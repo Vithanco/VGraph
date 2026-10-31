@@ -43,7 +43,11 @@ jobs:
           tar -xzf "$JUST" -C /usr/local/bin just
       - run: just lint
       - run: swift build --build-tests
-      - run: swift test --skip-build
+      # The PNG tests convert with rsvg-convert, as the server image does.
+      - run: apt-get install -y --no-install-recommends librsvg2-bin fontconfig fonts-liberation
+      # These two assume Linux means "inside the server image", and describe an
+      # image that does not exist: it has no dot and runs as root.
+      - run: swift test --skip-build --skip 'DockerIntegrationTests/test(DockerBuildSucceeds|NonRootUserExecution)'
 
   scripts:
     # The shell tests are written for the maintainer's macOS: bash 3.2 and BSD tools.
