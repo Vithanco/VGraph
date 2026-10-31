@@ -1,0 +1,64 @@
+# Public repository: pull requests from forks run here with a read-only token and no
+# secrets, and a first-time contributor's run waits for the maintainer's approval.
+# Never switch to pull_request_target, which would run outside code with write access.
+# Actions are pinned to a full commit SHA; the repository refuses anything else.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  swift:
+    name: Swift on Linux
+    runs-on: ubuntu-24.04
+    # Matches .swift-version.
+    container: swift:6.4.1-noble
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .build
+          key: swift-linux-6.4.1-${{ hashFiles('Package.resolved') }}
+          restore-keys: swift-linux-6.4.1-
+      - run: apt-get update && apt-get install -y --no-install-recommends just
+      - run: just lint
+      - run: swift build --build-tests
+      - run: swift test --skip-build
+
+  scripts:
+    # The shell tests are written for the maintainer's macOS: bash 3.2 and BSD tools.
+    name: Shell tests and public audit
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # gitleaks scans every commit
+      - run: brew install just gitleaks
+      - name: Shell tests
+        run: |
+          failed=0
+          for t in check-wasm-optimized justfile-hygiene doctor-kegs doctor-sdk codeowners licence audit-public export-public; do
+            echo "::group::$t"
+            ./scripts/$t.test.sh || failed=1
+            echo "::endgroup::"
+          done
+          exit $failed
+      # The real forbidden-strings list never reaches GitHub, so the audit runs
+      # with an empty one: its other checks (bare issue numbers, home paths,
+      # required files, gitleaks) need no list.
+      - name: Public audit
+        run: |
+          empty=$(mktemp)
+          VITHANCO_FORBIDDEN="$empty" ./scripts/audit-public.sh .
