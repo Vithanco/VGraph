@@ -49,6 +49,46 @@ jobs:
       # image that does not exist: it has no dot and runs as root.
       - run: swift test --skip-build --skip 'DockerIntegrationTests/test(DockerBuildSucceeds|NonRootUserExecution)'
 
+  wasm:
+    # Builds and tests the wasm; it publishes nothing. Releases stay on the
+    # maintainer's machine, so no publish secret ever reaches GitHub.
+    name: Wasm build, smoke and editor tests
+    runs-on: ubuntu-24.04
+    container: swift:6.4.1-noble
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: VGraphWasm/.build
+          key: wasm-6.4.1-${{ hashFiles('VGraphWasm/Package.resolved') }}
+          restore-keys: wasm-6.4.1-
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: Install just
+        env:
+          JUST: just-1.59.0-x86_64-unknown-linux-musl.tar.gz
+          SHA256: 409044617b6f06517c1035e55ca38c8c856ff8b650e41bc2aa1ef82d5903a23e
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends curl ca-certificates python3
+          curl -fsSLO "https://github.com/casey/just/releases/download/1.59.0/$JUST"
+          echo "$SHA256  $JUST" | sha256sum -c -
+          tar -xzf "$JUST" -C /usr/local/bin just
+      # Must equal .swift-version; the checksum is swift.org's for that release.
+      - name: Install the Embedded wasm SDK
+        run: |
+          swift sdk install \
+            https://download.swift.org/swift-6.4.1-release/wasm-sdk/swift-6.4.1-RELEASE/swift-6.4.1-RELEASE_wasm.artifactbundle.tar.gz \
+            --checksum 783e6128d174d9f975b4eda68be02a5960681b723ef372e6876a7c2543a365d8
+      - name: Build the wasm and run the smoke tests
+        run: ./build-wasm.sh
+      # The ipad project runs in WebKit, the rest in Chromium.
+      - name: Editor browser tests
+        run: |
+          cd VGraphWasm/Tests-Browser && npm ci --silent && npx playwright install --with-deps chromium webkit
+          cd ../.. && just test-editor
+
   scripts:
     # The shell tests are written for the maintainer's macOS: bash 3.2 and BSD tools.
     name: Shell tests and public audit
