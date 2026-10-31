@@ -1,0 +1,16 @@
+# Cloud Build: only upload what the Dockerfile needs
+.build/
+.claude/
+.git/
+.gitignore
+.swiftpm/
+VGraphWasm/
+website/
+docs/
+mapping-skills/
+*.tar.gz
+*.wasm
+node_modules/
+package.json
+package-lock.json
+yarn.lock

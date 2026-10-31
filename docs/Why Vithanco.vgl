@@ -1,0 +1,65 @@
+vgraph whyVithanco: IBIS "Why Vithanco" {
+	layoutdirection: "Left to Right"
+
+	node whatIsVithanco: Question "What is Vithanco?"
+	node anAnalysisTool: Answer "An analysis tool"
+	node aToolToMakeBetterDecisions: Answer "A tool to make better decisions"
+	node aToolToCommunicateBetter: Answer "A tool to communicate better"
+	node howDoesVithancoHelpMeToAnalyse: Question "How does Vithanco help me to analyse?"
+	node visualThinkingPresentsAll: Answer "Visual Thinking presents all relevant information in a condensed manner"
+	node notationsAddStructureToAnalysis: Answer "Notations add structure to analysis"
+	node howDoesVithancoHelpMe: Question "How does Vithanco help me communicating?"
+	node aPictureSaysMoreThan1000Words: Answer "A Picture says more than 1000 words"
+	node theVisualStructureHelpsToExplain: Answer "The visual structure helps to explain the argument"
+	node itIsEasyToTakeSomeoneThroughThe: Answer "It is easy to take someone through the diagram"
+	node twodimensionalRepresentationIs: Pro "Twodimensional representation is superiour to text that only reads from top to  bottom"
+	node aCooperationTool: Answer "A cooperation tool"
+	node howDoesVithancoHelpToCooperate: Question "How does Vithanco help to cooperate?"
+	node vithancoDisplaysTheSharedMemory: Answer "Vithanco displays the shared memory of the group"
+	node howDoesVithancoHelpMeToMake: Question "How does Vithanco help me to make better decisions? "
+	node methodsCanHelpToAskTheRight: Answer "Methods can help to ask the right questions"
+	node connectionsEdgesBetween: Answer "Connections (edges) between Information (nodes) provides context and overview"
+	node eGInAnIBISDiagramThePrevious: Pro "e.g. in an IBIS diagram, the previous questions and answers provide the context for the now you concentrate on"
+	node byGoingThroughTheDiagramYou: Pro "By going through the diagram you reveal the structure to other people and allow them to diagree"
+	node whyIsDisagreementImportant: Question "Why is disagreement important?"
+	node itIsTheTimeWhenYouCanLearn: Answer "It is the time when you can learn something"
+	node gettingDisagreementIsNearly: Pro "Getting disagreement is nearly always positive as long as the disagreement is based on facts and not just on feelings or believes. But even then it might open up for further insights"
+	node theEdgesAreMoreEasilyTraceable: Pro "The edges are more easily traceable than references in a book (e.g. \"see section 3.5.2\")"
+	node havingALimitationOnTheAmountOf: Pro "Having a limitation on the amount of text you can put into a node requires you to be concise"
+	node bBSForExampleRequiresThatYou: Pro "BBS for example requires that you break down the benefit first into the business changes that are needed before you look at the one off enablers"
+	node forExampleTheThinkingProcessesOf: Pro "For example, the Thinking Processes of TOC are all about asking the right question at the right time. The notation is \"only\" capturing the current knowledge"
+	node theAlignStakeholdersMethodIs: Pro "The Align Stakeholders Method is buidling up a shared knowledge by iteratively going throught the previous version until all stakeholders agree"
+	node whyIsThat: Question "Why is that?"
+	node inATextYouGoFromTopToBottom: Answer "In a text you go from top to bottom. Complex thoughts need to sequentialised, often supported by an hierarchical heading structure"
+	node anImageCanBeQuickerScannedAndThe: Answer "An image can be quicker scanned and the focus can more quickly go to the important parts"
+	edge whatIsVithanco -> aToolToMakeBetterDecisions
+	edge whatIsVithanco -> aToolToCommunicateBetter
+	edge whatIsVithanco -> anAnalysisTool
+	edge anAnalysisTool -> howDoesVithancoHelpMeToAnalyse
+	edge howDoesVithancoHelpMeToMake -> visualThinkingPresentsAll
+	edge howDoesVithancoHelpMeToAnalyse -> notationsAddStructureToAnalysis
+	edge aToolToCommunicateBetter -> howDoesVithancoHelpMe
+	edge howDoesVithancoHelpMe -> aPictureSaysMoreThan1000Words
+	edge howDoesVithancoHelpMe -> theVisualStructureHelpsToExplain
+	edge howDoesVithancoHelpMe -> itIsEasyToTakeSomeoneThroughThe
+	edge aPictureSaysMoreThan1000Words -> twodimensionalRepresentationIs
+	edge whatIsVithanco -> aCooperationTool
+	edge aCooperationTool -> howDoesVithancoHelpToCooperate
+	edge howDoesVithancoHelpToCooperate -> vithancoDisplaysTheSharedMemory
+	edge aToolToMakeBetterDecisions -> howDoesVithancoHelpMeToMake
+	edge howDoesVithancoHelpMeToAnalyse -> methodsCanHelpToAskTheRight
+	edge howDoesVithancoHelpMeToMake -> connectionsEdgesBetween
+	edge theVisualStructureHelpsToExplain -> eGInAnIBISDiagramThePrevious
+	edge itIsEasyToTakeSomeoneThroughThe -> byGoingThroughTheDiagramYou
+	edge byGoingThroughTheDiagramYou -> whyIsDisagreementImportant
+	edge whyIsDisagreementImportant -> itIsTheTimeWhenYouCanLearn
+	edge itIsTheTimeWhenYouCanLearn -> gettingDisagreementIsNearly
+	edge connectionsEdgesBetween -> theEdgesAreMoreEasilyTraceable
+	edge visualThinkingPresentsAll -> havingALimitationOnTheAmountOf
+	edge notationsAddStructureToAnalysis -> bBSForExampleRequiresThatYou
+	edge methodsCanHelpToAskTheRight -> forExampleTheThinkingProcessesOf
+	edge vithancoDisplaysTheSharedMemory -> theAlignStakeholdersMethodIs
+	edge twodimensionalRepresentationIs -> whyIsThat
+	edge whyIsThat -> inATextYouGoFromTopToBottom
+	edge whyIsThat -> anImageCanBeQuickerScannedAndThe
+}

@@ -1,0 +1,39 @@
+{
+  "name": "@vithanco/vgraph",
+  "version": "1.1.0",
+  "description": "VGraph JavaScript library for rendering Vithanco Graph Language (VGL) diagrams",
+  "main": "vgraph-v1.1.0.js",
+  "module": "vgraph-v1.1.0.js",
+  "types": "vgraph-v1.1.0.d.ts",
+  "type": "module",
+  "files": [
+    "vgraph-v1.1.0.js",
+    "vgraph-v1.1.0.d.ts",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "scripts": {
+    "test": "echo \"No tests yet\""
+  },
+  "keywords": [
+    "graph",
+    "visualization",
+    "diagram",
+    "vgl",
+    "vithanco",
+    "ibis",
+    "bbs",
+    "wasm"
+  ],
+  "author": "Vithanco",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Vithanco/VGraph.git"
+  },
+  "homepage": "https://vithanco.com",
+  "peerDependencies": {
+    "@bjorn3/browser_wasi_shim": "^0.3.0"
+  }
+}

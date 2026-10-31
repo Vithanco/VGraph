@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Diagram Style Exploration — Vithanco</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { overflow: hidden; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel">
+
+// ─── Diagram Data ────────────────────────────────────────────────────────────
+
+const CM_NODES = [
+  { id: 'cm',   label: ['Concept Mapping'],       x: 150, y: 32,  w: 158, h: 44 },
+  { id: 'agm',  label: ['Any Group Member'],       x: 340, y: 32,  w: 142, h: 44 },
+  { id: 'vtm',  label: ['Visual Thinking', 'Method'], x: 18, y: 185, w: 148, h: 52 },
+  { id: 'sr',   label: ['Shared Review'],          x: 340, y: 185, w: 132, h: 44 },
+  { id: 'cmap', label: ['Concept Map'],            x: 180, y: 325, w: 128, h: 44 },
+  { id: 'term', label: ['Terminology'],            x: 38,  y: 450, w: 128, h: 44 },
+  { id: 'con',  label: ['Concepts'],               x: 312, y: 442, w: 110, h: 44 },
+  { id: 'rel',  label: ['Relationships'],          x: 255, y: 548, w: 142, h: 44 },
+];
+
+const CM_EDGES = [
+  { from: 'cm',   to: 'vtm',  label: 'is a' },
+  { from: 'cm',   to: 'sr',   label: 'is conducted as' },
+  { from: 'agm',  to: 'sr',   label: 'can conduct' },
+  { from: 'sr',   to: 'cmap', label: 'validates' },
+  { from: 'cm',   to: 'cmap', label: 'results in', cp: [-32, 0] },
+  { from: 'cmap', to: 'term', label: 'defines' },
+  { from: 'cmap', to: 'con',  label: 'consists of' },
+  { from: 'con',  to: 'rel',  label: 'defined via' },
+];
+
+const IBIS_NODES = [
+  { id: 'q', label: ['Question'], type: 'question', x: 125, y: 28,  w: 130, h: 44 },
+  { id: 'a', label: ['Answer'],   type: 'answer',   x: 125, y: 162, w: 130, h: 44 },
+  { id: 'p', label: ['Pro'],      type: 'pro',       x: 22,  y: 296, w: 100, h: 44 },
+  { id: 'c', label: ['Con'],      type: 'con',       x: 258, y: 296, w: 100, h: 44 },
+];
+
+const IBIS_EDGES = [
+  { from: 'q', to: 'a', cp: [-22, 0] },
+  { from: 'a', to: 'q', cp: [22,  0] },
+  { from: 'a', to: 'p' },
+  { from: 'a', to: 'c' },
+  { from: 'p', to: 'q', cp: [-28, 0] },
+  { from: 'c', to: 'q', cp: [28,  0] },
+];
+
+// ─── IBIS semantic colors ────────────────────────────────────────────────────
+
+const IBIS_COLORS = {
+  whisper: {
+    question: { fill: '#f4f1ff', border: '#9b7fe8', text: '#3d1f8e' },
+    answer:   { fill: '#fffbeb', border: '#e8a822', text: '#7a4a08' },
+    pro:      { fill: '#f0fdf5', border: '#34c76a', text: '#0f5e2e' },
+    con:      { fill: '#fff1f3', border: '#f05070', text: '#8b1030' },
+  },
+  verdant: {
+    question: { fill: '#ede8ff', border: '#7c48e0', text: '#2a0e82' },
+    answer:   { fill: '#fef3c0', border: '#d09010', text: '#6a3a05' },
+    pro:      { fill: '#d8faec', border: '#18a858', text: '#084828' },
+    con:      { fill: '#fde0e5', border: '#d82848', text: '#780f22' },
+  },
+  blueprint: {
+    question: { fill: '#1a1235', border: '#9070f8', text: '#c8b8ff' },
+    answer:   { fill: '#1e1808', border: '#d8a020', text: '#fcd880' },
+    pro:      { fill: '#081a10', border: '#28c870', text: '#70f0a8' },
+    con:      { fill: '#1e0810', border: '#f05070', text: '#ff9090' },
+  },
+};
+
+// ─── Themes ──────────────────────────────────────────────────────────────────
+
+const THEMES = {
+  whisper: {
+    key: 'whisper',
+    name: 'Whisper',
+    sub: 'Minimal & airy',
+    bg: '#faf9f7',
+    nodeFill: '#ffffff',
+    nodeBorder: '#ddd8d0',
+    nodeBorderW: 1,
+    nodeRadius: 7,
+    nodeText: '#2a2420',
+    nodeFont: '"DM Sans", sans-serif',
+    nodeFontSize: 12.5,
+    nodeFontW: 500,
+    edgeStroke: '#c8c0b4',
+    edgeW: 1.5,
+    edgeLabelColor: '#a09080',
+    edgeLabelSize: 10,
+    hasShadow: true,
+    hasGlow: false,
+  },
+  verdant: {
+    key: 'verdant',
+    name: 'Verdant',
+    sub: 'Teal + warmth',
+    bg: '#f6fefd',
+    nodeFill: '#e5f7f5',
+    nodeBorder: '#1a9e94',
+    nodeBorderW: 1.5,
+    nodeRadius: 12,
+    nodeText: '#0c3430',
+    nodeFont: '"Plus Jakarta Sans", sans-serif',
+    nodeFontSize: 13,
+    nodeFontW: 600,
+    edgeStroke: '#50c0b8',
+    edgeW: 2,
+    edgeLabelColor: '#2a8880',
+    edgeLabelSize: 11,
+    hasShadow: true,
+    hasGlow: false,
+  },
+  blueprint: {
+    key: 'blueprint',
+    name: 'Blueprint',
+    sub: 'Dark & technical',
+    bg: '#0c1220',
+    nodeFill: '#131c2e',
+    nodeBorder: '#2060d8',
+    nodeBorderW: 1,
+    nodeRadius: 9,
+    nodeText: '#a8c4e8',
+    nodeFont: '"Space Grotesk", sans-serif',
+    nodeFontSize: 12,
+    nodeFontW: 500,
+    edgeStroke: '#2060d8',
+    edgeW: 1.5,
+    edgeLabelColor: '#4878b0',
+    edgeLabelSize: 10,
+    hasShadow: false,
+    hasGlow: true,
+  },
+};
+
+// ─── Geometry helpers ────────────────────────────────────────────────────────
+
+function boundaryPt(node, tx, ty) {
+  const cx = node.x + node.w / 2, cy = node.y + node.h / 2;
+  const dx = tx - cx, dy = ty - cy;
+  if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) return [cx, cy];
+  const hw = node.w / 2 + 5, hh = node.h / 2 + 5;
+  const t = Math.min(
+    Math.abs(dx) > 0.01 ? hw / Math.abs(dx) : Infinity,
+    Math.abs(dy) > 0.01 ? hh / Math.abs(dy) : Infinity,
+  );
+  return [cx + dx * t, cy + dy * t];
+}
+
+function edgePts(fromN, toN) {
+  const fcx = fromN.x + fromN.w / 2, fcy = fromN.y + fromN.h / 2;
+  const tcx = toN.x + toN.w / 2,     tcy = toN.y + toN.h / 2;
+  const [x1, y1] = boundaryPt(fromN, tcx, tcy);
+  const [x2, y2] = boundaryPt(toN,   fcx, fcy);
+  return { x1, y1, x2, y2, mx: (x1 + x2) / 2, my: (y1 + y2) / 2 };
+}
+
+// ─── SVG primitives ──────────────────────────────────────────────────────────
+
+function Marker({ id, color }) {
+  return (
+    <marker id={id} markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0.5 L5.5,3.5 L0,6.5 Z" fill={color} />
+    </marker>
+  );
+}
+
+function DiagramSVG({ nodes, edges, theme, width, height, ibis }) {
+  const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]));
+  const pid = `${theme.key}${ibis ? 'i' : 'c'}`;
+  const markerId  = `arr-${pid}`;
+  const shadowId  = `shd-${pid}`;
+  const glowId    = `glw-${pid}`;
+
+  return (
+    <svg width={width} height={height} style={{ display: 'block', background: theme.bg }}>
+      <defs>
+        <Marker id={markerId} color={theme.edgeStroke} />
+        {theme.hasShadow && (
+          <filter id={shadowId} x="-25%" y="-25%" width="150%" height="150%">
+            <feDropShadow dx="0" dy="2" stdDeviation="4"
+              floodColor={theme.key === 'verdant' ? '#1a9e94' : '#000'}
+              floodOpacity={theme.key === 'verdant' ? 0.12 : 0.07} />
+          </filter>
+        )}
+        {theme.hasGlow && (
+          <filter id={glowId} x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        )}
+      </defs>
+
+      {/* Edges first (behind nodes) */}
+      {edges.map((edge, i) => {
+        const fn = nodeMap[edge.from], tn = nodeMap[edge.to];
+        if (!fn || !tn) return null;
+        const { x1, y1, x2, y2 } = edgePts(fn, tn);
+        let pathD, lx, ly;
+        if (edge.cp) {
+          const cpx = (x1 + x2) / 2 + edge.cp[0];
+          const cpy = (y1 + y2) / 2 + edge.cp[1];
+          pathD = `M${x1},${y1} Q${cpx},${cpy} ${x2},${y2}`;
+          lx = 0.25 * x1 + 0.5 * cpx + 0.25 * x2;
+          ly = 0.25 * y1 + 0.5 * cpy + 0.25 * y2 - 6;
+        } else {
+          pathD = `M${x1},${y1} L${x2},${y2}`;
+          lx = (x1 + x2) / 2; ly = (y1 + y2) / 2 - 6;
+        }
+        return (
+          <g key={i}>
+            <path d={pathD} fill="none"
+              stroke={theme.edgeStroke}
+              strokeWidth={theme.edgeW}
+              strokeOpacity={theme.key === 'blueprint' ? 0.65 : 1}
+              markerEnd={`url(#${markerId})`}
+            />
+            {edge.label && (
+              <text x={lx} y={ly} textAnchor="middle"
+                fontFamily={theme.nodeFont} fontSize={theme.edgeLabelSize}
+                fill={theme.edgeLabelColor} fontStyle="italic"
+                style={{ userSelect: 'none' }}>
+                {edge.label}
+              </text>
+            )}
+          </g>
+        );
+      })}
+
+      {/* Nodes */}
+      {nodes.map(node => {
+        const cx = node.x + node.w / 2, cy = node.y + node.h / 2;
+        const lh = theme.nodeFontSize * 1.38;
+        const lines = node.label;
+        const y0 = cy - ((lines.length - 1) * lh) / 2;
+
+        let fill = theme.nodeFill, border = theme.nodeBorder, textC = theme.nodeText;
+        if (ibis && node.type) {
+          const c = IBIS_COLORS[theme.key]?.[node.type];
+          if (c) { fill = c.fill; border = c.border; textC = c.text; }
+        }
+
+        return (
+          <g key={node.id}>
+            {/* Blueprint: glow ring behind node */}
+            {theme.hasGlow && (
+              <rect x={node.x} y={node.y} width={node.w} height={node.h}
+                rx={theme.nodeRadius} ry={theme.nodeRadius}
+                fill="none" stroke={border} strokeWidth={3} strokeOpacity={0.35}
+                filter={`url(#${glowId})`}
+              />
+            )}
+            <rect x={node.x} y={node.y} width={node.w} height={node.h}
+              rx={theme.nodeRadius} ry={theme.nodeRadius}
+              fill={fill} stroke={border} strokeWidth={theme.nodeBorderW}
+              filter={theme.hasShadow ? `url(#${shadowId})` : undefined}
+            />
+            <text textAnchor="middle"
+              fontFamily={theme.nodeFont} fontSize={theme.nodeFontSize}
+              fontWeight={theme.nodeFontW} fill={textC}
+              style={{ userSelect: 'none' }}>
+              {lines.map((line, li) => (
+                <tspan key={li} x={cx} y={y0 + li * lh}>{line}</tspan>
+              ))}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+// ─── CRT Node swatches ───────────────────────────────────────────────────────
+
+const CRT_TYPES = [
+  { label: 'Undesirable Effect',
+    whisper:   { fill: '#fff4f6', border: '#e05878' },
+    verdant:   { fill: '#fde0e8', border: '#d02858' },
+    blueprint: { fill: '#1e0812', border: '#e04870', text: '#f8a0b8' },
+  },
+  { label: 'Given',
+    whisper:   { fill: '#f2f4ff', border: '#8090d0' },
+    verdant:   { fill: '#e4e8f8', border: '#3040b0' },
+    blueprint: { fill: '#0c1030', border: '#4870e0', text: '#90b8f8' },
+  },
+  { label: 'Intermediate Effect',
+    whisper:   { fill: '#f4fdf7', border: '#50b870' },
+    verdant:   { fill: '#d8f8e8', border: '#18a050' },
+    blueprint: { fill: '#081818', border: '#28c870', text: '#70f0a0' },
+  },
+  { label: 'AND (connector)',
+    whisper:   { fill: '#faf5ff', border: '#a070d0' },
+    verdant:   { fill: '#ede0f8', border: '#7040c0' },
+    blueprint: { fill: '#140c28', border: '#8060e0', text: '#c0a0f8' },
+  },
+  { label: 'Changeable',
+    whisper:   { fill: '#fff8f0', border: '#d08040' },
+    verdant:   { fill: '#fdecd8', border: '#b06020' },
+    blueprint: { fill: '#1e1008', border: '#e08030', text: '#f8c080' },
+  },
+];
+
+function CRTSwatches({ theme }) {
+  return (
+    <div style={{ background: theme.bg, padding: 24, display: 'flex', flexDirection: 'column', gap: 10, height: '100%' }}>
+      {CRT_TYPES.map(t => {
+        const c = t[theme.key] || {};
+        return (
+          <div key={t.label} style={{
+            background: c.fill,
+            border: `${theme.nodeBorderW}px solid ${c.border}`,
+            borderRadius: theme.nodeRadius,
+            padding: '9px 14px',
+            fontFamily: theme.nodeFont,
+            fontSize: theme.nodeFontSize,
+            fontWeight: theme.nodeFontW,
+            color: c.text || theme.nodeText,
+          }}>
+            {t.label}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Causal Loop ─────────────────────────────────────────────────────────────
+
+function CausalLoop({ theme }) {
+  const w = 380, h = 220;
+  const nodes = [
+    { id: 'ba', label: ['Bank', 'Account'], cx: 95, cy: 110, r: 60 },
+    { id: 'ei', label: ['Earned', 'Interest'], cx: 285, cy: 110, r: 60 },
+  ];
+
+  // arc from Bank Account top-right to Earned Interest top-left (above)
+  // arc from Earned Interest bottom-left to Bank Account bottom-right (below)
+
+  const arcPath1 = `M 140,75 Q 190,28 240,75`;   // top arc BA→EI
+  const arcPath2 = `M 240,145 Q 190,192 140,145`; // bottom arc EI→BA
+
+  // reinforce arrow for center
+  const arrColor = theme.edgeStroke;
+  const markerId = `arr-cl-${theme.key}`;
+
+  return (
+    <svg width={w} height={h} style={{ display: 'block', background: theme.bg }}>
+      <defs>
+        <Marker id={markerId} color={arrColor} />
+      </defs>
+      {/* Arcs */}
+      <path d={arcPath1} fill="none" stroke={theme.edgeStroke} strokeWidth={theme.edgeW}
+        strokeOpacity={theme.key === 'blueprint' ? 0.7 : 1}
+        markerEnd={`url(#${markerId})`} />
+      <path d={arcPath2} fill="none" stroke={theme.edgeStroke} strokeWidth={theme.edgeW}
+        strokeOpacity={theme.key === 'blueprint' ? 0.7 : 1}
+        markerEnd={`url(#${markerId})`} />
+      {/* "s" labels */}
+      {[
+        { x: 168, y: 44 }, { x: 212, y: 44 },
+        { x: 168, y: 178 }, { x: 212, y: 178 },
+      ].map((pt, i) => (
+        <text key={i} x={pt.x} y={pt.y} textAnchor="middle"
+          fontFamily={theme.nodeFont} fontSize={11} fill={theme.edgeLabelColor}
+          fontStyle="italic">s</text>
+      ))}
+      {/* Reinforcing symbol */}
+      <circle cx={190} cy={110} r={22}
+        fill={theme.nodeFill} stroke={theme.nodeBorder} strokeWidth={theme.nodeBorderW} />
+      <text x={190} y={115} textAnchor="middle"
+        fontFamily={theme.nodeFont} fontSize={14} fontWeight="600" fill={theme.nodeText}>R</text>
+      {/* Nodes */}
+      {nodes.map(n => (
+        <g key={n.id}>
+          <circle cx={n.cx} cy={n.cy} r={n.r}
+            fill={theme.nodeFill} stroke={theme.nodeBorder} strokeWidth={theme.nodeBorderW} />
+          <text textAnchor="middle"
+            fontFamily={theme.nodeFont} fontSize={theme.nodeFontSize - 0.5}
+            fontWeight={theme.nodeFontW} fill={theme.nodeText}>
+            {n.label.map((line, li) => (
+              <tspan key={li} x={n.cx} y={n.cy + (li - (n.label.length - 1) / 2) * (theme.nodeFontSize * 1.38)}>{line}</tspan>
+            ))}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+// ─── App ─────────────────────────────────────────────────────────────────────
+
+const themeList = Object.values(THEMES);
+
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection
+        title="Concept Map"
+        subtitle="Same structure, three visual directions — pan & zoom to explore">
+        {themeList.map(theme => (
+          <DCArtboard key={theme.key}
+            label={`${theme.name}  ·  ${theme.sub}`}
+            width={510} height={630}>
+            <DiagramSVG nodes={CM_NODES} edges={CM_EDGES}
+              theme={theme} width={510} height={630} />
+          </DCArtboard>
+        ))}
+      </DCSection>
+
+      <DCSection title="IBIS Argument Map" subtitle="Semantic node coloring by role">
+        {themeList.map(theme => (
+          <DCArtboard key={theme.key} label={theme.name} width={390} height={380}>
+            <DiagramSVG nodes={IBIS_NODES} edges={IBIS_EDGES}
+              theme={theme} width={390} height={380} ibis />
+          </DCArtboard>
+        ))}
+      </DCSection>
+
+      <DCSection title="Causal Loop" subtitle="System dynamics — reinforcing loop">
+        {themeList.map(theme => (
+          <DCArtboard key={theme.key} label={theme.name} width={380} height={220}>
+            <CausalLoop theme={theme} />
+          </DCArtboard>
+        ))}
+      </DCSection>
+
+      <DCSection title="CRT Node Types" subtitle="Cause & effect tree — node type palette">
+        {themeList.map(theme => (
+          <DCArtboard key={theme.key} label={theme.name} width={280} height={270}>
+            <CRTSwatches theme={theme} />
+          </DCArtboard>
+        ))}
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

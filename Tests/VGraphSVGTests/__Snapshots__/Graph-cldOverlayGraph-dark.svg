@@ -1,0 +1,23 @@
+<svg width="500.0" height="300.0" viewBox="-50.0 -50.0 500.0 300.0" xmlns="http://www.w3.org/2000/svg" data-theme="dark"><style>@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap');</style><style>.vgraph-node, .vgraph-edge, .vgraph-group > rect { transition: opacity 0.12s ease-out, filter 0.12s ease-out; }
+.vgraph-node, .vgraph-edge, .loop-indicator { cursor: pointer; }
+svg:has(.vgraph-node:hover, .vgraph-edge:hover, .loop-indicator:hover) .vgraph-node,
+svg:has(.vgraph-node:hover, .vgraph-edge:hover, .loop-indicator:hover) .vgraph-edge { opacity: 0.15; }
+.vgraph-node:hover, .vgraph-edge:hover { opacity: 1 !important; }
+.vgraph-node:hover { filter: drop-shadow(0 0 10px rgba(59,130,246,0.95)) drop-shadow(0 0 3px rgba(59,130,246,1)); }
+.vgraph-edge:hover { filter: drop-shadow(0 0 9px rgba(59,130,246,0.95)); }
+.vgraph-edge:hover path { stroke: #3b82f6; stroke-width: 4; }
+.vgraph-edge:hover polygon, .vgraph-edge:hover ellipse, .vgraph-edge:hover circle { fill: #3b82f6; stroke: #3b82f6; }
+.vgraph-group:hover > rect { filter: drop-shadow(0 0 8px rgba(59,130,246,0.85)); stroke: #3b82f6; }
+.vgraph-url-badge { cursor: pointer; }
+.vgraph-url-badge:hover { opacity: 0.75; }</style><defs><symbol id="vithanco-watermark" viewBox="0 0 162.12 162.0"><path d="M 121.68 34.67 L 94.40 81.89 L 81.07 104.96 L 101.28 139.95 L 114.61 116.88 L 162.12 34.67 Z" fill="#4a4842"/><path d="M 81.07 58.81 L 95.01 34.67 L 121.68 34.67 L 141.72 0 L 115.05 0 L 47.07 0 L 20.40 0 L 40.44 34.67 L 67.11 34.67 Z" fill="#4a4842"/><path d="M 40.44 34.67 L 0 34.67 L 47.51 116.88 L 60.84 139.96 L 81.07 104.96 L 67.73 81.89 Z" fill="#4a4842"/><text x="9.13" y="158.59" font-family="Arial" font-size="18.67" fill="#4a4842">VITHANCO.COM</text></symbol></defs><style>svg:has(#node-a:hover) #edge-e1,svg:has(#node-a:hover) #edge-e2,svg:has(#node-a:hover) #node-b{opacity:1;filter:drop-shadow(0 0 8px rgba(59,130,246,0.9));}
+svg:has(#node-a:hover) #edge-e1 path,svg:has(#node-a:hover) #edge-e2 path{stroke:#3b82f6;stroke-width:3;}
+svg:has(#node-a:hover) #edge-e1 polygon,svg:has(#node-a:hover) #edge-e1 ellipse,svg:has(#node-a:hover) #edge-e1 circle,svg:has(#node-a:hover) #edge-e2 polygon,svg:has(#node-a:hover) #edge-e2 ellipse,svg:has(#node-a:hover) #edge-e2 circle{fill:#3b82f6;stroke:#3b82f6;}
+svg:has(#node-b:hover) #edge-e1,svg:has(#node-b:hover) #edge-e2,svg:has(#node-b:hover) #node-a{opacity:1;filter:drop-shadow(0 0 8px rgba(59,130,246,0.9));}
+svg:has(#node-b:hover) #edge-e1 path,svg:has(#node-b:hover) #edge-e2 path{stroke:#3b82f6;stroke-width:3;}
+svg:has(#node-b:hover) #edge-e1 polygon,svg:has(#node-b:hover) #edge-e1 ellipse,svg:has(#node-b:hover) #edge-e1 circle,svg:has(#node-b:hover) #edge-e2 polygon,svg:has(#node-b:hover) #edge-e2 ellipse,svg:has(#node-b:hover) #edge-e2 circle{fill:#3b82f6;stroke:#3b82f6;}
+svg:has(#edge-e1:hover) #node-a,svg:has(#edge-e1:hover) #node-b{opacity:1;filter:drop-shadow(0 0 8px rgba(59,130,246,0.9));}
+svg:has(#edge-e2:hover) #node-b,svg:has(#edge-e2:hover) #node-a{opacity:1;filter:drop-shadow(0 0 8px rgba(59,130,246,0.9));}
+svg:has(#loop-e1-e2:hover) #edge-e1,svg:has(#loop-e1-e2:hover) #edge-e2,svg:has(#loop-e1-e2:hover) #node-a,svg:has(#loop-e1-e2:hover) #node-b,svg:has(#loop-e1-e2:hover) #loop-e1-e2{opacity:1;filter:drop-shadow(0 0 8px rgba(59,130,246,0.9));}
+svg:has(#loop-e1-e2:hover) #edge-e1 path,svg:has(#loop-e1-e2:hover) #edge-e2 path{stroke:#3b82f6;stroke-width:3;}
+svg:has(#loop-e1-e2:hover) #edge-e1 polygon,svg:has(#loop-e1-e2:hover) #edge-e1 ellipse,svg:has(#loop-e1-e2:hover) #edge-e1 circle,svg:has(#loop-e1-e2:hover) #edge-e2 polygon,svg:has(#loop-e1-e2:hover) #edge-e2 ellipse,svg:has(#loop-e1-e2:hover) #edge-e2 circle{fill:#3b82f6;stroke:#3b82f6;}
+</style><g id="edge-e1" class="vgraph-edge"><path d="" fill="none" stroke="#6e6a60" stroke-width="1"/></g><g id="edge-e2" class="vgraph-edge"><path d="" fill="none" stroke="#6e6a60" stroke-width="1"/></g><g id="loop-e1-e2" class="loop-indicator"><circle cx="200.0" cy="100.0" r="17.2" fill="transparent" pointer-events="all"/><path d="M 214.89563694509235,108.6 A 17.2,17.2 0 1,1 200.0,82.8" fill="none" stroke="#a8a49a" stroke-width="2.2" stroke-linecap="round"/><g transform="translate(209.24,82.8) rotate(-90.0)"><path d="M 0,0 L -3.5200000000000005,-9.240000000000002 L 3.5200000000000005,-9.240000000000002 Z" fill="#a8a49a"/></g><text x="200.0" y="106.4" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="17.6" font-weight="800" fill="#a8a49a">R</text></g><use href="#vithanco-watermark" x="3.0" y="167.0222057735011" width="30.0" height="29.97779422649889"/></svg>

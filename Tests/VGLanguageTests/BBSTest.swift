@@ -1,0 +1,42 @@
+// Created for debugging BBS parsing
+
+import Foundation
+import Testing
+
+@testable import App
+@testable import VGLanguage
+@testable import VGraph
+
+@Suite
+struct BBSTest {
+
+    @Test
+    func testBBSExample() throws {
+        let input = """
+            vgraph project: BBS "Sample Project" {
+                node obj1: InvestmentObjective "Increase Revenue";
+                node ben1: Benefit "Faster Customer Onboarding";
+                node ben2: Benefit "Improved Customer Satisfaction";
+                node bc1: BusinessChange "Automated Registration Process";
+                node bc2: BusinessChange "Self-Service Portal";
+                node en1: Enabler "Implement Online Forms";
+                node en2: Enabler "Deploy Customer Portal";
+                node en3: Enabler "Train Support Team";
+
+                edge obj1 -> ben1;
+                edge obj1 -> ben2;
+                edge ben1 -> bc1;
+                edge ben2 -> bc2;
+                edge bc1 -> en1;
+                edge bc2 -> en2;
+                edge bc2 -> en3;
+            }
+            """
+
+        let parser = VGraphParser(logger: NoOpLogger())
+        let graph = try parser.parse(source: input)
+
+        #expect(graph.nodes.count == 8)
+        #expect(graph.edges.count == 7)
+    }
+}

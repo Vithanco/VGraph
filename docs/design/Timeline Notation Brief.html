@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vithanco — Timeline Notation: Implementation Brief</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #18160f;
+    --ink-2: #5a564e;
+    --ink-3: #9a9690;
+    --rule: #e8e3db;
+    --page: #faf9f6;
+    --card: #ffffff;
+    --preview: #f5f4f0;
+    --accent: #2258c8;
+    --warn-bg: #fff8e8;
+    --warn-bd: #e8c870;
+    --warn-ink: #6a4808;
+    --info-bg: #f0f4ff;
+    --info-bd: #c8d4f0;
+    --info-ink: #203070;
+    --font: 'DM Sans', system-ui, sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+  html { font-size: 15px; }
+  body {
+    font-family: var(--font);
+    background: var(--page);
+    color: var(--ink);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 880px; margin: 0 auto; padding: 56px 40px 120px; }
+
+  /* Header */
+  .doc-header { margin-bottom: 56px; padding-bottom: 36px; border-bottom: 1px solid var(--rule); }
+  .meta-row {
+    display: flex; gap: 24px; align-items: center;
+    font-size: 11px; font-weight: 500; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 16px;
+  }
+  .meta-row .pill {
+    padding: 3px 9px; border: 1px solid var(--rule); border-radius: 999px;
+    background: var(--card); color: var(--ink-2);
+  }
+  .meta-row .pill.draft { color: var(--warn-ink); border-color: var(--warn-bd); background: var(--warn-bg); }
+  .doc-title { font-size: 32px; font-weight: 300; letter-spacing: -0.4px; line-height: 1.2; margin-bottom: 14px; }
+  .doc-title strong { font-weight: 600; }
+  .doc-lead { font-size: 15px; color: var(--ink-2); max-width: 640px; }
+
+  /* Section */
+  .section { margin-bottom: 52px; }
+  .section-num { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 4px; }
+  .section-title { font-size: 20px; font-weight: 600; letter-spacing: -0.2px; margin-bottom: 18px; }
+
+  p { margin-bottom: 14px; color: var(--ink-2); font-size: 14.5px; }
+  p:last-child { margin-bottom: 0; }
+  p.lead { color: var(--ink); }
+  strong { color: var(--ink); font-weight: 600; }
+
+  ul, ol { margin: 0 0 16px 22px; color: var(--ink-2); font-size: 14.5px; }
+  ul li, ol li { margin-bottom: 6px; }
+  ul li::marker { color: var(--ink-3); }
+
+  /* Card */
+  .card { background: var(--card); border: 1px solid var(--rule); border-radius: 12px; padding: 28px; }
+  .card + .card { margin-top: 16px; }
+
+  /* Compare grid for before/after */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+  .compare-cell { background: var(--preview); border: 1px solid var(--rule); border-radius: 10px; padding: 28px 24px; }
+  .compare-cell-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 16px; }
+  .compare-cell.before .compare-cell-label { color: #b85040; }
+  .compare-cell.after  .compare-cell-label { color: #208860; }
+
+  /* Spec table */
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+       text-transform: uppercase; color: var(--ink-3); padding: 0 14px 10px;
+       border-bottom: 1px solid var(--rule); }
+  td { padding: 12px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; color: var(--ink-2); }
+  td:first-child { font-weight: 500; color: var(--ink); width: 38%; }
+  td:last-child  { font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); }
+  tr:last-child td { border-bottom: none; }
+
+  /* Code block */
+  pre {
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.65;
+    background: #1c1a16; color: #e8e3db;
+    padding: 18px 20px; border-radius: 8px; overflow-x: auto;
+    margin-top: 12px;
+  }
+  pre .c { color: #8a857c; font-style: italic; }
+  pre .k { color: #d8a878; }
+  pre .s { color: #98c878; }
+  pre .v { color: #a8c8e8; }
+
+  code { font-family: var(--mono); font-size: 12.5px; background: #f0ede8; padding: 1px 6px; border-radius: 3px; color: var(--ink); }
+
+  /* Note boxes */
+  .note { padding: 14px 18px; border-radius: 8px; font-size: 13.5px; line-height: 1.6; margin-top: 16px; }
+  .note.info { background: var(--info-bg); border: 1px solid var(--info-bd); color: var(--info-ink); }
+  .note.warn { background: var(--warn-bg); border: 1px solid var(--warn-bd); color: var(--warn-ink); }
+  .note strong { color: inherit; }
+
+  /* Checklist */
+  .check-list { list-style: none; margin-left: 0; }
+  .check-list li {
+    padding: 8px 0 8px 30px; position: relative;
+    border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink-2);
+  }
+  .check-list li:last-child { border-bottom: none; }
+  .check-list li::before {
+    content: ''; position: absolute; left: 4px; top: 14px;
+    width: 14px; height: 14px; border: 1.5px solid var(--ink-3); border-radius: 3px;
+    background: var(--card);
+  }
+  .check-list li strong { display: block; color: var(--ink); margin-bottom: 2px; }
+
+  /* Inline mini-diagrams */
+  .mini-svg { display: block; margin: 0 auto; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="doc-header">
+    <div class="meta-row">
+      <span>Vithanco · Notation Spec</span>
+      <span class="pill draft">Draft v1</span>
+      <span class="pill">Amends §02 · §05 · §11</span>
+      <span class="pill">For: Renderer team</span>
+    </div>
+    <h1 class="doc-title"><strong>Timeline</strong> Notation — column-guide treatment</h1>
+    <p class="doc-lead">
+      Implementation brief: replace the current event-like rendering of TimePoint nodes
+      with an axis-and-guide treatment. The Timeline notation gains a dedicated visual
+      vocabulary that distinguishes <em>temporal coordinates</em> from <em>events</em>.
+    </p>
+  </header>
+
+  <!-- 01 — Why -->
+  <section class="section">
+    <div class="section-num">01 · Problem</div>
+    <h2 class="section-title">Why this change</h2>
+    <p class="lead">
+      In the current renderer, <code>TimePoint</code> nodes use the standard Notation
+      §02 node pattern — rounded rect, type label, content, icon disc. That pattern says
+      "this is a thing." But a timepoint isn't a thing; it's a <strong>coordinate on an
+      axis</strong>. Events are things that happened <em>at</em> a coordinate.
+    </p>
+    <p>
+      The pattern mismatch has two effects: timepoints visually compete with events for
+      attention, and the <code>alignGroup</code> mechanic (events aligning vertically
+      under their timepoint) is rendered but invisible — there's no visual evidence that
+      "Industrial Revolution peaks" sits in the 1850 column.
+    </p>
+
+    <div class="compare">
+      <div class="compare-cell before">
+        <div class="compare-cell-label">Before — timepoints as nodes</div>
+        <svg viewBox="0 0 360 200" class="mini-svg" width="100%">
+          <!-- Timepoints as full nodes -->
+          <g>
+            <rect x="20"  y="14" width="76" height="44" rx="7" fill="#3a342a" stroke="#5a564e" stroke-width="1"/>
+            <circle cx="36" cy="26" r="5" fill="#5a564e"/>
+            <text x="46" y="29" font-family="DM Sans" font-size="7" font-weight="600" fill="#9a9690" letter-spacing="0.06em">TIME</text>
+            <text x="36" y="50" font-family="DM Sans" font-size="11" font-weight="500" fill="#e8e3db">1800</text>
+          </g>
+          <g transform="translate(132,0)">
+            <rect x="20"  y="14" width="76" height="44" rx="7" fill="#3a342a" stroke="#5a564e" stroke-width="1"/>
+            <circle cx="36" cy="26" r="5" fill="#5a564e"/>
+            <text x="46" y="29" font-family="DM Sans" font-size="7" font-weight="600" fill="#9a9690" letter-spacing="0.06em">TIME</text>
+            <text x="36" y="50" font-family="DM Sans" font-size="11" font-weight="500" fill="#e8e3db">1850</text>
+          </g>
+          <g transform="translate(244,0)">
+            <rect x="20"  y="14" width="76" height="44" rx="7" fill="#3a342a" stroke="#5a564e" stroke-width="1"/>
+            <circle cx="36" cy="26" r="5" fill="#5a564e"/>
+            <text x="46" y="29" font-family="DM Sans" font-size="7" font-weight="600" fill="#9a9690" letter-spacing="0.06em">TIME</text>
+            <text x="36" y="50" font-family="DM Sans" font-size="11" font-weight="500" fill="#e8e3db">1871</text>
+          </g>
+          <!-- Sequence arrows -->
+          <defs>
+            <marker id="ahb" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0.5 L5,3 L0,5.5 Z" fill="#b0a898"/></marker>
+          </defs>
+          <line x1="96"  y1="36" x2="152" y2="36" stroke="#b0a898" stroke-width="1.5" marker-end="url(#ahb)"/>
+          <line x1="228" y1="36" x2="264" y2="36" stroke="#b0a898" stroke-width="1.5" marker-end="url(#ahb)"/>
+          <!-- Disconnected event below -->
+          <rect x="56" y="120" width="80" height="50" rx="7" fill="#152840" stroke="#4a78c8"/>
+          <text x="68" y="138" font-family="DM Sans" font-size="7" font-weight="600" fill="#7a9ed8" letter-spacing="0.06em">EVENT</text>
+          <text x="96" y="158" text-anchor="middle" font-family="DM Sans" font-size="10" fill="#e8e3db">Napoleon</text>
+          <text x="284" y="100" text-anchor="middle" font-family="DM Sans" font-size="9" fill="#b85040" font-style="italic">no visible link</text>
+          <path d="M232 104 Q 180 100 130 116" stroke="#b85040" stroke-width="1" fill="none" stroke-dasharray="2,2"/>
+        </svg>
+      </div>
+      <div class="compare-cell after">
+        <div class="compare-cell-label">After — axis + descending guides</div>
+        <svg viewBox="0 0 360 200" class="mini-svg" width="100%">
+          <!-- Vertical guides (lowest z) -->
+          <line x1="58"  y1="38" x2="58"  y2="194" stroke="#5a564e" stroke-opacity="0.35" stroke-width="1" stroke-dasharray="2,4"/>
+          <line x1="170" y1="38" x2="170" y2="194" stroke="#5a564e" stroke-opacity="0.35" stroke-width="1" stroke-dasharray="2,4"/>
+          <line x1="282" y1="38" x2="282" y2="194" stroke="#5a564e" stroke-opacity="0.35" stroke-width="1" stroke-dasharray="2,4"/>
+          <!-- Timepoint labels: dot + year -->
+          <circle cx="58"  cy="24" r="3" fill="#a8a49a"/>
+          <text x="58"  y="42" text-anchor="middle" font-family="DM Sans" font-size="11" font-weight="500" fill="#e8e3db">1800</text>
+          <circle cx="170" cy="24" r="3" fill="#a8a49a"/>
+          <text x="170" y="42" text-anchor="middle" font-family="DM Sans" font-size="11" font-weight="500" fill="#e8e3db">1850</text>
+          <circle cx="282" cy="24" r="3" fill="#a8a49a"/>
+          <text x="282" y="42" text-anchor="middle" font-family="DM Sans" font-size="11" font-weight="500" fill="#e8e3db">1871</text>
+          <!-- Axis baseline through dots -->
+          <line x1="20" y1="24" x2="340" y2="24" stroke="#5a564e" stroke-opacity="0.4" stroke-width="1"/>
+          <!-- Event positioned on guide -->
+          <rect x="22" y="120" width="72" height="50" rx="7" fill="#152840" stroke="#4a78c8"/>
+          <text x="34" y="138" font-family="DM Sans" font-size="7" font-weight="600" fill="#7a9ed8" letter-spacing="0.06em">EVENT</text>
+          <text x="58" y="158" text-anchor="middle" font-family="DM Sans" font-size="10" fill="#e8e3db">Napoleon</text>
+          <rect x="134" y="120" width="72" height="50" rx="7" fill="#152840" stroke="#4a78c8"/>
+          <text x="146" y="138" font-family="DM Sans" font-size="7" font-weight="600" fill="#7a9ed8" letter-spacing="0.06em">EVENT</text>
+          <text x="170" y="158" text-anchor="middle" font-family="DM Sans" font-size="10" fill="#e8e3db">Industrial</text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 — Solution -->
+  <section class="section">
+    <div class="section-num">02 · Visual specification</div>
+    <h2 class="section-title">Two new render layers</h2>
+
+    <p>
+      The Timeline notation introduces <strong>two render layers</strong> the renderer
+      doesn't currently have. Neither requires DOT changes — they're post-layout drawing
+      passes on top of what Graphviz already returns.
+    </p>
+
+    <h3 style="font-size: 14px; font-weight: 600; color: var(--ink); margin: 22px 0 10px;">A. Axis anchors (replaces TimePoint node render)</h3>
+    <div class="card">
+      <table>
+        <tbody>
+          <tr><td>Glyph</td><td>3px filled circle, axis-baseline color</td></tr>
+          <tr><td>Label</td><td>Year string only — no "TIME" type label, no rounded rect, no icon disc</td></tr>
+          <tr><td>Label font</td><td>DM Sans, 12px, 500, ink-primary</td></tr>
+          <tr><td>Label position</td><td>Centered below the dot, 14px from the axis baseline</td></tr>
+          <tr><td>Axis baseline</td><td>Horizontal rule connecting all anchors, 1px, ink-2 @ 0.4 opacity</td></tr>
+          <tr><td>Sequence arrows</td><td>Existing — unchanged. The Graphviz <code>sequence</code> edges between TimePoints are still drawn as standard edges.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size: 14px; font-weight: 600; color: var(--ink); margin: 22px 0 10px;">B. Column guides (new draw pass)</h3>
+    <div class="card">
+      <table>
+        <tbody>
+          <tr><td>Geometry</td><td>Vertical line at <code>x = timepoint.cx</code>, from axis baseline to diagram bottom</td></tr>
+          <tr><td>Stroke</td><td>1px, ink-2 @ <strong>0.35 opacity</strong> light / <strong>0.30 opacity</strong> dark</td></tr>
+          <tr><td>Dash</td><td><code>stroke-dasharray: 2,4</code></td></tr>
+          <tr><td>Z-order</td><td><strong>Below</strong> group containers, <strong>above</strong> page background. See §04.</td></tr>
+          <tr><td>Pass-through</td><td>Guides render continuously through group container backgrounds. Group fills are opaque enough to mask them slightly — that's intentional (guides feel like wallpaper, not foreground).</td></tr>
+          <tr><td>Termination</td><td>Stop at the bounding box of the last group containing a member of that <code>alignGroup</code>. If no events use the column, guide still draws full-height (useful for empty-column hint).</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note info">
+      <strong>Why guides at all.</strong> The <code>alignGroup</code> mechanic already
+      positions events under their timepoint. The guides make that mechanic <em>visible</em> —
+      a reader can trace from a timepoint label down to every event in that year without
+      eye-measurement. They're not decoration; they're the visual encoding of the
+      Timeline data model.
+    </div>
+  </section>
+
+  <!-- 03 — Tokens -->
+  <section class="section">
+    <div class="section-num">03 · Tokens to add</div>
+    <h2 class="section-title">Three new design tokens</h2>
+    <p>Add to the style guide §11 chrome palette and to the renderer's token table:</p>
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>Role</th><th>Light</th><th>Dark</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>--timeline-axis</code><br/><span style="color:var(--ink-3);font-weight:400;font-size:12.5px">Axis baseline + anchor dot</span></td>
+            <td>#5a564e @ 0.5</td>
+            <td>#a8a49a @ 0.5</td>
+          </tr>
+          <tr>
+            <td><code>--timeline-guide</code><br/><span style="color:var(--ink-3);font-weight:400;font-size:12.5px">Vertical column guide</span></td>
+            <td>#5a564e @ 0.35</td>
+            <td>#a8a49a @ 0.30</td>
+          </tr>
+          <tr>
+            <td><code>--timeline-year</code><br/><span style="color:var(--ink-3);font-weight:400;font-size:12.5px">Year label text</span></td>
+            <td>#18160f</td>
+            <td>#ecebe5</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:14px">
+      Light → dark mapping follows §11's existing role-preserving pattern. Opacities are
+      tuned slightly differently per mode because light-on-dark needs marginally less
+      opacity to feel as present as dark-on-light.
+    </p>
+  </section>
+
+  <!-- 04 — Graphviz -->
+  <section class="section">
+    <div class="section-num">04 · Graphviz integration</div>
+    <h2 class="section-title">No DOT changes needed</h2>
+    <p>
+      Everything Graphviz needs to give us, it already does. The new work is entirely
+      in the custom renderer's post-layout passes.
+    </p>
+
+    <div class="card">
+      <table>
+        <thead><tr><th>Input from Graphviz</th><th>How it's used</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Per-node <code>pos</code> attribute (center X, Y)</td>
+            <td>Read <code>timepoint.cx</code> for guide X position and anchor dot placement.</td>
+          </tr>
+          <tr>
+            <td>Root graph <code>bb</code> attribute</td>
+            <td>Read diagram bottom Y; guides span from axis baseline to <code>bb.y2</code>.</td>
+          </tr>
+          <tr>
+            <td>Existing <code>sequence</code> edges between timepoints</td>
+            <td>Rendered as standard edges. Unchanged.</td>
+          </tr>
+          <tr>
+            <td>Existing <code>alignGroup</code> constraints</td>
+            <td>Unchanged. Whatever mechanism currently aligns events under their timepoint X still applies. The guides simply visualize what's already true.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size: 14px; font-weight: 600; color: var(--ink); margin: 22px 0 10px;">Render-order requirement (critical)</h3>
+
+    <p>The renderer's existing draw order needs one new layer:</p>
+
+<pre><span class="c">// New layer order (top-to-bottom = back-to-front):</span>
+1. Page background
+2. <strong>Column guides</strong>            <span class="c">← NEW · only for Timeline notation</span>
+3. Group containers (fill + dashed border)
+4. <strong>Axis baseline + anchor dots</strong>  <span class="c">← NEW · only for Timeline notation</span>
+5. Edges (with arrows)
+6. Nodes (events)
+7. Edge labels
+8. Watermark</pre>
+
+    <p style="margin-top:14px">
+      Guides go <strong>under</strong> group containers so they feel like a structural
+      backdrop. Axis baseline + anchor dots go <strong>above</strong> groups so they read
+      as the top-level coordinate system. Both new layers render only for diagrams of
+      notation type <code>Timeline</code>.
+    </p>
+  </section>
+
+  <!-- 05 — Pseudocode -->
+  <section class="section">
+    <div class="section-num">05 · Render algorithm</div>
+    <h2 class="section-title">Drop-in pseudocode</h2>
+
+<pre><span class="c">// After Graphviz layout completes, before drawing anything else:</span>
+
+<span class="k">function</span> <span class="v">renderTimelineChrome</span>(graph, svg, theme) {
+  <span class="k">if</span> (graph.notation !== <span class="s">'Timeline'</span>) <span class="k">return</span>;
+
+  <span class="k">const</span> timepoints = graph.nodes.filter(n => n.type === <span class="s">'TimePoint'</span>);
+  <span class="k">const</span> bb = graph.boundingBox; <span class="c">// from Graphviz</span>
+
+  <span class="c">// Sort by X so the baseline draws left-to-right</span>
+  timepoints.sort((a, b) => a.cx - b.cx);
+
+  <span class="k">const</span> axisY  = timepoints[0].cy;
+  <span class="k">const</span> diagramBottom = bb.y2 - <span class="v">16</span>; <span class="c">// small bottom padding</span>
+
+  <span class="c">// PASS 1 · Column guides (lowest layer, before groups)</span>
+  <span class="k">for</span> (<span class="k">const</span> tp <span class="k">of</span> timepoints) {
+    svg.layer(<span class="s">'guides'</span>).line({
+      x1: tp.cx, y1: axisY + <span class="v">10</span>,
+      x2: tp.cx, y2: diagramBottom,
+      stroke: token(<span class="s">'--timeline-guide'</span>, theme),
+      strokeWidth: <span class="v">1</span>,
+      strokeDasharray: <span class="s">'2,4'</span>,
+    });
+  }
+
+  <span class="c">// ...groups render here in normal order...</span>
+
+  <span class="c">// PASS 2 · Axis baseline + anchor dots (above groups, below edges)</span>
+  <span class="k">const</span> xs = timepoints.map(t => t.cx);
+  svg.layer(<span class="s">'axis'</span>).line({
+    x1: <span class="v">Math</span>.min(...xs) - <span class="v">20</span>, y1: axisY,
+    x2: <span class="v">Math</span>.max(...xs) + <span class="v">20</span>, y2: axisY,
+    stroke: token(<span class="s">'--timeline-axis'</span>, theme),
+    strokeWidth: <span class="v">1</span>,
+  });
+  <span class="k">for</span> (<span class="k">const</span> tp <span class="k">of</span> timepoints) {
+    svg.layer(<span class="s">'axis'</span>).circle({
+      cx: tp.cx, cy: axisY, r: <span class="v">3</span>,
+      fill: token(<span class="s">'--timeline-axis'</span>, theme),
+    });
+    svg.layer(<span class="s">'axis'</span>).text({
+      x: tp.cx, y: axisY + <span class="v">22</span>,
+      anchor: <span class="s">'middle'</span>,
+      font: <span class="s">'DM Sans 12 500'</span>,
+      fill: token(<span class="s">'--timeline-year'</span>, theme),
+      content: tp.label, <span class="c">// the year string</span>
+    });
+  }
+}
+
+<span class="c">// In the main render dispatch:</span>
+<span class="k">function</span> <span class="v">renderNode</span>(node, svg, theme) {
+  <span class="k">if</span> (node.type === <span class="s">'TimePoint'</span>) <span class="k">return</span>; <span class="c">// drawn by renderTimelineChrome</span>
+  <span class="c">// ...existing node rendering...</span>
+}</pre>
+  </section>
+
+  <!-- 06 — Edge cases -->
+  <section class="section">
+    <div class="section-num">06 · Edge cases &amp; rules</div>
+    <h2 class="section-title">Things to handle</h2>
+    <div class="card">
+      <table>
+        <tbody>
+          <tr>
+            <td>Timepoints not horizontally aligned</td>
+            <td>Use the median Y of all timepoints for <code>axisY</code>. Don't try to draw a curved or stepped axis baseline.</td>
+          </tr>
+          <tr>
+            <td>Only one timepoint</td>
+            <td>Skip the axis baseline (degenerate). Draw the anchor dot, label, and a single guide.</td>
+          </tr>
+          <tr>
+            <td>Zero events on a column</td>
+            <td>Guide still draws full-height. The empty column itself communicates "no event here" which is data, not absence.</td>
+          </tr>
+          <tr>
+            <td>Events outside any <code>alignGroup</code></td>
+            <td>Render normally. Guides only correspond to declared timepoints — events without alignGroup just sit where Graphviz puts them.</td>
+          </tr>
+          <tr>
+            <td>Nested groups (e.g. region → country)</td>
+            <td>Guides pass through nested group fills the same way they pass through top-level groups — z-order is "below all groups," not "below outermost group."</td>
+          </tr>
+          <tr>
+            <td>Sequence edge crosses a guide</td>
+            <td>No collision logic needed. Edges (z=5) render above guides (z=2), so the edge wins visually. Guides are wallpaper.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note warn">
+      <strong>Do not</strong> let timepoint nodes render via the standard Notation §02
+      node pipeline as well. The dispatch must short-circuit on <code>type === 'TimePoint'</code>
+      — otherwise you'll get a phantom rounded rect underneath the new axis treatment.
+      This is the most likely regression source.
+    </div>
+  </section>
+
+  <!-- 07 — Acceptance -->
+  <section class="section">
+    <div class="section-num">07 · Acceptance criteria</div>
+    <h2 class="section-title">How we know it's done</h2>
+    <ul class="check-list">
+      <li>
+        <strong>Visual: timepoints don't look like events.</strong>
+        No rounded rectangle, no type label, no icon disc on any TimePoint node.
+      </li>
+      <li>
+        <strong>Visual: axis baseline is present.</strong>
+        A horizontal rule connects all timepoint dots, with 20px overhang on each side.
+      </li>
+      <li>
+        <strong>Visual: column guides descend through the diagram.</strong>
+        From each timepoint dot down to the diagram's bottom edge, dashed, at correct opacity.
+      </li>
+      <li>
+        <strong>Layering: guides are behind group containers.</strong>
+        When a group's fill overlaps a guide, the fill is on top. (Will look slightly "muted" in the overlap — that's correct.)
+      </li>
+      <li>
+        <strong>Alignment: events sit on their guide.</strong>
+        Any event with <code>alignGroup: "1850"</code> is horizontally centered on the 1850 guide. (Already true via existing alignGroup logic; this verifies the guide line draws at the same X.)
+      </li>
+      <li>
+        <strong>Dark mode: all three tokens swap correctly.</strong>
+        Axis, guides, and year labels remap via §11. No literal light-mode hex remains in the rendered SVG.
+      </li>
+      <li>
+        <strong>Other notations unaffected.</strong>
+        Render a CRT, IBIS, BBS, etc. — no axis baseline, no guides, no behavior change. The new code path is gated on <code>notation === 'Timeline'</code>.
+      </li>
+      <li>
+        <strong>VGL source is unchanged.</strong>
+        The example timeline from the demo (<code>vgraph myTimeline: Timeline …</code>) renders correctly without any edit to its VGL source.
+      </li>
+    </ul>
+  </section>
+
+  <!-- 08 — Out of scope -->
+  <section class="section">
+    <div class="section-num">08 · Out of scope</div>
+    <h2 class="section-title">Not in this brief</h2>
+    <ul>
+      <li><strong>Era bands / colored regions between timepoints.</strong> A future enhancement could shade alternating columns. Not needed for the v1 treatment.</li>
+      <li><strong>Curved or non-linear axes.</strong> Logarithmic time scales, branching timelines, etc. — out of scope.</li>
+      <li><strong>Timepoint hover/interaction behavior.</strong> This is a static-render spec. Interaction belongs to the host app, not the diagram renderer.</li>
+      <li><strong>Updates to other notations.</strong> The §02 Notation node pattern still applies to every notation other than Timeline.</li>
+    </ul>
+  </section>
+
+  <!-- 09 — Refs -->
+  <section class="section">
+    <div class="section-num">09 · References</div>
+    <h2 class="section-title">Related spec sections</h2>
+    <ul>
+      <li><strong>§02 Notations</strong> — base node pattern that this brief overrides for TimePoints only</li>
+      <li><strong>§05 Edge &amp; Arrow Styles</strong> — sequence edges between timepoints continue to follow this</li>
+      <li><strong>§08 Groups &amp; Clusters</strong> — group rendering is unchanged; guides interleave with it via z-order</li>
+      <li><strong>§11 Dark Mode</strong> — new tokens slot in here</li>
+    </ul>
+  </section>
+
+</div>
+</body>
+</html>

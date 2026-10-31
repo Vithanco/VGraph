@@ -1,0 +1,77 @@
+{
+  "configurations" : [
+    {
+      "id" : "0C65117A-C799-4158-8881-06A2B1E81F88",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:",
+      "identifier" : "VGraphExec",
+      "name" : "VGraphExec"
+    }
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "AppTests",
+        "name" : "AppTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "VGraphTests",
+        "name" : "VGraphTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "VGraphvizLibTests",
+        "name" : "VGraphvizLibTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "VGraphSVGTests",
+        "name" : "VGraphSVGTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "VGLanguageTests",
+        "name" : "VGLanguageTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "VGraphvizCLITests",
+        "name" : "VGraphvizCLITests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "IntegrationTests",
+        "name" : "IntegrationTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "VGraphMCPTests",
+        "name" : "VGraphMCPTests"
+      }
+    }
+  ],
+  "version" : 1
+}

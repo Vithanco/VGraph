@@ -1,0 +1,437 @@
+{
+  "exported" : {
+    "aliases" : [
+
+    ],
+    "classes" : [
+
+    ],
+    "enums" : [
+
+    ],
+    "exposeToGlobal" : false,
+    "functions" : [
+      {
+        "abiName" : "bjs_mountEditor",
+        "documentation" : "Mount the ElementaryUI-based interactive editor into the DOM element with\nthe given id. Builds a textarea + Render button + status line (managed by\nElementaryUI) plus a live SVG preview, and renders the default VGL.",
+        "effects" : {
+          "isAsync" : false,
+          "isStatic" : false,
+          "isThrows" : false
+        },
+        "name" : "mountEditor",
+        "parameters" : [
+          {
+            "label" : "elementId",
+            "name" : "elementId",
+            "type" : {
+              "string" : {
+
+              }
+            }
+          }
+        ],
+        "returnType" : {
+          "void" : {
+
+          }
+        }
+      },
+      {
+        "abiName" : "bjs_editorRenderNow",
+        "effects" : {
+          "isAsync" : false,
+          "isStatic" : false,
+          "isThrows" : false
+        },
+        "name" : "editorRenderNow",
+        "parameters" : [
+
+        ],
+        "returnType" : {
+          "void" : {
+
+          }
+        }
+      },
+      {
+        "abiName" : "bjs_editorLongPressFired",
+        "effects" : {
+          "isAsync" : false,
+          "isStatic" : false,
+          "isThrows" : false
+        },
+        "name" : "editorLongPressFired",
+        "parameters" : [
+
+        ],
+        "returnType" : {
+          "void" : {
+
+          }
+        }
+      },
+      {
+        "abiName" : "bjs_setEditorVGL",
+        "effects" : {
+          "isAsync" : false,
+          "isStatic" : false,
+          "isThrows" : false
+        },
+        "name" : "setEditorVGL",
+        "parameters" : [
+          {
+            "label" : "text",
+            "name" : "text",
+            "type" : {
+              "string" : {
+
+              }
+            }
+          }
+        ],
+        "returnType" : {
+          "void" : {
+
+          }
+        }
+      },
+      {
+        "abiName" : "bjs_openEditorDocument",
+        "documentation" : "Load a document the host fetched for `?src=`. `name` is the last\npath segment of the source, which is where the document's name comes\nfrom — the same role a picked file's name plays.",
+        "effects" : {
+          "isAsync" : false,
+          "isStatic" : false,
+          "isThrows" : false
+        },
+        "name" : "openEditorDocument",
+        "parameters" : [
+          {
+            "label" : "text",
+            "name" : "text",
+            "type" : {
+              "string" : {
+
+              }
+            }
+          },
+          {
+            "label" : "name",
+            "name" : "name",
+            "type" : {
+              "string" : {
+
+              }
+            }
+          }
+        ],
+        "returnType" : {
+          "bool" : {
+
+          }
+        }
+      },
+      {
+        "abiName" : "bjs_setEditorStatus",
+        "effects" : {
+          "isAsync" : false,
+          "isStatic" : false,
+          "isThrows" : false
+        },
+        "name" : "setEditorStatus",
+        "parameters" : [
+          {
+            "label" : "text",
+            "name" : "text",
+            "type" : {
+              "string" : {
+
+              }
+            }
+          }
+        ],
+        "returnType" : {
+          "void" : {
+
+          }
+        }
+      },
+      {
+        "abiName" : "bjs_convertToDot",
+        "effects" : {
+          "isAsync" : false,
+          "isStatic" : false,
+          "isThrows" : false
+        },
+        "name" : "convertToDot",
+        "parameters" : [
+          {
+            "label" : "graph",
+            "name" : "graph",
+            "type" : {
+              "string" : {
+
+              }
+            }
+          }
+        ],
+        "returnType" : {
+          "string" : {
+
+          }
+        }
+      },
+      {
+        "abiName" : "bjs_dotForLayout",
+        "documentation" : "Produce the DOT for the host to lay out with Graphviz (decoupled path).\nThe host computes layout JSON from this DOT at JS top level and passes\nit back to `renderGraphWithLayout` — keeping Graphviz off the nested\nSwiftWasm→JS call path that corrupts the Emscripten module.",
+        "effects" : {
+          "isAsync" : false,
+          "isStatic" : false,
+          "isThrows" : false
+        },
+        "name" : "dotForLayout",
+        "parameters" : [
+          {
+            "label" : "graph",
+            "name" : "graph",
+            "type" : {
+              "string" : {
+
+              }
+            }
+          }
+        ],
+        "returnType" : {
+          "string" : {
+
+          }
+        }
+      },
+      {
+        "abiName" : "bjs_renderGraph",
+        "documentation" : "Render a graph to SVG. Graphviz layout runs in-process inside this wasm\nmodule (swiftGraphviz) — no host-computed layout JSON needed.",
+        "effects" : {
+          "isAsync" : false,
+          "isStatic" : false,
+          "isThrows" : false
+        },
+        "name" : "renderGraph",
+        "parameters" : [
+          {
+            "label" : "graph",
+            "name" : "graph",
+            "type" : {
+              "string" : {
+
+              }
+            }
+          }
+        ],
+        "returnType" : {
+          "string" : {
+
+          }
+        }
+      },
+      {
+        "abiName" : "bjs_renderGraphDark",
+        "documentation" : "Dark-mode variant of `renderGraph` (§11 of the Diagram Style Guide).",
+        "effects" : {
+          "isAsync" : false,
+          "isStatic" : false,
+          "isThrows" : false
+        },
+        "name" : "renderGraphDark",
+        "parameters" : [
+          {
+            "label" : "graph",
+            "name" : "graph",
+            "type" : {
+              "string" : {
+
+              }
+            }
+          }
+        ],
+        "returnType" : {
+          "string" : {
+
+          }
+        }
+      },
+      {
+        "abiName" : "bjs_renderGraphWithQuality",
+        "documentation" : "SVG *and* the quality report, as `{\"svg\": …, \"quality\": [{severity, message}]}`.\n\nRestored: this export existed as `renderGraphWithQuality` until 99c8d5c,\nwhere the Graphviz-decoupling refactor reused its body for a layout\nvariant and dropped the quality half — leaving `App.renderGraphJSON`\n(\"the shape JavaScript callers read\") with no JavaScript caller.\n`renderGraph` discards the report the editor already displays.\n\nAn empty `view` is the default view: the model, shown even in a document\nthat declares views. An unknown name returns the error listing them.",
+        "effects" : {
+          "isAsync" : false,
+          "isStatic" : false,
+          "isThrows" : false
+        },
+        "name" : "renderGraphWithQuality",
+        "parameters" : [
+          {
+            "label" : "graph",
+            "name" : "graph",
+            "type" : {
+              "string" : {
+
+              }
+            }
+          },
+          {
+            "label" : "view",
+            "name" : "view",
+            "type" : {
+              "string" : {
+
+              }
+            }
+          }
+        ],
+        "returnType" : {
+          "string" : {
+
+          }
+        }
+      },
+      {
+        "abiName" : "bjs_listViews",
+        "documentation" : "`[{\"name\": …, \"label\": …}]` in document order; `[]` for a document without views.",
+        "effects" : {
+          "isAsync" : false,
+          "isStatic" : false,
+          "isThrows" : false
+        },
+        "name" : "listViews",
+        "parameters" : [
+          {
+            "label" : "graph",
+            "name" : "graph",
+            "type" : {
+              "string" : {
+
+              }
+            }
+          }
+        ],
+        "returnType" : {
+          "string" : {
+
+          }
+        }
+      },
+      {
+        "abiName" : "bjs_describeNotation",
+        "documentation" : "A notation's self-describing Markdown, or `Error: …`.\n\nThe same document as the CLI's `describe` subcommand and the\n`describe_notation` MCP tool. Without this export a wasm host can\nrender every notation but not explain one, which is the half a model\nneeds first.",
+        "effects" : {
+          "isAsync" : false,
+          "isStatic" : false,
+          "isThrows" : false
+        },
+        "name" : "describeNotation",
+        "parameters" : [
+          {
+            "label" : "notation",
+            "name" : "notation",
+            "type" : {
+              "string" : {
+
+              }
+            }
+          }
+        ],
+        "returnType" : {
+          "string" : {
+
+          }
+        }
+      },
+      {
+        "abiName" : "bjs_debugGraph",
+        "effects" : {
+          "isAsync" : false,
+          "isStatic" : false,
+          "isThrows" : false
+        },
+        "name" : "debugGraph",
+        "parameters" : [
+          {
+            "label" : "graph",
+            "name" : "graph",
+            "type" : {
+              "string" : {
+
+              }
+            }
+          }
+        ],
+        "returnType" : {
+          "string" : {
+
+          }
+        }
+      },
+      {
+        "abiName" : "bjs_layoutGraph",
+        "documentation" : "Lay out a graph (in-process Graphviz) and return position information as\ntext — node positions and edge paths.",
+        "effects" : {
+          "isAsync" : false,
+          "isStatic" : false,
+          "isThrows" : false
+        },
+        "name" : "layoutGraph",
+        "parameters" : [
+          {
+            "label" : "graph",
+            "name" : "graph",
+            "type" : {
+              "string" : {
+
+              }
+            }
+          }
+        ],
+        "returnType" : {
+          "string" : {
+
+          }
+        }
+      },
+      {
+        "abiName" : "bjs_exportToVGL",
+        "effects" : {
+          "isAsync" : false,
+          "isStatic" : false,
+          "isThrows" : false
+        },
+        "name" : "exportToVGL",
+        "parameters" : [
+          {
+            "label" : "graph",
+            "name" : "graph",
+            "type" : {
+              "string" : {
+
+              }
+            }
+          }
+        ],
+        "returnType" : {
+          "string" : {
+
+          }
+        }
+      }
+    ],
+    "protocols" : [
+
+    ],
+    "structs" : [
+
+    ]
+  },
+  "moduleName" : "VGraphWasm",
+  "usedExternalModules" : [
+
+  ]
+}

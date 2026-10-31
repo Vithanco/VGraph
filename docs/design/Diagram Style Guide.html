@@ -1,0 +1,2520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vithanco — Diagram Style Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="assets/vithanco-logo-svg.js"></script>
+<script src="assets/vithanco-mark-svg.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #18160f;
+    --ink-2: #5a564e;
+    --ink-3: #9a9690;
+    --rule: #e8e3db;
+    --page: #faf9f6;
+    --card: #ffffff;
+    --preview-bg: #f5f4f0;
+    --edge: #b0a898;
+    --edge-bold: #5a564e;
+    --code-bg: #f0ede8;
+    --note-bg: #f0f4ff;
+    --note-border: #c8d4f0;
+    --note-text: #203070;
+    --group-fill: #f4f3f0;
+    --group-text: #505048;
+    --pill-bg: #eeece8;
+    --pill-text: #807870;
+    --junctor: #303030;
+    --badge-icon: #ffffff;
+    --accent: #2258c8;
+    --font: 'DM Sans', system-ui, sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+  [data-theme="dark"] {
+    --ink: #ecebe5;
+    --ink-2: #a8a49a;
+    --ink-3: #6e6a62;
+    --rule: #2a2824;
+    --page: #0e0d0a;
+    --card: #181612;
+    --preview-bg: #1c1a16;
+    --edge: #6e6a60;
+    --edge-bold: #a8a49a;
+    --code-bg: #26241f;
+    --note-bg: #14182a;
+    --note-border: #2a3258;
+    --note-text: #b8c4e8;
+    --group-fill: #1c1a16;
+    --group-text: #c8c4bc;
+    --pill-bg: #262420;
+    --pill-text: #a8a49a;
+    --junctor: #e8e3db;
+    --badge-icon: #14120f;
+  }
+  html { font-size: 15px; }
+  body {
+    font-family: var(--font);
+    background: var(--page);
+    color: var(--ink);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.25s ease, color 0.25s ease;
+  }
+
+  /* Layout */
+  .page { max-width: 960px; margin: 0 auto; padding: 64px 40px 120px; }
+
+  /* Header */
+  .doc-header { margin-bottom: 64px; border-bottom: 1px solid var(--rule); padding-bottom: 40px; }
+  .doc-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 12px; }
+  .doc-title { font-size: 36px; font-weight: 300; letter-spacing: -0.5px; color: var(--ink); line-height: 1.2; margin-bottom: 16px; }
+  .doc-title strong { font-weight: 600; }
+  .doc-lead { font-size: 15px; color: var(--ink-2); max-width: 580px; line-height: 1.7; }
+
+  /* Section */
+  .section { margin-bottom: 72px; }
+  .section-label { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 6px; }
+  .section-title { font-size: 22px; font-weight: 600; letter-spacing: -0.2px; margin-bottom: 8px; }
+  .section-body { font-size: 14px; color: var(--ink-2); margin-bottom: 32px; line-height: 1.7; max-width: 620px; }
+
+  /* Cards */
+  .card { background: var(--card); border: 1px solid var(--rule); border-radius: 12px; }
+  .card-pad { padding: 32px; }
+
+  /* Grid */
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+
+  /* Palette grid */
+  .palette-row { display: flex; gap: 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--rule); margin-bottom: 16px; }
+  .swatch {
+    flex: 1; padding: 18px 14px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .swatch-name { font-size: 11px; font-weight: 600; color: var(--ink); }
+  .swatch-hex { font-size: 10px; font-family: var(--mono); color: var(--ink-2); }
+
+  /* Spec table */
+  .spec-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .spec-table th { text-align: left; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); padding: 0 12px 10px; border-bottom: 1px solid var(--rule); }
+  .spec-table td { padding: 11px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  .spec-table td:first-child { font-weight: 500; color: var(--ink); width: 200px; }
+  .spec-table td:last-child { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+  .spec-table tr:last-child td { border-bottom: none; }
+
+  /* Type label */
+  .tl { display: inline-block; font-size: 9.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+
+  /* Note box */
+  .note { background: var(--note-bg); border: 1px solid var(--note-border); border-radius: 8px; padding: 14px 18px; font-size: 13px; color: var(--note-text); line-height: 1.6; margin-top: 20px; }
+  .note strong { font-weight: 600; }
+
+  /* Divider */
+  hr { border: none; border-top: 1px solid var(--rule); margin: 48px 0; }
+
+  /* Inline code */
+  code { font-family: var(--mono); font-size: 12px; background: var(--code-bg); padding: 1px 5px; border-radius: 3px; color: var(--ink); }
+
+  /* Color type headers */
+  .palette-section-title { font-size: 12px; font-weight: 600; color: var(--ink); margin-bottom: 10px; margin-top: 28px; }
+  .palette-section-title:first-child { margin-top: 0; }
+
+  /* Mini diagram container */
+  .diagram-preview { background: var(--preview-bg); border-radius: 10px; padding: 24px; display: flex; justify-content: center; }
+
+  @media print {
+    body { background: white; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useMemo } = React;
+
+// ─── Theme: light/dark color derivation ─────────────────────────────────────
+
+function hexToHSL(hex) {
+  hex = hex.replace('#','');
+  if (hex.length === 3) hex = hex.split('').map(c=>c+c).join('');
+  const r = parseInt(hex.slice(0,2),16)/255;
+  const g = parseInt(hex.slice(2,4),16)/255;
+  const b = parseInt(hex.slice(4,6),16)/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  let h, s, l = (max+min)/2;
+  if (max===min) { h = 0; s = 0; }
+  else {
+    const d = max-min;
+    s = l>0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max){
+      case r: h = (g-b)/d + (g<b ? 6 : 0); break;
+      case g: h = (b-r)/d + 2; break;
+      case b: h = (r-g)/d + 4; break;
+    }
+    h *= 60;
+  }
+  return [h, s*100, l*100];
+}
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100;
+  const c = (1-Math.abs(2*l-1))*s;
+  const x = c*(1-Math.abs(((h/60)%2)-1));
+  const m = l-c/2;
+  let r=0,g=0,b=0;
+  if (h<60){r=c;g=x;}
+  else if (h<120){r=x;g=c;}
+  else if (h<180){g=c;b=x;}
+  else if (h<240){g=x;b=c;}
+  else if (h<300){r=x;b=c;}
+  else {r=c;b=x;}
+  const to = v => Math.round((v+m)*255).toString(16).padStart(2,'0');
+  return ('#' + to(r) + to(g) + to(b)).toLowerCase();
+}
+
+// Derive a dark variant of a single hex by classifying its lightness:
+//   light tints (>70% L)  → very dark, slightly desaturated (node fills)
+//   mid hues   (30–70% L) → bright, saturated (borders / accents)
+//   dark tones (<30% L)   → light pastel (text on dark fills)
+//   near-grays (<8% S)    → invert lightness, keep neutral
+function darkOf(hex) {
+  const [h, s, l] = hexToHSL(hex);
+  if (s < 8) {
+    // neutral gray — mirror lightness
+    const nl = Math.max(0, Math.min(100, 100 - l));
+    return hslToHex(h, s, nl);
+  }
+  if (l > 70) return hslToHex(h, Math.min(s, 32), 13);  // dark fill
+  if (l < 30) return hslToHex(h, Math.min(s, 60), 86);  // light text
+  // mid → brighter accent
+  return hslToHex(h, Math.min(s + 8, 78), Math.max(l, 62));
+}
+
+// ─── Icons ───────────────────────────────────────────────────────────────────
+
+// §14. BuiltinIcons.swift must match; StyleGuideSyncTests checks.
+const ICONS = {
+  'and': { kind: 'junctor', viewBox: '0 0 24 24', d: 'M12 0C5.37 0 0 5.37 0 12C0 18.63 5.37 24 12 24C18.63 24 24 18.63 24 12C24 5.37 18.63 0 12 0ZM8.37 15.3L7.02 15.3L6.5 13.8L3.97 13.8L3.45 15.3L2.11 15.3L4.52 8.7L5.97 8.7ZM4.31 12.81L6.16 12.81L5.24 10.15ZM13.64 13.24L13.64 8.7L14.91 8.7L14.91 15.3L13.64 15.3L10.6 10.76L10.6 15.3L9.33 15.3L9.33 8.7L10.6 8.7ZM20.42 9.11C20.92 9.38 21.29 9.77 21.53 10.26C21.77 10.75 21.89 11.33 21.89 12C21.89 12.67 21.77 13.25 21.53 13.74C21.29 14.23 20.92 14.62 20.42 14.89C19.92 15.16 19.29 15.3 18.52 15.3L16.31 15.3L16.31 8.7L18.52 8.7C19.29 8.7 19.92 8.84 20.42 9.11ZM17.58 9.78L17.58 14.21L18.45 14.21C18.99 14.21 19.42 14.12 19.73 13.94C20.04 13.77 20.26 13.51 20.39 13.18C20.52 12.85 20.59 12.46 20.59 12C20.59 11.54 20.52 11.14 20.39 10.81C20.26 10.48 20.04 10.22 19.73 10.05C19.42 9.87 18.99 9.78 18.45 9.78Z', names: ['and'] },
+  'or': { kind: 'junctor', viewBox: '0 0 24 24', d: 'M12 0C5.37 0 0 5.37 0 12C0 18.63 5.37 24 12 24C18.63 24 24 18.63 24 12C24 5.37 18.63 0 12 0ZM10.68 9.02C11.18 9.31 11.56 9.71 11.83 10.22C12.1 10.73 12.24 11.33 12.24 12C12.24 12.67 12.1 13.27 11.83 13.78C11.56 14.29 11.18 14.69 10.68 14.98C10.19 15.27 9.63 15.41 8.98 15.41C8.33 15.41 7.76 15.27 7.28 14.98C6.79 14.69 6.41 14.29 6.13 13.78C5.85 13.27 5.72 12.67 5.72 12C5.72 11.33 5.85 10.73 6.13 10.22C6.41 9.71 6.79 9.31 7.28 9.02C7.76 8.73 8.33 8.59 8.98 8.59C9.63 8.59 10.19 8.73 10.68 9.02ZM7.94 10.01C7.65 10.19 7.42 10.45 7.26 10.79C7.1 11.13 7.02 11.53 7.02 12C7.02 12.46 7.1 12.87 7.26 13.21C7.42 13.55 7.65 13.81 7.94 13.99C8.24 14.18 8.58 14.27 8.98 14.27C9.38 14.27 9.73 14.18 10.02 13.99C10.32 13.81 10.55 13.55 10.71 13.21C10.87 12.87 10.95 12.46 10.95 12C10.95 11.53 10.87 11.13 10.71 10.79C10.55 10.45 10.32 10.19 10.02 10.01C9.73 9.83 9.38 9.74 8.98 9.74C8.58 9.74 8.24 9.83 7.94 10.01ZM17.2 8.97C17.54 9.16 17.8 9.4 17.97 9.7C18.14 10.01 18.23 10.35 18.23 10.72C18.23 11.07 18.14 11.4 17.98 11.7C17.81 12.01 17.55 12.25 17.2 12.44C17.12 12.48 17.03 12.52 16.93 12.56L18.28 15.3L16.83 15.3L15.62 12.72L14.68 12.72L14.68 15.3L13.41 15.3L13.41 8.7L15.88 8.7C16.41 8.7 16.85 8.79 17.2 8.97ZM14.68 9.77L14.68 11.79L15.8 11.79C16.19 11.79 16.47 11.7 16.65 11.51C16.83 11.32 16.93 11.07 16.93 10.76C16.93 10.46 16.84 10.21 16.66 10.03C16.48 9.86 16.19 9.77 15.8 9.77Z', names: ['or'] },
+  'conflict': { kind: 'junctor', viewBox: '0 0 24 24', d: 'M12 0C5.37 0 0 5.37 0 12C0 18.63 5.37 24 12 24C18.63 24 24 18.63 24 12C24 5.37 18.63 0 12 0ZM10.6 4L15.4 4L12.6 9.8L16.6 9.8L9 20.2L11.2 12.6L7.4 12.6Z', names: ['conflict'] },
+  'default': { kind: 'default', viewBox: '0 0 24 24', d: 'M12 0C5.37 0 0 5.37 0 12C0 18.63 5.37 24 12 24C18.63 24 24 18.63 24 12C24 5.37 18.63 0 12 0ZM11.96 15.92C12.22 16.18 12.36 16.51 12.36 16.89C12.36 17.27 12.22 17.6 11.96 17.86C11.69 18.12 11.34 18.25 10.91 18.25C10.48 18.25 10.13 18.12 9.86 17.86C9.6 17.6 9.46 17.27 9.46 16.89C9.46 16.51 9.6 16.18 9.86 15.92C10.13 15.66 10.48 15.53 10.91 15.53C11.34 15.53 11.69 15.66 11.96 15.92ZM14.11 6.18C14.72 6.46 15.2 6.88 15.54 7.42C15.88 7.97 16.05 8.63 16.05 9.41C16.05 10.2 15.88 10.86 15.54 11.39C15.2 11.92 14.72 12.31 14.11 12.57C13.5 12.82 12.8 12.96 12.01 12.97L11.94 14.22L9.86 14.22L9.79 11.42L10.63 11.42C11.07 11.42 11.49 11.39 11.87 11.33C12.25 11.27 12.59 11.17 12.87 11.03C13.16 10.89 13.38 10.69 13.54 10.42C13.71 10.16 13.79 9.82 13.79 9.41C13.79 9.05 13.71 8.74 13.56 8.49C13.41 8.23 13.2 8.03 12.93 7.89C12.67 7.75 12.35 7.69 11.99 7.69C11.62 7.69 11.3 7.76 11.02 7.9C10.75 8.05 10.54 8.25 10.4 8.5C10.25 8.75 10.18 9.04 10.18 9.39L7.95 9.39C7.95 8.7 8.1 8.07 8.42 7.53C8.73 6.98 9.2 6.55 9.81 6.23C10.43 5.91 11.17 5.75 12.03 5.75C12.81 5.75 13.5 5.89 14.11 6.18Z', names: ['default'] },
+  'vithanco': { kind: 'logo', viewBox: '0 0 24 24', d: 'M18 5.94 L13.97 14.03 L12 17.99 L14.98 24 L16.95 20.05 L24 5.94 L18 5.94 Z M12 10.08 L14.05 5.94 L18 5.94 L20.98 0 L17.03 0 L6.97 0 L3.02 0 L5.98 5.94 L9.93 5.94 L12 10.08 Z M5.98 5.94 L0 5.94 L7.03 20.05 L9 24 L12 17.99 L10.03 14.03 L5.98 5.94 Z', names: ['vithanco'] },
+  'bang': { kind: 'badge', viewBox: '0 0 24 24', d: 'M13.45 17.28C13.82 17.64 14 18.09 14 18.62C14 19.15 13.82 19.6 13.45 19.96C13.08 20.32 12.6 20.5 12 20.5C11.4 20.5 10.92 20.32 10.55 19.96C10.18 19.6 10 19.15 10 18.62C10 18.09 10.18 17.64 10.55 17.28C10.92 16.92 11.4 16.74 12 16.74C12.6 16.74 13.08 16.92 13.45 17.28ZM13.37 14.88L10.63 14.88L10.24 3.5L13.74 3.5Z', names: ['undesirable-effect', 'need', 'answer'] },
+  'question': { kind: 'badge', viewBox: '0 0 24 24', d: 'M11.94 17.33C12.3 17.69 12.49 18.13 12.49 18.65C12.49 19.17 12.3 19.61 11.94 19.97C11.58 20.32 11.1 20.5 10.52 20.5C9.93 20.5 9.46 20.32 9.1 19.97C8.73 19.61 8.55 19.17 8.55 18.65C8.55 18.13 8.73 17.69 9.1 17.33C9.46 16.98 9.93 16.8 10.52 16.8C11.1 16.8 11.58 16.98 11.94 17.33ZM14.87 4.08C15.7 4.47 16.35 5.03 16.81 5.78C17.28 6.52 17.51 7.42 17.51 8.48C17.51 9.55 17.28 10.45 16.81 11.17C16.35 11.89 15.7 12.42 14.87 12.77C14.04 13.12 13.09 13.3 12.01 13.32L11.92 15.02L9.1 15.02L9 11.21L10.14 11.21C10.74 11.21 11.3 11.17 11.82 11.09C12.34 11.01 12.8 10.87 13.19 10.68C13.57 10.49 13.88 10.22 14.1 9.85C14.32 9.49 14.43 9.03 14.43 8.48C14.43 7.99 14.33 7.57 14.12 7.22C13.92 6.87 13.63 6.61 13.27 6.42C12.91 6.23 12.48 6.13 11.99 6.13C11.48 6.13 11.04 6.23 10.67 6.43C10.3 6.62 10.02 6.9 9.82 7.23C9.62 7.57 9.52 7.98 9.52 8.46L6.49 8.46C6.49 7.51 6.7 6.66 7.13 5.92C7.55 5.18 8.19 4.59 9.02 4.15C9.86 3.72 10.87 3.5 12.04 3.5C13.1 3.5 14.04 3.69 14.87 4.08Z', names: ['question', 'decision-point', 'assumption'] },
+  'star': { kind: 'badge', viewBox: '0 0 24 24', d: 'M12.56 2.89L14.83 9.1L21.44 9.34C22 9.36 22.23 10.07 21.79 10.41L16.59 14.49L18.4 20.85C18.55 21.38 17.95 21.82 17.49 21.51L12 17.82L6.51 21.51C6.05 21.82 5.45 21.38 5.6 20.85L7.41 14.49L2.21 10.41C1.77 10.07 2 9.36 2.56 9.34L9.17 9.1L11.44 2.89C11.63 2.37 12.37 2.37 12.56 2.89Z', names: ['desirable-effect', 'benefit', 'critical-success-factor'] },
+  'flag': { kind: 'badge', viewBox: '0 0 24 24', d: 'M7.4 4.2C10.2 2.8 12.6 5.6 15.4 4.6C17 4 18.4 3.7 20 4.2L20 13.4C18.4 12.9 17 13.2 15.4 13.8C12.6 14.8 10.2 12 7.4 13.4L7.4 21.4L4.6 21.4L4.6 3L7.4 3Z', names: ['goal', 'objective', 'common-objective'] },
+  'target': { kind: 'badge', viewBox: '0 0 24 24', d: 'M22 12C22 17.53 17.53 22 12 22C6.47 22 2 17.53 2 12C2 6.47 6.47 2 12 2C17.53 2 22 6.47 22 12ZM4.6 12C4.6 16.09 7.91 19.4 12 19.4C16.09 19.4 19.4 16.09 19.4 12C19.4 7.91 16.09 4.6 12 4.6C7.91 4.6 4.6 7.91 4.6 12ZM16.8 12C16.8 14.65 14.65 16.8 12 16.8C9.35 16.8 7.2 14.65 7.2 12C7.2 9.35 9.35 7.2 12 7.2C14.65 7.2 16.8 9.35 16.8 12ZM9.8 12C9.8 13.21 10.79 14.2 12 14.2C13.21 14.2 14.2 13.21 14.2 12C14.2 10.79 13.21 9.8 12 9.8C10.79 9.8 9.8 10.79 9.8 12Z', names: ['investment-objective'] },
+  'check': { kind: 'badge', viewBox: '0 0 24 24', d: 'M20.79 7.66L10.99 18.66L9.87 19.93L8.67 18.73L3.67 13.73L5.93 11.47L9.73 15.27L18.41 5.54Z', names: ['outcome', 'solution'] },
+  'plus': { kind: 'badge', viewBox: '0 0 24 24', d: 'M13.6 10.4L20 10.4L20 13.6L13.6 13.6L13.6 20L10.4 20L10.4 13.6L4 13.6L4 10.4L10.4 10.4L10.4 4L13.6 4Z', names: ['pro', 'plus'] },
+  'minus': { kind: 'badge', viewBox: '0 0 24 24', d: 'M20 13.6L4 13.6L4 10.4L20 10.4Z', names: ['con', 'minus'] },
+  'cross': { kind: 'badge', viewBox: '0 0 24 24', d: 'M19.13 7.13L14.26 12L19.13 16.87L16.87 19.13L12 14.26L7.13 19.13L4.87 16.87L9.74 12L4.87 7.13L7.13 4.87L12 9.74L16.87 4.87Z', names: ['obstacle', 'times'] },
+  'divide': { kind: 'badge', viewBox: '0 0 24 24', d: 'M14.3 16.8C14.3 18.07 13.27 19.1 12 19.1C10.73 19.1 9.7 18.07 9.7 16.8C9.7 15.53 10.73 14.5 12 14.5C13.27 14.5 14.3 15.53 14.3 16.8ZM14.3 7.2C14.3 8.47 13.27 9.5 12 9.5C10.73 9.5 9.7 8.47 9.7 7.2C9.7 5.93 10.73 4.9 12 4.9C13.27 4.9 14.3 5.93 14.3 7.2Z', names: ['divide'] },
+  'equals': { kind: 'badge', viewBox: '0 0 24 24', d: 'M19.5 16.7L4.5 16.7L4.5 13.7L19.5 13.7ZM19.5 10.3L4.5 10.3L4.5 7.3L19.5 7.3Z', names: ['equals'] },
+  'not-equal': { kind: 'badge', viewBox: '0 0 24 24', d: 'M16.98 4.14L15.55 7.3L19.5 7.3L19.5 10.3L14.2 10.3L12.66 13.7L19.5 13.7L19.5 16.7L11.3 16.7L9.38 20.94L7.02 19.86L8.45 16.7L4.5 16.7L4.5 13.7L9.8 13.7L11.34 10.3L4.5 10.3L4.5 7.3L12.7 7.3L14.62 3.06Z', names: ['not-equal'] },
+  'cycle': { kind: 'badge', viewBox: '0 0 24 24', d: 'M9.24 10.07L7.63 8.45C5.53 10.77 5.6 14.34 7.83 16.57C10.13 18.87 13.87 18.87 16.17 16.57C18.47 14.27 18.47 10.53 16.17 8.23L18.29 6.11C21.77 9.59 21.77 15.21 18.29 18.69C14.81 22.17 9.19 22.17 5.71 18.69C2.3 15.29 2.24 9.82 5.51 6.33L3.87 4.69L10.44 3.49Z', names: ['changeable'] },
+  'zigzag': { kind: 'badge', viewBox: '0 0 24 24', d: 'M16.84 7.92L18.36 9.4L11.53 12.81L14.18 15.46L15.95 13.69L16.94 20.34L10.29 19.35L12.06 17.58L6.47 11.99L8.33 11.06L13.24 8.6L8.16 3.68L10.24 1.52Z', names: ['impact'] },
+  'swap': { kind: 'badge', viewBox: '0 0 24 24', d: 'M10 14.7L20 14.7L20 17.3L10 17.3L10 20.2L3.5 16L10 11.8ZM20.5 8L14 12.2L14 9.3L4 9.3L4 6.7L14 6.7L14 3.8Z', names: ['business-change'] },
+  'dot': { kind: 'badge', viewBox: '0 0 24 24', d: 'M18.8 12C18.8 15.76 15.76 18.8 12 18.8C8.24 18.8 5.2 15.76 5.2 12C5.2 8.24 8.24 5.2 12 5.2C15.76 5.2 18.8 8.24 18.8 12Z', names: ['event', 'concept'] },
+  'half': { kind: 'badge', viewBox: '0 0 24 24', d: 'M22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2C17.52 2 22 6.48 22 12ZM12 19.2C15.98 19.2 19.2 15.98 19.2 12C19.2 8.02 15.98 4.8 12 4.8Z', names: ['intermediate-objective'] },
+  'heart': { kind: 'badge', viewBox: '0 0 24 24', d: 'M21 8.6C21 13.9 13.4 19.2 12 20.4C10.6 19.2 3 13.9 3 8.6C3 5.8 5.2 3.8 7.8 3.8C9.6 3.8 11.1 4.8 12 6.3C12.9 4.8 14.4 3.8 16.2 3.8C18.8 3.8 21 5.8 21 8.6Z', names: ['want'] },
+  'fork': { kind: 'badge', viewBox: '0 0 24 24', d: 'M20.3 5.2C20.3 6.28 19.62 7.19 18.66 7.54C18.12 8.71 17.17 9.67 15.76 10.74C15.64 10.83 14.96 11.34 14.78 11.48C13.74 12.27 13.4 12.72 13.4 13.2L13.4 17.33C14.06 17.78 14.5 18.54 14.5 19.4C14.5 20.78 13.38 21.9 12 21.9C10.62 21.9 9.5 20.78 9.5 19.4C9.5 18.54 9.94 17.78 10.6 17.33L10.6 13.2C10.6 12.72 10.26 12.27 9.22 11.48C9.04 11.34 8.36 10.83 8.24 10.74C6.83 9.67 5.88 8.71 5.34 7.54C4.38 7.19 3.7 6.28 3.7 5.2C3.7 3.82 4.82 2.7 6.2 2.7C7.58 2.7 8.7 3.82 8.7 5.2C8.7 5.8 8.49 6.35 8.13 6.78C8.5 7.33 9.08 7.87 9.93 8.51C10.04 8.59 10.73 9.1 10.93 9.26C11.34 9.57 11.69 9.87 12 10.17C12.31 9.87 12.66 9.57 13.07 9.26C13.27 9.1 13.96 8.59 14.07 8.51C14.92 7.87 15.5 7.33 15.87 6.78C15.51 6.35 15.3 5.8 15.3 5.2C15.3 3.82 16.42 2.7 17.8 2.7C19.18 2.7 20.3 3.82 20.3 5.2Z', names: ['choice'] },
+  'vee': { kind: 'badge', viewBox: '0 0 24 24', d: 'M12 16.54L16.18 4.5L19.24 4.5L13.78 19.5L10.22 19.5L4.76 4.5L7.84 4.5Z', names: ['variable'] },
+  'pencil': { kind: 'badge', viewBox: '0 0 24 24', d: 'M17.23 10.16L9.31 18.08L4.65 19.35L5.92 14.69L13.84 6.77ZM20.49 6.91L18.58 8.82L15.18 5.42L17.09 3.51Z', names: ['annotation'] },
+  'warning': { kind: 'badge', viewBox: '0 0 24 24', d: 'M13.03 3.59L22.03 18.69C22.51 19.49 21.93 20.5 21 20.5L3 20.5C2.07 20.5 1.49 19.49 1.97 18.69L10.97 3.59C11.43 2.8 12.57 2.8 13.03 3.59ZM10.55 16.9C10.55 17.7 11.2 18.35 12 18.35C12.8 18.35 13.45 17.7 13.45 16.9C13.45 16.1 12.8 15.45 12 15.45C11.2 15.45 10.55 16.1 10.55 16.9ZM10.75 8.6L10.75 14.2L13.25 14.2L13.25 8.6Z', names: ['warning'] },
+  'person': { kind: 'badge', viewBox: '0 0 24 24', d: 'M20.2 20.8L3.8 20.8C3.8 16 7.4 13.3 12 13.3C16.6 13.3 20.2 16 20.2 20.8ZM16.3 7.1C16.3 9.47 14.37 11.4 12 11.4C9.63 11.4 7.7 9.47 7.7 7.1C7.7 4.73 9.63 2.8 12 2.8C14.37 2.8 16.3 4.73 16.3 7.1Z', names: ['actor'] },
+  'box': { kind: 'badge', viewBox: '0 0 24 24', d: 'M20.6 16.9L12.9 21.11L12.9 12.34L20.6 8.16ZM11.1 12.34L11.1 21.11L3.4 16.9L3.4 8.16ZM12 11.8L12 11.8L12 11.8ZM19.69 6.6L12 10.78L4.31 6.6L12 2.4Z', names: ['deliverable'] },
+  'flow': { kind: 'badge', viewBox: '0 0 24 24', d: 'M22.4 12L17.4 16.4L17.4 13.4L16.6 13.4L16.6 10.6L17.4 10.6L17.4 7.6ZM15.8 12C15.8 14.1 14.1 15.8 12 15.8C9.9 15.8 8.2 14.1 8.2 12C8.2 9.9 9.9 8.2 12 8.2C14.1 8.2 15.8 9.9 15.8 12ZM7.4 13.4L2.6 13.4L2.6 10.6L7.4 10.6Z', names: ['intermediate-effect'] },
+  'anchor': { kind: 'badge', viewBox: '0 0 24 24', d: 'M15.2 4.8C15.2 6.1 14.42 7.23 13.3 7.72L13.3 8.8L16.4 8.8L16.4 11.2L13.3 11.2L13.3 18.96C15.18 18.58 16.66 17.35 17.25 15.6L16.6 15.6L18.8 12.2L21.2 15.6L19.95 15.6C19.14 19.27 15.89 21.7 12 21.7C8.11 21.7 4.86 19.27 4.05 15.6L2.8 15.6L5.2 12.2L7.4 15.6L6.75 15.6C7.34 17.35 8.82 18.58 10.7 18.96L10.7 11.2L7.6 11.2L7.6 8.8L10.7 8.8L10.7 7.72C9.58 7.23 8.8 6.1 8.8 4.8C8.8 3.03 10.23 1.6 12 1.6C13.77 1.6 15.2 3.03 15.2 4.8ZM11 4.8C11 5.35 11.45 5.8 12 5.8C12.55 5.8 13 5.35 13 4.8C13 4.25 12.55 3.8 12 3.8C11.45 3.8 11 4.25 11 4.8Z', names: ['given'] },
+  'key': { kind: 'badge', viewBox: '0 0 24 24', d: 'M12.2 10.6L21.4 10.6L21.4 13.4L21.3 13.4L21.3 15.4L18.7 15.4L18.7 13.4L17.7 13.4L17.7 16.6L15.1 16.6L15.1 13.4L12.2 13.4C11.6 15.48 9.68 17 7.4 17C4.64 17 2.4 14.76 2.4 12C2.4 9.24 4.64 7 7.4 7C9.68 7 11.6 8.52 12.2 10.6ZM5.2 12C5.2 13.22 6.18 14.2 7.4 14.2C8.62 14.2 9.6 13.22 9.6 12C9.6 10.78 8.62 9.8 7.4 9.8C6.18 9.8 5.2 10.78 5.2 12Z', names: ['necessary-condition'] },
+  'gear': { kind: 'badge', viewBox: '0 0 24 24', d: 'M9.84 4.92L9.92 2.22C11.29 1.93 12.71 1.93 14.08 2.22L14.16 4.92C15.24 5.25 16.22 5.82 17.05 6.59L19.43 5.31C20.37 6.35 21.08 7.58 21.51 8.91L19.21 10.34C19.46 11.43 19.46 12.57 19.21 13.66L21.51 15.09C21.08 16.42 20.37 17.65 19.43 18.69L17.05 17.41C16.22 18.18 15.24 18.75 14.16 19.08L14.08 21.78C12.71 22.07 11.29 22.07 9.92 21.78L9.84 19.08C8.76 18.75 7.78 18.18 6.95 17.41L4.57 18.69C3.63 17.65 2.92 16.42 2.49 15.09L4.79 13.66C4.54 12.57 4.54 11.43 4.79 10.34L2.49 8.91C2.92 7.58 3.63 6.35 4.57 5.31L6.95 6.59C7.78 5.82 8.76 5.25 9.84 4.92ZM12 8.8C10.23 8.8 8.8 10.23 8.8 12C8.8 13.77 10.23 15.2 12 15.2C13.77 15.2 15.2 13.77 15.2 12C15.2 10.23 13.77 8.8 12 8.8Z', names: ['enabler'] },
+  'sword': { kind: 'badge', viewBox: '0 0 24 24', d: 'M19.78 4.22L18.86 7.83L11.36 15.32L8.68 12.64L16.17 5.14ZM6.63 10.59L13.41 17.37L11.43 19.35L4.65 12.57ZM7.05 14.97L9.03 16.95L7.33 18.65L5.35 16.67ZM6.98 17.02C7.72 17.76 7.72 18.97 6.98 19.71C6.24 20.45 5.03 20.45 4.29 19.71C3.55 18.97 3.55 17.76 4.29 17.02C5.03 16.28 6.24 16.28 6.98 17.02Z', names: ['attack'] },
+  'shield': { kind: 'badge', viewBox: '0 0 24 24', d: 'M5 4.6Q12 2.6 19 4.6L19 11.2C19 16.2 15.6 19.6 12 21.6C8.4 19.6 5 16.2 5 11.2Z', names: ['defense'] },
+};
+
+function Icon({ name, x = 0, y = 0, size = 24, fill = 'var(--junctor)' }) {
+  const icon = ICONS[name];
+  return (
+    <svg x={x} y={y} width={size} height={size} viewBox={icon.viewBox} style={{display:'block', overflow:'visible'}}>
+      <path d={icon.d} style={{fill}}/>
+    </svg>
+  );
+}
+
+// An icon name (what a node type holds) -> the artwork that draws it.
+const ARTWORK_OF = Object.fromEntries(
+  Object.entries(ICONS).flatMap(([key, icon]) => icon.names.map(name => [name, key])));
+
+// ─── Color System ────────────────────────────────────────────────────────────
+
+const CRT_TYPES = [
+  { name: 'Undesirable Effect', abbr: 'UDE', icon: 'undesirable-effect',  fill: '#fdeef1', border: '#c84060', text: '#8a1830' },
+  { name: 'Given',              abbr: 'GIV', icon: 'given',  fill: '#edf0fd', border: '#4858c8', text: '#202878' },
+  { name: 'Intermediate Effect',abbr: 'IME', icon: 'intermediate-effect',  fill: '#edfdf6', border: '#20a068', text: '#0a5838' },
+  { name: 'Changeable',         abbr: 'CHG', icon: 'changeable',  fill: '#fdf6ed', border: '#c07820', text: '#784808' },
+];
+
+const IBIS_TYPES = [
+  { name: 'Question', abbr: '?',  icon: 'question', fill: '#f0ebff', border: '#6038d0', text: '#301878' },
+  { name: 'Answer',   abbr: '!',  icon: 'answer', fill: '#fff8e8', border: '#c08820', text: '#784808' },
+  { name: 'Pro',      abbr: '+',  icon: 'pro', fill: '#ebfff2', border: '#20a048', text: '#085828' },
+  { name: 'Con',      abbr: '−',  icon: 'con', fill: '#ffebeb', border: '#d03048', text: '#881028' },
+];
+
+const CM_TYPE   = { name: 'Concept',   icon: 'concept', fill: '#e8f5f3', border: '#1a9488', text: '#0a5048' };
+const CLD_TYPE  = { name: 'Stock',     icon: 'variable', fill: '#f0f0ec', border: '#707068', text: '#303028' };
+
+const BBS_TYPES = [
+  { name: 'Enabler',              icon: 'enabler', fill: '#f0ebff', border: '#7038d0', text: '#3a1878' },
+  { name: 'Business Change',      icon: 'business-change', fill: '#fff4e5', border: '#c87820', text: '#6a3c08' },
+  { name: 'Benefit',              icon: 'benefit', fill: '#ebfdf2', border: '#209858', text: '#0a5028' },
+  { name: 'Investment Objective', icon: 'investment-objective', fill: '#e8f0ff', border: '#2858d0', text: '#0a2878' },
+];
+
+const ADT_TYPES = [
+  { name: 'Attack',  icon: 'attack', fill: '#fdeef1', border: '#c83040', text: '#7a0818' },
+  { name: 'Defense', icon: 'defense', fill: '#ecfdf5', border: '#189858', text: '#085028' },
+];
+
+const DT_TYPES = [
+  { name: 'Decision Point', abbr: '?', icon: 'decision-point', fill: '#fff8e8', border: '#d08020', text: '#6a3c08' },
+  { name: 'Choice',         abbr: 'Y', icon: 'choice', fill: '#e8eeff', border: '#2858d0', text: '#0a2878' },
+  { name: 'Outcome',        abbr: '✓', icon: 'outcome', fill: '#ebfdf2', border: '#209858', text: '#0a5028' },
+];
+
+const IM_TYPES = [
+  { name: 'Goal',        abbr: '⚑', icon: 'goal', fill: '#fdeef1', border: '#c03858', text: '#7a0818' },
+  { name: 'Actor',       abbr: '◉', icon: 'actor', fill: '#e5f7f5', border: '#1a9488', text: '#0a5048' },
+  { name: 'Impact',      abbr: '↯', icon: 'impact', fill: '#fdf8de', border: '#9a8a18', text: '#504808' },
+  { name: 'Deliverable', abbr: '▣', icon: 'deliverable', fill: '#e0eef8', border: '#2070a8', text: '#083858' },
+];
+
+const EC_NEW_TYPES = [
+  { name: 'Common Objective', icon: 'common-objective', fill: '#d8fdf6', border: '#00b898', text: '#005848' },
+  { name: 'Solution',         icon: 'solution', fill: '#e5f2fd', border: '#2888d0', text: '#083878' },
+  { name: 'Need',             icon: 'need', fill: '#dce6f8', border: '#2050b8', text: '#0a1e68' },
+  { name: 'Want',             icon: 'want', fill: '#fff3e5', border: '#c07020', text: '#6a3808' },
+  { name: 'Assumption',       icon: 'assumption', fill: '#f0ebff', border: '#7038d0', text: '#3a1878' },
+];
+
+// GoalTree
+const GT_TYPES = [
+  { name: 'Necessary Condition',     icon: 'necessary-condition', fill: '#fdf3de', border: '#c89028', text: '#6a4808' },
+  { name: 'Critical Success Factor', icon: 'critical-success-factor', fill: '#d8f8f8', border: '#0898b8', text: '#044858' },
+  { name: 'Goal',                    icon: 'goal', fill: '#deeeff', border: '#1878c8', text: '#083878' },
+];
+
+// Prerequisite Tree
+const PRT_TYPES = [
+  { name: 'Objective',              icon: 'objective', fill: '#d8fce8', border: '#18a858', text: '#085828' },
+  { name: 'Intermediate Objective', icon: 'intermediate-objective', fill: '#e0e0f8', border: '#4848c8', text: '#181878' },
+  { name: 'Obstacle',               icon: 'obstacle', fill: '#f8e4e4', border: '#b84848', text: '#681818' },
+];
+
+// Future / Transition Reality Tree — extends CRT types + adds DesirableEffect
+const FRT_EXTRA = [
+  { name: 'Desirable Effect', icon: 'desirable-effect', fill: '#d8fce0', border: '#18a848', text: '#085028' },
+];
+// Note: FRT & TRT also use UDE, Given, Intermediate Effect, Changeable from CRT_TYPES
+
+// Annotation node — NOT a content node; meta-information
+const ANNOTATION = { name: 'Annotation', icon: 'annotation', fill: '#fefce8', border: '#b8980a', text: '#4a3c08' };
+const WARNING    = { name: 'Warning',    icon: 'warning', fill: '#fff1f2', border: '#c02838', text: '#7a0810' };
+
+// ─── Collect all type colors + dark-mode override rules ─────────────────────
+
+const ALL_TYPES = [
+  ...CRT_TYPES, ...IBIS_TYPES, CM_TYPE, CLD_TYPE,
+  ...BBS_TYPES, ...ADT_TYPES, ...DT_TYPES, ...IM_TYPES, ...EC_NEW_TYPES,
+  ...GT_TYPES, ...PRT_TYPES, ...FRT_EXTRA, ANNOTATION, WARNING,
+];
+
+// Chrome hexes that appear inside SVG attributes (fill="..." / stroke="...").
+// CSS variable substitution would require touching every JSX site; attribute
+// selectors let us remap them per theme without changing the JSX at all.
+const CHROME_DARK = {
+  '#b0a898': '#6e6a60',  // edges
+  '#5a564e': '#a8a49a',  // ink-2 AND edge-bold (aliases — same hex in both modes by rule)
+  '#9a9690': '#6e6a62',  // ink-3
+  '#1a1816': '#ecebe5',  // ink headings inside svgs
+  // '#303030' handled via the --junctor CSS var; do not remap it as an attribute
+  // selector (a junctor icon would lose contrast).
+  '#eeece8': '#262420',  // pill bg
+  '#807870': '#a8a49a',  // pill text
+  '#f4f3f0': '#1c1a16',  // group fill
+  '#909088': '#7a766e',  // group border
+  '#505048': '#c8c4bc',  // group text
+  '#efefef': '#22201c',  // group nested fill
+  '#e8e7e4': '#1a1814',  // group stack
+  '#eeedea': '#1f1d19',
+  '#808078': '#a8a49a',  // CLD loop indicator
+};
+
+// Build complete light→dark hex map: chrome + every type's fill/border/text.
+const DARK_MAP = (() => {
+  const m = {...CHROME_DARK};
+  for (const t of ALL_TYPES) {
+    if (t.fill   && !m[t.fill])   m[t.fill]   = darkOf(t.fill);
+    if (t.border && !m[t.border]) m[t.border] = darkOf(t.border);
+    if (t.text   && !m[t.text])   m[t.text]   = darkOf(t.text);
+  }
+  // white stays white; the icon on a coloured circle follows --badge-icon instead
+  delete m['#fff']; delete m['#ffffff'];
+  return m;
+})();
+
+// Emit attribute-selector overrides scoped to [data-theme="dark"].
+// Attribute selectors have higher specificity than SVG presentation attributes,
+// so no !important is needed for fill="..." / stroke="...".
+function DarkOverrides() {
+  const css = useMemo(() => {
+    let s = '';
+    for (const [light, dark] of Object.entries(DARK_MAP)) {
+      s += `[data-theme="dark"] [fill="${light}"]{fill:${dark};}`;
+      s += `[data-theme="dark"] [stroke="${light}"]{stroke:${dark};}`;
+    }
+    return s;
+  }, []);
+  return <style dangerouslySetInnerHTML={{__html: css}}/>;
+}
+
+// Resolve type → palette in the current theme. Used by components whose colors
+// live in JSX inline styles (not SVG attrs), where attribute selectors don't apply.
+function useTypeColors(type, theme) {
+  return useMemo(() => {
+    if (theme !== 'dark') return { fill: type.fill, border: type.border, text: type.text };
+    return {
+      fill:   DARK_MAP[type.fill]   || darkOf(type.fill),
+      border: DARK_MAP[type.border] || darkOf(type.border),
+      text:   DARK_MAP[type.text]   || darkOf(type.text),
+    };
+  }, [type, theme]);
+}
+
+const ThemeContext = React.createContext('light');
+const useTheme = () => React.useContext(ThemeContext);
+
+// ─── Theme toggle button ─────────────────────────────────────────────────────
+
+function ThemeToggle({ theme, setTheme }) {
+  const isDark = theme === 'dark';
+  return (
+    <button
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
+      aria-label="Toggle dark mode"
+      style={{
+        position:'fixed', top:20, right:20, zIndex:100,
+        display:'flex', alignItems:'center', gap:10,
+        padding:'8px 14px 8px 10px',
+        background:'var(--card)', color:'var(--ink)',
+        border:'1px solid var(--rule)', borderRadius:999,
+        font:'500 12px var(--font)', letterSpacing:'0.02em',
+        cursor:'pointer',
+        boxShadow:'0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04)',
+        transition:'background 0.2s, color 0.2s, border-color 0.2s',
+      }}>
+      <span style={{
+        width:22, height:22, borderRadius:11,
+        background: isDark ? '#f0ede5' : '#1a1816',
+        display:'flex', alignItems:'center', justifyContent:'center',
+        fontSize:12, lineHeight:1,
+      }}>
+        {isDark ? '☾' : '☀'}
+      </span>
+      <span>{isDark ? 'Dark' : 'Light'}</span>
+    </button>
+  );
+}
+
+// ─── Node SVG primitives ─────────────────────────────────────────────────────
+
+const NODE_W = 172, NODE_H = 60, NR = 9;
+const CONTENT = 'There is a pressure\nto reduce prices.';
+
+function NodeAccent({ type, x = 0, y = 0 }) {
+  const lines = CONTENT.split('\n');
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {/* Shadow */}
+      <rect x={1} y={2} width={NODE_W} height={NODE_H} rx={NR} fill="rgba(0,0,0,0.05)" style={{filter:'blur(4px)'}} />
+      {/* Body */}
+      <rect x={0} y={0} width={NODE_W} height={NODE_H} rx={NR} fill={type.fill} stroke={type.border} strokeWidth={1} />
+      {/* Left accent bar */}
+      <rect x={0} y={0} width={4} height={NODE_H} rx={NR} fill={type.border} />
+      <rect x={0} y={NR} width={4} height={NODE_H - NR} fill={type.border} />
+      {/* Icon circle */}
+      <circle cx={22} cy={17} r={8} fill={type.border} />
+      <Icon name={ARTWORK_OF[type.icon]} x={22-6.25} y={17-6.25} size={12.5} fill="var(--badge-icon)"/>
+      {/* Type label */}
+      <text x={34} y={20} fontFamily="'DM Sans',sans-serif" fontSize={9} fontWeight="600"
+        fill={type.border} opacity={0.85}
+        style={{textTransform:'uppercase',letterSpacing:'0.07em'}}>
+        {type.abbr || type.name}
+      </text>
+      {/* Content */}
+      {lines.map((l, i) => (
+        <text key={i} x={16} y={36 + i * 16}
+          fontFamily="'DM Sans',sans-serif" fontSize={12.5} fontWeight={500} fill={type.text}>
+          {l}
+        </text>
+      ))}
+    </g>
+  );
+}
+
+// ─── Multi-node preview ───────────────────────────────────────────────────────
+
+function MiniCRT() {
+  const NodeComp = NodeAccent;
+  const nodeH = NODE_H;
+  const svgW = 580, svgH = 320;
+  const markerId = 'arr-crt-accent';
+  // Node positions (cx,cy used for edges, x,y for rendering)
+  const nodes = [
+    { id: 'a', type: CRT_TYPES[0], x: 200, y: 20 },
+    { id: 'b', type: CRT_TYPES[1], x: 20,  y: 140 },
+    { id: 'c', type: CRT_TYPES[2], x: 200, y: 140 },
+    { id: 'd', type: CRT_TYPES[0], x: 380, y: 140 },
+    { id: 'e', type: CRT_TYPES[1], x: 200, y: 260 },
+  ];
+  const edges = [
+    { fx: 286, fy: 20+nodeH, tx: 286, ty: 140 },
+    { fx: 92,  fy: 140+nodeH/2, tx: 200, ty: 200+nodeH/2 },
+    { fx: 372, fy: 140+nodeH/2, tx: 372, ty: 260 },
+    { fx: 286, fy: 140+nodeH, tx: 286, ty: 260 },
+  ];
+
+  return (
+    <svg width={svgW} height={svgH} style={{display:'block',overflow:'visible'}}>
+      <defs>
+        <marker id={markerId} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0.5 L5,3 L0,5.5 Z" fill="#b0a898" />
+        </marker>
+      </defs>
+      {edges.map((e, i) => (
+        <line key={i} x1={e.fx} y1={e.fy} x2={e.tx} y2={e.ty}
+          stroke="#b0a898" strokeWidth={1.5} markerEnd={`url(#${markerId})`} />
+      ))}
+      {nodes.map(n => (
+        <NodeComp key={n.id} type={n.type} x={n.x} y={n.y} />
+      ))}
+    </svg>
+  );
+}
+
+// ─── Option data ──────────────────────────────────────────────────────────────
+
+
+
+// ─── IBIS icon treatments ─────────────────────────────────────────────────────
+
+const IBIS_CONTENT = 'Core issue to resolve.';
+const IW = 175, IH = 58;
+
+// T2 — Icon circle + label (chosen treatment)
+function IBISIconNode({ type, x = 0, y = 0 }) {
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <rect x={1} y={2} width={IW} height={IH} rx={8} fill="rgba(0,0,0,0.05)" style={{filter:'blur(3px)'}}/>
+      <rect x={0} y={0} width={IW} height={IH} rx={8} fill={type.fill} stroke={type.border} strokeWidth={1}/>
+      {/* Accent strip */}
+      <rect x={0} y={0} width={4} height={IH} rx={8} fill={type.border}/>
+      <rect x={0} y={8} width={4} height={IH-8} fill={type.border}/>
+      {/* Icon circle */}
+      <circle cx={22} cy={17} r={8} fill={type.border}/>
+      <Icon name={ARTWORK_OF[type.icon]} x={22-6.25} y={17-6.25} size={12.5} fill="var(--badge-icon)"/>
+      {/* Type label */}
+      <text x={34} y={21} fontFamily="'DM Sans',sans-serif" fontSize={9} fontWeight={600} fill={type.border}
+        style={{textTransform:'uppercase',letterSpacing:'0.06em'}}>
+        {type.name}
+      </text>
+      {/* Content */}
+      <text x={14} y={42} fontFamily="'DM Sans',sans-serif" fontSize={12.5} fontWeight={500} fill={type.text}>
+        {IBIS_CONTENT}
+      </text>
+    </g>
+  );
+}
+
+function IBISRow({ NodeComp, label, desc, margin = 0 }) {
+  const gap = 16;
+  const totalW = IBIS_TYPES.length * (IW + gap) - gap + margin * 2;
+  return (
+    <div style={{marginBottom:32}}>
+      <div style={{fontSize:12,fontWeight:600,color:'var(--ink)',marginBottom:4}}>{label}</div>
+      <div style={{fontSize:13,color:'var(--ink-2)',marginBottom:16,lineHeight:1.6}}>{desc}</div>
+      <div style={{background:'var(--preview-bg)',borderRadius:10,padding:'28px 24px',overflowX:'auto'}}>
+        <svg width={totalW} height={IH + 8} style={{display:'block',overflow:'visible'}}>
+          {IBIS_TYPES.map((t, i) => (
+            <NodeComp key={t.name} type={t} x={margin + i * (IW + gap)} y={4}/>
+          ))}
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+// ─── Palette display ──────────────────────────────────────────────────────────
+
+function PaletteRow({ types, noStrip = false, forceTheme }) {
+  const ctxTheme = useTheme();
+  const theme = forceTheme || ctxTheme;
+  return (
+    <div style={{display:'flex', gap:12, flexWrap:'wrap', marginBottom:12}}>
+      {types.map(t => <PaletteSwatch key={t.name} type={t} noStrip={noStrip} theme={theme}/>)}
+    </div>
+  );
+}
+
+function PaletteSwatch({ type: t, noStrip, theme }) {
+  const c = useTypeColors(t, theme);
+  return (
+    <div style={{display:'flex',alignItems:'stretch',borderRadius:8,overflow:'hidden',
+      border: noStrip ? `1.5px dashed ${c.border}` : '1px solid var(--rule)',minWidth:160,
+      background:'var(--card)'}}>
+      {!noStrip && <div style={{width:8,background:c.border,flexShrink:0}} />}
+      <div style={{padding:'10px 12px',background:c.fill,flex:1,display:'flex',alignItems:'flex-start',gap:8}}>
+        {t.icon && (
+          <div style={{width:18,height:18,borderRadius:9,background:c.border,
+            display:'flex',alignItems:'center',justifyContent:'center',
+            flexShrink:0,marginTop:1}}>
+            <svg width={12} height={12} viewBox="0 0 24 24" style={{display:'block'}}>
+              <Icon name={ARTWORK_OF[t.icon]} size={24} fill="var(--badge-icon)"/>
+            </svg>
+          </div>
+        )}
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:11,fontWeight:600,color:c.text,marginBottom:3}}>{t.name}</div>
+          <div style={{fontFamily:'DM Mono,monospace',fontSize:10,color:'var(--ink-3)',lineHeight:1.8}}>
+            fill: {c.fill}<br/>
+            border: {c.border}<br/>
+            text: {c.text}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Junctor display (Option B — filled circle, text label) ────────────────
+
+function JunctorSpec() {
+  const R = 14;
+  const renderJ = (cx, cy, label) => (
+    <Icon name={label.toLowerCase()} x={cx - R} y={cy - R} size={2 * R}/>
+  );
+  return (
+    <div className="card card-pad">
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:32, alignItems:'start'}}>
+        <div>
+          <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginBottom:12}}>AND / OR junctors</div>
+          <div style={{background:'var(--preview-bg)', borderRadius:10, padding:'20px', display:'flex', gap:40, alignItems:'center', marginBottom:16}}>
+            <svg width={200} height={60} style={{display:'block', overflow:'visible'}}>
+              {renderJ(20, 30, 'AND')}
+              <text x={44} y={34} fontFamily="'DM Sans',sans-serif" fontSize={11} fill="#9a9690">AND junctor</text>
+              {renderJ(140, 30, 'OR')}
+              <text x={164} y={34} fontFamily="'DM Sans',sans-serif" fontSize={11} fill="#9a9690">OR junctor</text>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginBottom:12}}>Specification</div>
+          <table className="spec-table">
+            <tbody>
+              <tr><td>Shape</td><td>Circle, 28px diameter</td></tr>
+              <tr><td>Fill</td><td>var(--junctor) · #303030 light · #e8e3db dark</td></tr>
+              <tr><td>Icon</td><td>the <code>and</code> / <code>or</code> icon (§14): DM Sans Bold letters cut out of the icon background, so they show the page or group behind</td></tr>
+              <tr><td>Graphviz</td><td><code>shape=circle</code> · <code>fixedsize=true</code> · <code>width=0.19</code></td></tr>
+            </tbody>
+          </table>
+          <div className="note" style={{marginTop:12}}>
+            Junctors are structural — no accent strip, no semantic color. Dark fill
+            makes them immediately distinct from all content node types.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Ghost node (Option C — ghost pill) ────────────────────────────────────
+
+const GW = 120, GH = 34;
+
+function GhostPill({ x = 0, y = 0, label = 'is conducted by' }) {
+  return (
+    <g transform={"translate(" + x + "," + y + ")"}>
+      <rect x={0} y={0} width={GW} height={GH} rx={GH/2} fill="#eeece8" stroke="none"/>
+      <text x={GW/2} y={GH/2+4} textAnchor="middle"
+        fontFamily="'DM Sans',sans-serif" fontSize={11} fontStyle="italic" fill="#807870">
+        {label}
+      </text>
+    </g>
+  );
+}
+
+function GhostNodeSpec() {
+  const arrId = 'arr-ghost';
+  return (
+    <div className="card card-pad">
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:32, alignItems:'start'}}>
+        <div>
+          <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginBottom:12}}>In context</div>
+          <div style={{background:'var(--preview-bg)', borderRadius:10, padding:'24px 20px'}}>
+            <svg width={180} height={162} style={{display:'block', overflow:'visible'}}>
+              <defs>
+                <marker id={arrId} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+                  <path d="M0,0.5 L5.5,3 L0,5.5 Z" fill="#b0a898"/>
+                </marker>
+              </defs>
+              <rect x={20} y={0} width={130} height={40} rx={8} fill={CM_TYPE.fill} stroke={CM_TYPE.border} strokeWidth={1}/>
+              <rect x={20} y={0} width={4} height={40} rx={8} fill={CM_TYPE.border}/>
+              <rect x={20} y={8} width={4} height={32} fill={CM_TYPE.border}/>
+              <text x={90} y={25} textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize={12.5} fontWeight={500} fill={CM_TYPE.text}>Concept A</text>
+              <line x1={90} y1={40} x2={90} y2={58} stroke="#b0a898" strokeWidth={1.5} markerEnd="url(#arr-ghost)"/>
+              <GhostPill x={25} y={60} label="is conducted by"/>
+              <line x1={90} y1={94} x2={90} y2={112} stroke="#b0a898" strokeWidth={1.5} markerEnd="url(#arr-ghost)"/>
+              <rect x={20} y={114} width={130} height={40} rx={8} fill={CM_TYPE.fill} stroke={CM_TYPE.border} strokeWidth={1}/>
+              <rect x={20} y={114} width={4} height={40} rx={8} fill={CM_TYPE.border}/>
+              <rect x={20} y={122} width={4} height={32} fill={CM_TYPE.border}/>
+              <text x={90} y={139} textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize={12.5} fontWeight={500} fill={CM_TYPE.text}>Concept B</text>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginBottom:12}}>Specification</div>
+          <table className="spec-table">
+            <tbody>
+              <tr><td>Shape</td><td>Pill (fully rounded rect, rx=17)</td></tr>
+              <tr><td>Fill</td><td>#eeece8 (warm light gray)</td></tr>
+              <tr><td>Border</td><td>None</td></tr>
+              <tr><td>Text</td><td>DM Sans 11px · italic · #807870</td></tr>
+              <tr><td>No accent strip</td><td>Relationship node is structural, not content</td></tr>
+              <tr><td>Graphviz DOT</td><td><code>shape=plaintext</code> · custom renderer draws pill</td></tr>
+            </tbody>
+          </table>
+          <div className="note" style={{marginTop:12}}>
+            The pill shape and warm-gray fill make relationship nodes clearly selectable
+            without competing with concept nodes.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Icon-node pattern (DT, IM) ──────────────────────────────────────────────
+
+const INW = 185, INH = 58, IR = 12;
+
+function IconNode({ type, content = 'Node content', x = 0, y = 0 }) {
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <rect x={1} y={2} width={INW} height={INH} rx={8} fill="rgba(0,0,0,0.05)" style={{filter:'blur(3px)'}}/>
+      <rect x={0} y={0} width={INW} height={INH} rx={8} fill={type.fill} stroke={type.border} strokeWidth={1}/>
+      {/* Accent strip — same as Option A */}
+      <rect x={0} y={0} width={4} height={INH} rx={8} fill={type.border}/>
+      <rect x={0} y={8} width={4} height={INH-8} fill={type.border}/>
+      {/* Icon circle — T2 pattern, top-left */}
+      <circle cx={22} cy={17} r={9} fill={type.border}/>
+      <Icon name={ARTWORK_OF[type.icon]} x={22-7.0} y={17-7.0} size={14.0} fill="var(--badge-icon)"/>
+      {/* Type label */}
+      <text x={36} y={21} fontFamily="'DM Sans',sans-serif" fontSize={9} fontWeight={600}
+        fill={type.border} style={{textTransform:'uppercase',letterSpacing:'0.06em'}}>
+        {type.name}
+      </text>
+      {/* Content */}
+      <text x={14} y={42} fontFamily="'DM Sans',sans-serif" fontSize={12.5} fontWeight={500}
+        fill={type.text}>{content}</text>
+    </g>
+  );
+}
+
+function IconNodeRow({ types, contents = [] }) {
+  const gap = 14;
+  const totalW = types.length * (INW + gap) - gap;
+  return (
+    <div style={{background:'var(--preview-bg)', borderRadius:10, padding:'24px 20px', overflowX:'auto', marginBottom:16}}>
+      <svg width={totalW} height={INH + 8} style={{display:'block', overflow:'visible'}}>
+        {types.map((t, i) => (
+          <IconNode key={t.name} type={t} content={contents[i]} x={i*(INW+gap)} y={4}/>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+// ─── EC special elements ──────────────────────────────────────────────────────
+
+function ECSpecialElements() {
+  const R = 14;
+  const arrId = 'arr-ec';
+  return (
+    <div className="card card-pad" style={{marginTop:24}}>
+      <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginBottom:20}}>
+        EC-specific structural elements
+      </div>
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:32}}>
+
+        {/* AND junctor */}
+        <div>
+          <div style={{fontSize:11, fontWeight:600, color:'var(--ink-3)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:12}}>AND junctor</div>
+          <div style={{background:'var(--preview-bg)', borderRadius:8, padding:'20px', display:'flex', justifyContent:'center', marginBottom:10}}>
+            <Icon name="and" size={28}/>
+          </div>
+          <div style={{fontSize:12, color:'var(--ink-2)', lineHeight:1.6}}>Same as section 05. Used to show logical conjunction between Wants and the conflict.</div>
+        </div>
+
+        {/* Conflict marker */}
+        <div>
+          <div style={{fontSize:11, fontWeight:600, color:'var(--ink-3)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:12}}>Conflict marker</div>
+          <div style={{background:'var(--preview-bg)', borderRadius:8, padding:'20px', display:'flex', justifyContent:'center', marginBottom:10}}>
+            <Icon name="conflict" size={28}/>
+          </div>
+          <div style={{fontSize:12, color:'var(--ink-2)', lineHeight:1.6}}>Same size/style as AND junctor. Renders as a Graphviz node with <code>shape=circle</code>, <code>fixedsize=true</code>. Icon: the <code>conflict</code> icon (§14).</div>
+        </div>
+
+        {/* Dot edge decorator */}
+        <div>
+          <div style={{fontSize:11, fontWeight:600, color:'var(--ink-3)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:12}}>Dot edge decorator</div>
+          <div style={{background:'var(--preview-bg)', borderRadius:8, padding:'20px', display:'flex', justifyContent:'center', alignItems:'center', marginBottom:10}}>
+            <svg width={120} height={28}>
+              <defs>
+                <marker id={arrId} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+                  <path d="M0,0.5 L5.5,3 L0,5.5 Z" fill="#b0a898"/>
+                </marker>
+              </defs>
+              <line x1={8} y1={14} x2={112} y2={14} stroke="#b0a898" strokeWidth={1.5} markerEnd={`url(#${arrId})`}/>
+              <circle cx={8} cy={14} r={4} style={{fill:'var(--junctor)'}}/>
+            </svg>
+          </div>
+          <div style={{fontSize:12, color:'var(--ink-2)', lineHeight:1.6}}>6px filled dot at the edge origin. Signals "depends on" directionality in EC (no longer used in the current model). Render as <code>marker-start</code> in SVG.</div>
+        </div>
+      </div>
+
+      {/* Old vs new comparison */}
+      <div style={{marginTop:24, paddingTop:20, borderTop:'1px solid var(--rule)'}}>
+        <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginBottom:8}}>Old → New model changes</div>
+        <table className="spec-table">
+          <thead><tr><th>Element</th><th>Old EC model</th><th>New EC meta model</th></tr></thead>
+          <tbody>
+            <tr><td>Node types</td><td>CommonObjective, Need, Want</td><td>+ Solution, + Assumption</td></tr>
+            <tr><td>Conflict</td><td>Inline lightning on edge (edge decorator)</td><td>The <code>conflict</code> icon (same size as a junctor)</td></tr>
+            <tr><td>AND junctor</td><td>Not present</td><td>Explicit AND circle</td></tr>
+            <tr><td>Edge dot</td><td>Filled dot at edge origin</td><td>Not used</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── Group / Cluster ─────────────────────────────────────────────────────────
+
+function GroupExpanded({ x = 0, y = 0, w = 260, h = 180, label = 'Cache Layer', nested = false }) {
+  const r = 12;
+  const fill = nested ? '#efefef' : '#f4f3f0';
+  const border = '#909088';
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <rect x={0} y={0} width={w} height={h} rx={r}
+        fill={fill} stroke={border} strokeWidth={1.5} strokeDasharray="6,4"/>
+      {/* Label top-left */}
+      <text x={14} y={20} fontFamily="'DM Sans',sans-serif"
+        fontSize={11} fontWeight={600} fill="#505048"
+        style={{textTransform:'uppercase', letterSpacing:'0.07em'}}>
+        {label}
+      </text>
+    </g>
+  );
+}
+
+function GroupFolded({ x = 0, y = 0, w = 180, h = 54, label = 'Authentication Module', count = 6 }) {
+  const r = 9;
+  const fill = '#f4f3f0';
+  const border = '#909088';
+  const stackOff = 5;
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {/* Stack shadow layers */}
+      <rect x={stackOff*2} y={stackOff*2} width={w} height={h} rx={r}
+        fill="#e8e7e4" stroke={border} strokeWidth={1} opacity={0.5}/>
+      <rect x={stackOff} y={stackOff} width={w} height={h} rx={r}
+        fill="#eeedea" stroke={border} strokeWidth={1} opacity={0.75}/>
+      {/* Main face */}
+      <rect x={0} y={0} width={w} height={h} rx={r}
+        fill={fill} stroke={border} strokeWidth={1.5} strokeDasharray="6,4"/>
+      {/* Label */}
+      <text x={14} y={23} fontFamily="'DM Sans',sans-serif"
+        fontSize={11} fontWeight={600} fill="#505048"
+        style={{textTransform:'uppercase', letterSpacing:'0.07em'}}>
+        {label}
+      </text>
+      {/* Count badge */}
+      <rect x={w - 28} y={h/2 - 8} width={22} height={22} rx={11}
+        fill={border}/>
+      <text x={w - 17} y={h/2 + 6} textAnchor="middle"
+        fontFamily="'DM Sans',sans-serif" fontSize={10} fontWeight={700} fill="#fff">
+        {count}
+      </text>
+    </g>
+  );
+}
+
+function GroupSpec() {
+  // Show expanded group with nodes inside, and folded group
+  const arrId = 'arr-grp';
+  const qB = IBIS_TYPES[0].border, qF = IBIS_TYPES[0].fill, qT = IBIS_TYPES[0].text;
+  const aB = IBIS_TYPES[1].border, aF = IBIS_TYPES[1].fill, aT = IBIS_TYPES[1].text;
+  const pB = IBIS_TYPES[2].border, pF = IBIS_TYPES[2].fill, pT = IBIS_TYPES[2].text;
+
+  // Mini IBIS nodes for inside the group
+  function MiniNode({ x, y, type: { fill, border, text }, icon, typeName, content }) {
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <rect x={0} y={0} width={130} height={46} rx={7} fill={fill} stroke={border} strokeWidth={1}/>
+        <rect x={0} y={0} width={3} height={46} rx={7} fill={border}/>
+        <rect x={0} y={7} width={3} height={39} fill={border}/>
+        <circle cx={18} cy={14} r={7} fill={border}/>
+        <Icon name={ARTWORK_OF[icon]} x={18-5.45} y={14-5.45} size={10.9} fill="var(--badge-icon)"/>
+        <text x={30} y={18} fontFamily="'DM Sans',sans-serif" fontSize={8} fontWeight={600} fill={border} style={{textTransform:'uppercase',letterSpacing:'0.06em'}}>{typeName}</text>
+        <text x={10} y={36} fontFamily="'DM Sans',sans-serif" fontSize={11} fontWeight={500} fill={text}>{content}</text>
+      </g>
+    );
+  }
+
+  return (
+    <div className="card card-pad">
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:32, alignItems:'start'}}>
+
+        {/* Expanded */}
+        <div>
+          <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginBottom:12}}>Expanded group</div>
+          <div style={{background:'var(--page)', borderRadius:10, padding:'20px', marginBottom:16}}>
+            <svg width={290} height={230} style={{display:'block', overflow:'visible'}}>
+              <defs>
+                <marker id={arrId} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+                  <path d="M0,0.5 L5.5,3 L0,5.5 Z" fill="#b0a898"/>
+                </marker>
+              </defs>
+              <GroupExpanded x={0} y={0} w={270} h={220} label="Cache Layer"/>
+              <MiniNode x={68} y={28} type={{fill:qF,border:qB,text:qT}} icon="question" typeName="Question" content="Caching strategy?"/>
+              <line x1={133} y1={74} x2={133} y2={106} stroke="#b0a898" strokeWidth={1.5} markerEnd={`url(#${arrId})`}/>
+              <MiniNode x={68} y={108} type={{fill:aF,border:aB,text:aT}} icon="answer" typeName="Answer" content="Use Redis"/>
+              <line x1={133} y1={154} x2={133} y2={176} stroke="#b0a898" strokeWidth={1.5} markerEnd={`url(#${arrId})`}/>
+              <MiniNode x={68} y={178} type={{fill:pF,border:pB,text:pT}} icon="pro" typeName="Pro" content="Fast in-memory"/>
+            </svg>
+          </div>
+          <table className="spec-table" style={{fontSize:12}}>
+            <tbody>
+              <tr><td>Fill</td><td>#f4f3f0 (warm near-white)</td></tr>
+              <tr><td>Border</td><td>#909088 · 1.5px · dashed (6,4)</td></tr>
+              <tr><td>Corner radius</td><td>12px</td></tr>
+              <tr><td>Label</td><td>11px · 600 · uppercase · #505048</td></tr>
+              <tr><td>Label position</td><td>14px from left, 20px from top</td></tr>
+              <tr><td>Padding inside</td><td>28px top, 16px other sides</td></tr>
+              <tr><td>Nesting</td><td>Slightly darker fill (#efefef) for nested groups</td></tr>
+              <tr><td>Graphviz</td><td><code>subgraph cluster_*</code> · <code>style=dashed</code> · <code>bgcolor="#f4f3f0"</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Folded */}
+        <div>
+          <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginBottom:12}}>Folded group (collapsed)</div>
+          <div style={{background:'var(--page)', borderRadius:10, padding:'28px 20px', marginBottom:16, display:'flex', flexDirection:'column', gap:16, alignItems:'flex-start'}}>
+            <svg width={230} height={130} style={{display:'block', overflow:'visible'}}>
+              <GroupFolded x={0} y={0} w={190} h={54} label="Cache Layer" count={3}/>
+              <GroupFolded x={0} y={70} w={220} h={54} label="Authentication Module" count={8}/>
+            </svg>
+          </div>
+          <table className="spec-table" style={{fontSize:12}}>
+            <tbody>
+              <tr><td>Shape</td><td>Same rounded rect as expanded, dashed border</td></tr>
+              <tr><td>Stack layers</td><td>2 offset rects behind (+5px, +10px) at 50–75% opacity</td></tr>
+              <tr><td>Count badge</td><td>22×16px pill · fill #909088 · 9px white bold</td></tr>
+              <tr><td>Subtitle</td><td>12px italic · #808078 · "N nodes inside"</td></tr>
+              <tr><td>Connects to graph</td><td>Edges attach to the folded node as if it were a regular node</td></tr>
+              <tr><td>Graphviz</td><td>Replace cluster with a plain node, <code>shape=rect</code>, <code>style=dashed</code></td></tr>
+            </tbody>
+          </table>
+          <div className="note" style={{marginTop:16}}>
+            The stacked-shadow effect visually encodes "multiple things inside" without requiring
+            any icon. The count badge gives a precise sense of scale. The dashed border ties it
+            to the expanded group vocabulary — same pattern, just collapsed.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Annotation node ─────────────────────────────────────────────────────────
+
+const ANN_W = 160, ANN_H = 48;
+
+function AnnotationNode({ x = 0, y = 0, text = 'here a note', type = ANNOTATION }) {
+  const fold = 12;
+  const path = `M${ANN_W - fold},0 L${ANN_W},${fold} L${ANN_W},${ANN_H} Q${ANN_W},${ANN_H+6} ${ANN_W-6},${ANN_H+6} L6,${ANN_H+6} Q0,${ANN_H+6} 0,${ANN_H} L0,6 Q0,0 6,0 Z`;
+  const foldPath = `M${ANN_W - fold},0 L${ANN_W - fold},${fold} L${ANN_W},${fold}`;
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <path d={path} fill={type.fill} stroke={type.border}
+        strokeWidth={1} strokeDasharray="5,3"/>
+      <path d={foldPath} fill="none" stroke={type.border} strokeWidth={1} strokeDasharray="none" opacity={0.5}/>
+      <text x={10} y={28} fontFamily="'DM Sans',sans-serif"
+        fontSize={12} fontStyle="italic" fill={type.text}>{text}</text>
+    </g>
+  );
+}
+
+// Palette row variant: render the actual folded-corner annotation/warning
+// node shape alongside its color codes. Keeps annotation visualization
+// consistent with section 09 (no extra icon-circle treatment).
+function AnnotationPaletteRow({ types, forceTheme }) {
+  const ctxTheme = useTheme();
+  const theme = forceTheme || ctxTheme;
+  return (
+    <div style={{display:'flex',gap:14,flexWrap:'wrap',marginBottom:12}}>
+      {types.map(t => {
+        const c = useTypeColors(t, theme);
+        return (
+          <div key={t.name}
+            style={{display:'flex',alignItems:'center',gap:16,
+              border:'1px solid var(--rule)', borderRadius:10,
+              background:'var(--card)', padding:'14px 18px', minWidth:320}}>
+            <svg width={ANN_W + 2} height={ANN_H + 8} style={{display:'block',overflow:'visible',flexShrink:0}}>
+              <AnnotationNode x={1} y={2} text={t.name} type={t}/>
+            </svg>
+            <div style={{flex:1, minWidth:0}}>
+              <div style={{fontSize:11,fontWeight:600,color:c.border,marginBottom:4,
+                textTransform:'uppercase',letterSpacing:'0.07em'}}>
+                {t.name}
+              </div>
+              <div style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--ink-3)',lineHeight:1.8}}>
+                fill: {c.fill}<br/>
+                border: {c.border}<br/>
+                text: {c.text}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function AnnotationSpec() {
+  const svgW = 440, svgH = 130;
+  const arrId = 'arr-ann';
+  const qFill = IBIS_TYPES[0].fill, qBorder = IBIS_TYPES[0].border, qText = IBIS_TYPES[0].text;
+  return (
+    <div className="card card-pad">
+      {/* Two node previews side by side */}
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:24}}>
+        {[
+          { type: ANNOTATION, label: 'Annotation', text: 'here a note' },
+          { type: WARNING,    label: 'Warning',    text: 'risk of failure' },
+        ].map(({ type, label, text }) => (
+          <div key={label}>
+            <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginBottom:10}}>{label}</div>
+            <div style={{background:'var(--preview-bg)', borderRadius:10, padding:'20px', display:'flex', justifyContent:'center'}}>
+              <svg width={ANN_W + 4} height={ANN_H + 14} style={{display:'block', overflow:'visible'}}>
+                <AnnotationNode x={2} y={4} text={text} type={type}/>
+              </svg>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* In-context + spec */}
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:32, alignItems:'start'}}>
+        <div>
+          <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginBottom:12}}>In context</div>
+          <div style={{background:'var(--preview-bg)', borderRadius:10, padding:'24px 20px'}}>
+            <svg width={200} height={svgH} style={{display:'block', overflow:'visible'}}>
+              <defs>
+                <marker id={arrId} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+                  <path d="M0,0.5 L5.5,3 L0,5.5 Z" fill="#b0a898"/>
+                </marker>
+              </defs>
+              <rect x={0} y={0} width={180} height={54} rx={8} fill={qFill} stroke={qBorder} strokeWidth={1}/>
+              <rect x={0} y={0} width={4} height={54} rx={8} fill={qBorder}/>
+              <rect x={0} y={8} width={4} height={46} fill={qBorder}/>
+              <circle cx={22} cy={17} r={9} fill={qBorder}/>
+              <text x={22} y={21} textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize={10} fontWeight={700} fill="#fff">?</text>
+              <text x={36} y={21} fontFamily="'DM Sans',sans-serif" fontSize={9} fontWeight={600} fill={qBorder} style={{textTransform:'uppercase',letterSpacing:'0.06em'}}>Question</text>
+              <text x={14} y={42} fontFamily="'DM Sans',sans-serif" fontSize={12.5} fontWeight={500} fill={qText}>What should we do?</text>
+              <line x1={90} y1={60} x2={90} y2={74} stroke="#b0a898" strokeWidth={1.2} strokeDasharray="4,3" markerEnd={`url(#${arrId})`}/>
+              <AnnotationNode x={10} y={76} text="here a note" type={ANNOTATION}/>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginBottom:12}}>Specification</div>
+          <table className="spec-table">
+            <tbody>
+              <tr><td>Shape</td><td>Folded-corner rect (12px fold, top-right)</td></tr>
+              <tr><td>Annotation fill</td><td>#fefce8 · border #b8980a · text #4a3c08</td></tr>
+              <tr><td>Warning fill</td><td>#fff1f2 · border #c02838 · text #7a0810</td></tr>
+              <tr><td>Border style</td><td>1px dashed (5,3) for both</td></tr>
+              <tr><td>Text</td><td>DM Sans 12px · italic</td></tr>
+              <tr><td>No accent strip</td><td>Meta nodes only — not content</td></tr>
+              <tr><td>Connecting edge</td><td>Dashed line (4,3) · no arrowhead</td></tr>
+              <tr><td>Graphviz shape</td><td><code>shape=note</code> · <code>style=dashed</code></td></tr>
+            </tbody>
+          </table>
+          <div className="note" style={{marginTop:16}}>
+            Both types share the same shape and dashed border. Color alone distinguishes
+            a neutral annotation (amber) from an urgent warning (red). Neither uses an accent
+            strip — that pattern is reserved for content nodes.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── CLD Loop Indicators ─────────────────────────────────────────────────────
+
+function LoopIndicator({ type = 'R', clockwise = true, x = 0, y = 0, size = 52 }) {
+  const r = size * 0.43;
+  const cx = x + size / 2, cy = y + size / 2;
+  const sw = size * 0.055;
+  const color = '#808078';
+  const toRad = d => d * Math.PI / 180;
+  const toDeg = v => v * 180 / Math.PI;
+  const pt = deg => [cx + r * Math.cos(toRad(deg)), cy + r * Math.sin(toRad(deg))];
+
+  // 240° arc ending at 12 o'clock (270° SVG) — arrowhead at top pointing right (CW) or left (CCW).
+  // CW:  starts at  30° (4:30), sweeps CW  240° to 270° (12 o'clock)
+  // CCW: starts at 150° (7:30), sweeps CCW 240° to 270° (12 o'clock)
+  const arcStartDeg = clockwise ? 30 : 150;
+  const arcEndDeg   = 270;
+  const sweepFlag   = clockwise ? 1 : 0;
+
+  const [sx, sy] = pt(arcStartDeg);
+  const [ex, ey] = pt(arcEndDeg);
+
+  // Tangent at 270° (top): CW → pointing right (1,0); CCW → pointing left (−1,0)
+  const tx = clockwise ? 1 : -1;
+  const ty = 0;
+
+  // SVG rotate(φ) maps (0,1) → (−sinφ, cosφ). Need that = (tx,ty) → φ = atan2(−tx, ty)
+  const arrowRot = toDeg(Math.atan2(-tx, ty));
+
+  const ah = sw * 4.2, aw = sw * 3.2;
+  const arrowPath = `M 0,0 L ${-aw/2},${-ah} L ${aw/2},${-ah} Z`;
+
+  return (
+    <g>
+      <path d={`M ${sx},${sy} A ${r},${r} 0 1,${sweepFlag} ${ex},${ey}`}
+        fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <g transform={`translate(${ex + tx * ah},${ey + ty * ah}) rotate(${arrowRot})`}>
+        <path d={arrowPath} fill={color}/>
+      </g>
+      <text x={cx} y={cy + size * 0.16} textAnchor="middle"
+        fontFamily="'DM Sans',sans-serif" fontSize={size * 0.44} fontWeight={800} fill={color}>
+        {type}
+      </text>
+    </g>
+  );
+}
+
+function CLDLoopSpec() {
+  const SIZE = 52;
+  const GAP = 36;
+  const COL = SIZE + GAP;
+
+  const variants = [
+    { type: 'R', clockwise: true,  label: 'Reinforcing · CW' },
+    { type: 'R', clockwise: false, label: 'Reinforcing · CCW' },
+    { type: 'B', clockwise: true,  label: 'Balancing · CW' },
+    { type: 'B', clockwise: false, label: 'Balancing · CCW' },
+  ];
+
+  const svgW = variants.length * COL - GAP + 20;
+
+  return (
+    <div className="card card-pad">
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:32, alignItems:'start'}}>
+
+        {/* All four variants */}
+        <div>
+          <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginBottom:16}}>Four variants</div>
+          <div style={{background:'var(--preview-bg)', borderRadius:10, padding:'32px 28px'}}>
+            <svg width={svgW} height={SIZE + 48} style={{display:'block', overflow:'visible'}}>
+              {variants.map((v, i) => (
+                <g key={i}>
+                  <LoopIndicator type={v.type} clockwise={v.clockwise} x={i * COL} y={0} size={SIZE}/>
+                  <text x={i * COL + SIZE/2} y={SIZE + 18} textAnchor="middle"
+                    fontFamily="'DM Sans',sans-serif" fontSize={10} fontWeight={600} fill="#505048">
+                    {v.type === 'R' ? 'Reinforcing' : 'Balancing'}
+                  </text>
+                  <text x={i * COL + SIZE/2} y={SIZE + 32} textAnchor="middle"
+                    fontFamily="'DM Sans',sans-serif" fontSize={9} fill="#9a9690">
+                    {v.clockwise ? 'clockwise' : 'counter-CW'}
+                  </text>
+                </g>
+              ))}
+            </svg>
+          </div>
+
+          {/* In-context: loop sitting inside a diagram excerpt */}
+          <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginTop:24, marginBottom:12}}>In context</div>
+          <div style={{background:'var(--preview-bg)', borderRadius:10, padding:'24px 20px'}}>
+            <svg width={240} height={160} style={{display:'block', overflow:'visible'}}>
+              <defs>
+                <marker id="arr-cld" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+                  <path d="M0,0.5 L5.5,3 L0,5.5 Z" fill="#b0a898"/>
+                </marker>
+              </defs>
+              {/* Two CLD nodes */}
+              <rect x={0} y={0} width={100} height={36} rx={7} fill={CLD_TYPE.fill} stroke={CLD_TYPE.border} strokeWidth={1}/>
+              <rect x={0} y={0} width={3} height={36} rx={7} fill={CLD_TYPE.border}/>
+              <rect x={0} y={7} width={3} height={29} fill={CLD_TYPE.border}/>
+              <text x={52} y={22} textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize={12} fontWeight={500} fill={CLD_TYPE.text}>Population</text>
+
+              <rect x={130} y={0} width={100} height={36} rx={7} fill={CLD_TYPE.fill} stroke={CLD_TYPE.border} strokeWidth={1}/>
+              <rect x={130} y={0} width={3} height={36} rx={7} fill={CLD_TYPE.border}/>
+              <rect x={130} y={7} width={3} height={29} fill={CLD_TYPE.border}/>
+              <text x={182} y={22} textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize={12} fontWeight={500} fill={CLD_TYPE.text}>Births</text>
+
+              {/* Curved edges forming the loop */}
+              <path d="M 100,18 Q 115,0 130,18" fill="none" stroke="#b0a898" strokeWidth={1.5} markerEnd="url(#arr-cld)"/>
+              <path d="M 130,22 Q 115,50 100,22" fill="none" stroke="#b0a898" strokeWidth={1.5} markerEnd="url(#arr-cld)"/>
+
+              {/* Edge labels S */}
+              <text x={115} y={10} textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize={9} fontStyle="italic" fill="#9a9690">s</text>
+              <text x={115} y={52} textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize={9} fontStyle="italic" fill="#9a9690">s</text>
+
+              {/* Loop indicator floating between the nodes */}
+              <LoopIndicator type="R" clockwise={true} x={91} y={58} size={40}/>
+
+              {/* Second loop below */}
+              <rect x={30} y={110} width={90} height={36} rx={7} fill={CLD_TYPE.fill} stroke={CLD_TYPE.border} strokeWidth={1}/>
+              <rect x={30} y={110} width={3} height={36} rx={7} fill={CLD_TYPE.border}/>
+              <rect x={30} y={117} width={3} height={29} fill={CLD_TYPE.border}/>
+              <text x={76} y={132} textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize={12} fontWeight={500} fill={CLD_TYPE.text}>Deaths</text>
+
+              <path d="M 100,28 Q 140,80 115,110" fill="none" stroke="#b0a898" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-cld)"/>
+              <text x={128} y={75} fontFamily="'DM Sans',sans-serif" fontSize={9} fontStyle="italic" fill="#9a9690">o</text>
+
+              <LoopIndicator type="B" clockwise={false} x={148} y={90} size={36}/>
+            </svg>
+          </div>
+        </div>
+
+        {/* Spec */}
+        <div>
+          <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginBottom:12}}>Specification</div>
+          <table className="spec-table">
+            <tbody>
+              <tr><td>Size</td><td>40–56px diameter (scales with diagram zoom)</td></tr>
+              <tr><td>Color</td><td>#808078 — warm gray, never semantic color</td></tr>
+              <tr><td>Stroke width</td><td>2px</td></tr>
+              <tr><td>Arc</td><td>Single continuous stroke · same style for B and R</td></tr>
+              <tr><td>Arrowhead</td><td>Filled triangle · tangential to arc at end point</td></tr>
+              <tr><td>B vs R</td><td>Distinguished by letter only</td></tr>
+              <tr><td>CW vs CCW</td><td>Distinguished by arrow direction only</td></tr>
+              <tr><td>Letter</td><td>DM Sans · 700 · 38% of diameter · centered</td></tr>
+              <tr><td>No fill</td><td>Transparent center — sits over edges without blocking them</td></tr>
+              <tr><td>Placement</td><td>Floating inside the loop, not connected to any node</td></tr>
+            </tbody>
+          </table>
+
+          <div className="note" style={{marginTop:16}}>
+            <strong>Why neutral color?</strong> Loop indicators are structural annotations —
+            they label the loop topology, not a node type. Using semantic color here would
+            create false equivalence with content nodes. The dashed arc alone carries
+            the B/R distinction; color adds no information and would compete with node fills.
+          </div>
+
+          <div className="note" style={{marginTop:12}}>
+            <strong>Edge polarity labels</strong> (s / o) appear near the arrowhead of each edge,
+            not on the loop indicator itself. 's' = same direction (positive), 'o' = opposite
+            (negative). Both use 9px italic DM Sans · #9a9690.
+          </div>
+
+          <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginTop:20, marginBottom:8}}>CLD node style</div>
+          <table className="spec-table" style={{fontSize:12}}>
+            <tbody>
+              <tr><td>Fill</td><td>{CLD_TYPE.fill}</td></tr>
+              <tr><td>Border</td><td>{CLD_TYPE.border} · 1px solid</td></tr>
+              <tr><td>Text</td><td>{CLD_TYPE.text}</td></tr>
+              <tr><td>No accent strip</td><td>CLD nodes are homogeneous — type is not a dimension</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Edge specimen ────────────────────────────────────────────────────────────
+
+function EdgeSpec() {
+  const arrId = 'arr-spec';
+  return (
+    <div className="card card-pad" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:32}}>
+      {/* Arrow styles */}
+      <div>
+        <div style={{fontSize:12,fontWeight:600,color:'var(--ink)',marginBottom:16}}>Arrow styles</div>
+        <svg width={240} height={160} style={{display:'block'}}>
+          <defs>
+            <marker id={arrId} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0.5 L5.5,3 L0,5.5 Z" fill="#5a564e" />
+            </marker>
+            <marker id="arr-open" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto" markerUnits="strokeWidth">
+              <path d="M1,1 L6,4 L1,7" fill="none" stroke="#5a564e" strokeWidth="1.2" />
+            </marker>
+          </defs>
+          {/* Solid arrow */}
+          <line x1={12} y1={30} x2={160} y2={30} stroke="#5a564e" strokeWidth={1.5} markerEnd={`url(#${arrId})`} />
+          <text x={172} y={34} fontFamily="DM Sans,sans-serif" fontSize={11} fill="#9a9690">Standard</text>
+          {/* With label */}
+          <line x1={12} y1={80} x2={160} y2={80} stroke="#5a564e" strokeWidth={1.5} markerEnd={`url(#${arrId})`} />
+          <text x={86} y={73} fontFamily="DM Sans,sans-serif" fontSize={11} fill="#5a564e" textAnchor="middle" fontStyle="italic">edge label</text>
+          <text x={172} y={84} fontFamily="DM Sans,sans-serif" fontSize={11} fill="#9a9690">With label</text>
+          {/* Curve */}
+          <path d="M12,130 Q86,105 160,130" fill="none" stroke="#5a564e" strokeWidth={1.5} markerEnd={`url(#${arrId})`} />
+          <text x={172} y={134} fontFamily="DM Sans,sans-serif" fontSize={11} fill="#9a9690">Curved</text>
+        </svg>
+      </div>
+
+      {/* Spec values */}
+      <div>
+        <div style={{fontSize:12,fontWeight:600,color:'var(--ink)',marginBottom:16}}>Edge specifications</div>
+        <table className="spec-table">
+          <tbody>
+            <tr><td>Stroke width</td><td>1.5px</td></tr>
+            <tr><td>Stroke color</td><td>#c0b8a8 (neutral)<br/>or semantic border color</td></tr>
+            <tr><td>Arrowhead</td><td>Filled triangle, 6×6, markerUnits=strokeWidth</td></tr>
+            <tr><td>Label font</td><td>DM Sans, 11px, italic, <strong>#5a564e</strong> (ink-2) — dark-maps to <strong>#a8a49a</strong></td></tr>
+            <tr><td>Label contrast</td><td>Promoted from ink-3 to ink-2 for legibility: ink-3 ({'<'}3.5:1 in dark) fails WCAG AA for small italic text. Ink-2 gives 6.3:1 light / 7.1:1 dark.</td></tr>
+            <tr><td>Label position</td><td>Midpoint of edge, 6px above line</td></tr>
+            <tr><td>Curve</td><td>Quadratic bezier for back-edges; straight otherwise</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── Typography specimen ──────────────────────────────────────────────────────
+
+function TypographySpec() {
+  const rows = [
+    { role: 'Node content',    size: '13px', weight: '500', sample: 'There is a pressure to reduce prices.' },
+    { role: 'Type label',      size: '9.5px', weight: '600 + uppercase', sample: 'UNDESIRABLE EFFECT' },
+    { role: 'Edge label',      size: '11px', weight: '400 italic · ink-2', sample: 'is a', italic: true, ink2: true },
+    { role: 'Diagram caption', size: '12px', weight: '400', sample: 'Current Reality Tree — Q3 analysis', muted: true },
+  ];
+
+  return (
+    <div className="card card-pad">
+      <div style={{fontFamily:'DM Sans,sans-serif',marginBottom:24}}>
+        <div style={{fontSize:11,fontWeight:600,color:'var(--ink-3)',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:4}}>Font family</div>
+        <div style={{fontSize:22,fontWeight:300}}>DM Sans <span style={{fontWeight:600}}>Regular + Medium + SemiBold</span></div>
+        <div style={{fontSize:13,color:'var(--ink-3)',marginTop:4}}>Google Fonts · Variable · Excellent legibility at small sizes</div>
+      </div>
+      <table className="spec-table" style={{fontFamily:'DM Sans,sans-serif'}}>
+        <thead>
+          <tr>
+            <th>Role</th>
+            <th>Size / Weight</th>
+            <th>Specimen</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(r => (
+            <tr key={r.role}>
+              <td style={{fontFamily:'DM Sans,sans-serif'}}>{r.role}</td>
+              <td>{r.size} / {r.weight}</td>
+              <td style={{fontFamily:'DM Sans,sans-serif', fontStyle: r.italic?'italic':'normal', color: r.muted?'#9a9690':(r.ink2?'#5a564e':'#1a1816'),
+                fontSize: r.size, fontWeight: parseInt(r.weight) || 400}}>
+                {r.sample}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ─── Vithanco watermark ─────────────────────────────────────────────────────
+
+// V-mark-only SVG content (V + accent triangle, no wordmark) — extracted
+// from the original logo and inlined via assets/vithanco-mark-svg.js.
+const MARK_SVG = (typeof window !== 'undefined' && window.__VITHANCO_MARK_SVG) || '';
+
+// Watermark wordmark spec — real <text>, matches the v2 type system.
+const WORDMARK_FONT   = "'DM Sans', system-ui, sans-serif";
+const WORDMARK_TEXT   = 'vithanco';
+const WORDMARK_WEIGHT = 700;
+const WORDMARK_TRACK  = '-0.015em';
+
+// V mark bbox inside the original 253.57 × 193.94 SVG coordinate space.
+// Determined from the path geometry — the V mark sits in the upper portion.
+// We render the full original SVG and rely on `preserveAspectRatio` + a
+// tight viewBox cropping just the mark.
+const MARK_VIEWBOX = '88 0 116 130';  // x, y, w, h — covers all three V triangles
+const MARK_RATIO   = 116 / 130;       // ≈ 0.89 — slightly taller than wide
+
+// ─── V mark — just the triangles ────────────────────────────────────────────
+
+function VithancoMark({ size = 48, color = 'currentColor', opacity = 1 }) {
+  return (
+    <svg
+      role="img" aria-label="Vithanco mark"
+      width={size * MARK_RATIO} height={size}
+      viewBox={MARK_VIEWBOX}
+      style={{display:'block', color, opacity, overflow:'visible'}}
+      dangerouslySetInnerHTML={{__html: MARK_SVG}}
+    />
+  );
+}
+
+// ─── Lockup — V mark + "vithanco" text, roughly square ─────────────────────
+
+// Layout (in a 100×100 unit grid):
+//   mark sits centered at top, height ≈ 62 units
+//   wordmark sits below at y≈82, font size ≈ 18 units
+function VithancoLockup({ size = 64, color = 'currentColor', opacity = 1, compact = false }) {
+  if (compact) {
+    return <VithancoMark size={size} color={color} opacity={opacity}/>;
+  }
+  // Combined SVG so the V mark and the <text> scale together perfectly.
+  // viewBox is 100×100 → "roughly square" lockup.
+  const markH = 62;
+  const markW = markH * MARK_RATIO;            // ≈ 55.3
+  const markX = (100 - markW) / 2;             // center horizontally
+  const markY = 0;
+  return (
+    <svg
+      role="img" aria-label="Vithanco"
+      width={size} height={size}
+      viewBox="0 0 100 100"
+      style={{display:'block', color, opacity, overflow:'visible'}}>
+      {/* V mark — nested SVG so its inner viewBox crops to the triangles */}
+      <svg x={markX} y={markY} width={markW} height={markH}
+        viewBox={MARK_VIEWBOX} preserveAspectRatio="xMidYMid meet"
+        overflow="visible"
+        dangerouslySetInnerHTML={{__html: MARK_SVG}}/>
+      {/* Wordmark — real <text>, DM Sans 700 */}
+      <text
+        x={50} y={94}
+        textAnchor="middle"
+        fontFamily={WORDMARK_FONT}
+        fontSize={18}
+        fontWeight={WORDMARK_WEIGHT}
+        letterSpacing={WORDMARK_TRACK}
+        fill="currentColor">
+        {WORDMARK_TEXT}
+      </text>
+    </svg>
+  );
+}
+
+// ─── Auto-corner placement ──────────────────────────────────────────────────
+
+// Pick the corner with the least node-overlap. Returns {x, y, name}.
+function pickWatermarkCorner({ canvasW, canvasH, wmW, wmH, nodes = [], padding = 12 }) {
+  const corners = [
+    { name: 'tl', x: padding,                   y: padding },
+    { name: 'tr', x: canvasW - wmW - padding,   y: padding },
+    { name: 'bl', x: padding,                   y: canvasH - wmH - padding },
+    { name: 'br', x: canvasW - wmW - padding,   y: canvasH - wmH - padding },
+  ];
+  let best = corners[3], bestScore = Infinity;
+  for (const c of corners) {
+    const wx2 = c.x + wmW, wy2 = c.y + wmH;
+    let overlap = 0;
+    for (const n of nodes) {
+      const ix = Math.max(0, Math.min(wx2, n.x + n.w) - Math.max(c.x, n.x));
+      const iy = Math.max(0, Math.min(wy2, n.y + n.h) - Math.max(c.y, n.y));
+      overlap += ix * iy;
+    }
+    // Slight bias toward bottom-right (the conventional choice) on ties.
+    const bias = (c.name === 'br' ? -1 : c.name === 'bl' ? -0.5 : 0);
+    const score = overlap + bias;
+    if (score < bestScore) { bestScore = score; best = c; }
+  }
+  return best;
+}
+
+// ─── DiagramWatermark — drop-in for diagram canvases ───────────────────────
+
+function DiagramWatermark({ canvasW, canvasH, nodes = [], color = 'currentColor', opacity = 1 }) {
+  // Size: max 15% of the smaller canvas dimension. Clamped to [28, 96].
+  const target = Math.min(canvasW, canvasH) * 0.15;
+  const size = Math.max(28, Math.min(96, target));
+  // Compact (mark-only) when canvas width is < 400 — wordmark would be illegible.
+  const compact = canvasW < 400;
+  const ratio = compact ? MARK_RATIO : 1;
+  const wmW = size * ratio;
+  const wmH = size;
+  const corner = pickWatermarkCorner({ canvasW, canvasH, wmW, wmH, nodes });
+  return (
+    <g transform={`translate(${corner.x}, ${corner.y})`} style={{color}}>
+      <foreignObject width={wmW} height={wmH} style={{overflow:'visible'}}>
+        <VithancoLockup size={size} color={color} opacity={opacity} compact={compact}/>
+      </foreignObject>
+    </g>
+  );
+}
+
+function DetailsMarkerSpec() {
+  // A folded detailed node draws as its node type; only the editor adds the chip.
+  const W = 172, H = 60, R = 9, CH = 16, INSET = 6;
+  const q = IBIS_TYPES[0];
+  const sample = (x, label, count) => {
+    const cw = 12 + 6 * (count ? String(count).length + 1 : 0);
+    return (
+      <g transform={`translate(${x},20)`}>
+        <rect x={0} y={0} width={W} height={H} rx={R} fill={q.fill} stroke={q.border} strokeWidth={1.5}/>
+        <text x={W/2} y={H/2 + 4} textAnchor="middle" fontFamily="'DM Sans',sans-serif"
+          fontSize={12} fontWeight={600} fill={q.text}>{label}</text>
+        {count ? (
+          <g>
+            <rect x={W - cw - INSET} y={H - CH - INSET} width={cw} height={CH} rx={CH/2} fill="#eeece8"/>
+            <text x={W - cw/2 - INSET} y={H - CH/2 - INSET + 3.5} textAnchor="middle"
+              fontFamily="'DM Sans',sans-serif" fontSize={10} fontWeight={700} fill="#5a564e">+{count}</text>
+          </g>
+        ) : null}
+        <text x={W/2} y={H + 22} textAnchor="middle" fontFamily="'DM Sans',sans-serif"
+          fontSize={11} fill="#9a9690">{count ? 'Folded detailed node, in the editor' : 'Same node, exported SVG'}</text>
+      </g>
+    );
+  };
+  return (
+    <div className="card card-pad">
+      <svg width={440} height={120} style={{display:'block', marginBottom:20}}>
+        {sample(20, 'Which pricing model?', 3)}
+        {sample(240, 'Which pricing model?', 0)}
+      </svg>
+      <table className="spec-table">
+        <tbody>
+          <tr><td>Shown when</td><td>A detailed node is folded · never in exported SVG</td></tr>
+          <tr><td>Text</td><td><code>+N</code> · N = direct details, a nested detailed node counts once</td></tr>
+          <tr><td>Chip</td><td>16px high · radius 8 · 6px side padding · <code>--pill-bg</code></td></tr>
+          <tr><td>Label</td><td>DM Sans 10px / 700 · <code>--ink-2</code></td></tr>
+          <tr><td>Placement</td><td>Inside the node · 6px from the bottom-right corner</td></tr>
+          <tr><td>Never</td><td>Top-right (the URL badge's corner) · notation colours</td></tr>
+        </tbody>
+      </table>
+      <div className="note" style={{marginTop:16}}>
+        <strong>Why <code>--ink-2</code>, not <code>--pill-text</code>?</strong> At 10px,
+        <code> #807870</code> on <code>#eeece8</code> is about 3.6:1 and fails contrast;
+        ink-2 clears it in both themes.
+      </div>
+    </div>
+  );
+}
+
+function WatermarkSpec() {
+  // ─ Auto-corner demo: 4 canvases with different node arrangements ────────
+  // Nodes are bboxes in the canvas coordinate space. The watermark picker
+  // chooses the corner with least overlap.
+  const W = 360, H = 240;
+  const wmH = Math.min(W, H) * 0.15;  // ≈ 36px tall
+  const wmW = wmH;                    // square lockup
+  const scenarios = [
+    {
+      label: 'Nodes clustered top-left',
+      nodes: [
+        { x: 20,  y: 20,  w: 110, h: 50 },
+        { x: 20,  y: 90,  w: 90,  h: 50 },
+        { x: 130, y: 50,  w: 100, h: 50 },
+      ],
+    },
+    {
+      label: 'Nodes clustered bottom-right',
+      nodes: [
+        { x: 180, y: 80,  w: 110, h: 50 },
+        { x: 200, y: 150, w: 130, h: 60 },
+        { x: 80,  y: 160, w: 90,  h: 50 },
+      ],
+    },
+    {
+      label: 'Diagonal spread',
+      nodes: [
+        { x: 20,  y: 30,  w: 100, h: 50 },
+        { x: 130, y: 100, w: 110, h: 50 },
+        { x: 240, y: 170, w: 100, h: 50 },
+      ],
+    },
+    {
+      label: 'Center-only — bottom-right by default',
+      nodes: [
+        { x: 100, y: 70,  w: 160, h: 100 },
+      ],
+    },
+  ];
+
+  // ─ Small-canvas demo: width < 400 → mark only ───────────────────────────
+  const smallW = 260, smallH = 180;
+  const smallWmH = Math.min(smallW, smallH) * 0.15; // 27px
+  const smallSize = Math.max(28, smallWmH);
+  const smallCorner = pickWatermarkCorner({
+    canvasW: smallW, canvasH: smallH,
+    wmW: smallSize * MARK_RATIO, wmH: smallSize,
+    nodes: [{ x: 40, y: 30, w: 90, h: 50 }, { x: 140, y: 90, w: 80, h: 50 }],
+  });
+
+  const renderCanvas = (s, idx) => {
+    const corner = pickWatermarkCorner({
+      canvasW: W, canvasH: H, wmW, wmH, nodes: s.nodes,
+    });
+    // Color matches the diagram canvas (chrome-aware via CSS var).
+    return (
+      <div key={idx} style={{
+        background:'var(--card)',
+        border:'1px solid var(--rule)',
+        borderRadius:10,
+        overflow:'hidden',
+      }}>
+        <div style={{
+          fontSize:10, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase',
+          color:'var(--ink-3)', padding:'10px 14px', borderBottom:'1px solid var(--rule)',
+        }}>
+          {s.label} — corner: <span style={{color:'var(--ink)',
+            fontFamily:'var(--mono)', textTransform:'uppercase'}}>{corner.name}</span>
+        </div>
+        <svg width={W} height={H} style={{display:'block', background:'var(--preview-bg)'}}>
+          {/* faint grid */}
+          <defs>
+            <pattern id={`wm-grid-${idx}`} width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="var(--rule)" strokeWidth="0.5"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill={`url(#wm-grid-${idx})`}/>
+          {/* node placeholders */}
+          {s.nodes.map((n, i) => (
+            <g key={i}>
+              <rect x={n.x} y={n.y} width={n.w} height={n.h} rx={6}
+                fill="var(--preview-bg)" stroke="var(--ink-3)" strokeWidth={1}/>
+              <rect x={n.x} y={n.y} width={3} height={n.h} rx={6} fill="var(--ink-3)"/>
+              <text x={n.x + n.w/2} y={n.y + n.h/2 + 4} textAnchor="middle"
+                fontFamily="'DM Sans',sans-serif" fontSize={11} fontWeight={500}
+                fill="var(--ink-2)">Node</text>
+            </g>
+          ))}
+          {/* watermark in computed corner */}
+          <g transform={`translate(${corner.x}, ${corner.y})`} style={{color:'var(--ink-3)'}}>
+            <foreignObject width={wmW} height={wmH} style={{overflow:'visible'}}>
+              <VithancoLockup size={wmH} color="currentColor"/>
+            </foreignObject>
+          </g>
+        </svg>
+      </div>
+    );
+  };
+
+  return (
+    <div className="card card-pad">
+      {/* Auto-placement demos */}
+      <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginBottom:6}}>
+        Auto-corner placement
+      </div>
+      <div style={{fontSize:12, color:'var(--ink-2)', marginBottom:16, maxWidth:560}}>
+        The watermark renders programmatically into the corner with the least
+        node overlap. Size is capped at 15% of the smaller canvas dimension.
+      </div>
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:24}}>
+        {scenarios.map(renderCanvas)}
+      </div>
+
+      {/* Compact / mark-only demo */}
+      <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginBottom:6}}>
+        Mark-only fallback (canvas width &lt; 400px)
+      </div>
+      <div style={{fontSize:12, color:'var(--ink-2)', marginBottom:16, maxWidth:560}}>
+        Below the threshold the wordmark would render at ~6px and be illegible.
+        The watermark drops the text and renders the V mark alone.
+      </div>
+      <div style={{display:'grid', gridTemplateColumns:'auto 1fr', gap:24, alignItems:'center', marginBottom:24}}>
+        <div style={{background:'var(--card)', border:'1px solid var(--rule)',
+          borderRadius:10, overflow:'hidden'}}>
+          <svg width={smallW} height={smallH} style={{display:'block', background:'var(--preview-bg)'}}>
+            <rect x={40} y={30} width={90} height={50} rx={6}
+              fill="var(--preview-bg)" stroke="var(--ink-3)"/>
+            <rect x={40} y={30} width={3} height={50} rx={6} fill="var(--ink-3)"/>
+            <text x={85} y={59} textAnchor="middle" fontFamily="'DM Sans',sans-serif"
+              fontSize={11} fontWeight={500} fill="var(--ink-2)">Node</text>
+            <rect x={140} y={90} width={80} height={50} rx={6}
+              fill="var(--preview-bg)" stroke="var(--ink-3)"/>
+            <rect x={140} y={90} width={3} height={50} rx={6} fill="var(--ink-3)"/>
+            <text x={180} y={119} textAnchor="middle" fontFamily="'DM Sans',sans-serif"
+              fontSize={11} fontWeight={500} fill="var(--ink-2)">Node</text>
+            <g transform={`translate(${smallCorner.x}, ${smallCorner.y})`} style={{color:'var(--ink-3)'}}>
+              <foreignObject width={smallSize * MARK_RATIO} height={smallSize} style={{overflow:'visible'}}>
+                <VithancoLockup size={smallSize} color="currentColor" compact/>
+              </foreignObject>
+            </g>
+          </svg>
+        </div>
+        <div style={{fontSize:13, color:'var(--ink-2)', lineHeight:1.7}}>
+          Canvas: <code>{smallW}×{smallH}</code><br/>
+          Mark size: <code>{Math.round(smallSize)}px</code><br/>
+          Variant: <code>compact</code> (mark only)<br/>
+          Corner: <code>{smallCorner.name.toUpperCase()}</code>
+        </div>
+      </div>
+
+      {/* Lockup specimen + spec */}
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:32, alignItems:'start'}}>
+
+        <div>
+          <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginBottom:12}}>
+            Lockup variants
+          </div>
+          <div style={{background:'var(--preview-bg)', borderRadius:10, padding:'28px 24px',
+            display:'flex', gap:36, alignItems:'flex-end', justifyContent:'center', flexWrap:'wrap'}}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
+              <VithancoLockup size={88} color="var(--ink-2)"/>
+              <div style={{fontFamily:'var(--mono)',fontSize:10, color:'var(--ink-3)'}}>
+                Full · ~square
+              </div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
+              <VithancoLockup size={88} color="var(--ink-2)" compact/>
+              <div style={{fontFamily:'var(--mono)',fontSize:10, color:'var(--ink-3)'}}>
+                Compact · mark only
+              </div>
+            </div>
+          </div>
+
+          <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginTop:20, marginBottom:12}}>
+            Size scale
+          </div>
+          <div style={{background:'var(--preview-bg)', borderRadius:10, padding:'24px 20px',
+            display:'flex', gap:24, alignItems:'flex-end', justifyContent:'center', flexWrap:'wrap'}}>
+            {[40, 56, 72, 96].map(s => (
+              <div key={s} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8}}>
+                <VithancoLockup size={s} color="var(--ink-3)"/>
+                <div style={{fontFamily:'var(--mono)',fontSize:10, color:'var(--ink-3)'}}>{s}px</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginBottom:12}}>
+            Specification
+          </div>
+          <table className="spec-table">
+            <tbody>
+              <tr><td>Mark asset</td><td><code>assets/vithanco-mark-svg.js</code> · V triangles only</td></tr>
+              <tr><td>Wordmark</td><td>Real <code>&lt;text&gt;</code> · not vectorised</td></tr>
+              <tr><td>Wordmark font</td><td><code>DM Sans</code> · 700 · -0.015em tracking · lowercase</td></tr>
+              <tr><td>Lockup ratio</td><td>1 : 1 (roughly square) — mark on top, text below</td></tr>
+              <tr><td>Placement</td><td>Corner of canvas with least node overlap</td></tr>
+              <tr><td>Size cap</td><td>15% of the smaller canvas dimension</td></tr>
+              <tr><td>Size clamp</td><td>min 28px · max 96px</td></tr>
+              <tr><td>Compact threshold</td><td>Canvas width &lt; 400px → mark only</td></tr>
+              <tr><td>Padding from edge</td><td>12px</td></tr>
+              <tr><td>Color (light canvas)</td><td><code>#c8c4bc</code> · ~2.0:1 vs white</td></tr>
+              <tr><td>Color (dark canvas)</td><td><code>#4a4842</code> · ~2.0:1 vs #0e0d0a</td></tr>
+              <tr><td>Tie-break</td><td>Bottom-right preferred on equal overlap</td></tr>
+              <tr><td>Never</td><td>Render on top of nodes · rotate · stretch · multi-color</td></tr>
+            </tbody>
+          </table>
+
+          <div className="note" style={{marginTop:16}}>
+            <strong>Why a real <code>&lt;text&gt;</code>?</strong> The wordmark
+            reflows with the system font — same DM Sans 700 used in chrome and
+            type labels. The mark stays as SVG paths because it's a brand
+            shape, not text. One ratio, one color, two parts.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── App ─────────────────────────────────────────────────────────────────────
+
+// Chrome variable comparison card
+function ChromePaletteCard() {
+  const rows = [
+    { name: 'Page background', light: '#faf9f6', dark: '#0e0d0a', cssVar: '--page' },
+    { name: 'Card / surface',  light: '#ffffff', dark: '#181612', cssVar: '--card' },
+    { name: 'Preview tray',    light: '#f5f4f0', dark: '#1c1a16', cssVar: '--preview-bg' },
+    { name: 'Rule / border',   light: '#e8e3db', dark: '#2a2824', cssVar: '--rule' },
+    { name: 'Ink (primary)',   light: '#18160f', dark: '#ecebe5', cssVar: '--ink' },
+    { name: 'Ink (secondary)', light: '#5a564e', dark: '#a8a49a', cssVar: '--ink-2' },
+    { name: 'Ink (muted)',     light: '#9a9690', dark: '#6e6a62', cssVar: '--ink-3' },
+    { name: 'Edge (graph)',    light: '#b0a898', dark: '#6e6a60', cssVar: '--edge' },
+    { name: 'Edge (bold)',     light: '#5a564e', dark: '#a8a49a', cssVar: '--edge-bold (= --ink-2)' },
+    { name: 'Junctor fill',    light: '#303030', dark: '#e8e3db', cssVar: '--junctor' },
+    { name: 'Badge icon',      light: '#ffffff', dark: '#14120f', cssVar: '--badge-icon' },
+    { name: 'Group fill',      light: '#f4f3f0', dark: '#1c1a16', cssVar: '--group-fill' },
+    { name: 'Pill bg',         light: '#eeece8', dark: '#262420', cssVar: '--pill-bg' },
+  ];
+  const Swatch = ({hex, label}) => (
+    <div style={{display:'flex',alignItems:'center',gap:10}}>
+      <div style={{width:24,height:24,borderRadius:5,background:hex,
+        border:'1px solid rgba(128,128,128,0.2)',flexShrink:0}}/>
+      <span style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--ink-2)'}}>{hex}</span>
+    </div>
+  );
+  return (
+    <div className="card card-pad">
+      <div style={{fontSize:12,fontWeight:600,color:'var(--ink)',marginBottom:16}}>
+        Chrome variables — light → dark
+      </div>
+      <table className="spec-table">
+        <thead><tr>
+          <th>Role</th><th>Light</th><th>Dark</th><th>CSS variable</th>
+        </tr></thead>
+        <tbody>
+          {rows.map(r => (
+            <tr key={r.name}>
+              <td>{r.name}</td>
+              <td><Swatch hex={r.light}/></td>
+              <td><Swatch hex={r.dark}/></td>
+              <td><code>{r.cssVar}</code></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// Side-by-side node renderings in both themes
+function NodeComparisonCard() {
+  const sample = [
+    { types: CRT_TYPES, title: 'Current Reality Tree' },
+    { types: IBIS_TYPES, title: 'IBIS' },
+    { types: EC_NEW_TYPES, title: 'Evaporating Cloud' },
+  ];
+  return (
+    <div className="card card-pad">
+      <div style={{fontSize:12,fontWeight:600,color:'var(--ink)',marginBottom:6}}>
+        Node rendering — same SVG, two themes
+      </div>
+      <div style={{fontSize:12,color:'var(--ink-2)',marginBottom:20}}>
+        Identical JSX produces both renderings. Dark variants are computed from
+        the light hue family.
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
+        {['light','dark'].map(t => (
+          <div key={t}>
+            <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.08em',
+              textTransform:'uppercase',color:'var(--ink-3)',marginBottom:10}}>
+              {t} mode
+            </div>
+            <ForcedThemeFrame theme={t}>
+              {sample.map(s => (
+                <div key={s.title} style={{marginBottom:14}}>
+                  <div style={{fontSize:10,color:s2color(t,'label'),marginBottom:6,
+                    fontWeight:600,letterSpacing:'0.06em',textTransform:'uppercase'}}>
+                    {s.title}
+                  </div>
+                  <NodeStrip types={s.types} forceTheme={t}/>
+                </div>
+              ))}
+            </ForcedThemeFrame>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function s2color(theme, role) {
+  if (theme === 'dark') return role === 'label' ? '#6e6a62' : '#a8a49a';
+  return role === 'label' ? '#9a9690' : '#5a564e';
+}
+
+// Render a forced-theme container — does NOT change document theme, just
+// applies the local data-theme so DarkOverrides (scoped by attr selector)
+// applies inside this subtree.
+function ForcedThemeFrame({ theme, children }) {
+  const bg = theme === 'dark' ? '#1c1a16' : '#f5f4f0';
+  return (
+    <div data-theme={theme} style={{
+      background:bg, borderRadius:10, padding:18,
+      border: theme==='dark' ? '1px solid #2a2824' : '1px solid var(--rule)',
+    }}>
+      {children}
+    </div>
+  );
+}
+
+function NodeStrip({ types, forceTheme }) {
+  const W = 110, H = 44;
+  const gap = 8;
+  const totalW = types.length * (W + gap) - gap;
+  return (
+    <svg width={totalW} height={H + 4} style={{display:'block',overflow:'visible'}}>
+      {types.map((t, i) => (
+        <MiniThemedNode key={t.name} type={t} x={i*(W+gap)} y={2} w={W} h={H} forceTheme={forceTheme}/>
+      ))}
+    </svg>
+  );
+}
+
+function MiniThemedNode({ type, x, y, w, h, forceTheme }) {
+  const c = useTypeColors(type, forceTheme);
+  // Use style instead of fill/stroke attributes so attribute-selector
+  // overrides (scoped to ancestor data-theme) don't double-remap.
+  const fillS   = { fill:   c.fill };
+  const borderS = { fill:   c.border };
+  const strokeS = { stroke: c.border, fill: c.fill };
+  const textS   = { fill:   c.text };
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <rect width={w} height={h} rx={7} strokeWidth={1} style={strokeS}/>
+      <rect width={3} height={h} rx={7} style={borderS}/>
+      <rect y={7} width={3} height={h-7} style={borderS}/>
+      <circle cx={18} cy={14} r={7} style={borderS}/>
+      <Icon name={ARTWORK_OF[type.icon]} x={18-5.45} y={14-5.45} size={10.9} fill="var(--badge-icon)"/>
+      <text x={30} y={17.5} fontFamily="'DM Sans',sans-serif" fontSize={7.5}
+        fontWeight={600} style={{fill: c.border, textTransform:'uppercase', letterSpacing:'0.06em'}}>
+        {(type.abbr || type.name).slice(0, 14)}
+      </text>
+      <text x={10} y={34} fontFamily="'DM Sans',sans-serif" fontSize={10}
+        fontWeight={500} style={textS}>
+        Sample text
+      </text>
+    </g>
+  );
+}
+
+// Force-rendered dark atlas
+function DarkPaletteAtlas() {
+  const sections = [
+    ['Current Reality Tree (CRT)', CRT_TYPES],
+    ['IBIS Argument Map',          IBIS_TYPES],
+    ['Concept Map · Causal Loop',  [CM_TYPE, CLD_TYPE]],
+    ['Benefit Breakdown (BBS)',    BBS_TYPES],
+    ['Attack-Defence Tree (ADT)',  ADT_TYPES],
+    ['Decision Tree',              DT_TYPES],
+    ['Impact Mapping',             IM_TYPES],
+    ['Evaporating Cloud',          EC_NEW_TYPES],
+    ['Goal Tree',                  GT_TYPES],
+    ['Prerequisite Tree (PRT)',    PRT_TYPES],
+    ['FRT/TRT extra',              FRT_EXTRA],
+    ['Annotation · Warning',       [ANNOTATION, WARNING]],
+  ];
+  return (
+    <div className="card card-pad">
+      <div style={{fontSize:12,fontWeight:600,color:'var(--ink)',marginBottom:6}}>
+        Full dark palette
+      </div>
+      <div style={{fontSize:12,color:'var(--ink-2)',marginBottom:16}}>
+        Every notation rendered with its derived dark colors.
+        Pinned to dark — independent of the page theme.
+      </div>
+      <ForcedThemeFrame theme="dark">
+        {sections.map(([title, types]) => (
+          <div key={title} style={{marginBottom:14}}>
+            <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.08em',
+              textTransform:'uppercase',color:'#6e6a62',marginBottom:8}}>
+              {title}
+            </div>
+            {title === 'Annotation · Warning' ? (
+              <AnnotationPaletteRow types={types} forceTheme="dark"/>
+            ) : (
+              <PaletteRow types={types} forceTheme="dark"/>
+            )}
+          </div>
+        ))}
+      </ForcedThemeFrame>
+    </div>
+  );
+}
+
+function IconsSpec() {
+  const sizes = [16, 24, 28, 32];
+  const names = Object.keys(ICONS);
+  const panel = (title, page, group, ink) => (
+    <div style={{background:page, borderRadius:10, padding:'16px 20px', marginBottom:12}}>
+      <div style={{fontSize:11, fontWeight:600, color:ink, opacity:0.7, marginBottom:10}}>{title}</div>
+      {names.map(name => (
+        <div key={name} style={{display:'flex', alignItems:'center', gap:18, marginBottom:8}}>
+          <code style={{width:72, fontSize:11, color:ink, background:'transparent', padding:0}}>{name}</code>
+          {sizes.map(px => <Icon key={px} name={name} size={px} fill={ink}/>)}
+          <div style={{background:group, border:`1px dashed ${ink}55`, borderRadius:6, padding:6}}>
+            <Icon name={name} size={28} fill={ink}/>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+  return (
+    <div className="card card-pad">
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:32, alignItems:'start'}}>
+        <div>
+          <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginBottom:12}}>Icons at 16 · 24 · 28 · 32, and at 28 on a group fill</div>
+          {panel('Light', '#faf9f6', '#f4f3f0', '#303030')}
+          {panel('Dark', '#0e0d0a', '#1c1a16', '#e8e3db')}
+        </div>
+        <div>
+          <div style={{fontSize:12, fontWeight:600, color:'var(--ink)', marginBottom:12}}>Specification</div>
+          <table className="spec-table">
+            <tbody>
+              <tr><td>Icon</td><td>A named drawing VGraph ships: one outline, one colour, chosen at the point of use</td></tr>
+              <tr><td>Own background</td><td>The junctors (AND, OR, conflict) and the default icon carry their own icon background and are drawn as the whole node</td></tr>
+              <tr><td>In a node type badge</td><td>All other icons are drawn alone, in <code>--badge-icon</code>, on the badge's icon background</td></tr>
+              <tr><td>Node type badge</td><td>An icon on a coloured icon background at a content node's top-left, then its type name</td></tr>
+              <tr><td>Grid</td><td>24 × 24 units · <code>viewBox 0 0 24 24</code></td></tr>
+              <tr><td>Paint</td><td>One filled path, no strokes; the point of use gives the colour</td></tr>
+              <tr><td>Cut-outs</td><td>Wound against the outer contour (non-zero rule); no contour overlaps another, so letters are merged into one outline first</td></tr>
+              <tr><td>Letters</td><td>DM Sans Bold outlines (OFL)</td></tr>
+              <tr><td>Line weight</td><td>3.2 units with flat ends, matching DM Sans Bold beside the type label</td></tr>
+              <tr><td>Smallest feature</td><td>1px at the size drawn</td></tr>
+              <tr><td>Junctor size</td><td>28px, as a junctor (§06)</td></tr>
+              <tr><td>Badge icon box</td><td>14px, centred in the 18px icon background</td></tr>
+              <tr><td>Names</td><td>Say what the icon means, not what it shows; several names may share one drawing</td></tr>
+            </tbody>
+          </table>
+          <table className="spec-table" style={{marginTop:16}}>
+            <thead><tr><th>Artwork</th><th>Kind</th><th>Icon names</th></tr></thead>
+            <tbody>
+              {Object.entries(ICONS).map(([key, icon]) => (
+                <tr key={key}><td><code>{key}</code></td><td>{icon.kind}</td><td>{icon.names.join(', ')}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem('vithanco-theme') || 'light'; } catch { return 'light'; }
+  });
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    try { localStorage.setItem('vithanco-theme', theme); } catch {}
+  }, [theme]);
+
+  return (
+    <ThemeContext.Provider value={theme}>
+      <DarkOverrides />
+      <ThemeToggle theme={theme} setTheme={setTheme} />
+      <div className="page">
+
+      {/* Header */}
+      <header className="doc-header">
+        <div className="doc-eyebrow">Vithanco · Design System</div>
+        <h1 className="doc-title"><strong>Diagram</strong> Style Guide</h1>
+        <p className="doc-lead">
+          A visual specification for node styles, color semantics, typography, and edge rendering
+          across all Vithanco diagram notations — designed to support both thinking and communication.
+        </p>
+      </header>
+
+      {/* 01 — Node type indicator */}
+      <section className="section">
+        <div className="section-label">01</div>
+        <h2 className="section-title">Node Type Indicator</h2>
+        <p className="section-body">
+          Each node carries a 4px colored left accent strip that declares the node type through color.
+          A small uppercase type label sits inside the top-left, clearly secondary to the content.
+          This replaces the Flying Logic header-band pattern — type is signalled by color and position,
+          not by splitting the node into a colored header area.
+        </p>
+
+        <div className="card card-pad">
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:32,alignItems:'start'}}>
+            <div>
+              <div style={{fontSize:12,fontWeight:600,color:'var(--ink)',marginBottom:16}}>Specimen — CRT excerpt</div>
+              <div className="diagram-preview">
+                <MiniCRT />
+              </div>
+            </div>
+            <div>
+              <div style={{fontSize:12,fontWeight:600,color:'var(--ink)',marginBottom:12}}>Specification</div>
+              <table className="spec-table">
+                <tbody>
+                  <tr><td>Accent strip width</td><td>4px</td></tr>
+                  <tr><td>Border radius</td><td>8px</td></tr>
+                  <tr><td>Border width</td><td>1px solid, semantic color</td></tr>
+                  <tr><td>Node padding</td><td>8px 12px 8px 16px</td></tr>
+                  <tr><td>Min node width</td><td>120px</td></tr>
+                  <tr><td>Min node height</td><td>48px</td></tr>
+                  <tr><td>Type label</td><td>9.5px / 600 / uppercase / semantic border color / 85% opacity</td></tr>
+                  <tr><td>Content font</td><td>13px / 500 / semantic text color</td></tr>
+                  <tr><td>Drop shadow</td><td>0 1px 4px rgba(0,0,0,0.07)</td></tr>
+                </tbody>
+              </table>
+              <div className="note" style={{marginTop:16}}>
+                <strong>A single-type notation has no badge.</strong> The badge tells types apart and
+                teaches the notation; with one node type it does neither, and it would repeat the same
+                word on every node. Such a node keeps its fill, border and accent strip and shows only
+                its content (CLD: Stock). A second node type brings the badge back for all of them.
+              </div>
+              <div className="note" style={{marginTop:16}}>
+                The accent strip uses the semantic border color. The node fill and text colors
+                are defined per notation type in section 02. The strip replaces the Flying Logic
+                header-band pattern — type is indicated by color position, not color area.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <hr />
+
+      {/* 02 — Notations */}
+      <section className="section">
+        <div className="section-label">02</div>
+        <h2 className="section-title">Notations</h2>
+        <p className="section-body">
+          Every node type uses the same base pattern: a 4px semantic accent strip, a small filled icon
+          circle with an icon, and an uppercase type label. The icon encodes the
+          node type at a glance — readable even when text is too small to parse.
+        </p>
+
+        <div style={{fontSize:14,fontWeight:600,color:'var(--ink)',marginBottom:16,paddingBottom:8,borderBottom:'1px solid var(--rule)'}}>Current Reality Tree (CRT)</div>
+        <IconNodeRow
+          types={CRT_TYPES}
+          contents={['Prices keep falling', 'Market is saturated', 'Margins erode', 'AND', 'Pricing model']}
+        />
+        <div className="note" style={{marginBottom:32}}>
+          <strong>Icon guidance:</strong> UDE = exclamation (problem); Given = diamond (fixed fact);
+          Intermediate Effect = arrow (in-between causal link); AND = the word AND (matching the junctor in section 06);
+          Changeable = clockwise arrow (mutable input).
+        </div>
+
+        <div style={{fontSize:14,fontWeight:600,color:'var(--ink)',marginTop:40,marginBottom:16,paddingBottom:8,borderBottom:'1px solid var(--rule)'}}>IBIS Argument Map</div>
+        <div className="card card-pad" style={{padding:32}}>
+          <IBISRow
+            NodeComp={IBISIconNode}
+            label=""
+            desc=""
+          />
+          <div className="note" style={{marginTop:8}}>
+            <strong>Recommendation:</strong> Option B (filled circle, text label) — universally readable, clearly distinct from content nodes, and compact enough not to dominate the diagram.
+          </div>
+        </div>
+
+        <div style={{fontSize:14,fontWeight:600,color:'var(--ink)',marginTop:40,marginBottom:16,paddingBottom:8,borderBottom:'1px solid var(--rule)'}}>Decision Tree · Impact Mapping · Evaporating Cloud</div>
+        <div style={{fontSize:13,fontWeight:600,color:'var(--ink)',marginBottom:12}}>Decision Tree</div>
+        <IconNodeRow
+          types={DT_TYPES}
+          contents={['What should we do?', 'Expand to Asia', 'Revenue +40%']}
+        />
+        <div className="note" style={{marginBottom:32}}>
+          <strong>Icon guidance:</strong> a type names its icon by what it means: Decision Point = question mark,
+          Choice = fork, Outcome = check. Icons are drawn for the project (§14), never taken from an icon library,
+          at 14px inside the 18px circle, in <code>--badge-icon</code>.
+        </div>
+
+        <div style={{fontSize:13,fontWeight:600,color:'var(--ink)',marginBottom:12}}>Impact Mapping</div>
+        <IconNodeRow
+          types={IM_TYPES}
+          contents={['Launch in EU', 'Marketing team', 'Increase sign-ups', 'Campaign page']}
+        />
+        <div className="note" style={{marginBottom:32}}>
+          <strong>Icon guidance:</strong> Goal = flag; Actor = person silhouette; Impact = lightning bolt;
+          Deliverable = package/box. Same icon library, same sizing. Note Actor and Deliverable
+          share a teal family — differentiate by icon, not color alone.
+        </div>
+
+        <div style={{fontSize:13,fontWeight:600,color:'var(--ink)',marginBottom:12}}>Evaporating Cloud — content nodes</div>
+        <IconNodeRow
+          types={EC_NEW_TYPES}
+          contents={['Sustain growth', 'Hybrid model', 'Stable revenue', 'Premium product', 'Customers value brand']}
+        />
+        <div className="note" style={{marginBottom:32}}>
+          <strong>Icon guidance:</strong> Common Objective = bullseye (shared target);
+          Solution = check (resolution); Need = exclamation (requirement);
+          Want = heart (desire); Assumption = question (belief to test).
+        </div>
+
+        <div style={{fontSize:13,fontWeight:600,color:'var(--ink)',marginBottom:12}}>Evaporating Cloud — special elements</div>
+        <ECSpecialElements />
+
+        <div style={{fontSize:14,fontWeight:600,color:'var(--ink)',marginTop:40,marginBottom:16,paddingBottom:8,borderBottom:'1px solid var(--rule)'}}>Concept Map · Causal Loop Diagram</div>
+        <div style={{fontSize:13,fontWeight:600,color:'var(--ink)',marginBottom:12}}>Concept Map</div>
+        <IconNodeRow
+          types={[CM_TYPE]}
+          contents={['Photosynthesis']}
+        />
+        <div style={{fontSize:13,fontWeight:600,color:'var(--ink)',marginBottom:12,marginTop:8}}>Causal Loop Diagram</div>
+        <IconNodeRow
+          types={[CLD_TYPE]}
+          contents={['Population']}
+        />
+        <div className="note" style={{marginBottom:32}}>
+          Both notations are homogeneous — every node is the same type. The icon (● for Concept,
+          V for Variable) signals the notation at a glance even when a single node is shown out of context.
+        </div>
+
+        <div style={{fontSize:14,fontWeight:600,color:'var(--ink)',marginTop:40,marginBottom:16,paddingBottom:8,borderBottom:'1px solid var(--rule)'}}>Benefit Breakdown Structure (BBS)</div>
+        <IconNodeRow
+          types={BBS_TYPES}
+          contents={['New CRM system', 'Unified pipeline', 'Faster close rate', 'Grow ARR 20%']}
+        />
+        <div className="note" style={{marginBottom:32}}>
+          <strong>Icon guidance:</strong> Enabler = gear (mechanism); Business Change = exchange arrows
+          (transformation); Benefit = star (value delivered); Investment Objective = bullseye (target outcome).
+        </div>
+
+        <div style={{fontSize:14,fontWeight:600,color:'var(--ink)',marginTop:40,marginBottom:16,paddingBottom:8,borderBottom:'1px solid var(--rule)'}}>Attack-Defence Tree (ADT)</div>
+        <IconNodeRow
+          types={ADT_TYPES}
+          contents={['SQL injection', 'Input validation']}
+        />
+        <div className="note" style={{marginBottom:32}}>
+          <strong>Icon guidance:</strong> Attack = crossed swords (threat); Defense = shield
+          (countermeasure). Colour reinforces (red/green) but icon carries the meaning.
+        </div>
+
+        <div style={{fontSize:14,fontWeight:600,color:'var(--ink)',marginTop:40,marginBottom:16,paddingBottom:8,borderBottom:'1px solid var(--rule)'}}>Goal Tree · PRT · FRT · TRT</div>
+        <div style={{fontSize:13,fontWeight:600,color:'var(--ink)',marginBottom:12}}>Goal Tree</div>
+        <IconNodeRow
+          types={GT_TYPES}
+          contents={['We must ship on time', 'Q3 revenue target', 'Market leadership']}
+        />
+
+        <div style={{fontSize:13,fontWeight:600,color:'var(--ink)',marginBottom:12,marginTop:8}}>Prerequisite Tree (PRT)</div>
+        <IconNodeRow
+          types={PRT_TYPES}
+          contents={['Grow market share', 'Improve delivery speed', 'Legacy system delays']}
+        />
+
+        <div style={{fontSize:13,fontWeight:600,color:'var(--ink)',marginBottom:12,marginTop:8}}>FRT / TRT — additional type</div>
+        <IconNodeRow
+          types={FRT_EXTRA}
+          contents={['Customer satisfaction improves']}
+        />
+        <div className="note">
+          FRT and TRT use all five CRT types (Given, Changeable, Intermediate Effect, Undesirable Effect, AND junctor)
+          plus Desirable Effect. Render with accent strip + type label, same as CRT.
+          TRT differs from FRT only in diagram semantics, not visual style.
+        </div>
+      </section>
+
+      <hr />
+
+      {/* 03 — Color system */}
+      <section className="section">
+        <div className="section-label">03</div>
+        <h2 className="section-title">Color System</h2>
+        <p className="section-body">
+          Each node type has a fill, border, and text color. The fill is desaturated enough to
+          work in dense diagrams without eye strain. The border carries the full semantic hue.
+          All colors meet WCAG AA contrast for text on their respective fills.
+        </p>
+
+        <div className="card card-pad">
+          <div className="palette-section-title">Current Reality Tree (CRT)</div>
+          <PaletteRow types={CRT_TYPES} />
+
+          <div className="palette-section-title">IBIS Argument Map</div>
+          <PaletteRow types={IBIS_TYPES} />
+
+          <div className="palette-section-title">Concept Map · Causal Loop</div>
+          <PaletteRow types={[CM_TYPE, CLD_TYPE]} />
+
+          <div className="palette-section-title">Benefit Breakdown Structure (BBS)</div>
+          <PaletteRow types={BBS_TYPES} />
+
+          <div className="palette-section-title">Attack-Defence Tree (ADT)</div>
+          <PaletteRow types={ADT_TYPES} />
+
+          <div className="palette-section-title">Decision Tree</div>
+          <PaletteRow types={DT_TYPES} />
+
+          <div className="palette-section-title">Impact Mapping</div>
+          <PaletteRow types={IM_TYPES} />
+
+          <div className="palette-section-title">Evaporating Cloud</div>
+          <PaletteRow types={EC_NEW_TYPES} />
+
+          <div className="palette-section-title">Goal Tree</div>
+          <PaletteRow types={GT_TYPES} />
+
+          <div className="palette-section-title">Prerequisite Tree (PRT)</div>
+          <PaletteRow types={PRT_TYPES} />
+
+          <div className="palette-section-title">Future / Transition Reality Tree — additional type</div>
+          <PaletteRow types={FRT_EXTRA} />
+          <div className="note" style={{marginTop:0,marginBottom:8}}>
+            FRT and TRT share Given, Intermediate Effect, Undesirable Effect and Changeable with CRT. Only <strong>Desirable Effect</strong> is unique to FRT/TRT.
+          </div>
+
+          <div className="palette-section-title">Annotation · Warning</div>
+          <AnnotationPaletteRow types={[ANNOTATION, WARNING]} />
+        </div>
+        <div className="note" style={{marginTop:16}}>
+          <strong>Implementation:</strong> For concept maps and causal loop diagrams, all nodes share one semantic color.
+          For CRT and IBIS, each node type gets its own entry. The <code>border</code> color is used for the accent strip.
+        </div>
+      </section>
+
+      <hr />
+
+      {/* 04 — Typography */}
+      <section className="section">
+        <div className="section-label">04</div>
+        <h2 className="section-title">Typography</h2>
+        <p className="section-body">
+          A single typeface family handles all text roles. DM Sans is a humanist sans-serif
+          designed for legibility at small sizes — ideal for dense diagrams. Its low x-height
+          variation between weights ensures good rhythm in mixed-weight nodes.
+        </p>
+        <TypographySpec />
+      </section>
+
+      <hr />
+
+      {/* 05 — Edges */}
+      <section className="section">
+        <div className="section-label">05</div>
+        <h2 className="section-title">Edge &amp; Arrow Styles</h2>
+        <p className="section-body">
+          Edges are intentionally lightweight — thinner than node borders, in a neutral gray.
+          This keeps the graph structure visible without competing with node content.
+          Labels sit 6px above the midpoint of the edge line.
+        </p>
+        <EdgeSpec />
+      </section>
+
+      <hr />
+
+      {/* 06 — Junctors */}
+      <section className="section">
+        <div className="section-label">06</div>
+        <h2 className="section-title">AND / OR Junctors</h2>
+        <p className="section-body">
+          Junctors are structural connectors, not content nodes — they should be visually much smaller
+          than regular nodes and immediately recognisable as logical operators.
+          The words AND / OR are used rather than formal logic symbols for clarity with any audience.
+          They are drawn as marks, not set as text, so every renderer shows the same letters.
+        </p>
+        <JunctorSpec />
+      </section>
+
+      <hr />
+
+      {/* 07 — Ghost node */}
+      <section className="section">
+        <div className="section-label">07</div>
+        <h2 className="section-title">Ghost / Edge-Label Node</h2>
+        <p className="section-body">
+          In concept maps, relationship phrases are represented as nodes rather than inline edge labels.
+          This allows relationships to be reused and connected to multiple edges.
+          Option C (ghost pill) is recommended: subtle enough to recede, distinct enough to be selectable.
+        </p>
+        <GhostNodeSpec />
+      </section>
+
+      <hr />
+
+      {/* 08 — Groups */}
+      <section className="section">
+        <div className="section-label">08</div>
+        <h2 className="section-title">Groups &amp; Clusters</h2>
+        <p className="section-body">
+          Groups collect related nodes into a named region. The current style (black solid border,
+          flat gray fill) is too heavy — it competes with node content. The redesigned group uses
+          a dashed border and near-white fill so it recedes behind its children.
+          Folded groups collapse to a single node with a stacked-shadow effect implying depth.
+        </p>
+        <GroupSpec />
+      </section>
+
+      <hr />
+
+      {/* 09 — Annotation */}
+      <section className="section">
+        <div className="section-label">09</div>
+        <h2 className="section-title">Annotation &amp; Warning Nodes</h2>
+        <p className="section-body">
+          Both are meta-information nodes — not concepts, not content. They use the same
+          folded-corner shape and dashed border to signal this. Color distinguishes intent:
+          amber for neutral annotations, red for warnings or risks.
+        </p>
+        <AnnotationSpec />
+      </section>
+
+      <hr />
+
+      {/* 09b — CLD Loop Indicators */}
+      <section className="section">
+        <div className="section-label">09b</div>
+        <h2 className="section-title">CLD Loop Indicators</h2>
+        <p className="section-body">
+          Causal Loop Diagrams use floating loop indicators to label feedback loops.
+          Two loop types × two rotation directions give four variants. The indicator is
+          diagram furniture — it floats inside the loop it labels and must not compete
+          with node colors.
+        </p>
+        <CLDLoopSpec />
+      </section>
+
+      <hr />
+
+      {/* 10 — Implementation */}
+      <section className="section">
+        <div className="section-label">10</div>
+        <h2 className="section-title">Implementation Notes</h2>
+        <p className="section-body">
+          Since layout is handled by Graphviz and rendering is custom, the two concerns are cleanly separated.
+        </p>
+        <div className="card card-pad">
+          <table className="spec-table">
+            <thead><tr><th>Concern</th><th>Handled by</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Node position &amp; size</td>
+                <td>Graphviz</td>
+                <td>Set <code>shape=rect</code>, <code>width</code>/<code>height</code> in inches. Graphviz returns center coords.</td>
+              </tr>
+              <tr>
+                <td>Edge routing</td>
+                <td>Graphviz</td>
+                <td>Use <code>splines=ortho</code> or <code>splines=curved</code>. Parse the B-spline control points from the DOT output.</td>
+              </tr>
+              <tr>
+                <td>Node fill, border, radius</td>
+                <td>Custom renderer</td>
+                <td>Draw rounded rect at Graphviz-supplied position. Ignore Graphviz's own <code>fillcolor</code>.</td>
+              </tr>
+              <tr>
+                <td>Type indicator (A/B/C)</td>
+                <td>Custom renderer</td>
+                <td>Draw after main rect; use node's <code>type</code> attribute to look up color entry.</td>
+              </tr>
+              <tr>
+                <td>Arrowheads</td>
+                <td>Custom renderer</td>
+                <td>Set <code>arrowhead=none</code> in Graphviz. Draw custom marker at the end of each parsed spline.</td>
+              </tr>
+              <tr>
+                <td>Edge labels</td>
+                <td>Graphviz + custom</td>
+                <td>Graphviz supplies label position (<code>lp</code>). Render text at that point with custom font.</td>
+              </tr>
+              <tr>
+                <td>Drop shadows</td>
+                <td>Custom renderer</td>
+                <td>Draw a blurred rect 2px below/right, then draw main node on top.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="note">
+          <strong>AND nodes:</strong> the 28px <code>and</code> icon (§06), never a full rect.
+          This visually distinguishes logical connectors from content nodes and avoids the wasted whitespace
+          of a near-empty rounded rectangle.
+        </div>
+      </section>
+
+      <hr />
+
+      {/* 11 — Dark Mode */}
+      <section className="section">
+        <div className="section-label">11</div>
+        <h2 className="section-title">Dark Mode</h2>
+        <p className="section-body">
+          The system carries a parallel dark palette. Each light fill / border / text
+          triple maps to a dark equivalent through three lightness bands: light tints
+          (&gt;70% L) become dark fills (~13% L) of the same hue; mid borders
+          stay vibrant with a small lightness lift; deep texts become pastel
+          equivalents (~86% L). Hue is preserved across both modes — that's what
+          keeps each notation visually identifiable regardless of theme.
+        </p>
+
+        <ChromePaletteCard />
+
+        <div style={{height:24}}/>
+
+        <NodeComparisonCard />
+
+        <div style={{height:24}}/>
+
+        <DarkPaletteAtlas />
+
+        <div className="note" style={{marginTop:24}}>
+          <strong>Implementation:</strong> the diagram renderer reads <code>theme</code> from
+          the host's preference (system or user toggle), applies a single
+          <code>data-theme="dark"</code> attribute to the root, and remaps both
+          chrome and semantic colors via attribute selectors — no JSX changes,
+          no recompilation, no parallel asset paths. Border, fill, and text are
+          derived from the same hue family so contrast ratios stay matched
+          (AA on fill, AAA on chrome).
+        </div>
+        <div className="note" style={{marginTop:12}}>
+          <strong>Token rule:</strong> dark-mode remapping is keyed on the light hex, so
+          <strong> two tokens that share a light value must share the dark value</strong>.
+          <code>--edge-bold</code> is therefore an alias of <code>--ink-2</code>
+          (<code>#5a564e</code> → <code>#a8a49a</code>). If a token ever needs its own dark
+          value, give it a distinct light value first.
+        </div>
+      </section>
+
+      <hr />
+
+      {/* 12 — Watermark */}
+      <section className="section">
+        <div className="section-label">12</div>
+        <h2 className="section-title">Diagram Watermark</h2>
+        <p className="section-body">
+          A small Vithanco watermark is rendered into every diagram export.
+          It's a square lockup — the V mark on top, "vithanco" as a real
+          <code> &lt;text&gt;</code> element below in DM Sans 700.
+          Placement is computed: the renderer measures node bounding boxes and
+          drops the watermark into the corner with the least overlap, sized to
+          at most 15% of the smaller canvas dimension. On canvases narrower than
+          400px the wordmark would render below legibility, so the renderer
+          switches to a mark-only variant.
+        </p>
+        <WatermarkSpec />
+      </section>
+
+      <hr />
+
+      {/* 13 — Details Marker */}
+      <section className="section">
+        <div className="section-label">13</div>
+        <h2 className="section-title">Details Marker</h2>
+        <p className="section-body">
+          Folded, a detailed node is the node it was and draws exactly as its type,
+          so the diagram alone cannot show there is more inside. The editor adds a
+          count chip in the folded-group badge's language: how many details
+          unfolding reveals. Exports stay a plain picture of the model.
+        </p>
+        <DetailsMarkerSpec />
+      </section>
+
+      <hr />
+
+      {/* 14 — Icons */}
+      <section className="section">
+        <div className="section-label">14</div>
+        <h2 className="section-title">Icons</h2>
+        <p className="section-body">
+          Every icon VGraph ships is drawn for the project, never traced from another icon set, and
+          is drawn here first: <code>ICONS</code> in this page is the master, the renderer's
+          <code>BuiltinIcons</code> is the copy, and a test fails when the two differ.
+        </p>
+        <IconsSpec />
+      </section>
+
+    </div>
+    </ThemeContext.Provider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

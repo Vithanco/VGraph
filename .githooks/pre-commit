@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Formatting only: `swift test` is too slow for a hook, and the structural
+# rules (ArchitectureTest) run there.
+exec just lint

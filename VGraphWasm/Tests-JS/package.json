@@ -1,0 +1,12 @@
+{
+  "name": "vgraph-wasm-tests-js",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --reporter=verbose"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.11",
+    "@bjorn3/browser_wasi_shim": "^0.4.2"
+  }
+}

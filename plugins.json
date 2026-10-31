@@ -1,0 +1,19 @@
+{
+  "_doc": "Registry of the consumers that ship the VGraph WASM engine, kept on one version so a version number identifies an engine build wherever it is quoted. release-plugins.sh reads this file, bumps each entry via its own ./release.sh, and writes the resulting versions back here. setup-plugins.sh clones any missing entry that has a repo URL; entries without one live inside this monorepo and are skipped. Add a new consumer by appending an entry.",
+  "plugins": [
+    {
+      "path": "obsidian-vithanco",
+      "version": "1.0.10",
+      "repo": "https://github.com/Vithanco/obsidian-vithanco.git"
+    },
+    {
+      "path": "vscode-vithanco",
+      "version": "1.0.10",
+      "repo": "https://github.com/Vithanco/vscode-vithanco.git"
+    },
+    {
+      "path": "vgraph-mcp-node",
+      "version": "1.0.10"
+    }
+  ]
+}

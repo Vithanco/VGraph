@@ -1,0 +1,27 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.vithanco/vgraph-mcp",
+  "description": "Concept Maps, IBIS, Causal Loop Diagrams and Timelines as images. Runs locally via WebAssembly.",
+  "repository": {
+    "url": "https://github.com/Vithanco/VGraph",
+    "source": "github"
+  },
+  "version": "1.0.10",
+  "websiteUrl": "https://vithanco.com",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@vithanco/vgraph-mcp",
+      "version": "1.0.10",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.vithanco.com/mcp"
+    }
+  ]
+}

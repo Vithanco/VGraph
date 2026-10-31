@@ -1,0 +1,7 @@
+vgraph demo: ConceptMap "Demo" {
+  group g1 "My Group" {
+    node idea: Concept "Idea";
+  };
+  node detail: Concept "Detail";
+  edge idea -> detail;
+}

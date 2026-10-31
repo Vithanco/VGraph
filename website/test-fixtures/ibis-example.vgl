@@ -1,0 +1,3 @@
+vgraph demo: ConceptMap "Demo" {
+  node idea: Concept "Idea";
+}

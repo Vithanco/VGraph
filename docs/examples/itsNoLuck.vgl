@@ -1,0 +1,164 @@
+vgraph goldratt_crt: CRT "Sales & Marketing Current Reality Tree" {
+    // ==========================================
+    // TOP LEVEL - Undesirable Effects (symptoms)
+    // ==========================================
+    
+    // Top row - Major UDEs
+    node ude_uniform: UndesirableEffect "Suppliers display a less and less uniform front";
+    node ude12_overloaded: UndesirableEffect "(UDE #12) Salespeople are overloaded";
+    
+    // Second row
+    node ude1_competition: UndesirableEffect "(UDE #1) Competition is fiercer than ever";
+    node ude9_confuses: UndesirableEffect "(UDE #9) In advanced material industries the constant introduction of new products confuses and spoils the market";
+    
+    // Third row
+    node ude2_pressure: UndesirableEffect "(UDE #2) There is an increasing pressure to reduce prices";
+    node ude8_launch: UndesirableEffect "(UDE #8) In advanced material industries there is a need to launch new products at an unprecedented rate";
+    
+    // Fourth row
+    node ude_sales_pressure: UndesirableEffect "There is a pressure on salespeople to bring in more sales";
+    node ude_develop_pressure: UndesirableEffect "In advanced material industries there is unprecedented pressure to promptly develop new products";
+    
+    // Fifth row
+    node given_desperate: Given "A desperate traditional method to get sales is to reduce prices";
+    node ude7_take_actions: UndesirableEffect "(UDE #7) There is unprecedented pressure to take actions that will increase sales";
+    node given_develop: Given "One to the most effective ways to increase sales is to develop new, improved products";
+    node given_fast_dev: Given "There are industries where fast development of new material enables the development of new products - advanced material industries";
+    
+    // Sixth row - companies falling short
+    node ude_falling_short: UndesirableEffect "Companies are falling short of their stated financial targets";
+    node given_cut_costs: Given "Companies have already cut all costs they know how to cut";
+    
+    // Seventh row
+    node ude_not_improving: UndesirableEffect "Companies are not improving fast enough";
+    
+    // ==========================================
+    // MIDDLE LEVEL - Production/Engineering Issues
+    // ==========================================
+    
+    node ude15_marketing: UndesirableEffect "(UDE #15) Companies don't come up with sufficient innovative ideas in marketing";
+    node ude10_cannibalize: UndesirableEffect "(UDE #10) Most new outlets and most new/improved products eat into the sales of existing outlets/products";
+    
+    node ude13_production: UndesirableEffect "(UDE #13) Production and distribution do not improve fast/significantly enough";
+    node ude_marketing_oriented: UndesirableEffect "Marketing is not oriented to take advantage of the most promising and almost virgin direction - that of market segmentation";
+    node ude4_punishes: UndesirableEffect "(UDE #4) More than ever the market punishes suppliers who don't perform according to expectation";
+    
+    node ude14_engineering: UndesirableEffect "(UDE #14) Engineering is unable to deliver new products fast and reliable enough";
+    
+    // ==========================================
+    // MARKET SEGMENTATION & PRICING SECTION
+    // ==========================================
+    
+    node ie_perceptions: IntermediateEffect "Different market sections might have different perceptions of value for even the same product";
+    node ude_reluctant: UndesirableEffect "Most companies are reluctant to accept orders with low margins and even go so far as dropping low-margin products";
+    node ude_too_steep: UndesirableEffect "Imposing a single price firms away customers for whom the price is too steep relative to their perception of value";
+    node ude_high_perception: UndesirableEffect "Imposing a single price enables customers who have a high perception of value to pay a low price";
+    node ude3_margin: UndesirableEffect "(UDE #3) In more and more cases the price the market is willing to pay doesn't leave enough margin";
+    
+    node ude_below_cost: UndesirableEffect "Most managers believe that selling below product cost leads (at least in the long run) to losses";
+    node ude_single_price: UndesirableEffect "Most managers believe that there is a single, fair price for a product";
+    
+    node given_different_needs: Given "Different market sections might have different needs?";
+    node changeable_segmentation: Changeable "Actions to guarantee effective segmentation can be taken";
+    node ude_price_equal: UndesirableEffect "Most managers believe that the product price should be equal to product cost plus reasonable margin";
+    
+    node ie_satisfying: IntermediateEffect "More than ever satisfying the market perception of value is key to success";
+    
+    node ude_cost_real: UndesirableEffect "Most managers believe that product cost is something real that quantifies the efforts absorbed by the product";
+    
+    node ie_price_value: IntermediateEffect "Prices and quantities sold are determined more and more by the market perception of value and less and less by the suppliers perception of value";
+    
+    node given_market_value: Given "Market perception of value is in accordance with the benefits of having the product";
+    
+    // ==========================================
+    // BOTTOM LEVEL - Root Causes (Givens and Measurements)
+    // ==========================================
+    
+    node given_improvements: Given "Many actions that are needed for improving lead time, reliability, quality, response time and service, do not save cost and/or increase cost in the short run";
+    node ude_measurements: UndesirableEffect "There are important measurements that focus on local optima, e.g. cost accounting based measurements";
+    node given_cost_accounting: Given "The essence of cost accounting is to calculate the product cost";
+    
+    node ude_managers_perception: UndesirableEffect "Most managers' perception of value of a product is heavily influenced by the local efforts required to design, produce, sell and deliver the product";
+    
+    node given_measurements: Given "For every mode of operation, managers develop suitable measurements";
+    node ude5_local_optima: UndesirableEffect "(UDE #5) Managers are trying to run their companies by striving to achieve local optima";
+    node ude11_sales_skills: UndesirableEffect "(UDE #11) A large percentage of the existing sales force lacks sufficient sales skills";
+    
+    // ==========================================
+    // EDGES - Cause and Effect Relationships
+    // ==========================================
+    
+    // Top level causal chains
+    edge ude1_competition -> ude_uniform;
+    edge ude2_pressure -> ude1_competition;
+    edge ude_sales_pressure -> ude2_pressure;
+    
+    edge ude9_confuses -> ude12_overloaded;
+    edge ude8_launch -> ude9_confuses;
+    edge ude_develop_pressure -> ude8_launch;
+    
+    edge ude_sales_pressure -> ude_uniform;
+    edge ude_develop_pressure -> ude_sales_pressure;
+    
+    edge given_desperate -> ude2_pressure;
+    edge ude7_take_actions -> given_desperate;
+    edge given_develop -> ude_develop_pressure;
+    edge given_fast_dev -> ude_develop_pressure;
+    
+    edge ude7_take_actions -> ude_sales_pressure;
+    edge given_develop -> ude7_take_actions;
+    
+    // Companies falling short chain
+    edge ude_falling_short -> ude7_take_actions;
+    edge given_cut_costs -> ude_falling_short;
+    edge ude_not_improving -> ude_falling_short;
+    
+    // Production/Engineering chains
+    edge ude15_marketing -> ude_not_improving;
+    edge ude10_cannibalize -> ude_not_improving;
+    
+    edge ude13_production -> ude_not_improving;
+    edge ude_marketing_oriented -> ude15_marketing;
+    edge ude_marketing_oriented -> ude10_cannibalize;
+    edge ude4_punishes -> ude10_cannibalize;
+    
+    edge ude14_engineering -> ude13_production;
+    
+    // Market segmentation and pricing chains
+    edge ie_perceptions -> ude_marketing_oriented;
+    edge ude_reluctant -> ude_marketing_oriented;
+    edge ude_too_steep -> ude_marketing_oriented;
+    edge ude_high_perception -> ude4_punishes;
+    edge ude3_margin -> ude4_punishes;
+    
+    edge ude_below_cost -> ude_reluctant;
+    edge ude_single_price -> ude_too_steep;
+    edge ude_single_price -> ude_high_perception;
+    edge ude_single_price -> ude3_margin;
+    
+    edge given_different_needs -> ie_perceptions;
+    edge changeable_segmentation -> ude_marketing_oriented;
+    edge ude_price_equal -> ude_single_price;
+    edge ude_price_equal -> ude_below_cost;
+    
+    edge ie_satisfying -> ude3_margin;
+    
+    edge ude_cost_real -> ude_price_equal;
+    
+    edge ie_price_value -> ie_satisfying;
+    
+    edge given_market_value -> ie_price_value;
+    
+    // Bottom level root causes
+    edge given_improvements -> ude_measurements;
+    edge ude_measurements -> ude_managers_perception;
+    edge given_cost_accounting -> ude_cost_real;
+    edge given_cost_accounting -> ude_managers_perception;
+    
+    edge ude_managers_perception -> ude_cost_real;
+    
+    edge given_measurements -> ude5_local_optima;
+    edge ude5_local_optima -> ude14_engineering;
+    edge ude5_local_optima -> ude13_production;
+    edge ude11_sales_skills -> ude14_engineering;
+}

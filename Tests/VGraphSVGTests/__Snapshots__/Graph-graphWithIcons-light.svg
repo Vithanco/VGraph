@@ -1,0 +1,19 @@
+<svg width="600.0" height="400.0" viewBox="-50.0 -50.0 600.0 400.0" xmlns="http://www.w3.org/2000/svg"><style>@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap');</style><style>.vgraph-node, .vgraph-edge, .vgraph-group > rect { transition: opacity 0.12s ease-out, filter 0.12s ease-out; }
+.vgraph-node, .vgraph-edge, .loop-indicator { cursor: pointer; }
+svg:has(.vgraph-node:hover, .vgraph-edge:hover, .loop-indicator:hover) .vgraph-node,
+svg:has(.vgraph-node:hover, .vgraph-edge:hover, .loop-indicator:hover) .vgraph-edge { opacity: 0.15; }
+.vgraph-node:hover, .vgraph-edge:hover { opacity: 1 !important; }
+.vgraph-node:hover { filter: drop-shadow(0 0 10px rgba(59,130,246,0.95)) drop-shadow(0 0 3px rgba(59,130,246,1)); }
+.vgraph-edge:hover { filter: drop-shadow(0 0 9px rgba(59,130,246,0.95)); }
+.vgraph-edge:hover path { stroke: #3b82f6; stroke-width: 4; }
+.vgraph-edge:hover polygon, .vgraph-edge:hover ellipse, .vgraph-edge:hover circle { fill: #3b82f6; stroke: #3b82f6; }
+.vgraph-group:hover > rect { filter: drop-shadow(0 0 8px rgba(59,130,246,0.85)); stroke: #3b82f6; }
+.vgraph-url-badge { cursor: pointer; }
+.vgraph-url-badge:hover { opacity: 0.75; }</style><defs><symbol id="vithanco-watermark" viewBox="0 0 162.12 162.0"><path d="M 121.68 34.67 L 94.40 81.89 L 81.07 104.96 L 101.28 139.95 L 114.61 116.88 L 162.12 34.67 Z" fill="#c8c4bc"/><path d="M 81.07 58.81 L 95.01 34.67 L 121.68 34.67 L 141.72 0 L 115.05 0 L 47.07 0 L 20.40 0 L 40.44 34.67 L 67.11 34.67 Z" fill="#c8c4bc"/><path d="M 40.44 34.67 L 0 34.67 L 47.51 116.88 L 60.84 139.96 L 81.07 104.96 L 67.73 81.89 Z" fill="#c8c4bc"/><text x="9.13" y="158.59" font-family="Arial" font-size="18.67" fill="#c8c4bc">VITHANCO.COM</text></symbol></defs><style>svg:has(#node-sys:hover) #edge-100002,svg:has(#node-sys:hover) #node-person{opacity:1;filter:drop-shadow(0 0 8px rgba(59,130,246,0.9));}
+svg:has(#node-sys:hover) #edge-100002 path{stroke:#3b82f6;stroke-width:3;}
+svg:has(#node-sys:hover) #edge-100002 polygon,svg:has(#node-sys:hover) #edge-100002 ellipse,svg:has(#node-sys:hover) #edge-100002 circle{fill:#3b82f6;stroke:#3b82f6;}
+svg:has(#node-person:hover) #edge-100002,svg:has(#node-person:hover) #node-sys{opacity:1;filter:drop-shadow(0 0 8px rgba(59,130,246,0.9));}
+svg:has(#node-person:hover) #edge-100002 path{stroke:#3b82f6;stroke-width:3;}
+svg:has(#node-person:hover) #edge-100002 polygon,svg:has(#node-person:hover) #edge-100002 ellipse,svg:has(#node-person:hover) #edge-100002 circle{fill:#3b82f6;stroke:#3b82f6;}
+svg:has(#edge-100002:hover) #node-person,svg:has(#edge-100002:hover) #node-sys{opacity:1;filter:drop-shadow(0 0 8px rgba(59,130,246,0.9));}
+</style><g id="edge-100002" class="vgraph-edge"><path d="M 180.0 80.0 L 60.0 80.0" fill="none" stroke="#b0a898" stroke-width="1"/></g><g id="node-sys" class="vgraph-node"><g transform="translate(15,58)"></g></g><g id="node-person" class="vgraph-node"><g transform="translate(135,58)"><rect x="0" y="18.7" width="90" height="25.3" rx="9" fill="#08427b"/><circle cx="45" cy="11" r="11" fill="#08427b"/><text x="12" y="38.54" text-anchor="start" fill="#ffffff" font-size="11" font-family="'DM Sans', Helvetica, sans-serif" font-weight="600" opacity="0.85" letter-spacing="0.07em">«PERSON»</text></g></g><use href="#vithanco-watermark" x="4.5" y="250.53330866025166" width="45.0" height="44.96669133974834"/></svg>

@@ -1,0 +1,61 @@
+.DS_Store
+.build/
+/WASM/.build/
+/Packages
+xcuserdata/
+DerivedData/
+.swiftpm/configuration/registries.json
+.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+.netrc
+/website/Package
+test_output.swift
+ADDING_SF_SYMBOLS.md
+.plan.md
+.claude/settings.local.json
+INTEGRATION_COMPLETE.md
+deploy-to-website.sh
+PLAN.md
+contents.xcworkspacedata
+settings.local.json
+/*.vgl
+/*.dot
+/*.svg
+/*.xdot
+vgraph-mcp.tar
+vgraph-mcp.tar.gz
+vgraph-mcp-amd64.tar.gz
+*.tar.gz
+Dockerfile.node
+mcp_test_output.png
+vgraph-cli
+launch.json
+VGraphWasm/Tests-JS/node_modules/
+VGraphWasm/Tests-Browser/node_modules/
+VGraphWasm/Tests-Browser/test-results/
+VGraphWasm/Tests-Browser/playwright-report/
+
+# Phase 2a throwaway toolchain spike — not committed to main.
+SmokeWasm/
+
+# Editor plugin repos — checked out as siblings via ./setup-plugins.sh.
+# Each is its own git repo with its own release cycle; the monorepo only
+# tracks them through plugins.json (paths + versions + clone URLs).
+obsidian-vithanco/
+vscode-vithanco/
+
+# Mapping skills — like the editor plugins above, its own git repo with its
+# own release cycle, just checked out here for convenience.
+mapping-skills/
+
+# Claude Code agent worktrees: full copies of this repo, created and removed
+# per agent run.
+.claude/worktrees/
+
+# swiftly toolchain installer, downloaded ad hoc when setting up a machine.
+swiftly.pkg
+Why Vithanco.dark.jpg
+Why Vithanco.png
+
+# Rendered IBIS maps of grilling sessions. The .vgl beside them is the artefact;
+# these are re-renderable with `vgraph-cli svg` and ~20x the size.
+*.ibis.svg

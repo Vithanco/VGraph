@@ -1,0 +1,60 @@
+vgraph mcpTerms: ConceptMap "How does VGraph reach an AI assistant?" {
+    node notation: EmphasizedConcept "Notation"
+    node method: EmphasizedConcept "Method"
+    node tool: Concept "Tool"
+    node prompt: Concept "Prompt"
+    node skill: Concept "Skill"
+    node server: Concept "Model Context Protocol (MCP) Server"
+    node report: Concept "Quality Report"
+    node diagram: Concept "Diagram"
+    node vgl: Concept "Vithanco Graph Language (VGL)"
+    node model: Concept "Assistant"
+    node person: Concept "Person"
+
+    node constrains: Relation "constrains"
+    node uses: Relation "uses"
+    node produces: Relation "produces"
+    node carries: Relation "carries"
+    node offers: Relation "offers"
+    node renders: Relation "renders"
+    node accepts: Relation "accepts"
+    node returns: Relation "returns"
+    node expresses: Relation "expresses"
+    node critiques: Relation "critiques"
+    node selects: Relation "selects"
+    node reads: Relation "reads"
+    node invokes: Relation "invokes"
+    node connectsTo: Relation "connects to"
+
+    edge notation -> constrains
+    edge constrains -> diagram
+    edge method -> uses
+    edge uses -> notation
+    edge method -> produces
+    edge produces -> diagram
+    edge skill -> carries
+    edge prompt -> carries
+    edge carries -> method
+    edge server -> offers
+    edge offers -> tool
+    edge offers -> prompt
+    edge tool -> renders
+    edge renders -> diagram
+    edge tool -> accepts
+    edge accepts -> vgl
+    edge tool -> returns
+    edge returns -> report
+    edge vgl -> expresses
+    edge expresses -> diagram
+    edge report -> critiques
+    edge critiques -> diagram
+    edge model -> selects
+    edge selects -> tool
+    edge model -> reads
+    edge reads -> report
+    edge person -> invokes
+    edge invokes -> prompt
+    edge invokes -> skill
+    edge model -> connectsTo
+    edge connectsTo -> server
+}

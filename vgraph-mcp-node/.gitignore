@@ -1,0 +1,8 @@
+# Vendored build artefacts — `just mcp-node` repopulates them from the engine
+# build. Not committed: the wasm alone is 4.1MB, and a copy in git is a copy
+# that can disagree with the engine it was built from.
+vendor/
+node_modules/
+
+# npm pack output
+*.tgz

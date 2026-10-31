@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vithanco</title>
+  <script type="importmap">
+    {
+      "imports": {
+        "@bjorn3/browser_wasi_shim": "https://cdn.jsdelivr.net/npm/@bjorn3/browser_wasi_shim@0.3.0/dist/index.js"
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    /* No chrome here: the editor renders its own title bar, toolbar and all. */
+    main {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    #editor-root { flex: 1 1 auto; min-height: 0; }
+    #status-boot { color: #888; font-size: 13px; padding: 16px 20px; }
+    /* The editor sizes the SVG itself (Zoom+Editor.swift): fitted to the pane
+       until the user picks a zoom, after which the preview (overflow:auto)
+       scrolls whatever is bigger than the pane. */
+    #vg-editor-preview svg { display: block; }
+  </style>
+</head>
+<body>
+  <main>
+    <p id="status-boot">Loading…</p>
+    <div id="editor-root"></div>
+  </main>
+
+  <script type="module">
+    const boot = document.getElementById('status-boot');
+    try {
+      const { init } = await import('./Package/index.js');
+      const { exports } = await init({});
+
+      if (typeof exports.mountEditor !== 'function') {
+        throw new Error('VGraph engine loaded but mountEditor export is missing.');
+      }
+
+      // The editor's render debounce lives in Swift (VGraphEditor
+      // `scheduleRender`), but the wasm reactor has no clock of its own, so it
+      // borrows the host's time source: we expose the render entry as a named
+      // JS function that its `setTimeout` can invoke directly. This must be a
+      // real JS function reference (not a Swift JSClosure, which can't fire in
+      // this embedded build — see Editor.swift header). The File menu (open /
+      // save VGL, save SVG) and `?vgl=` seeding are likewise fully inside the
+      // editor now, so no other host glue remains and every embedding host
+      // inherits all of it.
+      window.__vgraphRenderNow = exports.editorRenderNow;
+      // Same borrowed clock, for the press-and-hold that stands in for a
+      // right-click on a touch device. A host that omits this binding just has no
+      // long press; the editor checks before arming the timer.
+      window.__vgraphLongPress = exports.editorLongPressFired;
+
+      // The editor's draft storage. It lives here, not in Swift, because
+      // `localStorage` *throws* rather than fails quietly when a browser has
+      // site data switched off (some private-browsing modes) — and a JS
+      // exception is not something this embedded build can catch. A host that
+      // omits this object simply has no autosave; the editor checks first.
+      window.__vgraphDraft = {
+        read() {
+          try {
+            return window.localStorage.getItem('vgraph.editor.draft') || '';
+          } catch (e) {
+            return '';
+          }
+        },
+        readName() {
+          try {
+            return window.localStorage.getItem('vgraph.editor.draft-name') || '';
+          } catch (e) {
+            return '';
+          }
+        },
+        readView() {
+          try {
+            return window.localStorage.getItem('vgraph.editor.draft-view') || '';
+          } catch (e) {
+            return '';
+          }
+        },
+        write(vgl, name, view) {
+          try {
+            window.localStorage.setItem('vgraph.editor.draft', vgl);
+            window.localStorage.setItem('vgraph.editor.draft-name', name);
+            window.localStorage.setItem('vgraph.editor.draft-view', view || '');
+          } catch (e) {
+            /* storage full, or switched off — the diagram is still on screen */
+          }
+        },
+      };
+
+      exports.mountEditor('editor-root');
+
+      boot.remove();
+
+      // `?src=` seeds the editor from a *file* rather than from inline VGL.
+      // Unlike `?vgl=`, which the editor reads for itself, this one
+      // lives in the host page: fetching is asynchronous, and a Swift
+      // `JSClosure` cannot be invoked in this embedded build (see Editor.swift's
+      // header). Only the fetch is the host's — what the bytes *are* is still
+      // decided by `openEditorDocument`, i.e. by EditorCore.
+      const src = new URLSearchParams(location.search).get('src');
+      if (src) loadSource(src, exports);
+    } catch (e) {
+      boot.textContent = 'Failed to load the VGraph editor: ' + (e && e.message ? e.message : e);
+      boot.style.color = '#b00020';
+      console.error('[vgraph] boot failed', e);
+    }
+
+    // The editor is not ready when `mountEditor` returns. ElementaryUI paints the
+    // tree afterwards, and the textarea's own `.onAppear` then renders the
+    // document — which is what finally fills the preview. A call that arrives
+    // before that either tears the half-built tree down or has its status
+    // overwritten by that render, so the rendered SVG is the signal to wait for:
+    // it is the one thing that cannot exist until `onAppear` has run. Fetching
+    // does not wait — it runs alongside the boot, so the document is usually in
+    // hand by the time the editor can take it.
+    function whenEditorReady(timeoutMs = 15000) {
+      const deadline = performance.now() + timeoutMs;
+      return new Promise((resolve) => {
+        (function poll() {
+          if (document.querySelector('#vg-editor-preview svg')) return resolve(true);
+          if (performance.now() > deadline) return resolve(false);
+          requestAnimationFrame(poll);
+        })();
+      });
+    }
+
+    async function loadSource(src, exports) {
+      const say = async (message) => {
+        if (await whenEditorReady()) exports.setEditorStatus(message);
+        else console.error('[vgraph] editor never became ready; ' + message);
+      };
+
+      let url;
+      try {
+        url = new URL(src, location.href);
+      } catch {
+        return say(`Not a usable source: ${src}`);
+      }
+      // Same origin is allowed on any scheme, so the editor still loads its own
+      // files from a plain http dev server. Another site must be https: a link
+      // must not be able to downgrade what the page fetches.
+      const sameOrigin = url.origin === location.origin;
+      if (!sameOrigin && url.protocol !== 'https:') {
+        return say(`Refused ${src} — a source on another site must be https`);
+      }
+
+      let text;
+      try {
+        // `credentials` stays at its default of 'same-origin', so nothing of the
+        // visitor's rides along cross-origin; `no-referrer` keeps the link from
+        // telling a third party who followed it.
+        const response = await fetch(url.href, { referrerPolicy: 'no-referrer' });
+        if (!response.ok) return say(`Could not load ${src} — ${response.status}`);
+        text = await response.text();
+      } catch (e) {
+        return say(`Could not load ${src} — ${e && e.message ? e.message : e}`);
+      }
+
+      if (!(await whenEditorReady())) {
+        console.error(`[vgraph] editor never became ready; ${src} not loaded`);
+        return;
+      }
+      // The last path segment names the document, the same role a picked file's
+      // name plays — it is what a later Save writes under.
+      const name = decodeURIComponent(url.pathname.split('/').pop() || 'document');
+      const loaded = exports.openEditorDocument(text, name);
+      // Said only on success, so it cannot bury a refusal — and said at all
+      // because a diagram from a stranger's repo should not read as one of ours.
+      if (loaded && !sameOrigin) exports.setEditorStatus(`Loaded from ${url.origin}`);
+    }
+  </script>
+</body>
+</html>

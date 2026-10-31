@@ -1,0 +1,57 @@
+# Build artifacts
+.build/
+/WASM/.build/
+/Packages
+xcuserdata/
+DerivedData/
+.swiftpm/configuration/registries.json
+.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+
+# macOS files
+.DS_Store
+
+# Git
+.git/
+.gitignore
+
+# Documentation and planning
+*.md
+ADDING_SF_SYMBOLS.md
+.plan.md
+INTEGRATION_COMPLETE.md
+PLAN.md
+
+# Directories not needed for Docker build
+docs/
+website/
+graphics/
+VGraphWasm/
+
+# Generated files
+test_output.swift
+/*.vgl
+/*.dot
+/*.svg
+/*.xdot
+*.tar
+*.tar.gz
+
+# Configuration
+.netrc
+.claude/
+settings.local.json
+
+# Scripts not needed in build context
+deploy-to-website.sh
+docker.sh
+
+# Website build artifacts
+/website/Package
+contents.xcworkspacedata
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

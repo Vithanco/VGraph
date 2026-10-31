@@ -1,0 +1,108 @@
+// c4model.com's Internet Banking example. The model is unfolded to the code;
+// each view zooms out by folding one node type.
+vgraph banking: C4 "Internet Banking System" {
+    node customer: Person "Personal Banking Customer";
+
+    group bigBank: Organisation "Big Bank" {
+        node serviceStaff: Person "Customer Service Staff";
+        node backOfficeStaff: Person "Back Office Staff";
+        node atm: SoftwareSystem "ATM" [backgroundColor: "#8e24aa"];
+        node cbs: SoftwareSystem "Core Banking System" [backgroundColor: "#e8710a"];
+
+        group ibs: SoftwareSystem "Internet Banking System" {
+            isfolded: false;
+            node staticContent: Container "Static Content";
+            node ui: Container "UI";
+            node statementStore: Database "Statement Store";
+            node database: Database "Database";
+
+            group backend: Container "Backend" {
+                isfolded: false;
+                node statementApi: Component "Statement API";
+                node signInApi: Component "Sign In API";
+                node accountsSummaryApi: Component "Accounts Summary API";
+                node statementComponent: Component "Statement Component";
+                node securityComponent: Component "Security Component";
+                node emailComponent: Component "Email Component";
+
+                group adapter: Component "Core Banking System Adapter" {
+                    isfolded: false;
+                    node adapterInterface: CodeElement "CoreBankingSystemAdapter";
+                    node adapterImpl: CodeElement "CoreBankingSystemAdapterImpl";
+                    node connection: CodeElement "CoreBankingSystemConnection";
+                    node response: CodeElement "Response";
+                    node request: CodeElement "Request";
+                    node bankAccountsResponse: CodeElement "BankAccountsResponse";
+                    node bankAccountsRequest: CodeElement "BankAccountsRequest";
+                };
+            };
+        };
+    };
+
+    group aws: Organisation "Amazon Web Services" {
+        node ses: SoftwareSystem "Amazon Web Services Simple Email Service" [backgroundColor: "#c62828"];
+    };
+
+    edge customer -> serviceStaff "Asks questions to";
+    edge customer -> atm "Withdraws cash using";
+    edge serviceStaff -> cbs "Support customers using";
+    edge backOfficeStaff -> cbs "Investigate and troubleshoot problems using";
+    edge atm -> cbs "Makes transactions using";
+    edge ses -> customer "Sends e-mails to";
+
+    // Edges join elements, never boundaries: a detailed node's relationships
+    // start at its details, and folding it gathers them onto its box.
+    edge customer -> staticContent "Loads the UI from";
+    edge customer -> ui "Views account balances and makes payments using";
+    edge staticContent -> ui "Delivers";
+    edge ui -> statementApi "Requests statements from";
+    edge ui -> signInApi "Makes sign in requests to";
+    edge ui -> accountsSummaryApi "Requests a list of bank accounts from";
+
+    edge statementApi -> statementComponent "Requests statements from";
+    edge statementApi -> securityComponent "Validates authentication token using";
+    edge signInApi -> securityComponent "Validates credentials using";
+    edge accountsSummaryApi -> securityComponent "Validates authentication token using";
+    edge accountsSummaryApi -> adapterInterface "Requests lists of bank accounts from";
+    edge statementComponent -> adapterInterface "Requests statement information from";
+    edge securityComponent -> emailComponent "Sends emails using";
+    edge statementComponent -> statementStore "Reads from and writes to";
+    edge securityComponent -> database "Reads from and writes to";
+    edge emailComponent -> ses "Sends e-mails to customers using";
+
+    edge adapterImpl -> adapterInterface [arrowhead: "empty"; style: dashed];
+    edge adapterImpl -> connection "initialises and pools" [headlabel: "1..20"];
+    edge adapterImpl -> bankAccountsRequest "creates";
+    edge connection -> response "creates";
+    edge connection -> request "executes";
+    edge bankAccountsResponse -> response [arrowhead: "empty"; style: dashed];
+    edge bankAccountsRequest -> request [arrowhead: "empty"; style: dashed];
+    edge connection -> cbs "Makes API requests to";
+}
+
+vview landscape "System Landscape View" {
+    folded node type: SoftwareSystem;
+}
+
+// The narrower views turn derived edges off: a C4 diagram shows what it shows.
+vview context "System Context View: Internet Banking System" [derivedEdges: false] {
+    include group ibs;
+    expand 1;
+    folded node type: SoftwareSystem;
+}
+
+vview containers "Container View: Internet Banking System" [derivedEdges: false] {
+    include group ibs;
+    expand 1;
+    folded node type: Container;
+}
+
+vview components "Component View: Internet Banking System - Backend" [derivedEdges: false] {
+    include group backend;
+    expand 1;
+    folded node type: Component;
+}
+
+vview code "Code View: Internet Banking System - Backend - Core Banking System Adapter" [derivedEdges: false] {
+    include group adapter;
+}

@@ -1,0 +1,55 @@
+{
+  "name": "@vithanco/vgraph-mcp",
+  "version": "1.0.10",
+  "mcpName": "com.vithanco/vgraph-mcp",
+  "description": "Concept Maps, IBIS, Causal Loop Diagrams and Timelines as images. Runs locally via WebAssembly.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "Klaus Kneupner <klaus@vithanco.com>",
+  "homepage": "https://vithanco.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vithanco/VGraph.git",
+    "directory": "vgraph-mcp-node"
+  },
+  "bugs": {
+    "url": "https://github.com/Vithanco/VGraph/issues"
+  },
+  "keywords": [
+    "mcp",
+    "modelcontextprotocol",
+    "diagram",
+    "concept-map",
+    "ibis",
+    "causal-loop-diagram",
+    "timeline",
+    "graphviz",
+    "webassembly",
+    "vgl"
+  ],
+  "bin": {
+    "vgraph-mcp": "src/server.mjs"
+  },
+  "files": [
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "src",
+    "tools.json",
+    "vendor"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@bjorn3/browser_wasi_shim": "^0.4.2",
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@resvg/resvg-wasm": "^2.6.2"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.11"
+  },
+  "scripts": {
+    "test": "vitest run"
+  }
+}

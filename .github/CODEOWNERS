@@ -1,0 +1,29 @@
+# Files that run commands, or steer a coding agent, when someone builds, tests,
+# commits or reviews. Whoever can change one can run code or give instructions on
+# another person's machine, so the maintainer approves every change to them.
+# scripts/codeowners.test.sh holds this list to the files that exist.
+
+# Instructions for coding agents. .claude/ and .agents/ hold nothing today and are
+# listed so that adding them needs approval too.
+/AGENTS.md          @Vithanco
+/.claude/           @Vithanco
+/.agents/           @Vithanco
+
+# Automation, hooks and the repository's own settings.
+/.github/           @Vithanco
+/.githooks/         @Vithanco
+
+# The task runner, scripts and the build context of the images.
+/justfile           @Vithanco
+/scripts/           @Vithanco
+*.sh                @Vithanco
+/Dockerfile         @Vithanco
+/.dockerignore      @Vithanco
+/.gcloudignore      @Vithanco
+
+# Manifests run code when a package is resolved or built, and pin what it fetches.
+Package.swift       @Vithanco
+Package.resolved    @Vithanco
+package.json        @Vithanco
+package-lock.json   @Vithanco
+/plugins.json       @Vithanco
