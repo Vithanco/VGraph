@@ -133,10 +133,13 @@ public final class PNGConverter: Sendable {
             let pid = process.processIdentifier
             let kill: @Sendable () -> Void = { _ = Foundation.kill(pid, SIGKILL) }
 
-            DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
-                if outcome.finish(.timedOut) { kill() }
+            // Threads of their own, not the shared dispatch pool: on Linux that pool
+            // does not grow while its workers block, so the reads below could hold
+            // up the timeout until the converter exited by itself.
+            Thread.detachNewThread {
+                if !outcome.waitForDecision(seconds: timeout), outcome.finish(.timedOut) { kill() }
             }
-            DispatchQueue.global().async {
+            Thread.detachNewThread {
                 try? input.fileHandleForWriting.write(contentsOf: Data(svg.utf8))
                 try? input.fileHandleForWriting.close()
             }
@@ -145,7 +148,7 @@ public final class PNGConverter: Sendable {
             // the pipe open, and the answer must not wait for them.
             let errorText = Collected(limit: 64 << 10)
             let errorsDone = DispatchSemaphore(value: 0)
-            DispatchQueue.global().async {
+            Thread.detachNewThread {
                 while true {
                     let chunk = errors.fileHandleForReading.availableData
                     if chunk.isEmpty { break }
@@ -153,7 +156,7 @@ public final class PNGConverter: Sendable {
                 }
                 errorsDone.signal()
             }
-            DispatchQueue.global().async {
+            Thread.detachNewThread {
                 let png = Collected(limit: maxBytes)
                 while true {
                     let chunk = output.fileHandleForReading.availableData
@@ -190,9 +193,15 @@ public final class PNGConverter: Sendable {
 private final class Outcome: @unchecked Sendable {
     private let lock = NSLock()
     private var continuation: CheckedContinuation<PNGResult, Never>?
+    private let decided = DispatchSemaphore(value: 0)
 
     init(_ continuation: CheckedContinuation<PNGResult, Never>) {
         self.continuation = continuation
+    }
+
+    /// False if nothing decided the result within `seconds`.
+    func waitForDecision(seconds: Double) -> Bool {
+        decided.wait(timeout: .now() + seconds) == .success
     }
 
     /// True for the first call, which is the one that decided the result.
@@ -201,8 +210,10 @@ private final class Outcome: @unchecked Sendable {
         let pending = continuation
         continuation = nil
         lock.unlock()
-        pending?.resume(returning: result)
-        return pending != nil
+        guard let pending else { return false }
+        decided.signal()
+        pending.resume(returning: result)
+        return true
     }
 }
 
