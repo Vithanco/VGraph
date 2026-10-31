@@ -83,6 +83,21 @@ jobs:
             --checksum 783e6128d174d9f975b4eda68be02a5960681b723ef372e6876a7c2543a365d8
       - name: Build the wasm and run the smoke tests
         run: ./build-wasm.sh
+      # The page asks for system-ui, which is San Francisco on a real iPad. Linux
+      # falls back to a much wider face and the iPad toolbar wraps, so prefer
+      # Liberation Sans (Arial's metrics), the nearest face a runner can have.
+      - name: Fonts for the browser tests
+        run: |
+          apt-get install -y --no-install-recommends fontconfig fonts-liberation
+          cat > /etc/fonts/local.conf <<'EOF'
+          <?xml version="1.0"?>
+          <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+          <fontconfig>
+            <alias><family>system-ui</family><prefer><family>Liberation Sans</family></prefer></alias>
+            <alias><family>sans-serif</family><prefer><family>Liberation Sans</family></prefer></alias>
+          </fontconfig>
+          EOF
+          fc-cache -f && fc-match system-ui && fc-match sans-serif
       # The ipad project runs in WebKit, the rest in Chromium.
       - name: Editor browser tests
         run: |
