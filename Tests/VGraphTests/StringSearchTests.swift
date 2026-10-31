@@ -9,10 +9,15 @@
 //  concern rather than a detail.
 //
 
-import Darwin
 import Testing
 
 @testable import VGraph
+
+#if canImport(Darwin)
+    import Darwin
+#elseif canImport(Glibc)
+    import Glibc
+#endif
 
 @Suite("Foundation-free string search")
 struct StringSearchTests {
