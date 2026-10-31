@@ -31,7 +31,16 @@ jobs:
           path: .build
           key: swift-linux-6.4.1-${{ hashFiles('Package.resolved') }}
           restore-keys: swift-linux-6.4.1-
-      - run: apt-get update && apt-get install -y --no-install-recommends just
+      # Ubuntu's own just is too old for the justfile's [group] attribute.
+      - name: Install just
+        env:
+          JUST: just-1.59.0-x86_64-unknown-linux-musl.tar.gz
+          SHA256: 409044617b6f06517c1035e55ca38c8c856ff8b650e41bc2aa1ef82d5903a23e
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
+          curl -fsSLO "https://github.com/casey/just/releases/download/1.59.0/$JUST"
+          echo "$SHA256  $JUST" | sha256sum -c -
+          tar -xzf "$JUST" -C /usr/local/bin just
       - run: just lint
       - run: swift build --build-tests
       - run: swift test --skip-build
