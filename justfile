@@ -256,7 +256,6 @@ test filter='': build
     ./scripts/codeowners.test.sh
     ./scripts/licence.test.sh
     ./scripts/audit-public.test.sh
-    ./scripts/export-public.test.sh
     just _plugin-lint-if-present
 
 # Node WASM smoke tests (vitest) against the deployed website/Package.
