@@ -22,8 +22,12 @@ expect() { # expected-exit description file...
 printf '\0asm\1\0\0\0' > "$TMP/optimized.wasm"
 printf '\0asm\1\0\0\0.debug_info' > "$TMP/debug-sections.wasm"
 head -c 21000000 /dev/zero > "$TMP/oversized.wasm"
+head -c 5000000 /dev/zero > "$TMP/at-limit.wasm"
+head -c 5000001 /dev/zero > "$TMP/over-limit.wasm"
 
 expect 0 "accepts a stripped small engine" "$TMP/optimized.wasm"
+expect 0 "accepts an engine of exactly 5 MB" "$TMP/at-limit.wasm"
+expect 1 "rejects an engine one byte over 5 MB" "$TMP/over-limit.wasm"
 expect 1 "rejects an engine with DWARF sections" "$TMP/debug-sections.wasm"
 expect 1 "rejects an oversized engine" "$TMP/oversized.wasm"
 expect 1 "rejects when any one of several files is bad" "$TMP/optimized.wasm" "$TMP/debug-sections.wasm"
