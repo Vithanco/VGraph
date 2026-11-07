@@ -68,8 +68,9 @@ changed and why in the body when it is not obvious. Keep each commit to one idea
 Publishing needs the maintainer's own accounts, and the recipes that publish
 refuse to start otherwise. You do not need them to contribute.
 
-CI runs `scripts/audit-public.sh` on every push; running it locally needs
-`gitleaks`.
+CI runs `scripts/audit-public.sh` on pull requests and pushes to `main`, without
+the maintainer's private list of strings, so it skips that check. Running it locally
+needs `gitleaks`; its header explains the list.
 
 ## Reporting a problem
 
