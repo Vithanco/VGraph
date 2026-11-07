@@ -6,6 +6,8 @@
 # Instructions for coding agents. .claude/ and .agents/ hold nothing today and are
 # listed so that adding them needs approval too.
 /AGENTS.md          @Vithanco
+/CLAUDE.md          @Vithanco
+/.coderabbit.yaml   @Vithanco
 /.claude/           @Vithanco
 /.agents/           @Vithanco
 

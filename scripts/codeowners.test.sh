@@ -18,6 +18,8 @@ RESERVED="/.claude/ /.agents/"
 # tracked today (a hypothetical addition) are checked as strings.
 MUST_COVER="
 AGENTS.md
+CLAUDE.md
+.coderabbit.yaml
 justfile
 Dockerfile
 .dockerignore

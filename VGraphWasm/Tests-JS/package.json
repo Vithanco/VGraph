@@ -6,7 +6,7 @@
     "test": "vitest run --reporter=verbose"
   },
   "devDependencies": {
-    "vitest": "^4.1.11",
+    "vitest": "^4.1.12",
     "@bjorn3/browser_wasi_shim": "^0.4.2"
   }
 }

@@ -256,6 +256,8 @@ test filter='': build
     ./scripts/codeowners.test.sh
     ./scripts/licence.test.sh
     ./scripts/audit-public.test.sh
+    ./scripts/release-engine.test.sh
+    ./scripts/publish-plugins.test.sh
     just _plugin-lint-if-present
 
 # Node WASM smoke tests (vitest) against the deployed website/Package.
@@ -495,6 +497,11 @@ parity: (_require-plugin "obsidian-vithanco") (_require-plugin "vscode-vithanco"
 # Publish (outward-facing — the only irreversible recipes)
 # ═══════════════════════════════════════════════════════════════════════════
 
+# Tag VGraph vVERSION from a clean main, then have each plugin build against it and open a bump PR.
+[group('publish')]
+release-engine version: _require-maintainer
+    ./scripts/release-engine.sh {{quote(version)}}
+
 # Commit + push + tag + GitHub release for BOTH plugins (parity-guarded). Stops before the marketplace.
 [group('publish')]
 publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_require-plugin "vscode-vithanco")
@@ -549,7 +556,8 @@ publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_req
     ( cd obsidian-vithanco
       # main.js is gitignored in this repo — it ships as a GitHub release asset (below), not a commit.
       git add manifest.json package.json versions.json styles.css VGraphWasm.wasm
-      git commit -m "chore: release $OBS_V"
+      # A merged bump PR may already have committed all of this.
+      git diff --cached --quiet || git commit -m "chore: release $OBS_V"
       git tag "$OBS_V"
       git push origin HEAD "$OBS_V"
       gh release create "$OBS_V" --title "$OBS_V" --notes "Release $OBS_V" main.js manifest.json styles.css )
@@ -561,7 +569,7 @@ publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_req
       # aborted the whole recipe under `set -e`, after Obsidian had already
       # published. The engine ships to users inside the .vsix asset below.
       git add package.json
-      git commit -m "chore: release $VSC_V"
+      git diff --cached --quiet || git commit -m "chore: release $VSC_V"
       git tag "$VSC_V"
       git push origin HEAD "$VSC_V"
       gh release create "$VSC_V" --title "$VSC_V" --notes "Release $VSC_V" "$VSIX" )
