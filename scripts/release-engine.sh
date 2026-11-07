@@ -9,7 +9,7 @@ VERSION=${1:-}
 TAG="v$VERSION"
 die() { echo "Error: $*" >&2; echo "Nothing was released." >&2; exit 1; }
 
-[[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "version must be plain semver such as 1.2.3, got '$VERSION'"
+[[ "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || die "version must be plain semver such as 1.2.3, got '$VERSION'"
 [ "$(git branch --show-current)" = main ] || die "release from main"
 [ -z "$(git status --porcelain)" ] || die "the working tree is not clean"
 git fetch -q origin main

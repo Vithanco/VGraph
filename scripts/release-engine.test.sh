@@ -63,11 +63,16 @@ grep -q 'vgraph-mcp-node' "$GH_LOG" && fail "started vgraph-mcp-node, which has 
 
 # Given a version that is not plain semver, when releasing, then nothing happens.
 # A leading v would double up in the tag and reach Obsidian, which rejects it.
-for bad in v1.2.3 1.2 1.2.3-rc1 "" 'x;y'; do
+for bad in v1.2.3 1.2 1.2.3-rc1 "" 'x;y' 01.2.3 1.02.3 1.2.03; do
     given_a_clean_main
     run "$bad" && fail "accepted version '$bad'"
     refused "version '$bad'"
 done
+
+# Given zeros that semver allows, when releasing, then they are accepted.
+given_a_clean_main
+run 0.10.0 || fail "refused 0.10.0: $(cat "$ROOT/out")"
+tag_pushed v0.10.0 || fail "v0.10.0 was not pushed"
 
 # Given a dirty tree, when releasing, then nothing happens: the tag would not describe it.
 given_a_clean_main
