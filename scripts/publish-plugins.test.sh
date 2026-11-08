@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The bump can reach a plugin's main through a merged bump PR, leaving nothing to
+# The bump can already be committed on a plugin's main, leaving nothing to
 # commit. `git commit` then exits non-zero and `set -e` stops the recipe, which
 # used to leave the Obsidian plugin published and the VS Code one not.
 set -uo pipefail
@@ -50,7 +50,7 @@ given_plugins_at() { # version, in a fresh directory WORK with pushed plugin rep
 }
 publish() { just --justfile "$REPO_ROOT/justfile" --working-directory "$WORK" publish-plugins >"$WORK/out" 2>&1; }
 
-# Given a bump PR already merged and nothing to commit, when publishing, then both plugins are tagged and released.
+# Given the bump already committed and nothing to commit, when publishing, then both plugins are tagged and released.
 given_plugins_at 1.2.3
 publish || fail "publishing with nothing to commit failed: $(cat "$WORK/out")"
 for p in obsidian-vithanco vscode-vithanco; do
@@ -64,6 +64,17 @@ printf '\0asm\1\0\0\0\1' > "$WORK/obsidian-vithanco/VGraphWasm.wasm"
 publish || fail "publishing a changed engine failed: $(cat "$WORK/out")"
 [ "$(git -C "$WORK/obsidian-vithanco" log -1 --format=%s 1.2.3)" = "chore: release 1.2.3" ] \
     || fail "the changed engine was not committed under the tag"
+
+# Given a plugin checked out on another branch, when publishing, then nothing is
+# pushed, tagged or released: `git push origin HEAD` would release that branch.
+given_plugins_at 1.2.3
+git -C "$WORK/vscode-vithanco" switch -qc some-pr
+publish && fail "published from a branch other than main"
+grep -q 'some-pr' "$WORK/out" || fail "does not name the branch: $(cat "$WORK/out")"
+for p in obsidian-vithanco vscode-vithanco; do
+    git -C "$WORK/$p.git" rev-parse -q --verify refs/tags/1.2.3 >/dev/null && fail "$p was tagged"
+done
+grep -q '^release create' "$GH_LOG" && fail "created a release"
 
 [ "$FAILED" -eq 0 ] && echo "✓ publish-plugins"
 exit "$FAILED"

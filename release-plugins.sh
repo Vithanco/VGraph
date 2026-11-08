@@ -130,4 +130,6 @@ printf '%s' "$SUMMARY" | while IFS= read -r s; do echo "  $s"; done
 echo ""
 echo "plugins.json updated. Nothing committed, tagged or pushed."
 echo ""
-echo "Next:  just publish-plugins      # commits, tags and creates both GitHub releases"
+echo "Next:  just release               # builds what publish-plugins ships"
+echo "       just publish-plugins      # commits, tags and creates both GitHub releases"
+echo "       then commit plugins.json and vgraph-mcp-node here in a PR; main takes no direct pushes"

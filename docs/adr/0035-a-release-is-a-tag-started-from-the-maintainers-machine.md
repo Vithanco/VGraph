@@ -4,7 +4,8 @@ Date: 2026-11-06
 
 ## Status
 
-Accepted.
+Superseded by [0036](./0036-releases-stay-on-the-maintainers-machine.md) before
+any release used it.
 
 ## Context
 

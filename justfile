@@ -257,7 +257,6 @@ test filter='': build
     ./scripts/licence.test.sh
     ./scripts/audit-public.test.sh
     ./scripts/export-public.test.sh
-    ./scripts/release-engine.test.sh
     ./scripts/publish-plugins.test.sh
     just _plugin-lint-if-present
 
@@ -498,11 +497,6 @@ parity: (_require-plugin "obsidian-vithanco") (_require-plugin "vscode-vithanco"
 # Publish (outward-facing — the only irreversible recipes)
 # ═══════════════════════════════════════════════════════════════════════════
 
-# Tag VGraph vVERSION from a clean main, then have each plugin build against it and open a bump PR.
-[group('publish')]
-release-engine version: _require-maintainer
-    ./scripts/release-engine.sh {{quote(version)}}
-
 # Commit + push + tag + GitHub release for BOTH plugins (parity-guarded). Stops before the marketplace.
 [group('publish')]
 publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_require-plugin "vscode-vithanco")
@@ -521,6 +515,11 @@ publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_req
     FAIL=0
     for spec in "obsidian-vithanco:main.js" "vscode-vithanco:vithanco-${OBS_V}.vsix"; do
         DIR=${spec%%:*}; ASSET=${spec#*:}
+        BRANCH=$(git -C "$DIR" branch --show-current)
+        if [ "$BRANCH" != main ]; then
+            echo "Preflight: $DIR is on '$BRANCH', not main — the release would tag and push that branch." >&2
+            FAIL=1
+        fi
         if git -C "$DIR" rev-parse -q --verify "refs/tags/$OBS_V" >/dev/null; then
             echo "Preflight: $DIR already has tag $OBS_V — bump before publishing." >&2
             FAIL=1
@@ -557,7 +556,7 @@ publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_req
     ( cd obsidian-vithanco
       # main.js is gitignored in this repo — it ships as a GitHub release asset (below), not a commit.
       git add manifest.json package.json versions.json styles.css VGraphWasm.wasm
-      # A merged bump PR may already have committed all of this.
+      # The bump may already be committed; then there is nothing to add.
       git diff --cached --quiet || git commit -m "chore: release $OBS_V"
       git tag "$OBS_V"
       git push origin HEAD "$OBS_V"

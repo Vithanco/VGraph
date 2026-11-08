@@ -101,8 +101,8 @@ jobs:
           cd ../.. && just test-editor
 
   engine:
-    # The build plugin CI runs against a release tag. Checked here on every change,
-    # so that a tag is not the first time it meets a new toolchain.
+    # The optimized engine the plugins bundle. Checked here on every change, so a
+    # release is not the first time it meets a new toolchain or outgrows 5 MB.
     name: Release engine build
     runs-on: ubuntu-24.04
     container: swift:6.4.1-noble
@@ -129,7 +129,7 @@ jobs:
       - name: Shell tests
         run: |
           failed=0
-          for t in check-wasm-optimized justfile-hygiene doctor-kegs doctor-sdk codeowners licence audit-public export-public release-engine publish-plugins; do
+          for t in check-wasm-optimized justfile-hygiene doctor-kegs doctor-sdk codeowners licence audit-public export-public publish-plugins; do
             echo "::group::$t"
             ./scripts/$t.test.sh || failed=1
             echo "::endgroup::"
