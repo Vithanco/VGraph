@@ -22,15 +22,15 @@ jobs:
     name: Swift on Linux
     runs-on: ubuntu-24.04
     # Matches .swift-version.
-    container: swift:6.4.1-noble
+    container: swift:6.4.2-noble
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .build
-          key: swift-linux-6.4.1-${{ hashFiles('Package.resolved') }}
-          restore-keys: swift-linux-6.4.1-
+          key: swift-linux-6.4.2-${{ hashFiles('Package.resolved') }}
+          restore-keys: swift-linux-6.4.2-
       # Ubuntu's own just is too old for the justfile's [group] attribute.
       - name: Install just
         env:
@@ -54,15 +54,15 @@ jobs:
     # maintainer's machine, so no publish secret ever reaches GitHub.
     name: Wasm build, smoke and editor tests
     runs-on: ubuntu-24.04
-    container: swift:6.4.1-noble
+    container: swift:6.4.2-noble
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: VGraphWasm/.build
-          key: wasm-6.4.1-${{ hashFiles('VGraphWasm/Package.resolved') }}
-          restore-keys: wasm-6.4.1-
+          key: wasm-6.4.2-${{ hashFiles('VGraphWasm/Package.resolved') }}
+          restore-keys: wasm-6.4.2-
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
@@ -105,15 +105,15 @@ jobs:
     # so that a tag is not the first time it meets a new toolchain.
     name: Release engine build
     runs-on: ubuntu-24.04
-    container: swift:6.4.1-noble
+    container: swift:6.4.2-noble
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: VGraphWasm/.build
-          key: engine-6.4.1-${{ hashFiles('VGraphWasm/Package.resolved') }}
-          restore-keys: engine-6.4.1-
+          key: engine-6.4.2-${{ hashFiles('VGraphWasm/Package.resolved') }}
+          restore-keys: engine-6.4.2-
       - run: ./scripts/ci-engine.sh
 
   scripts:
