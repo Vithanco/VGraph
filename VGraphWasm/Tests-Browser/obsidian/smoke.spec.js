@@ -204,6 +204,21 @@ test('the settings tab is declared, so settings search can find it', async () =>
   }
 });
 
+// Obsidian asks plugins not to log; the engine's debug output and Graphviz's
+// warnings belong to neither the user nor the developer console.
+test('rendering writes nothing to the console', async () => {
+  const logged = [];
+  const listen = (m) => logged.push(`${m.type()}: ${m.text()}`);
+  page.on('console', listen);
+  try {
+    await renderIn('moonstone');
+    await renderIn('obsidian');
+  } finally {
+    page.off('console', listen);
+  }
+  expect(logged).toEqual([]);
+});
+
 test('no uncaught errors in the window', async () => {
   expect(pageErrors).toEqual([]);
 });
