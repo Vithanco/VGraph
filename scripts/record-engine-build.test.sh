@@ -31,5 +31,14 @@ echo 'changed' > Sources/engine.swift
 [ "$(cat website/Package/VGRAPH_BUILD)" = "$(git rev-parse HEAD)-dirty $SUM" ] \
     || fail "dirty record is '$(cat website/Package/VGRAPH_BUILD)'"
 
+# Given a build whose source git cannot name (no repository, or one git refuses to
+# read, as CI containers do for a checkout owned by another user), when recording,
+# then the build still succeeds and records the commit as unknown.
+NOGIT=$(mktemp -d "$ROOT/nogit.XXXXXX")
+mkdir -p "$NOGIT/website/Package" && cp website/Package/VGraphWasm.wasm "$NOGIT/website/Package/"
+( cd "$NOGIT" && GIT_CEILING_DIRECTORIES="$ROOT" "$SCRIPT" website/Package ) || fail "recording without a readable repository failed the build"
+[ "$(cat "$NOGIT/website/Package/VGRAPH_BUILD")" = "unknown $SUM" ] \
+    || fail "record without a repository is '$(cat "$NOGIT/website/Package/VGRAPH_BUILD")'"
+
 [ "$FAILED" -eq 0 ] && echo "✓ record-engine-build"
 exit "$FAILED"

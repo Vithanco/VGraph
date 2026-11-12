@@ -565,7 +565,10 @@ publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_req
         FAIL=1
     else
         read -r BUILT BUILT_SUM < website/Package/VGRAPH_BUILD
-        if [ "${BUILT%-dirty}" != "$BUILT" ]; then
+        if [ "$BUILT" = unknown ]; then
+            echo "Preflight: the engine was built from an unknown commit — git could not read the checkout. Rebuild it here." >&2
+            FAIL=1
+        elif [ "${BUILT%-dirty}" != "$BUILT" ]; then
             echo "Preflight: the engine was built from uncommitted changes on ${BUILT:0:12} — commit, then run 'just plugins-release' again." >&2
             FAIL=1
         elif ! git merge-base --is-ancestor "$BUILT" origin/main 2>/dev/null; then

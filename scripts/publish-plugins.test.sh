@@ -146,6 +146,13 @@ publish && fail "published a plugin carrying another engine"
 grep -q 'vscode-vithanco/VGraphWasm.wasm' "$WORK/out" || fail "does not name the mismatched wasm: $(cat "$WORK/out")"
 nothing_released "mismatched wasm"
 
+# Given a build whose commit could not be read, when publishing, then nothing is released.
+given_plugins_at 1.2.3
+sed -i.bak 's/^[0-9a-f]* /unknown /' "$WORK/website/Package/VGRAPH_BUILD"
+publish && fail "published an engine whose source commit is unknown"
+grep -q 'unknown commit' "$WORK/out" || fail "does not say the commit is unknown: $(cat "$WORK/out")"
+nothing_released "unknown build commit"
+
 # Given no recorded build, when publishing, then nothing is released.
 given_plugins_at 1.2.3
 rm "$WORK/website/Package/VGRAPH_BUILD"
