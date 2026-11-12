@@ -779,7 +779,11 @@ _release-preflight: (_require-plugin "obsidian-vithanco") (_require-plugin "vsco
     #!/usr/bin/env bash
     set -uo pipefail
     FAIL=0
-    if [ -n "$(git status --porcelain)" ]; then
+    # A failed `git status` prints nothing, which would read as clean.
+    if ! STATUS=$(git status --porcelain 2>&1); then
+        echo "Preflight: could not read VGraph's git status: $STATUS" >&2
+        FAIL=1
+    elif [ -n "$STATUS" ]; then
         echo "Preflight: VGraph has uncommitted changes — the engine would ship from code no commit holds." >&2
         echo "           A version bump goes in through a PR: commit it, merge it, then 'git switch main && git pull'." >&2
         FAIL=1

@@ -191,5 +191,14 @@ grep -q 'uncommitted' "$WORK/out" || fail "release preflight does not say VGraph
 just --justfile "$REPO_ROOT/justfile" --show release | grep -q '^release: _release-preflight' \
     || fail "just release does not run _release-preflight first: $(just --justfile "$REPO_ROOT/justfile" --show release | grep '^release:')"
 
+# Given a VGraph whose status git cannot read (a corrupt index), when the release
+# preflight runs, then it refuses: empty output from a failed `git status` is
+# not a clean checkout.
+given_plugins_at 1.2.3
+echo 'not an index' > "$WORK/.git/index"
+just --justfile "$REPO_ROOT/justfile" --working-directory "$WORK" _release-preflight >"$WORK/out" 2>&1 \
+    && fail "the release preflight accepted a VGraph whose status could not be read"
+grep -q 'status' "$WORK/out" || fail "does not say the status could not be read: $(cat "$WORK/out")"
+
 [ "$FAILED" -eq 0 ] && echo "✓ publish-plugins"
 exit "$FAILED"
