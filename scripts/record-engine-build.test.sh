@@ -5,13 +5,13 @@
 set -uo pipefail
 
 SCRIPT="$(cd "$(dirname "$0")" && pwd)/record-engine-build.sh"
-ROOT=$(mktemp -d)
+ROOT=$(mktemp -d) || exit 1
 trap 'rm -rf "$ROOT"' EXIT
 FAILED=0
 fail() { echo "FAIL: $*" >&2; FAILED=1; }
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.invalid
 
-cd "$ROOT"
+cd "$ROOT" || exit 1
 git init -q -b main
 echo '/website/Package' > .gitignore
 mkdir -p Sources website/Package
@@ -34,11 +34,19 @@ echo 'changed' > Sources/engine.swift
 # Given a build whose source git cannot name (no repository, or one git refuses to
 # read, as CI containers do for a checkout owned by another user), when recording,
 # then the build still succeeds and records the commit as unknown.
-NOGIT=$(mktemp -d "$ROOT/nogit.XXXXXX")
+NOGIT=$(mktemp -d "$ROOT/nogit.XXXXXX") || exit 1
 mkdir -p "$NOGIT/website/Package" && cp website/Package/VGraphWasm.wasm "$NOGIT/website/Package/"
 ( cd "$NOGIT" && GIT_CEILING_DIRECTORIES="$ROOT" "$SCRIPT" website/Package ) || fail "recording without a readable repository failed the build"
 [ "$(cat "$NOGIT/website/Package/VGRAPH_BUILD")" = "unknown $SUM" ] \
     || fail "record without a repository is '$(cat "$NOGIT/website/Package/VGRAPH_BUILD")'"
+
+# Given a package without a readable wasm, when recording, then it fails and
+# writes no record: a record without a hash would name a build nobody can check.
+NOWASM=$(mktemp -d "$ROOT/nowasm.XXXXXX") || exit 1
+mkdir -p "$NOWASM/website/Package"
+( cd "$NOWASM" && GIT_CEILING_DIRECTORIES="$ROOT" "$SCRIPT" website/Package 2>/dev/null ) \
+    && fail "recording a package without a wasm succeeded"
+[ -e "$NOWASM/website/Package/VGRAPH_BUILD" ] && fail "wrote a record without a hash: '$(cat "$NOWASM/website/Package/VGRAPH_BUILD")'"
 
 [ "$FAILED" -eq 0 ] && echo "✓ record-engine-build"
 exit "$FAILED"

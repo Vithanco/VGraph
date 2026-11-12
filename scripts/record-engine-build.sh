@@ -14,4 +14,7 @@ if REV=$(git rev-parse HEAD 2>/dev/null) && STATUS=$(git status --porcelain 2>/d
 else
     REV=unknown
 fi
-echo "$REV $(shasum -a 256 < "$DIR/VGraphWasm.wasm" | cut -d' ' -f1)" > "$DIR/VGRAPH_BUILD"
+# Its own assignment, so a missing wasm stops here instead of writing a record
+# without a hash: set -e does not see a failure inside echo's arguments.
+SUM=$(shasum -a 256 < "$DIR/VGraphWasm.wasm" | cut -d' ' -f1)
+echo "$REV $SUM" > "$DIR/VGRAPH_BUILD"

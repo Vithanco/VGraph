@@ -5,7 +5,7 @@
 set -uo pipefail
 
 REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
-ROOT=$(mktemp -d)
+ROOT=$(mktemp -d) || exit 1
 trap 'rm -rf "$ROOT"' EXIT
 FAILED=0
 fail() { echo "FAIL: $*" >&2; FAILED=1; }
@@ -22,7 +22,7 @@ export VITHANCO_MAINTAINER=1
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.invalid
 
 given_plugins_at() { # version, in a fresh directory WORK with pushed plugin repos
-    WORK=$(mktemp -d "$ROOT/work.XXXXXX")
+    WORK=$(mktemp -d "$ROOT/work.XXXXXX") || exit 1
     export GH_LOG="$WORK/gh.log"
     : > "$GH_LOG"
     mkdir -p "$WORK/website/Package" "$WORK/scripts"
