@@ -137,6 +137,9 @@ given_plugins_at 1.2.3
 sed -i.bak 's/^\([0-9a-f]*\) /\1-dirty /' "$WORK/website/Package/VGRAPH_BUILD"
 publish && fail "published an engine built from uncommitted changes"
 grep -q 'uncommitted' "$WORK/out" || fail "does not say the build was uncommitted: $(cat "$WORK/out")"
+# The fix is to commit and rebuild; plugins-release would bump the version again.
+grep -q "just release" "$WORK/out" || fail "does not point at 'just release': $(cat "$WORK/out")"
+grep -q "plugins-release" "$WORK/out" && fail "advises plugins-release, which bumps again: $(cat "$WORK/out")"
 nothing_released "dirty build"
 
 # Given a plugin whose wasm is not the recorded build, when publishing, then nothing is released.

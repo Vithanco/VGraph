@@ -559,7 +559,7 @@ publish-plugins: _require-maintainer _release-preflight
             echo "Preflight: the engine was built from an unknown commit — git could not read the checkout. Rebuild it here." >&2
             FAIL=1
         elif [ "${BUILT%-dirty}" != "$BUILT" ]; then
-            echo "Preflight: the engine was built from uncommitted changes on ${BUILT:0:12} — commit, then run 'just plugins-release' again." >&2
+            echo "Preflight: the engine was built from uncommitted changes on ${BUILT:0:12} — commit and merge them, then rebuild with 'just release'." >&2
             FAIL=1
         elif ! git merge-base --is-ancestor "$BUILT" origin/main 2>/dev/null; then
             echo "Preflight: the engine was built from ${BUILT:0:12}, which is not on origin/main." >&2
