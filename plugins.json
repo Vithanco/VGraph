@@ -3,17 +3,17 @@
   "plugins": [
     {
       "path": "obsidian-vithanco",
-      "version": "1.0.10",
+      "version": "1.0.11",
       "repo": "https://github.com/Vithanco/obsidian-vithanco.git"
     },
     {
       "path": "vscode-vithanco",
-      "version": "1.0.10",
+      "version": "1.0.11",
       "repo": "https://github.com/Vithanco/vscode-vithanco.git"
     },
     {
       "path": "vgraph-mcp-node",
-      "version": "1.0.10"
+      "version": "1.0.11"
     }
   ]
 }
