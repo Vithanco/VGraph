@@ -25,11 +25,16 @@ publish or cross-repository credential.
 
 `just plugins-release` builds the optimized engine itself before bumping, since
 each plugin's `release.sh` copies `website/Package` in and a fresh checkout has
-none.
+none. It records the commit it built from and the wasm's hash in
+`website/Package/VGRAPH_BUILD`, because that folder is not tracked.
 
-`publish-plugins` refuses a VGraph checkout with uncommitted changes or a HEAD
-that is not on `origin/main`, and both releases name the VGraph commit. The
-engine ships inside both plugins, so a release must say which source it came from.
+The engine ships inside both plugins, so a release must say which source it came
+from. `publish-plugins` names the recorded commit in both releases, and refuses
+when it cannot fetch `origin/main`, when VGraph has uncommitted changes, when the
+build was made from uncommitted changes or from a commit not on `origin/main`,
+when the engine sources changed between that commit and HEAD, or when either
+plugin's wasm is not the recorded one. A version-bump commit after the build is
+expected and allowed.
 
 GitHub only checks. VGraph's CI builds the optimized engine on every change, and
 each plugin's CI builds against VGraph's `main` from the ref it checks out

@@ -447,6 +447,12 @@ plugins-release bump='patch' plugin='':
     # checkout without it; a stale or debug copy would ship instead.
     ./build-wasm.sh --release --skip-smoke
     ./scripts/check-wasm-optimized.sh website/Package/VGraphWasm.wasm
+    # Which commit built this wasm: publish-plugins names it, and refuses if the
+    # engine sources have moved since. website/Package is not tracked, so only
+    # this record ties the artifact to a commit.
+    REV=$(git rev-parse HEAD)
+    [ -z "$(git status --porcelain)" ] || REV="$REV-dirty"
+    echo "$REV $(shasum -a 256 < website/Package/VGraphWasm.wasm | cut -d' ' -f1)" > website/Package/VGRAPH_BUILD
     ./release-plugins.sh "$ARG" {{plugin}}
 
 # Internal: fail with a helpful hint if a plugin repo isn't cloned.
@@ -542,17 +548,46 @@ publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_req
     # published first, a late failure leaves one plugin released and the other not.
     FAIL=0
     # Both plugins ship the engine, so a release must come from a VGraph commit
-    # that main holds, and say which one.
+    # that main holds, and say which one: the one `plugins-release` built from.
     if [ -n "$(git status --porcelain)" ]; then
         echo "Preflight: VGraph has uncommitted changes — the engine would ship from code no commit holds." >&2
         FAIL=1
     fi
-    git fetch -q origin main 2>/dev/null || true
-    if ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
+    if ! git fetch -q origin main 2>/dev/null; then
+        echo "Preflight: could not fetch VGraph's origin/main to check against." >&2
+        FAIL=1
+    elif ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
         echo "Preflight: VGraph $(git rev-parse --short HEAD) is not on origin/main — push and merge it first." >&2
         FAIL=1
     fi
-    ENGINE="VGraph $(git rev-parse --short=12 HEAD)"
+    # What build-wasm.sh reads. A version-bump commit after the build is expected.
+    ENGINE_PATHS=(Sources Package.swift Package.resolved .swift-version build-wasm.sh
+        scripts/wasm-sdk.sh scripts/embedded-unicode.sh VGraphWasm/Package.swift
+        VGraphWasm/Package.resolved VGraphWasm/Sources VGraphWasm/VGraphEditor VGraphWasm/scripts)
+    BUILT=""
+    if [ ! -f website/Package/VGRAPH_BUILD ]; then
+        echo "Preflight: no record of which commit built website/Package — run 'just plugins-release <bump>'." >&2
+        FAIL=1
+    else
+        read -r BUILT BUILT_SUM < website/Package/VGRAPH_BUILD
+        if [ "${BUILT%-dirty}" != "$BUILT" ]; then
+            echo "Preflight: the engine was built from uncommitted changes on ${BUILT:0:12} — commit, then run 'just plugins-release' again." >&2
+            FAIL=1
+        elif ! git merge-base --is-ancestor "$BUILT" origin/main 2>/dev/null; then
+            echo "Preflight: the engine was built from ${BUILT:0:12}, which is not on origin/main." >&2
+            FAIL=1
+        elif ! git diff --quiet "$BUILT" HEAD -- "${ENGINE_PATHS[@]}"; then
+            echo "Preflight: the engine sources changed since the build at ${BUILT:0:12} — run 'just plugins-release' again." >&2
+            FAIL=1
+        fi
+        for w in website/Package obsidian-vithanco vscode-vithanco; do
+            if [ "$(shasum -a 256 < "$w/VGraphWasm.wasm" | cut -d' ' -f1)" != "$BUILT_SUM" ]; then
+                echo "Preflight: $w/VGraphWasm.wasm is not the engine built at ${BUILT:0:12}." >&2
+                FAIL=1
+            fi
+        done
+    fi
+    ENGINE="VGraph ${BUILT:0:12}"
     for spec in "obsidian-vithanco:main.js" "vscode-vithanco:vithanco-${OBS_V}.vsix"; do
         DIR=${spec%%:*}; ASSET=${spec#*:}
         BRANCH=$(git -C "$DIR" branch --show-current)

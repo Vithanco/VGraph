@@ -50,12 +50,23 @@ given_plugins_at() { # version, in a fresh directory WORK with pushed plugin rep
         git -C "$WORK/$p" push -q origin main
     done
     # WORK stands in for VGraph itself: committed, and pushed to its main.
-    printf '%s\n' '*.git/' obsidian-vithanco/ vscode-vithanco/ out gh.log > "$WORK/.gitignore"
+    mkdir -p "$WORK/Sources" && echo 'engine' > "$WORK/Sources/engine.swift"
+    echo '{}' > "$WORK/plugins.json"
+    printf '%s\n' '*.git/' obsidian-vithanco/ vscode-vithanco/ website/Package/ out gh.log > "$WORK/.gitignore"
     git init -q --bare -b main "$WORK/vgraph.git"
     git -C "$WORK" init -q -b main
     git -C "$WORK" remote add origin "$WORK/vgraph.git"
     git -C "$WORK" add . && git -C "$WORK" commit -qm "engine"
     git -C "$WORK" push -q origin main
+    record_build
+}
+# What `just plugins-release` writes after building: the commit and the wasm it produced.
+record_build() {
+    echo "$(git -C "$WORK" rev-parse HEAD) $(shasum -a 256 < "$WORK/website/Package/VGraphWasm.wasm" | cut -d' ' -f1)" \
+        > "$WORK/website/Package/VGRAPH_BUILD"
+}
+commit_and_push() { # file, message
+    echo "$2" > "$WORK/$1" && git -C "$WORK" add "$1" && git -C "$WORK" commit -qm "$2" && git -C "$WORK" push -q origin main
 }
 nothing_released() { # why
     for p in obsidian-vithanco vscode-vithanco; do
@@ -75,7 +86,8 @@ done
 
 # Given a local rebuild that changed the committed engine, when publishing, then it is committed under the tag.
 given_plugins_at 1.2.3
-printf '\0asm\1\0\0\0\1' > "$WORK/obsidian-vithanco/VGraphWasm.wasm"
+for w in website/Package obsidian-vithanco vscode-vithanco; do printf '\0asm\1\0\0\0\1' > "$WORK/$w/VGraphWasm.wasm"; done
+record_build
 publish || fail "publishing a changed engine failed: $(cat "$WORK/out")"
 [ "$(git -C "$WORK/obsidian-vithanco" log -1 --format=%s 1.2.3)" = "chore: release 1.2.3" ] \
     || fail "the changed engine was not committed under the tag"
@@ -106,12 +118,51 @@ publish && fail "published from a VGraph commit that is not on origin/main"
 grep -q 'origin/main' "$WORK/out" || fail "does not name origin/main: $(cat "$WORK/out")"
 nothing_released "unpushed VGraph"
 
-# Given a clean, pushed VGraph, when publishing, then both releases name the engine's commit.
+# Given the version bump committed after the build, when publishing, then it
+# publishes, and both releases name the commit that built the engine, not HEAD.
 given_plugins_at 1.2.3
 ENGINE=$(git -C "$WORK" rev-parse --short=12 HEAD)
-publish || fail "publishing from a clean VGraph failed: $(cat "$WORK/out")"
+commit_and_push plugins.json '{"bumped":true}'
+publish || fail "publishing after a version-bump commit failed: $(cat "$WORK/out")"
 [ "$(grep '^release create' "$GH_LOG" | grep -c "$ENGINE")" = 2 ] \
-    || fail "the releases do not name VGraph $ENGINE: $(cat "$GH_LOG")"
+    || fail "the releases do not name the build commit $ENGINE: $(cat "$GH_LOG")"
+
+# Given an engine change merged after the build, when publishing, then nothing is
+# released: the plugins carry the older engine, and the notes would name the newer.
+given_plugins_at 1.2.3
+commit_and_push Sources/engine.swift 'engine changed'
+publish && fail "published an engine built before the engine changed"
+grep -q 'changed since' "$WORK/out" || fail "does not say the engine changed: $(cat "$WORK/out")"
+nothing_released "engine changed after the build"
+
+# Given an engine built from uncommitted changes, when publishing, then nothing is released.
+given_plugins_at 1.2.3
+sed -i.bak 's/^\([0-9a-f]*\) /\1-dirty /' "$WORK/website/Package/VGRAPH_BUILD"
+publish && fail "published an engine built from uncommitted changes"
+grep -q 'uncommitted' "$WORK/out" || fail "does not say the build was uncommitted: $(cat "$WORK/out")"
+nothing_released "dirty build"
+
+# Given a plugin whose wasm is not the recorded build, when publishing, then nothing is released.
+given_plugins_at 1.2.3
+printf '\0asm\1\0\0\0\2' > "$WORK/vscode-vithanco/VGraphWasm.wasm"
+publish && fail "published a plugin carrying another engine"
+grep -q 'vscode-vithanco/VGraphWasm.wasm' "$WORK/out" || fail "does not name the mismatched wasm: $(cat "$WORK/out")"
+nothing_released "mismatched wasm"
+
+# Given no recorded build, when publishing, then nothing is released.
+given_plugins_at 1.2.3
+rm "$WORK/website/Package/VGRAPH_BUILD"
+publish && fail "published without knowing which commit built the engine"
+grep -q 'plugins-release' "$WORK/out" || fail "does not point at plugins-release: $(cat "$WORK/out")"
+nothing_released "no recorded build"
+
+# Given origin cannot be fetched, when publishing, then nothing is released: a
+# cached origin/main may still hold a commit the remote has dropped.
+given_plugins_at 1.2.3
+git -C "$WORK" remote set-url origin "$WORK/missing.git"
+publish && fail "published without fetching origin/main"
+grep -q 'fetch' "$WORK/out" || fail "does not say the fetch failed: $(cat "$WORK/out")"
+nothing_released "fetch failed"
 
 # Given a rebuild that refreshed the Obsidian plugin's vendored engine glue, when
 # publishing, then the glue is committed under the tag next to the wasm: the
