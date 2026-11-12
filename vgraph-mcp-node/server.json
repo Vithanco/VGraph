@@ -6,13 +6,13 @@
     "url": "https://github.com/Vithanco/VGraph",
     "source": "github"
   },
-  "version": "1.0.11",
+  "version": "1.0.12",
   "websiteUrl": "https://vithanco.com",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@vithanco/vgraph-mcp",
-      "version": "1.0.11",
+      "version": "1.0.12",
       "transport": {
         "type": "stdio"
       }
