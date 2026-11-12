@@ -114,6 +114,38 @@ extension Optional: AttributeType where Wrapped: AttributeType {
     }
 }
 
+// An element may itself contain the separator (a wrapped line "Yes, soon", a
+// point "1,2"), so `,` and `\` inside an element are backslash-escaped.
+private func escapeElement(_ element: String) -> String {
+    var result = ""
+    for ch in element {
+        if ch == "\\" || ch == "," { result.append("\\") }
+        result.append(ch)
+    }
+    return result
+}
+
+private func splitElements(_ body: String) -> [String] {
+    var elements: [String] = []
+    var current = ""
+    var escaped = false
+    for ch in body {
+        if escaped {
+            current.append(ch)
+            escaped = false
+        } else if ch == "\\" {
+            escaped = true
+        } else if ch == "," {
+            elements.append(current)
+            current = ""
+        } else {
+            current.append(ch)
+        }
+    }
+    elements.append(current)
+    return elements.map { $0.trimmingCharacters(in: " \t\n\r") }.filter { !$0.isEmpty }
+}
+
 extension Array: AttributeType, VProtocol where Element: AttributeType {
 
     public static var typeName: String {
@@ -127,13 +159,12 @@ extension Array: AttributeType, VProtocol where Element: AttributeType {
         }
         trimmed.removeFirst()
         trimmed.removeLast()
-        let elementsString = trimmed.split(separator: ",").map { $0.trimmingCharacters(in: " \t\n\r") }
-        let elements: [Element] = try elementsString.map(Element.fromString)
+        let elements: [Element] = try splitElements(trimmed).map(Element.fromString)
         return elements
     }
 
     public var asString: String {
-        return "[" + self.map { $0.asString }.joined(separator: ",") + "]"
+        return "[" + self.map { escapeElement($0.asString) }.joined(separator: ",") + "]"
     }
 
 }

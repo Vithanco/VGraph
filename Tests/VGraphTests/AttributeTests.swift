@@ -185,6 +185,21 @@ struct AttributeTests {
         #expect(retrieved4.count == 1)
     }
 
+    @Test("A wrapped line that contains a comma stays one line")
+    func arrayElementsKeepTheirCommas() throws(VError) {
+        let lines = ["Yes, soon", "a\\b", "x,", ",y", "\\,"]
+        let stored = try Attributes.Node.wrappedText.attribute(lines)
+        #expect(try Attributes.Node.wrappedText.value(fromString: stored.stringValue) == lines)
+    }
+
+    @Test("A problem message that contains a comma stays one message")
+    func messagesKeepTheirCommas() throws(VError) {
+        let problems = TypedAttributeDefinition<[MessageWithSeverity]>(
+            id: "test.problems", name: "problems", description: "", defaultValue: [], target: .node)
+        let messages = [MessageWithSeverity(message: "missing, or empty", severity: .warning)]
+        #expect(try problems.value(fromString: problems.attribute(messages).stringValue) == messages)
+    }
+
     @Test
     func vRectAttributeType() throws(VError) {
         let rectDef = TypedAttributeDefinition<VRect>(

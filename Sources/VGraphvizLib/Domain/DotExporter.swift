@@ -251,23 +251,9 @@ public struct DotExporter: ForExportAGraph {
         return formatAttributeContainer(attributes, definitions: graph.attributeDefinitions)
     }
 
-    /// Converts array string format "[item1, item2]" to newline-separated format "item1\nitem2"
+    /// One DOT line per array element.
     private func formatArrayValue(_ value: String) -> String {
-        var trimmed = value.trimmed()
-        guard trimmed.hasPrefix("[") && trimmed.hasSuffix("]") else {
-            return value
-        }
-
-        trimmed.removeFirst()
-        trimmed.removeLast()
-
-        guard !trimmed.isEmpty else {
-            return ""
-        }
-
-        let elements = trimmed.components(separatedBy: ",").map {
-            String($0).trimmed()
-        }
+        guard let elements = try? [String].fromString(value) else { return value }
         return elements.joined(separator: "\\n")
     }
 
