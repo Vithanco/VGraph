@@ -317,7 +317,7 @@ format:
 
 # test + produce all shippable artifacts (optimized WASM, release binaries, .vsix). Nothing is pushed.
 [group('build')]
-release: (_require-plugin "obsidian-vithanco") (_require-plugin "vscode-vithanco")
+release: _release-preflight
     #!/usr/bin/env bash
     set -euo pipefail
     # Run the full build+test gate in RELEASE config (optimized WASM flows into the
@@ -528,7 +528,7 @@ parity: (_require-plugin "obsidian-vithanco") (_require-plugin "vscode-vithanco"
 
 # Commit + push + tag + GitHub release for BOTH plugins (parity-guarded). Stops before the marketplace.
 [group('publish')]
-publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_require-plugin "vscode-vithanco")
+publish-plugins: _require-maintainer _release-preflight
     #!/usr/bin/env bash
     set -euo pipefail
     OBS_V=$(node -p "require('./obsidian-vithanco/manifest.json').version")
@@ -542,19 +542,9 @@ publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_req
     # this the recipe discovers problems halfway through — and since Obsidian is
     # published first, a late failure leaves one plugin released and the other not.
     FAIL=0
-    # Both plugins ship the engine, so a release must come from a VGraph commit
-    # that main holds, and say which one: the one build-wasm.sh recorded.
-    if [ -n "$(git status --porcelain)" ]; then
-        echo "Preflight: VGraph has uncommitted changes — the engine would ship from code no commit holds." >&2
-        FAIL=1
-    fi
-    if ! git fetch -q origin main 2>/dev/null; then
-        echo "Preflight: could not fetch VGraph's origin/main to check against." >&2
-        FAIL=1
-    elif ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
-        echo "Preflight: VGraph $(git rev-parse --short HEAD) is not on origin/main — push and merge it first." >&2
-        FAIL=1
-    fi
+    # Both plugins ship the engine, so a release must name the VGraph commit it was
+    # built from: the one build-wasm.sh recorded. (_release-preflight has checked
+    # VGraph and the plugin branches, and fetched origin/main.)
     # What build-wasm.sh reads. A version-bump commit after the build is expected.
     ENGINE_PATHS=(Sources Package.swift Package.resolved .swift-version build-wasm.sh
         scripts/wasm-sdk.sh scripts/embedded-unicode.sh VGraphWasm/Package.swift
@@ -588,11 +578,6 @@ publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_req
     ENGINE="VGraph ${BUILT:0:12}"
     for spec in "obsidian-vithanco:main.js" "vscode-vithanco:vithanco-${OBS_V}.vsix"; do
         DIR=${spec%%:*}; ASSET=${spec#*:}
-        BRANCH=$(git -C "$DIR" branch --show-current)
-        if [ "$BRANCH" != main ]; then
-            echo "Preflight: $DIR is on '$BRANCH', not main — the release would tag and push that branch." >&2
-            FAIL=1
-        fi
         if git -C "$DIR" rev-parse -q --verify "refs/tags/$OBS_V" >/dev/null; then
             echo "Preflight: $DIR already has tag $OBS_V — bump before publishing." >&2
             FAIL=1
@@ -787,6 +772,34 @@ _require-gcloud:
     fi
 
 # First dependency of every recipe that publishes under the maintainer's accounts.
+# What must already hold before a release is built or published, checked in
+# seconds: `just release` runs this first, so a version bump that is not yet
+# merged stops it here, not after its tests and builds.
+_release-preflight: (_require-plugin "obsidian-vithanco") (_require-plugin "vscode-vithanco")
+    #!/usr/bin/env bash
+    set -uo pipefail
+    FAIL=0
+    if [ -n "$(git status --porcelain)" ]; then
+        echo "Preflight: VGraph has uncommitted changes — the engine would ship from code no commit holds." >&2
+        echo "           A version bump goes in through a PR: commit it, merge it, then 'git switch main && git pull'." >&2
+        FAIL=1
+    fi
+    if ! git fetch -q origin main 2>/dev/null; then
+        echo "Preflight: could not fetch VGraph's origin/main to check against." >&2
+        FAIL=1
+    elif ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
+        echo "Preflight: VGraph $(git rev-parse --short HEAD) is not on origin/main — push and merge it first." >&2
+        FAIL=1
+    fi
+    for DIR in obsidian-vithanco vscode-vithanco; do
+        BRANCH=$(git -C "$DIR" branch --show-current)
+        if [ "$BRANCH" != main ]; then
+            echo "Preflight: $DIR is on '$BRANCH', not main — the release would tag and push that branch." >&2
+            FAIL=1
+        fi
+    done
+    exit "$FAIL"
+
 _require-maintainer:
     #!/usr/bin/env bash
     if [ "${VITHANCO_MAINTAINER:-}" != "1" ]; then

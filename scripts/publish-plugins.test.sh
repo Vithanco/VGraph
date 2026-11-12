@@ -177,5 +177,16 @@ publish || fail "publishing refreshed glue failed: $(cat "$WORK/out")"
 [ "$(git -C "$WORK/obsidian-vithanco" show 1.2.3:vendor/Package/index.js)" = "new glue" ] \
     || fail "the refreshed glue was not committed under the tag"
 
+# Given VGraph with uncommitted changes (a version bump not yet merged), when
+# `just release` starts, then it refuses before its long test and build run,
+# not only publish-plugins after it.
+given_plugins_at 1.2.3
+echo '{"bumped":true}' > "$WORK/plugins.json"
+just --justfile "$REPO_ROOT/justfile" --working-directory "$WORK" _release-preflight >"$WORK/out" 2>&1 \
+    && fail "the release preflight accepted an uncommitted VGraph"
+grep -q 'uncommitted' "$WORK/out" || fail "release preflight does not say VGraph is uncommitted: $(cat "$WORK/out")"
+just --justfile "$REPO_ROOT/justfile" --show release | grep -q '^release: _release-preflight' \
+    || fail "just release does not run _release-preflight first: $(just --justfile "$REPO_ROOT/justfile" --show release | grep '^release:')"
+
 [ "$FAILED" -eq 0 ] && echo "✓ publish-plugins"
 exit "$FAILED"
