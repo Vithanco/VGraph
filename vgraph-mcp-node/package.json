@@ -1,6 +1,6 @@
 {
   "name": "@vithanco/vgraph-mcp",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "mcpName": "com.vithanco/vgraph-mcp",
   "description": "Concept Maps, IBIS, Causal Loop Diagrams and Timelines as images. Runs locally via WebAssembly.",
   "type": "module",
