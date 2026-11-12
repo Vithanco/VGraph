@@ -257,7 +257,6 @@ test filter='': build
     ./scripts/codeowners.test.sh
     ./scripts/licence.test.sh
     ./scripts/audit-public.test.sh
-    ./scripts/export-public.test.sh
     ./scripts/publish-plugins.test.sh
     just _plugin-lint-if-present
 

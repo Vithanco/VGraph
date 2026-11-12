@@ -68,13 +68,9 @@ changed and why in the body when it is not obvious. Keep each commit to one idea
 Publishing needs the maintainer's own accounts, and the recipes that publish
 refuse to start otherwise. You do not need them to contribute.
 
-Before a repository goes public, `scripts/audit-public.sh <dir>` checks it, and
-`scripts/export-public.sh <target>` makes VGraph's public tree as one commit. Both
-read a list of strings that must never be public from a file outside every
-repository, so no repository holds the strings it keeps out:
-`~/.config/vithanco/forbidden-strings.txt`, or the path in `VITHANCO_FORBIDDEN`.
-Write one string per line; matching is case-insensitive and exact (no patterns),
-and a line starting with `#` is a comment. Both need `gitleaks`.
+CI runs `scripts/audit-public.sh` on pull requests and pushes to `main`, without
+the maintainer's private list of strings, so it skips that check. Running it locally
+needs `gitleaks`; its header explains the list.
 
 ## Reporting a problem
 
