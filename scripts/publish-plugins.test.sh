@@ -43,10 +43,25 @@ given_plugins_at() { # version, in a fresh directory WORK with pushed plugin rep
     echo 'bundle' > "$WORK/obsidian-vithanco/main.js"
     echo 'package' > "$WORK/vscode-vithanco/vithanco-$1.vsix"
     echo '*.vsix' >> "$WORK/vscode-vithanco/.gitignore"
+    mkdir -p "$WORK/obsidian-vithanco/vendor/Package"
+    echo 'glue' > "$WORK/obsidian-vithanco/vendor/Package/index.js"
     for p in obsidian-vithanco vscode-vithanco; do
         git -C "$WORK/$p" add . && git -C "$WORK/$p" commit -qm "bump merged"
         git -C "$WORK/$p" push -q origin main
     done
+    # WORK stands in for VGraph itself: committed, and pushed to its main.
+    printf '%s\n' '*.git/' obsidian-vithanco/ vscode-vithanco/ out gh.log > "$WORK/.gitignore"
+    git init -q --bare -b main "$WORK/vgraph.git"
+    git -C "$WORK" init -q -b main
+    git -C "$WORK" remote add origin "$WORK/vgraph.git"
+    git -C "$WORK" add . && git -C "$WORK" commit -qm "engine"
+    git -C "$WORK" push -q origin main
+}
+nothing_released() { # why
+    for p in obsidian-vithanco vscode-vithanco; do
+        git -C "$WORK/$p.git" rev-parse -q --verify refs/tags/1.2.3 >/dev/null && fail "$1: $p was tagged"
+    done
+    grep -q '^release create' "$GH_LOG" && fail "$1: created a release"
 }
 publish() { just --justfile "$REPO_ROOT/justfile" --working-directory "$WORK" publish-plugins >"$WORK/out" 2>&1; }
 
@@ -75,6 +90,37 @@ for p in obsidian-vithanco vscode-vithanco; do
     git -C "$WORK/$p.git" rev-parse -q --verify refs/tags/1.2.3 >/dev/null && fail "$p was tagged"
 done
 grep -q '^release create' "$GH_LOG" && fail "created a release"
+
+# Given VGraph with uncommitted changes, when publishing, then nothing is
+# released: the engine would ship from code that no commit holds.
+given_plugins_at 1.2.3
+echo 'change' > "$WORK/engine.swift"
+publish && fail "published from an uncommitted VGraph"
+grep -q 'uncommitted' "$WORK/out" || fail "does not say VGraph is uncommitted: $(cat "$WORK/out")"
+nothing_released "uncommitted VGraph"
+
+# Given a VGraph commit that is not on origin/main, when publishing, then nothing is released.
+given_plugins_at 1.2.3
+git -C "$WORK" commit -qm "local only" --allow-empty
+publish && fail "published from a VGraph commit that is not on origin/main"
+grep -q 'origin/main' "$WORK/out" || fail "does not name origin/main: $(cat "$WORK/out")"
+nothing_released "unpushed VGraph"
+
+# Given a clean, pushed VGraph, when publishing, then both releases name the engine's commit.
+given_plugins_at 1.2.3
+ENGINE=$(git -C "$WORK" rev-parse --short=12 HEAD)
+publish || fail "publishing from a clean VGraph failed: $(cat "$WORK/out")"
+[ "$(grep '^release create' "$GH_LOG" | grep -c "$ENGINE")" = 2 ] \
+    || fail "the releases do not name VGraph $ENGINE: $(cat "$GH_LOG")"
+
+# Given a rebuild that refreshed the Obsidian plugin's vendored engine glue, when
+# publishing, then the glue is committed under the tag next to the wasm: the
+# directory builds the repo alone, and new wasm with old glue would not run.
+given_plugins_at 1.2.3
+echo 'new glue' > "$WORK/obsidian-vithanco/vendor/Package/index.js"
+publish || fail "publishing refreshed glue failed: $(cat "$WORK/out")"
+[ "$(git -C "$WORK/obsidian-vithanco" show 1.2.3:vendor/Package/index.js)" = "new glue" ] \
+    || fail "the refreshed glue was not committed under the tag"
 
 [ "$FAILED" -eq 0 ] && echo "✓ publish-plugins"
 exit "$FAILED"

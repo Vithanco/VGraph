@@ -537,6 +537,18 @@ publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_req
     # this the recipe discovers problems halfway through — and since Obsidian is
     # published first, a late failure leaves one plugin released and the other not.
     FAIL=0
+    # Both plugins ship the engine, so a release must come from a VGraph commit
+    # that main holds, and say which one.
+    if [ -n "$(git status --porcelain)" ]; then
+        echo "Preflight: VGraph has uncommitted changes — the engine would ship from code no commit holds." >&2
+        FAIL=1
+    fi
+    git fetch -q origin main 2>/dev/null || true
+    if ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
+        echo "Preflight: VGraph $(git rev-parse --short HEAD) is not on origin/main — push and merge it first." >&2
+        FAIL=1
+    fi
+    ENGINE="VGraph $(git rev-parse --short=12 HEAD)"
     for spec in "obsidian-vithanco:main.js" "vscode-vithanco:vithanco-${OBS_V}.vsix"; do
         DIR=${spec%%:*}; ASSET=${spec#*:}
         BRANCH=$(git -C "$DIR" branch --show-current)
@@ -561,11 +573,11 @@ publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_req
     # just website/Package: that is what shipped as a 115 MB main.js in 1.0.9.
     ./scripts/check-wasm-optimized.sh website/Package/VGraphWasm.wasm \
         obsidian-vithanco/VGraphWasm.wasm vscode-vithanco/VGraphWasm.wasm || FAIL=1
-    # main.js carries the engine as base64 (~4/3), so this also catches a bundle
-    # built before the engine was replaced.
+    # main.js carries the engine gzipped, so this also catches a bundle built
+    # before the engine was replaced. Obsidian Sync's Standard plan skips files over 5 MB.
     MAIN_BYTES=$(wc -c < obsidian-vithanco/main.js)
-    if [ "$MAIN_BYTES" -gt 30000000 ]; then
-        echo "Preflight: obsidian-vithanco/main.js is $MAIN_BYTES bytes — built from a debug engine. Rebuild it." >&2
+    if [ "$MAIN_BYTES" -gt 5000000 ]; then
+        echo "Preflight: obsidian-vithanco/main.js is $MAIN_BYTES bytes, over 5 MB — a debug engine, or an old bundle. Rebuild it." >&2
         FAIL=1
     fi
     if [ "$FAIL" -ne 0 ]; then
@@ -579,12 +591,14 @@ publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_req
     # Obsidian
     ( cd obsidian-vithanco
       # main.js is gitignored in this repo — it ships as a GitHub release asset (below), not a commit.
-      git add manifest.json package.json versions.json styles.css VGraphWasm.wasm
+      # vendor/Package is the engine's glue for that wasm: Obsidian's directory
+      # builds this repo alone, and new wasm with old glue would not run.
+      git add manifest.json package.json versions.json styles.css VGraphWasm.wasm vendor/Package
       # The bump may already be committed; then there is nothing to add.
       git diff --cached --quiet || git commit -m "chore: release $OBS_V"
       git tag "$OBS_V"
       git push origin HEAD "$OBS_V"
-      gh release create "$OBS_V" --title "$OBS_V" --notes "Release $OBS_V" main.js manifest.json styles.css )
+      gh release create "$OBS_V" --title "$OBS_V" --notes "Release $OBS_V, engine $ENGINE" main.js manifest.json styles.css )
     # VS Code
     ( cd vscode-vithanco
       VSIX="vithanco-${VSC_V}.vsix"
@@ -596,7 +610,7 @@ publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_req
       git diff --cached --quiet || git commit -m "chore: release $VSC_V"
       git tag "$VSC_V"
       git push origin HEAD "$VSC_V"
-      gh release create "$VSC_V" --title "$VSC_V" --notes "Release $VSC_V" "$VSIX" )
+      gh release create "$VSC_V" --title "$VSC_V" --notes "Release $VSC_V, engine $ENGINE" "$VSIX" )
     echo ""
     echo "✓ Plugins pushed + tagged + GitHub releases created at v$OBS_V."
     echo ""
