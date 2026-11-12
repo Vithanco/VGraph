@@ -123,7 +123,7 @@ struct TimeoutTests {
     @Test("Given a connection that sends nothing for the idle limit, when the limit passes, then it is closed")
     func idleClosed() async throws {
         let channel = try await channel()
-        try await channel.testingEventLoop.advanceTime(by: .seconds(Int64(MCPLimits.standard.idleTimeoutSeconds) + 1))
+        await channel.testingEventLoop.advanceTime(by: .seconds(Int64(MCPLimits.standard.idleTimeoutSeconds) + 1))
         #expect(!channel.isActive)
     }
 
@@ -131,7 +131,7 @@ struct TimeoutTests {
     func readStallClosed() async throws {
         let channel = try await channel()
         try await channel.writeInbound(post(length: 100))
-        try await channel.testingEventLoop.advanceTime(by: .seconds(Int64(MCPLimits.standard.readTimeoutSeconds) + 1))
+        await channel.testingEventLoop.advanceTime(by: .seconds(Int64(MCPLimits.standard.readTimeoutSeconds) + 1))
         #expect(!channel.isActive)
     }
 

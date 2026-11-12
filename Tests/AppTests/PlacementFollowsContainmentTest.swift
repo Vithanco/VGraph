@@ -122,7 +122,7 @@ struct PlacementFollowsContainmentTest {
         let s = try session()
         let warnedBefore = Set(GenericQualityChecks.containment(graph: s.origin).map { $0.target })
 
-        try s.addNode(in: "ibs", ofType: NodeType(string: "Component"), notationBreak: .permitted)
+        _ = try s.addNode(in: "ibs", ofType: NodeType(string: "Component"), notationBreak: .permitted)
 
         let added = s.origin.nodes.filter { s.origin.group(of: $0) == Group(rawValue: "ibs") && $0.id != "db" }
         #expect(added.count == 1)

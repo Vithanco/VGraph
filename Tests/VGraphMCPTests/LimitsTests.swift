@@ -68,7 +68,6 @@ private struct ConceptMapUnderTest: ToolUnderTest {
 }
 
 private struct GenericTool<T: VGraphTool>: ToolUnderTest {
-    let type: T.Type
     func call(_ vgl: String, logger: StderrLogger, limits: MCPLimits) async -> CallTool.Result {
         await T.handle(.init(name: T.name, arguments: ["vgl": .string(vgl)]), logger: logger, limits: limits)
     }
@@ -134,8 +133,8 @@ struct GraphLimitTests {
     func everyToolRefuses() async {
         let tooBig = document(nodes: standard.maxNodes + 1)
         let tools: [any ToolUnderTest] = [
-            GenericTool(type: CLDTool.self), GenericTool(type: ConceptMapTool.self),
-            GenericTool(type: IBISTool.self), GenericTool(type: TimelineTool.self),
+            GenericTool<CLDTool>(), GenericTool<ConceptMapTool>(),
+            GenericTool<IBISTool>(), GenericTool<TimelineTool>(),
         ]
         for tool in tools {
             #expect(await run(tooBig, tool: tool).refusedByLimit)
