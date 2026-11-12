@@ -49,7 +49,10 @@ public actor MCPHTTPApp {
         try await channel.closeFuture.get()
     }
 
-    func makeHandler() -> HTTPHandler {
+    // Called from NIO's channel initializer, on an event loop outside the actor.
+    // It only reads the immutable limits; requests re-enter the actor through
+    // the awaited handler.
+    nonisolated func makeHandler() -> HTTPHandler {
         HTTPHandler(limits: limits, handle: { await self.handleHTTPRequest($0) })
     }
 
@@ -254,7 +257,7 @@ final class HTTPHandler: ChannelInboundHandler, @unchecked Sendable {
         nonisolated(unsafe) let ctx = context
         let eventLoop = ctx.eventLoop
 
-        let send = {
+        let send: @Sendable () -> Void = {
             var head = HTTPResponseHead(
                 version: version,
                 status: HTTPResponseStatus(statusCode: response.statusCode)

@@ -166,13 +166,13 @@ struct TimeoutTests {
         let app = MCPHTTPApp(transport: transport, host: "127.0.0.1", port: 0, logger: Logger(label: "test"))
 
         let refused = NIOAsyncTestingChannel()
-        try await refused.pipeline.addHandler(await app.makeHandler())
+        try await refused.pipeline.addHandler(app.makeHandler())
         try await refused.connect(to: SocketAddress(ipAddress: "127.0.0.1", port: 1))
         try await refused.writeInbound(post(length: 2 * oneMiB))
         #expect(await status(refused) == 413)
 
         let next = NIOAsyncTestingChannel()
-        try await next.pipeline.addHandler(await app.makeHandler())
+        try await next.pipeline.addHandler(app.makeHandler())
         try await next.connect(to: SocketAddress(ipAddress: "127.0.0.1", port: 1))
         let head = HTTPRequestHead(version: .http1_1, method: .GET, uri: "/health")
         try await next.writeInbound(HTTPServerRequestPart.head(head))
