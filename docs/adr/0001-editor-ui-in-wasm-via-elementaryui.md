@@ -115,5 +115,6 @@ maintenance liability to watch.
 - **Engine, website and both plugins are untouched**; existing engine tests
   remain the parity safety net. The editor gets thin JS smoke tests plus
   browser-preview verification. The plugins were build- and lint-validated but
-  not launched in-host — a runtime smoke inside Obsidian and VSCode is still owed
-  before a plugin release.
+  not launched in-host. `just obsidian-smoke` now runs the Obsidian plugin
+  in-host (light and dark theme, plus the error block); a runtime smoke inside
+  VSCode is still owed before a plugin release.

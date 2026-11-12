@@ -36,3 +36,20 @@ The decision logic that needs no DOM lives in Swift and is unit tested there —
   Playwright's own input is either a mouse — always `pointerType: "mouse"` — or a
   bare `touchscreen.tap()`, and neither can express a finger drag.
 - `website/index.html` pulls the WASI shim from a CDN, so a run needs network.
+
+## The Obsidian smoke
+
+`obsidian/` is a separate suite, run by `just obsidian-smoke`, not by `just
+test`: it needs a desktop Obsidian and the cloned plugin, and it opens a window.
+It loads the built `obsidian-vithanco/main.js` into a second Obsidian instance
+with its own `--user-data-dir`, so the maintainer's open Obsidian is never
+touched, and tests the newest `obsidian-<ver>.asar` from their install rather
+than the older one the installer bundles. Set `OBSIDIAN_PLUGIN_DIR`,
+`OBSIDIAN_BIN` or `OBSIDIAN_ASAR` (empty: the bundled version) to point it
+elsewhere.
+
+- Playwright's `_electron.launch` cannot attach — Obsidian's builds disable the
+  Node inspector — so the app is spawned with `--remote-debugging-port` and
+  reached over CDP.
+- `browser.close()` over CDP can hang. The instance is killed by matching its
+  `--user-data-dir`, never by app name.

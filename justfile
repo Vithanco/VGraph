@@ -279,6 +279,30 @@ test-editor filter='':
     npx playwright install --with-deps chromium >/dev/null
     npx playwright test {{ if filter == "" { "" } else { "-g " + quote(filter) } }}
 
+# The built obsidian-vithanco plugin inside a real Obsidian (separate instance, throwaway vault).
+[group('test')]
+obsidian-smoke:
+    #!/usr/bin/env bash
+    # Lint and build never load main.js into Obsidian; this does, in the light
+    # and dark theme. Opens a window. See VGraphWasm/Tests-Browser/README.md.
+    set -euo pipefail
+    BIN="${OBSIDIAN_BIN:-/Applications/Obsidian.app/Contents/MacOS/Obsidian}"
+    if [ ! -x "$BIN" ]; then
+        echo "· skipping obsidian-smoke: Obsidian is not installed ($BIN)"; exit 0
+    fi
+    if [ ! -d obsidian-vithanco ]; then
+        echo "· skipping obsidian-smoke: obsidian-vithanco/ is not cloned (just plugins-setup)"; exit 0
+    fi
+    if [ ! -f obsidian-vithanco/main.js ]; then
+        echo "obsidian-vithanco/main.js is missing — run 'just obsidian-build'." >&2; exit 1
+    fi
+    # The spec kills its instance; this covers an interrupted run. The pattern
+    # names only the smoke's temp dirs, never the maintainer's Obsidian.
+    trap "pkill -f 'user-data-dir=.*/vithanco-obsidian-smoke-' || true" EXIT
+    cd VGraphWasm/Tests-Browser
+    [ -d node_modules ] || npm install --silent
+    npx playwright test -c obsidian/playwright.config.js
+
 # Fail on any formatting deviation. `--strict` is load-bearing: without it the
 # linter prints its warnings and still exits 0, so nothing would ever go red.
 [group('test')]
