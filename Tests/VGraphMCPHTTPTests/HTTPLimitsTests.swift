@@ -123,7 +123,7 @@ struct TimeoutTests {
     @Test("Given a connection that sends nothing for the idle limit, when the limit passes, then it is closed")
     func idleClosed() async throws {
         let channel = try await channel()
-        try await channel.testingEventLoop.advanceTime(by: .seconds(Int64(MCPLimits.standard.idleTimeoutSeconds) + 1))
+        await channel.testingEventLoop.advanceTime(by: .seconds(Int64(MCPLimits.standard.idleTimeoutSeconds) + 1))
         #expect(!channel.isActive)
     }
 
@@ -131,7 +131,7 @@ struct TimeoutTests {
     func readStallClosed() async throws {
         let channel = try await channel()
         try await channel.writeInbound(post(length: 100))
-        try await channel.testingEventLoop.advanceTime(by: .seconds(Int64(MCPLimits.standard.readTimeoutSeconds) + 1))
+        await channel.testingEventLoop.advanceTime(by: .seconds(Int64(MCPLimits.standard.readTimeoutSeconds) + 1))
         #expect(!channel.isActive)
     }
 
@@ -166,13 +166,13 @@ struct TimeoutTests {
         let app = MCPHTTPApp(transport: transport, host: "127.0.0.1", port: 0, logger: Logger(label: "test"))
 
         let refused = NIOAsyncTestingChannel()
-        try await refused.pipeline.addHandler(await app.makeHandler())
+        try await refused.pipeline.addHandler(app.makeHandler())
         try await refused.connect(to: SocketAddress(ipAddress: "127.0.0.1", port: 1))
         try await refused.writeInbound(post(length: 2 * oneMiB))
         #expect(await status(refused) == 413)
 
         let next = NIOAsyncTestingChannel()
-        try await next.pipeline.addHandler(await app.makeHandler())
+        try await next.pipeline.addHandler(app.makeHandler())
         try await next.connect(to: SocketAddress(ipAddress: "127.0.0.1", port: 1))
         let head = HTTPRequestHead(version: .http1_1, method: .GET, uri: "/health")
         try await next.writeInbound(HTTPServerRequestPart.head(head))
