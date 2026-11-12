@@ -192,6 +192,11 @@ struct AttributeTests {
         #expect(try Attributes.Node.wrappedText.value(fromString: stored.stringValue) == lines)
     }
 
+    @Test("A backslash that escapes nothing is read as written, as values stored before escaping were")
+    func strayBackslashesSurvive() throws(VError) {
+        #expect(try [String].fromString("[C:\\temp,x\\]") == ["C:\\temp", "x\\"])
+    }
+
     @Test("A problem message that contains a comma stays one message")
     func messagesKeepTheirCommas() throws(VError) {
         let problems = TypedAttributeDefinition<[MessageWithSeverity]>(

@@ -1,17 +1,20 @@
 # 36. Releases stay on the maintainer's machine
 
-Date: 2026-11-08
+Date: 2026-11-08 (revised 2026-11-12)
 
 ## Status
 
-Accepted. Supersedes [0035](./0035-a-release-is-a-tag-started-from-the-maintainers-machine.md).
+Accepted. Absorbs 0035, which had a VGraph tag start each plugin's build on
+GitHub and was replaced before any release used it.
 
 ## Context
 
-0035 had a VGraph tag start each plugin's build on GitHub and open a bump PR there.
-That left the release half on GitHub and half local, and finishing it on GitHub
-would have needed either publish credentials in public repositories or OIDC
-trust granted to them. Neither is wanted.
+The plugins live in their own repositories and do not rebuild when the engine
+changes. GitHub offers no way for one repository's workflow to start another's
+without a token that can write to the other repository, and VGraph keeps no such
+secret in CI: it is public. Finishing a release on GitHub would also need either
+publish credentials in public repositories or OIDC trust granted to them. Neither
+is wanted.
 
 ## Decision
 
@@ -20,9 +23,25 @@ maintainer's own credentials: `just plugins-release`, `just release`, then
 `just publish-all` or the `publish-*` recipes it runs. No repository holds a
 publish or cross-repository credential.
 
+`just plugins-release` builds the optimized engine itself before bumping, since
+each plugin's `release.sh` copies `website/Package` in and a fresh checkout has
+none. Every engine build records the commit it built from and the wasm's hash in
+`website/Package/VGRAPH_BUILD` (`scripts/record-engine-build.sh`, run by
+`build-wasm.sh`), because that folder is not tracked and each build replaces it.
+
+The engine ships inside both plugins, so a release must say which source it came
+from. `publish-plugins` names the recorded commit in both releases, and refuses
+when it cannot fetch `origin/main`, when VGraph has uncommitted changes, when the
+build was made from uncommitted changes or from a commit not on `origin/main`,
+when the engine sources changed between that commit and HEAD, or when either
+plugin's wasm is not the recorded one. A version-bump commit after the build is
+expected and allowed.
+
 GitHub only checks. VGraph's CI builds the optimized engine on every change, and
-each plugin's CI builds against VGraph's `main`, so an engine change that breaks a
-plugin shows before a release rather than during one.
+each plugin's CI builds against VGraph's `main` from the ref it checks out
+(`scripts/ci-engine.sh`, inside the container named by that ref's
+`.swift-version`), so an engine change that breaks a plugin shows before a release
+rather than during one, and a Swift bump in VGraph needs no change in the plugins.
 
 ## Consequences
 
@@ -31,3 +50,20 @@ through a PR like any other change, because `main` takes no direct pushes.
 
 `publish-plugins` refuses a plugin checkout that is not on `main`: it tags and
 pushes whatever is checked out.
+
+The Obsidian plugin commits its copy of the engine, the wasm and its `vendor/Package`
+glue, because Obsidian's directory builds that repository on its own.
+`publish-plugins` commits both under the release tag so they cannot disagree.
+
+An engine build costs minutes on each new VGraph ref in plugin CI, and is cached
+by commit.
+
+## Alternatives considered
+
+- **A `v*` tag pushed by `just release-engine` starts each plugin's workflow**
+  through the maintainer's `gh` login; the workflow builds the engine from the
+  tag, builds the plugin and opens a bump PR (0035). Rejected because it left the
+  release half on GitHub and half local, and a tag pushed by hand started nothing.
+- **Scheduled polling in each plugin for new VGraph tags.** Rejected because
+  GitHub disables schedules after 60 days without activity, which quiet plugin
+  repositories can reach.

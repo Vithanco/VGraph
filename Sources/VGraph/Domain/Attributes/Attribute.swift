@@ -131,6 +131,9 @@ private func splitElements(_ body: String) -> [String] {
     var escaped = false
     for ch in body {
         if escaped {
+            // Values stored before escaping existed may hold a bare `\`; only the
+            // two characters the encoder escapes lose theirs.
+            if ch != "\\" && ch != "," { current.append("\\") }
             current.append(ch)
             escaped = false
         } else if ch == "\\" {
@@ -142,6 +145,7 @@ private func splitElements(_ body: String) -> [String] {
             current.append(ch)
         }
     }
+    if escaped { current.append("\\") }
     elements.append(current)
     return elements.map { $0.trimmingCharacters(in: " \t\n\r") }.filter { !$0.isEmpty }
 }

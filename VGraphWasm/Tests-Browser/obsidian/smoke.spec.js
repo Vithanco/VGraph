@@ -183,21 +183,25 @@ test('the same blocks render in the dark theme, in dark colours', async () => {
 // Obsidian 1.13+ indexes `settingItems` for its settings search and renders the
 // tab from the same definitions; a tab that only implements display() has neither.
 test('the settings tab is declared, so settings search can find it', async () => {
-  const tab = await page.evaluate(async () => {
+  const entries = ['Syntax guide', 'Notations gallery', 'Sponsor on GitHub'];
+  await page.evaluate(() => {
     app.setting.open();
     app.setting.openTabById('vithanco');
-    await new Promise((r) => setTimeout(r, 300));
+  });
+  const read = () => page.evaluate(() => {
     const t = app.setting.pluginTabs.find((p) => p.id === 'vithanco');
     const names = (items) => items.flatMap((i) => [i.name, ...names(i.items ?? [])]).filter(Boolean);
-    const result = {
+    return {
       indexed: names(t?.settingItems ?? []),
-      rendered: [...t.containerEl.querySelectorAll('.setting-item-name')].map((e) => e.textContent),
+      rendered: [...(t?.containerEl.querySelectorAll('.setting-item-name') ?? [])].map((e) => e.textContent),
     };
-    app.setting.close();
-    return result;
   });
-  expect(tab.indexed).toEqual(expect.arrayContaining(['Syntax guide', 'Notations gallery', 'Sponsor on GitHub']));
-  expect(tab.rendered).toEqual(expect.arrayContaining(['Syntax guide', 'Notations gallery', 'Sponsor on GitHub']));
+  try {
+    await expect.poll(async () => (await read()).indexed).toEqual(expect.arrayContaining(entries));
+    await expect.poll(async () => (await read()).rendered).toEqual(expect.arrayContaining(entries));
+  } finally {
+    await page.evaluate(() => app.setting.close());
+  }
 });
 
 test('no uncaught errors in the window', async () => {

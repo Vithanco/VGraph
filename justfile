@@ -254,6 +254,7 @@ test filter='': build
     ./scripts/doctor-kegs.test.sh
     ./scripts/doctor-sdk.test.sh
     ./scripts/embedded-unicode.test.sh
+    ./scripts/record-engine-build.test.sh
     ./scripts/codeowners.test.sh
     ./scripts/licence.test.sh
     ./scripts/audit-public.test.sh
@@ -443,6 +444,10 @@ plugins-release bump='patch' plugin='':
         patch|minor|major) ARG="--{{bump}}" ;;
         *)                 ARG="{{bump}}" ;;
     esac
+    # Each plugin's release.sh copies website/Package in, and fails on a fresh
+    # checkout without it; a stale or debug copy would ship instead.
+    ./build-wasm.sh --release --skip-smoke
+    ./scripts/check-wasm-optimized.sh website/Package/VGraphWasm.wasm
     ./release-plugins.sh "$ARG" {{plugin}}
 
 # Internal: fail with a helpful hint if a plugin repo isn't cloned.
@@ -537,6 +542,50 @@ publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_req
     # this the recipe discovers problems halfway through — and since Obsidian is
     # published first, a late failure leaves one plugin released and the other not.
     FAIL=0
+    # Both plugins ship the engine, so a release must come from a VGraph commit
+    # that main holds, and say which one: the one build-wasm.sh recorded.
+    if [ -n "$(git status --porcelain)" ]; then
+        echo "Preflight: VGraph has uncommitted changes — the engine would ship from code no commit holds." >&2
+        FAIL=1
+    fi
+    if ! git fetch -q origin main 2>/dev/null; then
+        echo "Preflight: could not fetch VGraph's origin/main to check against." >&2
+        FAIL=1
+    elif ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
+        echo "Preflight: VGraph $(git rev-parse --short HEAD) is not on origin/main — push and merge it first." >&2
+        FAIL=1
+    fi
+    # What build-wasm.sh reads. A version-bump commit after the build is expected.
+    ENGINE_PATHS=(Sources Package.swift Package.resolved .swift-version build-wasm.sh
+        scripts/wasm-sdk.sh scripts/embedded-unicode.sh VGraphWasm/Package.swift
+        VGraphWasm/Package.resolved VGraphWasm/Sources VGraphWasm/VGraphEditor VGraphWasm/scripts)
+    BUILT=""
+    if [ ! -f website/Package/VGRAPH_BUILD ]; then
+        echo "Preflight: no record of which commit built website/Package — rebuild it ('just release' or 'just plugins-release')." >&2
+        FAIL=1
+    else
+        read -r BUILT BUILT_SUM < website/Package/VGRAPH_BUILD
+        if [ "$BUILT" = unknown ]; then
+            echo "Preflight: the engine was built from an unknown commit — git could not read the checkout. Rebuild it here." >&2
+            FAIL=1
+        elif [ "${BUILT%-dirty}" != "$BUILT" ]; then
+            echo "Preflight: the engine was built from uncommitted changes on ${BUILT:0:12} — commit, then run 'just plugins-release' again." >&2
+            FAIL=1
+        elif ! git merge-base --is-ancestor "$BUILT" origin/main 2>/dev/null; then
+            echo "Preflight: the engine was built from ${BUILT:0:12}, which is not on origin/main." >&2
+            FAIL=1
+        elif ! git diff --quiet "$BUILT" HEAD -- "${ENGINE_PATHS[@]}"; then
+            echo "Preflight: the engine sources changed since the build at ${BUILT:0:12} — run 'just plugins-release' again." >&2
+            FAIL=1
+        fi
+        for w in website/Package obsidian-vithanco vscode-vithanco; do
+            if [ "$(shasum -a 256 < "$w/VGraphWasm.wasm" | cut -d' ' -f1)" != "$BUILT_SUM" ]; then
+                echo "Preflight: $w/VGraphWasm.wasm is not the engine built at ${BUILT:0:12}." >&2
+                FAIL=1
+            fi
+        done
+    fi
+    ENGINE="VGraph ${BUILT:0:12}"
     for spec in "obsidian-vithanco:main.js" "vscode-vithanco:vithanco-${OBS_V}.vsix"; do
         DIR=${spec%%:*}; ASSET=${spec#*:}
         BRANCH=$(git -C "$DIR" branch --show-current)
@@ -561,11 +610,11 @@ publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_req
     # just website/Package: that is what shipped as a 115 MB main.js in 1.0.9.
     ./scripts/check-wasm-optimized.sh website/Package/VGraphWasm.wasm \
         obsidian-vithanco/VGraphWasm.wasm vscode-vithanco/VGraphWasm.wasm || FAIL=1
-    # main.js carries the engine as base64 (~4/3), so this also catches a bundle
-    # built before the engine was replaced.
+    # main.js carries the engine gzipped, so this also catches a bundle built
+    # before the engine was replaced. Obsidian Sync's Standard plan skips files over 5 MB.
     MAIN_BYTES=$(wc -c < obsidian-vithanco/main.js)
-    if [ "$MAIN_BYTES" -gt 30000000 ]; then
-        echo "Preflight: obsidian-vithanco/main.js is $MAIN_BYTES bytes — built from a debug engine. Rebuild it." >&2
+    if [ "$MAIN_BYTES" -gt 5000000 ]; then
+        echo "Preflight: obsidian-vithanco/main.js is $MAIN_BYTES bytes, over 5 MB — a debug engine, or an old bundle. Rebuild it." >&2
         FAIL=1
     fi
     if [ "$FAIL" -ne 0 ]; then
@@ -579,12 +628,14 @@ publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_req
     # Obsidian
     ( cd obsidian-vithanco
       # main.js is gitignored in this repo — it ships as a GitHub release asset (below), not a commit.
-      git add manifest.json package.json versions.json styles.css VGraphWasm.wasm
+      # vendor/Package is the engine's glue for that wasm: Obsidian's directory
+      # builds this repo alone, and new wasm with old glue would not run.
+      git add manifest.json package.json versions.json styles.css VGraphWasm.wasm vendor/Package
       # The bump may already be committed; then there is nothing to add.
       git diff --cached --quiet || git commit -m "chore: release $OBS_V"
       git tag "$OBS_V"
       git push origin HEAD "$OBS_V"
-      gh release create "$OBS_V" --title "$OBS_V" --notes "Release $OBS_V" main.js manifest.json styles.css )
+      gh release create "$OBS_V" --title "$OBS_V" --notes "Release $OBS_V, engine $ENGINE" main.js manifest.json styles.css )
     # VS Code
     ( cd vscode-vithanco
       VSIX="vithanco-${VSC_V}.vsix"
@@ -596,7 +647,7 @@ publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_req
       git diff --cached --quiet || git commit -m "chore: release $VSC_V"
       git tag "$VSC_V"
       git push origin HEAD "$VSC_V"
-      gh release create "$VSC_V" --title "$VSC_V" --notes "Release $VSC_V" "$VSIX" )
+      gh release create "$VSC_V" --title "$VSC_V" --notes "Release $VSC_V, engine $ENGINE" "$VSIX" )
     echo ""
     echo "✓ Plugins pushed + tagged + GitHub releases created at v$OBS_V."
     echo ""
