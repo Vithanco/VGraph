@@ -254,6 +254,7 @@ test filter='': build
     ./scripts/doctor-kegs.test.sh
     ./scripts/doctor-sdk.test.sh
     ./scripts/embedded-unicode.test.sh
+    ./scripts/record-engine-build.test.sh
     ./scripts/codeowners.test.sh
     ./scripts/licence.test.sh
     ./scripts/audit-public.test.sh
@@ -447,12 +448,6 @@ plugins-release bump='patch' plugin='':
     # checkout without it; a stale or debug copy would ship instead.
     ./build-wasm.sh --release --skip-smoke
     ./scripts/check-wasm-optimized.sh website/Package/VGraphWasm.wasm
-    # Which commit built this wasm: publish-plugins names it, and refuses if the
-    # engine sources have moved since. website/Package is not tracked, so only
-    # this record ties the artifact to a commit.
-    REV=$(git rev-parse HEAD)
-    [ -z "$(git status --porcelain)" ] || REV="$REV-dirty"
-    echo "$REV $(shasum -a 256 < website/Package/VGraphWasm.wasm | cut -d' ' -f1)" > website/Package/VGRAPH_BUILD
     ./release-plugins.sh "$ARG" {{plugin}}
 
 # Internal: fail with a helpful hint if a plugin repo isn't cloned.
@@ -548,7 +543,7 @@ publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_req
     # published first, a late failure leaves one plugin released and the other not.
     FAIL=0
     # Both plugins ship the engine, so a release must come from a VGraph commit
-    # that main holds, and say which one: the one `plugins-release` built from.
+    # that main holds, and say which one: the one build-wasm.sh recorded.
     if [ -n "$(git status --porcelain)" ]; then
         echo "Preflight: VGraph has uncommitted changes — the engine would ship from code no commit holds." >&2
         FAIL=1
@@ -566,7 +561,7 @@ publish-plugins: _require-maintainer (_require-plugin "obsidian-vithanco") (_req
         VGraphWasm/Package.resolved VGraphWasm/Sources VGraphWasm/VGraphEditor VGraphWasm/scripts)
     BUILT=""
     if [ ! -f website/Package/VGRAPH_BUILD ]; then
-        echo "Preflight: no record of which commit built website/Package — run 'just plugins-release <bump>'." >&2
+        echo "Preflight: no record of which commit built website/Package — rebuild it ('just release' or 'just plugins-release')." >&2
         FAIL=1
     else
         read -r BUILT BUILT_SUM < website/Package/VGRAPH_BUILD

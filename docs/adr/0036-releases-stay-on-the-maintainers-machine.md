@@ -25,8 +25,9 @@ publish or cross-repository credential.
 
 `just plugins-release` builds the optimized engine itself before bumping, since
 each plugin's `release.sh` copies `website/Package` in and a fresh checkout has
-none. It records the commit it built from and the wasm's hash in
-`website/Package/VGRAPH_BUILD`, because that folder is not tracked.
+none. Every engine build records the commit it built from and the wasm's hash in
+`website/Package/VGRAPH_BUILD` (`scripts/record-engine-build.sh`, run by
+`build-wasm.sh`), because that folder is not tracked and each build replaces it.
 
 The engine ships inside both plugins, so a release must say which source it came
 from. `publish-plugins` names the recorded commit in both releases, and refuses

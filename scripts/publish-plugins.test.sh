@@ -60,11 +60,8 @@ given_plugins_at() { # version, in a fresh directory WORK with pushed plugin rep
     git -C "$WORK" push -q origin main
     record_build
 }
-# What `just plugins-release` writes after building: the commit and the wasm it produced.
-record_build() {
-    echo "$(git -C "$WORK" rev-parse HEAD) $(shasum -a 256 < "$WORK/website/Package/VGraphWasm.wasm" | cut -d' ' -f1)" \
-        > "$WORK/website/Package/VGRAPH_BUILD"
-}
+# What build-wasm.sh writes after every build: the commit and the wasm it produced.
+record_build() { ( cd "$WORK" && "$REPO_ROOT/scripts/record-engine-build.sh" website/Package ); }
 commit_and_push() { # file, message
     echo "$2" > "$WORK/$1" && git -C "$WORK" add "$1" && git -C "$WORK" commit -qm "$2" && git -C "$WORK" push -q origin main
 }

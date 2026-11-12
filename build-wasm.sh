@@ -196,6 +196,8 @@ awk '
 mv ../website/Package/platforms/browser.js.tmp ../website/Package/platforms/browser.js
 
 cd ..
+# This build replaced website/Package, so it also writes the record of its source.
+"$SCRIPT_DIR/scripts/record-engine-build.sh" website/Package
 echo "WASM build completed in $(( SECONDS - STEP_START ))s"
 
 # Show final size
