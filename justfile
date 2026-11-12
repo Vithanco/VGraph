@@ -443,6 +443,10 @@ plugins-release bump='patch' plugin='':
         patch|minor|major) ARG="--{{bump}}" ;;
         *)                 ARG="{{bump}}" ;;
     esac
+    # Each plugin's release.sh copies website/Package in, and fails on a fresh
+    # checkout without it; a stale or debug copy would ship instead.
+    ./build-wasm.sh --release --skip-smoke
+    ./scripts/check-wasm-optimized.sh website/Package/VGraphWasm.wasm
     ./release-plugins.sh "$ARG" {{plugin}}
 
 # Internal: fail with a helpful hint if a plugin repo isn't cloned.
