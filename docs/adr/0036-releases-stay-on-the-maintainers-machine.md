@@ -43,6 +43,14 @@ each plugin's CI builds against VGraph's `main` from the ref it checks out
 `.swift-version`), so an engine change that breaks a plugin shows before a release
 rather than during one, and a Swift bump in VGraph needs no change in the plugins.
 
+GitHub also attests, which Obsidian's directory review looks for. When an Obsidian
+plugin release is published, a workflow in that repository rebuilds the tag,
+checks the result is byte-identical to the released `main.js` and `styles.css`,
+and attests its own build. It can write attestations but not publish, push or
+create a release, so the release itself still comes only from the maintainer's
+machine. This depends on the bundle being reproducible, which is why it does not
+depend on the Node version that builds it.
+
 ## Consequences
 
 The version bump in VGraph (`plugins.json`, `vgraph-mcp-node`) reaches `main`
