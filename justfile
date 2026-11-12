@@ -253,6 +253,7 @@ test filter='': build
     ./scripts/justfile-hygiene.test.sh
     ./scripts/doctor-kegs.test.sh
     ./scripts/doctor-sdk.test.sh
+    ./scripts/embedded-unicode.test.sh
     ./scripts/codeowners.test.sh
     ./scripts/licence.test.sh
     ./scripts/audit-public.test.sh

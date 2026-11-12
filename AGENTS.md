@@ -73,7 +73,7 @@ functions.
 
 The WASM build compiles under Embedded Swift
 (`-enable-experimental-feature Embedded`, SDK
-`swift-6.4.0-RELEASE_wasm-embedded`). The build fails loudly if incompatible
+`swift-<.swift-version>-RELEASE_wasm-embedded`). The build fails loudly if incompatible
 code enters the WASM dependency graph (VGraph, VGLanguage, VGraphSVG,
 VGraphvizLib, App, EditorCore, MathUtils, VGraphWasm). In those targets:
 
@@ -93,8 +93,9 @@ that; they are not a pattern to copy for new code.
 
 Unicode normalization tables are linked from
 `<xctoolchain>/usr/lib/swift/embedded/wasm32-unknown-none-wasm/libswiftUnicodeDataTables.a`
-(see `VGraphWasm/Package.swift`). Without it, every `String == String`,
-`hasPrefix` and `contains` leaves an undefined symbol.
+Without it, every `String == String`, `hasPrefix` and `contains` leaves an
+undefined symbol. When the build can't find the archive, read
+`docs/wasm-unicode-tables.md` before searching the disk.
 
 `vgraph-cli`, `vgraph-mcp`, `vgraph-mcp-http` and `VGraphMCPTools` sit outside
 that graph and may use Foundation and key paths freely.

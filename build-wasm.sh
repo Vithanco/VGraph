@@ -54,7 +54,9 @@ export PATH="$HOME/.swiftly/bin:$PATH"
 STEP_START=$SECONDS
 cd VGraphWasm
 
-export TOOLCHAINS=$(swiftly use)
+# The swiftly shim picks the toolchain from .swift-version, and refuses to run
+# when TOOLCHAINS names anything else.
+unset TOOLCHAINS
 # The Embedded WASM SDK, derived from .swift-version so it matches the toolchain.
 . "$SCRIPT_DIR/scripts/wasm-sdk.sh"
 # Enable BridgeJS experimental feature for @JS macro support.
@@ -67,27 +69,7 @@ export JAVASCRIPTKIT_EXPERIMENTAL_EMBEDDED_WASM=true
 # cross-compile. Without it, it would pick the macOS xcframework and fail to link.
 export GRAPHVIZ_WASM=1
 
-# Resolve the xctoolchain's `libswiftUnicodeDataTables.a` directory and run an
-# early sanity check, so a misconfigured toolchain fails here with a clear
-# diagnostic instead of at link time with 50 undefined-symbol errors.
-#
-# VGraphWasm/Package.swift can resolve the same path itself (it shells out to
-# `swift -print-target-info`) — this block just gives users the early signal,
-# and exports the value for any tooling that wants to inspect it.
-if [ -z "${EMBEDDED_UNICODE_LIB_DIR:-}" ]; then
-    SWIFT_RUNTIME_RESOURCE_PATH=$(swift -print-target-info | sed -n 's/.*"runtimeResourcePath": "\(.*\)".*/\1/p')
-    if [ -n "$SWIFT_RUNTIME_RESOURCE_PATH" ]; then
-        EMBEDDED_UNICODE_LIB_DIR="${SWIFT_RUNTIME_RESOURCE_PATH}/embedded/wasm32-unknown-none-wasm"
-    fi
-fi
-if [ -z "${EMBEDDED_UNICODE_LIB_DIR:-}" ] || [ ! -f "${EMBEDDED_UNICODE_LIB_DIR}/libswiftUnicodeDataTables.a" ]; then
-    echo "ERROR: libswiftUnicodeDataTables.a is required for the Embedded WASM link." >&2
-    echo "       Looked for it under '${EMBEDDED_UNICODE_LIB_DIR:-<unset>}'." >&2
-    echo "       Set EMBEDDED_UNICODE_LIB_DIR to the directory containing the archive," >&2
-    echo "       or ensure 'swift -print-target-info' returns a valid runtimeResourcePath." >&2
-    exit 1
-fi
-export EMBEDDED_UNICODE_LIB_DIR
+. "$SCRIPT_DIR/scripts/embedded-unicode.sh" || exit 1
 
 # wasm-strip and wasm-opt can be installed yet unlinked (see scripts/brew-kegs.sh).
 . "$SCRIPT_DIR/scripts/brew-kegs.sh"
