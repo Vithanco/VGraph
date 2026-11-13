@@ -49,14 +49,12 @@ struct WatermarkRenderer {
             children)
     }
 
-    /// Tries bottom-left first, then bottom-right, top-left, top-right.
-    /// If all corners overlap, picks the one with the smallest total overlap area.
-    static func renderWatermark(
-        viewBoxX: Double, viewBoxY: Double, viewBoxWidth: Double, viewBoxHeight: Double,
-        avoidRects: [VRect]
-    ) -> VSVGNode {
+    /// The first free corner of the diagram, tried bottom-left, bottom-right,
+    /// top-left, top-right. With none free it goes below the diagram rather than
+    /// over a node, so the caller must grow the canvas to include the result.
+    static func placement(in diagram: VRect, avoiding avoidRects: [VRect]) -> VRect {
         // Cover 15% of the smaller dimension, but cap at 100px in either direction
-        let targetSize = min(min(viewBoxWidth, viewBoxHeight) * 0.15, 100.0)
+        let targetSize = min(min(diagram.width, diagram.height) * 0.15, 100.0)
 
         let aspectRatio = self.viewBoxWidth / self.viewBoxHeight
         let scaledWidth: Double
@@ -71,34 +69,19 @@ struct WatermarkRenderer {
 
         let margin = targetSize * 0.1
         let corners: [Corner] = [.bottomLeft, .bottomRight, .topLeft, .topRight]
-
-        var bestX = 0.0
-        var bestY = 0.0
-        var bestOverlap = Double.infinity
-
-        for corner in corners {
+        let candidates = corners.map { corner in
             let (x, y) = position(
                 for: corner, margin: margin,
                 scaledWidth: scaledWidth, scaledHeight: scaledHeight,
-                viewBoxX: viewBoxX, viewBoxY: viewBoxY,
-                viewBoxWidth: viewBoxWidth, viewBoxHeight: viewBoxHeight
+                viewBoxX: diagram.minX, viewBoxY: diagram.minY,
+                viewBoxWidth: diagram.width, viewBoxHeight: diagram.height
             )
-            let watermarkRect = VRect(x: x, y: y, width: scaledWidth, height: scaledHeight)
-            let overlap = totalOverlapArea(watermarkRect, avoidRects: avoidRects)
-
-            if overlap == 0 {
-                // No overlap at all — use this corner immediately
-                return renderUse(x: x, y: y, width: scaledWidth, height: scaledHeight)
-            }
-            if overlap < bestOverlap {
-                bestOverlap = overlap
-                bestX = x
-                bestY = y
-            }
+            return VRect(x: x, y: y, width: scaledWidth, height: scaledHeight)
         }
-
-        // All corners overlap — use the one with the least overlap
-        return renderUse(x: bestX, y: bestY, width: scaledWidth, height: scaledHeight)
+        if let free = candidates.first(where: { totalOverlapArea($0, avoidRects: avoidRects) == 0 }) {
+            return free
+        }
+        return VRect(x: diagram.minX + margin, y: diagram.maxY + margin, width: scaledWidth, height: scaledHeight)
     }
 
     private static func position(
@@ -144,13 +127,13 @@ struct WatermarkRenderer {
     }
 
     /// Raw interpolation, not `SVGBuilder.format`: the trailing `.0` is pinned.
-    private static func renderUse(x: Double, y: Double, width: Double, height: Double) -> VSVGNode {
+    static func render(at rect: VRect) -> VSVGNode {
         .element(
             .use,
             [
                 VSVGAttribute("href", "#" + symbolId),
-                VSVGAttribute("x", "\(x)"), VSVGAttribute("y", "\(y)"),
-                VSVGAttribute("width", "\(width)"), VSVGAttribute("height", "\(height)"),
+                VSVGAttribute("x", "\(rect.x)"), VSVGAttribute("y", "\(rect.y)"),
+                VSVGAttribute("width", "\(rect.width)"), VSVGAttribute("height", "\(rect.height)"),
             ])
     }
 }
