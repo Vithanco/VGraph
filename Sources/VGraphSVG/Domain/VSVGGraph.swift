@@ -78,8 +78,9 @@ public enum VSVGGraph {
         let icons = SVGRenderQueries.collectIcons(from: graph)
         let overlay = NotationOverlayRegistry.resolve(graph: graph, in: overlayProviders)
 
+        let overlayRects = overlay?.boundsContributions(graph) ?? []
         var bounds = SVGRenderQueries.calculateBounds(graph: graph)
-        for rect in overlay?.boundsContributions(graph) ?? [] {
+        for rect in overlayRects {
             bounds.include(rect)
         }
         let watermark =
@@ -87,7 +88,7 @@ public enum VSVGGraph {
             ? WatermarkRenderer.placement(
                 in: VRect(minX: bounds.minX, minY: bounds.minY, maxX: bounds.maxX, maxY: bounds.maxY),
                 avoiding: SVGRenderQueries.collectNodeRects(graph: graph)
-                    + SVGRenderQueries.collectGroupLabelRects(graph: graph))
+                    + SVGRenderQueries.collectGroupLabelRects(graph: graph) + overlayRects)
             : nil
         if let watermark {
             bounds.include(watermark)

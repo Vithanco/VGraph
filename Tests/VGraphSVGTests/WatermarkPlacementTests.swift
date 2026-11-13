@@ -29,8 +29,15 @@ struct WatermarkPlacementTests {
             width: nodeSize.width, height: nodeSize.height)
     }
 
-    func svg(_ graph: VGraph) throws -> String {
-        try VSVGGraph.render(graph: graph, darkMode: false, logger: TestLogger()).render()
+    func svg(_ graph: VGraph, overlays: [String: NotationOverlayEntry] = [:]) throws -> String {
+        try VSVGGraph.render(graph: graph, darkMode: false, logger: TestLogger(), overlayProviders: overlays).render()
+    }
+
+    /// Stands in for CLD's loop markers: drawn by the renderer, not a node or a label.
+    struct MarkerOverlay: NotationOverlayProvider {
+        let notationName: String
+        let marker: VRect
+        func boundsContributions(graph: VGraph) -> [VRect] { [marker] }
     }
 
     func watermarkRect(in svg: String) throws -> VRect {
@@ -92,6 +99,15 @@ struct WatermarkPlacementTests {
         let rendered = try svg(laidOut(nodesAt: cornerCentres))
 
         #expect(contains(try viewBox(of: rendered), try watermarkRect(in: rendered)))
+    }
+
+    @Test func anOverlayMarkerInTheFirstCornerIsNotCovered() throws {
+        let graph = try laidOut(nodesAt: [cornerCentres[3]])
+        let marker = VRect(x: 0, y: 260, width: 40, height: 40)
+        let overlay = MarkerOverlay(notationName: graph.notationName, marker: marker)
+        let rendered = try svg(graph, overlays: [graph.notationName: overlay.overlayEntry])
+
+        #expect(!overlaps(try watermarkRect(in: rendered), marker))
     }
 
     @Test func aFreeCornerKeepsTheWatermarkOnTheDiagramWithoutGrowingTheImage() throws {
