@@ -259,6 +259,7 @@ test filter='': build
     ./scripts/licence.test.sh
     ./scripts/audit-public.test.sh
     ./scripts/publish-plugins.test.sh
+    ./scripts/plugins-release.test.sh
     just _if-cloned obsidian-vithanco obsidian-lint
     just _if-cloned vscode-vithanco vscode-preview
 
@@ -347,8 +348,7 @@ release: _release-preflight
     V=$(node -p "require('./obsidian-vithanco/manifest.json').version" 2>/dev/null || echo "")
     if [ -n "$V" ] && git -C obsidian-vithanco rev-parse -q --verify "refs/tags/$V" >/dev/null 2>&1; then
         echo "  v$V is already published — bump before publishing:"
-        echo "    just plugins-release patch     # -> next version, rebuilds main.js + .vsix"
-        echo "    just publish-plugins           # tag + push + GitHub releases"
+        echo "    just plugins-release patch     # bump + open the release PR; merge it, pull, then just release"
     else
         echo "  just publish-plugins             # tag + push + GitHub releases at v$V"
     fi
@@ -444,9 +444,9 @@ plugins-setup:
 plugins-pull:
     ./setup-plugins.sh --pull
 
-# Bump + rebuild every engine consumer. BUMP: patch|minor|major or an explicit version. PLUGIN: optional path.
+# Bump every engine consumer, commit VGraph's half on release/<version> and open its PR. Builds nothing. BUMP: patch|minor|major or a version. PLUGIN: optional path.
 [group('plugins')]
-plugins-release bump='patch' plugin='':
+plugins-release bump='patch' plugin='': _require-maintainer _release-preflight
     #!/usr/bin/env bash
     set -euo pipefail
     # `patch`/`minor`/`major` are flags to the driver; an explicit version is a
@@ -457,11 +457,25 @@ plugins-release bump='patch' plugin='':
         patch|minor|major) ARG="--{{bump}}" ;;
         *)                 ARG="{{bump}}" ;;
     esac
-    # Each plugin's release.sh copies website/Package in, and fails on a fresh
-    # checkout without it; a stale or debug copy would ship instead.
-    ./build-wasm.sh --release --skip-smoke
-    ./scripts/check-wasm-optimized.sh website/Package/VGraphWasm.wasm
     ./release-plugins.sh "$ARG" {{plugin}}
+    V=$(node -p "const r = require('./plugins.json').plugins; (r.find(p => p.path === process.argv[1]) || r[0]).version" "{{plugin}}")
+    # main takes no direct pushes, so VGraph's half of the bump (plugins.json,
+    # vgraph-mcp-node) reaches it through a PR. _release-preflight left the
+    # checkout clean, so this commit holds the bump and nothing else. Each
+    # plugin's half is committed by publish-plugins, with the engine it ships.
+    BRANCH="release/$V"
+    git switch -q -c "$BRANCH"
+    git add plugins.json vgraph-mcp-node
+    git commit -q -m "chore: release $V"
+    git push -q -u origin "$BRANCH"
+    gh pr create --base main --head "$BRANCH" --title "chore: release $V" \
+        --body "Bumps every engine consumer to $V. After merging: \`git switch main && git pull\`, \`just release\`, \`just publish-plugins\`."
+    git switch -q -
+    echo ""
+    echo "✓ $V committed on $BRANCH and opened as a PR. Nothing built. Next:"
+    echo "    merge the PR, then: git switch main && git pull"
+    echo "    just release          # builds and tests what publish-plugins ships"
+    echo "    just publish-plugins  # tags, GitHub releases, and the Marketplace when a credential is found"
 
 # Internal: fail with a helpful hint if a plugin repo isn't cloned.
 _require-plugin name:
@@ -548,11 +562,15 @@ parity: (_require-plugin "obsidian-vithanco") (_require-plugin "vscode-vithanco"
 # Publish (outward-facing — the only irreversible recipes)
 # ═══════════════════════════════════════════════════════════════════════════
 
-# Commit + push + tag + GitHub release for BOTH plugins (parity-guarded). Stops before the marketplace.
+# Commit + push + tag + GitHub release for BOTH plugins (parity-guarded), then the VS Code Marketplace when a credential is found. MARKETPLACE: now|defer.
 [group('publish')]
-publish-plugins: _require-maintainer _release-preflight
+publish-plugins marketplace='now': _require-maintainer _release-preflight
     #!/usr/bin/env bash
     set -euo pipefail
+    case "{{marketplace}}" in
+        now|defer) ;;
+        *) echo "Error: MARKETPLACE is 'now' or 'defer', got '{{marketplace}}'." >&2; exit 1 ;;
+    esac
     OBS_V=$(node -p "require('./obsidian-vithanco/manifest.json').version")
     VSC_V=$(node -p "require('./vscode-vithanco/package.json').version")
     if [ "$OBS_V" != "$VSC_V" ]; then
@@ -573,7 +591,7 @@ publish-plugins: _require-maintainer _release-preflight
         VGraphWasm/Package.resolved VGraphWasm/Sources VGraphWasm/VGraphEditor VGraphWasm/scripts)
     BUILT=""
     if [ ! -f website/Package/VGRAPH_BUILD ]; then
-        echo "Preflight: no record of which commit built website/Package — rebuild it ('just release' or 'just plugins-release')." >&2
+        echo "Preflight: no record of which commit built website/Package — rebuild it with 'just release'." >&2
         FAIL=1
     else
         read -r BUILT BUILT_SUM < website/Package/VGRAPH_BUILD
@@ -587,7 +605,7 @@ publish-plugins: _require-maintainer _release-preflight
             echo "Preflight: the engine was built from ${BUILT:0:12}, which is not on origin/main." >&2
             FAIL=1
         elif ! git diff --quiet "$BUILT" HEAD -- "${ENGINE_PATHS[@]}"; then
-            echo "Preflight: the engine sources changed since the build at ${BUILT:0:12} — run 'just plugins-release' again." >&2
+            echo "Preflight: the engine sources changed since the build at ${BUILT:0:12} — rebuild with 'just release'." >&2
             FAIL=1
         fi
         for w in website/Package obsidian-vithanco vscode-vithanco; do
@@ -609,7 +627,7 @@ publish-plugins: _require-maintainer _release-preflight
             FAIL=1
         fi
         if [ ! -f "$DIR/$ASSET" ]; then
-            echo "Preflight: $DIR/$ASSET is missing — run 'just plugins-release <bump>' to build it." >&2
+            echo "Preflight: $DIR/$ASSET is missing — run 'just release' to build it." >&2
             FAIL=1
         fi
     done
@@ -630,7 +648,7 @@ publish-plugins: _require-maintainer _release-preflight
         exit 1
     fi
 
-    echo "Publishing both plugins at v$OBS_V (GitHub releases; marketplace stays manual)."
+    echo "Publishing both plugins at v$OBS_V."
     echo ""
     # Obsidian
     ( cd obsidian-vithanco
@@ -657,15 +675,13 @@ publish-plugins: _require-maintainer _release-preflight
       gh release create "$VSC_V" --title "$VSC_V" --notes "Release $VSC_V, engine $ENGINE" "$VSIX" )
     echo ""
     echo "✓ Plugins pushed + tagged + GitHub releases created at v$OBS_V."
-    echo ""
-    # The two plugins distribute differently, and conflating them is why the
-    # marketplace step gets missed: Obsidian reads the GitHub release, so it is
-    # finished here. VS Code does not — the release is only an attached .vsix.
-    echo "  Obsidian  → DONE. Clients update from the GitHub release."
-    echo "  VS Code   → NOT PUBLISHED YET. The release only attaches the .vsix;"
-    echo "              the Marketplace needs its own push:"
-    echo ""
-    echo "                just publish-vscode-marketplace     # irreversible"
+    # Obsidian reads the GitHub release, so it is finished here. VS Code does
+    # not: its release only attaches the .vsix. The Marketplace comes last, after
+    # both releases, so an expired token cannot leave one plugin released and
+    # the other not. publish-all defers it to the end of its own run.
+    if [ "{{marketplace}}" = now ]; then
+        ./scripts/vscode-marketplace.sh
+    fi
 
 # Publish the VS Code extension to the Marketplace (irreversible; needs a publisher token).
 [group('publish')]
@@ -807,7 +823,7 @@ _release-preflight: (_require-plugin "obsidian-vithanco") (_require-plugin "vsco
         FAIL=1
     elif [ -n "$STATUS" ]; then
         echo "Preflight: VGraph has uncommitted changes — the engine would ship from code no commit holds." >&2
-        echo "           A version bump goes in through a PR: commit it, merge it, then 'git switch main && git pull'." >&2
+        echo "           A version bump goes in through the PR 'just plugins-release' opens: merge it, then 'git switch main && git pull'." >&2
         FAIL=1
     fi
     if ! git fetch -q origin main 2>/dev/null; then
@@ -899,30 +915,11 @@ publish-all: _require-maintainer release
         exit 1
     fi
 
-    # The Marketplace is the one surface that may have no automated credential.
-    # vsce needs a PAT; the alternative Microsoft offers is Entra workload
-    # identity federation, which is CI-only and so no use to a release run from
-    # a laptop. Uploading the .vsix through the publisher portal is a perfectly
-    # good third option, and it is what shipped 1.0.8.
-    #
-    # So this is opportunistic rather than required: publish if a credential is
-    # reachable, otherwise finish everything else and say what is left. A
-    # release that aborts at the last step because of an auth method we chose
-    # not to adopt would be worse than one that tells you to drag a file.
-    # Detection, cheapest first. `vsce verify-pat` is the real proof, but it has
-    # to read the secret out of the keychain, and a process without a TTY is not
-    # granted that — so it reports "no credential" for a developer who is
-    # perfectly well logged in. The keychain *entry* can be seen without
-    # unlocking it, which is the signal that survives both contexts.
-    #
-    # None of these prove the token is still valid. An expired one fails at the
-    # publish itself, which is why this step runs last.
+    # The Marketplace is opportunistic: pushed when a credential is reachable,
+    # otherwise everything else ships and it says what is left. It runs last,
+    # because a credential that exists can still have expired.
     VSCE_AUTO=0
-    if [ -n "${VSCE_PAT:-}" ]; then
-        VSCE_AUTO=1
-    elif security find-generic-password -s vscode-vsce -a vithanco >/dev/null 2>&1; then
-        VSCE_AUTO=1
-    elif npx vsce verify-pat vithanco >/dev/null 2>&1; then
+    if ./scripts/vscode-marketplace.sh --has-credential; then
         VSCE_AUTO=1
     fi
 
@@ -949,7 +946,7 @@ publish-all: _require-maintainer release
        && gh release view "$VER" --repo Vithanco/vscode-vithanco >/dev/null 2>&1; then
         echo "· plugins already released at $VER — skipping"
     else
-        just publish-plugins
+        just publish-plugins defer
     fi
 
     if [ "$(npm view "@vithanco/vgraph-mcp" version 2>/dev/null)" = "$VER" ]; then
@@ -961,9 +958,7 @@ publish-all: _require-maintainer release
     just publish-website
     just publish-cloud-run
 
-    if [ "$VSCE_AUTO" -eq 1 ]; then
-        just publish-vscode-marketplace
-    fi
+    ./scripts/vscode-marketplace.sh
     echo ""
     echo "✓ publish-all done. Live at v$VER:"
     echo "    Obsidian  → GitHub release (clients update from it)"

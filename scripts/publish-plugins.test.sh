@@ -17,16 +17,31 @@ echo "$*" >> "$GH_LOG"
 [ "$1 $2" != "release view" ] # no release exists yet; everything else succeeds
 EOF
 chmod +x "$ROOT/bin/gh"
+# The Marketplace is never reached: npx stands in for vsce, and the keychain
+# lookup always misses, so only VSCE_PAT below decides whether a credential exists.
+cat > "$ROOT/bin/npx" <<'EOF'
+#!/usr/bin/env bash
+echo "$*" >> "$NPX_LOG"
+case "$1 $2" in
+    "vsce show") [ -n "${MARKETPLACE_VERSION:-}" ] || exit 1
+                 printf '{"versions":[{"version":"%s"}]}\n' "$MARKETPLACE_VERSION" ;;
+    # Like vsce with no stored token: it reads one from stdin (a timeout, not a hang).
+    "vsce verify-pat") read -r -t 2 pat && [ -n "$pat" ] ;;
+esac
+EOF
+printf '#!/bin/sh\nexit 1\n' > "$ROOT/bin/security"
+chmod +x "$ROOT/bin/npx" "$ROOT/bin/security"
 export PATH="$ROOT/bin:$PATH"
+unset VSCE_PAT MARKETPLACE_VERSION
 export VITHANCO_MAINTAINER=1
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.invalid
 
 given_plugins_at() { # version, in a fresh directory WORK with pushed plugin repos
     WORK=$(mktemp -d "$ROOT/work.XXXXXX") || exit 1
-    export GH_LOG="$WORK/gh.log"
-    : > "$GH_LOG"
+    export GH_LOG="$WORK/gh.log" NPX_LOG="$WORK/npx.log"
+    : > "$GH_LOG"; : > "$NPX_LOG"
     mkdir -p "$WORK/website/Package" "$WORK/scripts"
-    cp "$REPO_ROOT/scripts/check-wasm-optimized.sh" "$WORK/scripts/"
+    cp "$REPO_ROOT/scripts/check-wasm-optimized.sh" "$REPO_ROOT/scripts/vscode-marketplace.sh" "$WORK/scripts/"
     printf '\0asm\1\0\0\0' > "$WORK/website/Package/VGraphWasm.wasm"
     for p in obsidian-vithanco vscode-vithanco; do
         git init -q --bare -b main "$WORK/$p.git"
@@ -39,6 +54,7 @@ given_plugins_at() { # version, in a fresh directory WORK with pushed plugin rep
     done
     echo 'VGraphWasm.wasm' > "$WORK/vscode-vithanco/.gitignore"
     rm "$WORK/vscode-vithanco/manifest.json"
+    printf '{"name":"vithanco","publisher":"vithanco","version":"%s"}\n' "$1" > "$WORK/vscode-vithanco/package.json"
     echo 'main.js' > "$WORK/obsidian-vithanco/.gitignore"
     echo 'bundle' > "$WORK/obsidian-vithanco/main.js"
     echo 'package' > "$WORK/vscode-vithanco/vithanco-$1.vsix"
@@ -52,7 +68,7 @@ given_plugins_at() { # version, in a fresh directory WORK with pushed plugin rep
     # WORK stands in for VGraph itself: committed, and pushed to its main.
     mkdir -p "$WORK/Sources" && echo 'engine' > "$WORK/Sources/engine.swift"
     echo '{}' > "$WORK/plugins.json"
-    printf '%s\n' '*.git/' obsidian-vithanco/ vscode-vithanco/ website/Package/ out gh.log > "$WORK/.gitignore"
+    printf '%s\n' '*.git/' obsidian-vithanco/ vscode-vithanco/ website/Package/ out gh.log npx.log > "$WORK/.gitignore"
     git init -q --bare -b main "$WORK/vgraph.git"
     git -C "$WORK" init -q -b main
     git -C "$WORK" remote add origin "$WORK/vgraph.git"
@@ -71,7 +87,8 @@ nothing_released() { # why
     done
     grep -q '^release create' "$GH_LOG" && fail "$1: created a release"
 }
-publish() { just --justfile "$REPO_ROOT/justfile" --working-directory "$WORK" publish-plugins >"$WORK/out" 2>&1; }
+publish() { just --justfile "$REPO_ROOT/justfile" --working-directory "$WORK" publish-plugins "$@" >"$WORK/out" 2>&1; }
+pushed_to_marketplace() { grep -q '^vsce publish' "$NPX_LOG"; }
 
 # Given the bump already committed and nothing to commit, when publishing, then both plugins are tagged and released.
 given_plugins_at 1.2.3
@@ -156,12 +173,47 @@ publish && fail "published an engine whose source commit is unknown"
 grep -q 'unknown commit' "$WORK/out" || fail "does not say the commit is unknown: $(cat "$WORK/out")"
 nothing_released "unknown build commit"
 
-# Given no recorded build, when publishing, then nothing is released.
+# Given no recorded build, when publishing, then nothing is released, and it
+# points at `just release`, which builds: plugins-release only bumps.
 given_plugins_at 1.2.3
 rm "$WORK/website/Package/VGRAPH_BUILD"
 publish && fail "published without knowing which commit built the engine"
-grep -q 'plugins-release' "$WORK/out" || fail "does not point at plugins-release: $(cat "$WORK/out")"
+grep -q 'just release' "$WORK/out" || fail "does not point at 'just release': $(cat "$WORK/out")"
 nothing_released "no recorded build"
+
+# Given a Marketplace credential, when publishing, then the .vsix goes to the
+# Marketplace too, after both GitHub releases: no second recipe to remember.
+given_plugins_at 1.2.3
+VSCE_PAT=token publish || fail "publishing with a Marketplace credential failed: $(cat "$WORK/out")"
+grep -q '^vsce publish --packagePath vithanco-1.2.3.vsix' "$NPX_LOG" \
+    || fail "did not push vithanco-1.2.3.vsix to the Marketplace: $(cat "$NPX_LOG")"
+[ "$(grep -c '^release create' "$GH_LOG")" = 2 ] || fail "wanted two releases before the Marketplace: $(cat "$GH_LOG")"
+
+# Given no Marketplace credential, when publishing, then the GitHub releases
+# still succeed and it says how to finish the Marketplace by hand.
+given_plugins_at 1.2.3
+publish || fail "publishing without a Marketplace credential failed: $(cat "$WORK/out")"
+pushed_to_marketplace && fail "pushed to the Marketplace without a credential"
+grep -q 'vithanco-1.2.3.vsix' "$WORK/out" || fail "does not name the .vsix to upload: $(cat "$WORK/out")"
+
+# Given no stored credential and a terminal on stdin, when publishing, then the
+# credential check does not read it: its prompt is hidden, so it would wait
+# silently instead of saying how to upload by hand.
+given_plugins_at 1.2.3
+echo 'typed-token' | publish || fail "publishing with input on stdin failed: $(cat "$WORK/out")"
+pushed_to_marketplace && fail "the credential check read a token from stdin"
+
+# Given the Marketplace already at this version, when publishing, then it is not
+# pushed again: vsce refuses a version it already has.
+given_plugins_at 1.2.3
+MARKETPLACE_VERSION=1.2.3 VSCE_PAT=token publish || fail "publishing failed: $(cat "$WORK/out")"
+pushed_to_marketplace && fail "pushed a version the Marketplace already has"
+
+# Given publish-all, which runs the Marketplace last itself, when it publishes
+# the plugins, then publish-plugins leaves the Marketplace alone.
+given_plugins_at 1.2.3
+VSCE_PAT=token publish defer || fail "publishing with the Marketplace deferred failed: $(cat "$WORK/out")"
+pushed_to_marketplace && fail "pushed to the Marketplace although it was deferred"
 
 # Given origin cannot be fetched, when publishing, then nothing is released: a
 # cached origin/main may still hold a commit the remote has dropped.

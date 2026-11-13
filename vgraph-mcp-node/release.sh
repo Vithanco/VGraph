@@ -8,6 +8,7 @@
 #   ./release.sh --minor
 #   ./release.sh --major
 #   ./release.sh <version>        # explicit version
+#   ./release.sh --bump-only [..] # write the version only, vendor nothing
 #   VGRAPH_REPO=/path/to/VGraph ./release.sh [args]
 #
 # Called by ../release-plugins.sh, which drives every consumer in plugins.json
@@ -26,7 +27,16 @@ cd "$SCRIPT_DIR"
 
 CURRENT=$(node -p "require('./package.json').version")
 
-ARG="${1:-}"
+# --bump-only writes the version and stops: VGraph's `just plugins-release`
+# bumps every consumer, and `just release` builds what ships.
+ARG=""
+BUMP_ONLY=0
+for a in "$@"; do
+    case "$a" in
+        --bump-only) BUMP_ONLY=1 ;;
+        *)           ARG="$a" ;;
+    esac
+done
 case "$ARG" in
     ""|--patch) BUMP=patch ;;
     --minor)    BUMP=minor ;;
@@ -70,6 +80,11 @@ for (const [file, apply] of [
 # The engine inside vendor/ is Apache-2.0: its LICENSE and NOTICE travel with it.
 cp "$SCRIPT_DIR/../LICENSE" LICENSE
 cp "$SCRIPT_DIR/../NOTICE" NOTICE
+
+if [ "$BUMP_ONLY" -eq 1 ]; then
+    echo "✓ Bumped to $NEW (nothing vendored)."
+    exit 0
+fi
 
 # Refresh the vendored engine from an already-built monorepo, the way the
 # plugins re-copy VGraphWasm.wasm. A copy, not a build: building is `just

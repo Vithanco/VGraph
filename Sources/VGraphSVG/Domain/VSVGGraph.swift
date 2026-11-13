@@ -78,12 +78,20 @@ public enum VSVGGraph {
         let icons = SVGRenderQueries.collectIcons(from: graph)
         let overlay = NotationOverlayRegistry.resolve(graph: graph, in: overlayProviders)
 
+        let overlayRects = overlay?.boundsContributions(graph) ?? []
         var bounds = SVGRenderQueries.calculateBounds(graph: graph)
-        for rect in overlay?.boundsContributions(graph) ?? [] {
-            bounds.minX = min(bounds.minX, rect.minX)
-            bounds.minY = min(bounds.minY, rect.minY)
-            bounds.maxX = max(bounds.maxX, rect.maxX)
-            bounds.maxY = max(bounds.maxY, rect.maxY)
+        for rect in overlayRects {
+            bounds.include(rect)
+        }
+        let watermark =
+            showWatermark
+            ? WatermarkRenderer.placement(
+                in: VRect(minX: bounds.minX, minY: bounds.minY, maxX: bounds.maxX, maxY: bounds.maxY),
+                avoiding: SVGRenderQueries.collectNodeRects(graph: graph)
+                    + SVGRenderQueries.collectGroupLabelRects(graph: graph) + overlayRects)
+            : nil
+        if let watermark {
+            bounds.include(watermark)
         }
 
         let ctx = RenderContext(
@@ -111,15 +119,7 @@ public enum VSVGGraph {
 
         content.append(renderGraphLabel(graph: graph, darkMode: darkMode))
 
-        if showWatermark {
-            let avoidanceRects =
-                SVGRenderQueries.collectNodeRects(graph: graph) + SVGRenderQueries.collectGroupLabelRects(graph: graph)
-            content.append(
-                WatermarkRenderer.renderWatermark(
-                    viewBoxX: bounds.minX, viewBoxY: bounds.minY,
-                    viewBoxWidth: bounds.maxX - bounds.minX, viewBoxHeight: bounds.maxY - bounds.minY,
-                    avoidRects: avoidanceRects))
-        }
+        content.append(watermark.map { WatermarkRenderer.render(at: $0) } ?? .empty)
 
         let padding = 50.0
         let viewBoxX = bounds.minX - padding

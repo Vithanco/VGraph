@@ -14,6 +14,13 @@ enum SVGRenderQueries {
         var minY: Double = Double.infinity
         var maxX: Double = -Double.infinity
         var maxY: Double = -Double.infinity
+
+        mutating func include(_ rect: VRect) {
+            minX = min(minX, rect.minX)
+            minY = min(minY, rect.minY)
+            maxX = max(maxX, rect.maxX)
+            maxY = max(maxY, rect.maxY)
+        }
     }
 
     /// Reads the root graph's bounding box, populated by the layout step from
