@@ -314,7 +314,7 @@ obsidian-smoke:
     npx playwright test -c obsidian/playwright.config.js
 
 # The extension's zoom inside VS Code's Markdown preview, which no test can open:
-# its markup, preview script and styles loaded into Chromium instead.
+# its markup, preview script and styles loaded into Chromium and WebKit instead.
 [group('test')]
 vscode-preview: (_require-plugin "vscode-vithanco")
     #!/usr/bin/env bash
@@ -322,7 +322,7 @@ vscode-preview: (_require-plugin "vscode-vithanco")
     ( cd vscode-vithanco && npm run --silent build:preview )
     cd VGraphWasm/Tests-Browser
     [ -d node_modules ] || npm install --silent
-    npx playwright install chromium >/dev/null
+    npx playwright install chromium webkit >/dev/null
     npx playwright test -c vscode/playwright.config.js
 
 # Fail on any formatting deviation. `--strict` is load-bearing: without it the

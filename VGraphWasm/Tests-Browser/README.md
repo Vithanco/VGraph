@@ -61,4 +61,7 @@ elsewhere.
 loads what the extension contributes to it — the block markup from
 `src/html.ts`, the built preview script and the styles — into Chromium, and
 updates it the way the preview does after an edit. It is also the in-depth test
-of `src/zoom.ts`, which the Obsidian plugin shares.
+of `src/zoom.ts`, which the Obsidian plugin shares, so it runs in WebKit too
+(Obsidian's engine on iOS) and `touch.spec.js` pinches on an iPhone-sized page.
+WebKit will not construct a `Touch`, as on iOS, so those touch events are plain
+events carrying a `touches` list.

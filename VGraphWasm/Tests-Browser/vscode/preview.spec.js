@@ -1,36 +1,10 @@
-// Zoom in VS Code's Markdown preview. The preview is a webview no test can open,
-// so this loads what the extension contributes to it — the block markup, the
-// preview script and the styles — into a page, and updates it the way the
-// preview does: a `vscode.markdown.updateContent` event after either a fresh
-// document or the same nodes patched back to the new markup (morphdom).
+// Zoom in VS Code's Markdown preview, which no test can open (see helpers.js).
+// Updates arrive the way the preview sends them: a `vscode.markdown.updateContent`
+// event after either a fresh document or the same nodes patched back to the new
+// markup (morphdom).
 
 import { test, expect } from '@playwright/test';
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const here = path.dirname(fileURLToPath(import.meta.url));
-const pluginDir = path.resolve(process.env.VSCODE_PLUGIN_DIR ?? path.join(here, '../../../vscode-vithanco'));
-const { svgHtml, placeholderHtml } = await import(path.join(pluginDir, 'src/html.ts'));
-
-// The engine sets width and height to the viewBox's.
-const diagram = (w, h) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
-  `<rect width="${w}" height="${h}" fill="#dde"/><circle cx="${w / 2}" cy="${h / 2}" r="${h / 3}" fill="#88a"/></svg>`;
-const wide = svgHtml(diagram(1600, 400));
-
-const block = (page, n = 0) => page.locator('.vgraph-rendered').nth(n);
-const label = (page, n = 0) => block(page, n).locator('.vithanco-zoom-reset');
-const press = (page, which, n = 0) => block(page, n).locator(`.vithanco-zoom-${which}`).click();
-const rect = (page, n = 0) => block(page, n).locator('svg').evaluate((e) => e.getBoundingClientRect().toJSON());
-const overflow = (page, n = 0) =>
-  block(page, n).locator('.vithanco-zoom-viewport').evaluate((e) => e.scrollWidth - e.clientWidth);
-
-async function openPreview(page, blocks) {
-  await page.setContent(`<!doctype html><html><body class="vscode-body"><div class="markdown-body">${blocks.join('')}</div></body></html>`);
-  await page.addStyleTag({ path: path.join(pluginDir, 'styles.css') });
-  await page.addScriptTag({ path: path.join(pluginDir, 'out/preview.js') });
-}
+import { svgHtml, placeholderHtml, diagram, wide, block, label, press, rect, overflow, openPreview } from './helpers.js';
 
 async function rerender(page, blocks, { inPlace }) {
   await page.evaluate(({ html, inPlace }) => {
