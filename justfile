@@ -72,6 +72,15 @@ _plugin-lint-if-present:
         echo "· skipping obsidian-lint: obsidian-vithanco/ is not cloned (just plugins-setup)"
     fi
 
+_vscode-preview-if-present:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -d vscode-vithanco ]; then
+        just vscode-preview
+    else
+        echo "· skipping vscode-preview: vscode-vithanco/ is not cloned (just plugins-setup)"
+    fi
+
 # Build + deploy the WASM package. FLAGS: --release / --use-cdn / --skip-smoke.
 [group('build')]
 wasm *flags:
@@ -260,6 +269,7 @@ test filter='': build
     ./scripts/audit-public.test.sh
     ./scripts/publish-plugins.test.sh
     just _plugin-lint-if-present
+    just _vscode-preview-if-present
 
 # Node WASM smoke tests (vitest) against the deployed website/Package.
 [group('test')]
@@ -302,6 +312,18 @@ obsidian-smoke:
     cd VGraphWasm/Tests-Browser
     [ -d node_modules ] || npm install --silent
     npx playwright test -c obsidian/playwright.config.js
+
+# The extension's zoom inside VS Code's Markdown preview, which no test can open:
+# its markup, preview script and styles loaded into Chromium instead.
+[group('test')]
+vscode-preview: (_require-plugin "vscode-vithanco")
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ( cd vscode-vithanco && npm run --silent build:preview )
+    cd VGraphWasm/Tests-Browser
+    [ -d node_modules ] || npm install --silent
+    npx playwright install chromium >/dev/null
+    npx playwright test -c vscode/playwright.config.js
 
 # Fail on any formatting deviation. `--strict` is load-bearing: without it the
 # linter prints its warnings and still exits 0, so nothing would ever go red.
@@ -513,14 +535,23 @@ parity: (_require-plugin "obsidian-vithanco") (_require-plugin "vscode-vithanco"
         echo "    $VSC" >&2
         exit 2
     fi
+    status=0
     if diff <(echo "$a") <(echo "$b") >/dev/null; then
         echo "✓ parity OK — the shared render core is identical in both plugins (ignoring indentation/comments)."
     else
         echo "⚠ DRIFT — the shared render core differs between the plugins:"
         echo "  (< $OBS   > $VSC)"
         diff <(echo "$a") <(echo "$b") || true
-        exit 1
+        status=1
     fi
+    # Zoom is one file in each, kept byte-identical.
+    if diff obsidian-vithanco/src/zoom.ts vscode-vithanco/src/zoom.ts; then
+        echo "✓ parity OK — src/zoom.ts is identical in both plugins."
+    else
+        echo "⚠ DRIFT — src/zoom.ts differs between the plugins (< obsidian   > vscode)."
+        status=1
+    fi
+    exit $status
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Publish (outward-facing — the only irreversible recipes)

@@ -111,12 +111,16 @@ test.beforeAll(async () => {
   // A new vault that ships plugins asks before running them.
   const trust = page.getByRole('button', { name: 'Trust author and enable plugins' });
   await trust.click({ timeout: 10_000 }).catch(() => {});
+  await enablePlugin();
+});
+
+async function enablePlugin() {
   await page.evaluate(async () => {
     await app.plugins.setEnable(true);
     await app.plugins.loadManifests();
     await app.plugins.enablePluginAndSave('vithanco');
   });
-});
+}
 
 // `browser.close()` over CDP can hang; killing the app drops the connection.
 test.afterAll(async () => {
@@ -178,6 +182,52 @@ test('the same blocks render in the dark theme, in dark colours', async () => {
   expect(dark.labels).toContain('Should we ship?');
   expect(dark.error).toMatch(/error/i);
   expect(dark.fills).not.toEqual(light.fills);
+});
+
+// The zoom's behaviour is the shared src/zoom.ts, tested in depth by
+// vscode/preview.spec.js; this is that it is wired up in Obsidian.
+test('+ enlarges a rendered diagram, and its label fits it again', async () => {
+  await renderIn('moonstone');
+  const block = page.locator('.markdown-reading-view .vithanco-container').first();
+  const width = () => block.locator('svg').evaluate((e) => e.getBoundingClientRect().width);
+  const fitted = await width();
+
+  await block.hover();
+  await block.locator('.vithanco-zoom-in').click();
+  await expect(block.locator('.vithanco-zoom-reset')).toHaveText(/^\d+%$/);
+  expect(await width()).toBeGreaterThan(fitted * 1.1);
+
+  await block.locator('.vithanco-zoom-reset').click();
+  await expect(block.locator('.vithanco-zoom-reset')).toHaveText('Auto');
+  expect(await width()).toBeCloseTo(fitted, 0);
+});
+
+// Switching layout reloads the window, which may destroy the context mid-call,
+// and comes back with the throwaway vault's plugins off.
+async function emulateMobile(on) {
+  await page.evaluate((on) => app.emulateMobile(on), on).catch((e) => {
+    if (!/context was destroyed|app is not defined/.test(e.message)) throw e;
+  });
+  await page.waitForFunction((on) => window.app?.workspace?.layoutReady
+    && document.body.classList.contains('is-mobile') === on, on, { timeout: 60_000 });
+  await enablePlugin();
+}
+
+// A phone cannot hover, and an iPad with a trackpad says it can, so the mobile
+// layout itself shows the controls. emulateMobile is Chromium, not WebKit.
+test('in the mobile layout the zoom controls show without hovering, at finger size', async () => {
+  await emulateMobile(true);
+  try {
+    await renderIn('moonstone');
+    await page.evaluate(() => activeDocument.activeElement?.blur());
+    await page.mouse.move(0, 0);
+    const controls = page.locator('.markdown-reading-view .vithanco-container .vithanco-zoom-bar').first();
+    await expect(controls).toHaveCSS('opacity', '1');
+    const heights = await controls.locator('button').evaluateAll((bs) => bs.map((b) => b.getBoundingClientRect().height));
+    expect(Math.min(...heights)).toBeGreaterThanOrEqual(32);
+  } finally {
+    await emulateMobile(false);
+  }
 });
 
 // Obsidian 1.13+ indexes `settingItems` for its settings search and renders the

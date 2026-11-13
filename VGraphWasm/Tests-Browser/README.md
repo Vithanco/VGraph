@@ -53,3 +53,12 @@ elsewhere.
   reached over CDP.
 - `browser.close()` over CDP can hang. The instance is killed by matching its
   `--user-data-dir`, never by app name.
+
+## The VS Code preview
+
+`vscode/` is run by `just vscode-preview` (and by `just test` when
+`vscode-vithanco/` is cloned). No test can open VS Code's Markdown preview, so it
+loads what the extension contributes to it — the block markup from
+`src/html.ts`, the built preview script and the styles — into Chromium, and
+updates it the way the preview does after an edit. It is also the in-depth test
+of `src/zoom.ts`, which the Obsidian plugin shares.
