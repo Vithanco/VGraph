@@ -91,7 +91,7 @@ public struct Retype: Sendable, Equatable {
     public let ambiguous: [VAmbiguousEdge]
     public var chosen: [EdgeType.Id]
 
-    public init(type: NodeType, ambiguous: [VAmbiguousEdge], chosen: [EdgeType.Id] = []) {
+    init(type: NodeType, ambiguous: [VAmbiguousEdge], chosen: [EdgeType.Id] = []) {
         self.type = type
         self.ambiguous = ambiguous
         self.chosen = chosen
@@ -129,15 +129,12 @@ public struct Conversation: Sendable, Equatable {
 
     public var notationBreak: VNotationBreak { forceChoice ? .permitted : .forbidden }
 
-    public init(
-        command: VCommandID, subject: Subject, forceChoice: Bool,
-        retype: Retype? = nil, breakChoice: Bool = false
-    ) {
+    init(command: VCommandID, subject: Subject, forceChoice: Bool) {
         self.command = command
         self.subject = subject
         self.forceChoice = forceChoice
-        self.retype = retype
-        self.breakChoice = breakChoice
+        self.retype = nil
+        self.breakChoice = false
     }
 }
 

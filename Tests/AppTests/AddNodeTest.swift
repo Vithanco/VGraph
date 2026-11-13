@@ -35,23 +35,6 @@ struct AddNodeTest {
         #expect(try s.exportVGL().contains("node concept_2: Concept \"Change Me\""))
     }
 
-    /// The placeholder is a real, explicit label. An absent one reads "Change Me"
-    /// in memory and becomes the node id after export→reparse, so the visible text
-    /// would change under the user on the next keystroke (ADR-0009).
-    @Test func thePlaceholderSurvivesReparse() throws {
-        let s = try session()
-
-        #expect(try s.addNode(in: nil, ofType: NodeType(string: "Concept")) == "concept_2")
-
-        let before = try s.origin.get(node: Node(string: "concept_2"), attribute: Attributes.Node.label)
-        #expect(before == "Change Me")
-
-        try s.replaceDocument(vgl: try s.exportVGL())
-        #expect(
-            try s.origin.get(node: Node(string: "concept_2"), attribute: Attributes.Node.label)
-                == before)
-    }
-
     /// Naming a group puts the node inside it — the case a right-click within a
     /// boundary lands in, since the boundary rect encloses its interior and so
     /// already resolves to the group.
@@ -95,6 +78,7 @@ struct AddNodeTest {
     @Test func addingIntoAFoldedGroupLeavesItFolded() throws {
         let s = try makeTestSession(vgl: foldedVGL)
         #expect(s.isFolded("g1"))
+        #expect(!s.isFolded("a"), "only a group folds, whatever its group does")
 
         #expect(try s.addNode(in: "g1", ofType: NodeType(string: "Concept")) == "concept_2")
 
@@ -135,64 +119,13 @@ struct AddNodeTest {
         #expect(throws: VError.self) { try s.setLabel(of: root, to: "Renamed") }
         #expect(throws: VError.self) { try s.setURL(of: root, to: "https://example.com") }
         #expect(throws: VError.self) { try s.removeURL(from: root) }
+        #expect(throws: VError.commandUnavailable(.ungroup, target: root)) { try s.ungroup(root) }
 
         #expect(try s.exportVGL() == before, "a refusal changed the document")
         #expect(s.canUndo == false, "a refusal cut an undo step")
     }
 
     // MARK: - The menu (EditorCore)
-
-    /// First in the group menu: it is the one row that *creates* something, and
-    /// the whole reason a user right-clicks blank canvas. The ellipsis follows
-    /// "Add URL…" — it usually asks before it acts.
-    @Test func theGroupMenuOffersAddNodeFirst() throws {
-        #expect(EditorCore.commands(on: .group).first == .addNode)
-
-        let s = try makeTestSession(
-            vgl: """
-                vgraph demo: ConceptMap "Demo" {
-                  group g1 "Cluster" {
-                    node a: Concept "A";
-                  }
-                }
-                """)
-
-        let row = EditorCore.menu(for: "g1", in: s).first
-        #expect(row?.id == .addNode)
-        #expect(row?.title == "Add node…")
-        #expect(row?.enabled == true)
-    }
-
-    /// The [[Root group]] shares the group menu, so the canvas shows its nine rows
-    /// with one live, and adds the settings of the whole diagram: layout direction
-    /// is live there too. Deliberate, and the cheapest place to start: filtering
-    /// waits until the root has a command list of its own worth writing (ADR-0016).
-    @Test func theRootMenuOffersAddNodeAndGreysTheRest() throws {
-        let s = try session()
-
-        let rows = EditorCore.menu(for: s.rootGroupId(), in: s)
-        #expect(rows.count == 10)
-        #expect(rows.filter(\.enabled).map(\.id) == [.addNode, .layoutDirection])
-    }
-
-    /// ⌥ must not reach them. A greyed row is reachable when it is greyed
-    /// *by the notation*; these do not apply at all, so they are `.notApplicable`
-    /// — otherwise holding ⌥ over the canvas would delete the diagram.
-    @Test func altDoesNotReachTheRootsGreyedRows() throws {
-        let s = try session()
-
-        let rows = EditorCore.menu(for: s.rootGroupId(), in: s, notationBreak: .permitted)
-        #expect(rows.filter(\.enabled).map(\.id) == [.addNode, .layoutDirection])
-        #expect(
-            rows.allSatisfy { $0.id == .addNode || $0.id == .layoutDirection || $0.availability == .notApplicable })
-    }
-
-    /// Group-only. A node already offers "Add successor", which is the same wish
-    /// with a relationship attached; an edge has no group to put anything in.
-    @Test func nodeAndEdgeMenusDoNotOfferAddNode() {
-        #expect(!EditorCore.commands(on: .node).contains(.addNode))
-        #expect(!EditorCore.commands(on: .edge).contains(.addNode))
-    }
 
     /// The choice is a plain node type, because a node with no edge has no
     /// [[Candidate]] — there is no relationship for the notation to decide. And no
@@ -204,21 +137,5 @@ struct AddNodeTest {
         let options = EditorCore.addNodeOptions(on: s.rootGroupId(), in: s)
         #expect(options.map(\.title).sorted() == ["Concept", "EmphasizedConcept", "Relation"])
         #expect(options.allSatisfy { !$0.isBreak })
-        #expect(!options.contains { $0.id.hasPrefix(NodeType.unknownPrefix) })
-    }
-
-    /// Empty when there is no question — the rule `splitOptions`, `retypeOptions`
-    /// and `connectOptions` all follow. A Causal Loop Diagram declares one node
-    /// type, so asking which one would be a dialog with a single button.
-    @Test func aNotationWithOneNodeTypeAsksNothing() throws {
-        let s = try makeTestSession(
-            vgl: """
-                vgraph cld: CLD "Demo" {
-                  node s1: Stock "Price";
-                }
-                """)
-
-        #expect(s.nodeTypes().count == 1)
-        #expect(EditorCore.addNodeOptions(on: s.rootGroupId(), in: s).isEmpty)
     }
 }

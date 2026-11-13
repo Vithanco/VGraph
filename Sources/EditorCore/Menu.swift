@@ -84,7 +84,7 @@ public func menu(
 /// What each element kind offers, in the order it is shown. This was
 /// `appliesTo` plus the registry's array order; menu composition is the
 /// adapter's business, so it is spelled out where the menu is drawn.
-public func commands(on kind: VElementKind) -> [VCommandID] {
+func commands(on kind: VElementKind) -> [VCommandID] {
     switch kind {
     case .node:
         return [

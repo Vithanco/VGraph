@@ -56,11 +56,4 @@ struct DecomposeMenuTest {
     func absentOnADetailedNode() throws {
         #expect(!titles("core", in: try session()).contains("Decompose"))
     }
-
-    @Test("Given Decompose chosen, when the conversation begins, then it performs at once")
-    func asksNothing() throws {
-        let begun = EditorCore.begin(.decompose, on: "bank", forcingChoice: false, in: try session())
-
-        #expect(begun.step == .perform(.decompose(node: "bank")))
-    }
 }

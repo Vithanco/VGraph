@@ -44,24 +44,6 @@ struct ChangeEdgeTypeTest {
 
     // MARK: - Candidates
 
-    @Test func offersEveryTypeButTheEdgesOwn() throws {
-        let s = try cld()
-
-        let candidates = s.retypeCandidates(edge: onlyEdge(s))
-
-        #expect(candidates.map { $0.id.id } == ["opposite"])
-    }
-
-    @Test func offersNothingWhereTheNotationDeclaresOneType() throws {
-        let s = try conceptMap()
-
-        #expect(s.retypeCandidates(edge: onlyEdge(s)).isEmpty)
-    }
-
-    @Test func offersNothingForANode() throws {
-        #expect(try cld().retypeCandidates(edge: "s1").isEmpty)
-    }
-
     /// The whole reason this is not `connectCandidates` with the edge's own
     /// endpoints: the edge about to be replaced must not count against the bound
     /// it is about to vacate. `totalOutDegreeMax` closes the source outright, so the
@@ -104,17 +86,6 @@ struct ChangeEdgeTypeTest {
         try s.replaceDocument(vgl: exported)
     }
 
-    /// Both ends stay put, so the arrow runs the way it did. Reorienting is
-    /// `changeDirection`'s job (ADR-0021).
-    @Test func neverFlipsTheEdge() throws {
-        let s = try cld()
-
-        try s.changeType(of: onlyEdge(s), using: EdgeType.Id(string: "opposite"))
-
-        let exported = try s.exportVGL()
-        #expect(!exported.contains("edge s2 -> s1"))
-    }
-
     /// `reattach` carries the attributes across, which is the whole reason the
     /// command is not delete-then-connect.
     @Test func keepsTheLabelAndTheComments() throws {
@@ -147,6 +118,7 @@ struct ChangeEdgeTypeTest {
     @Test func refusesWhereThereIsNothingToBecome() throws {
         let s = try conceptMap()
 
+        #expect(s.retypeCandidates(edge: onlyEdge(s)).isEmpty)
         #expect(throws: VError.self) { try s.changeType(of: onlyEdge(s), using: nil) }
     }
 
@@ -161,45 +133,13 @@ struct ChangeEdgeTypeTest {
     @Test func refusesToRetypeANode() throws {
         let s = try cld()
 
+        #expect(s.retypeCandidates(edge: "s1").isEmpty)
         #expect(throws: VError.self) {
             try s.changeType(of: "s1", using: EdgeType.Id(string: "opposite"))
         }
     }
 
     // MARK: - The menu
-
-    /// It sits after `changeDirection`, so no existing entry moved.
-    @Test func showsUpOnTheEdgeMenuNextToChangeDirection() throws {
-        let commands = EditorCore.commands(on: .edge).map { $0.raw }
-
-        #expect(commands.prefix(3).map { $0 } == ["changeDirection", "changeType", "split"])
-    }
-
-    /// Not `.forbiddenByNotation`: there is no break here, so ⌥ must not enable
-    /// an item whose conversation would have nothing to offer.
-    @Test func greyedRatherThanBreakableWhereThereIsNothingToBecome() throws {
-        let s = try conceptMap()
-        let edge = onlyEdge(s)
-
-        #expect(EditorCore.availability(of: .changeType, on: edge, in: s) == .notApplicable)
-        #expect(
-            EditorCore.availability(of: .changeType, on: edge, in: s)
-                .isEnabled(under: .permitted) == false)
-    }
-
-    @Test func availableWhereTheNotationOffersAnother() throws {
-        let s = try cld()
-
-        #expect(EditorCore.availability(of: .changeType, on: onlyEdge(s), in: s) == .available)
-    }
-
-    /// One candidate is not a question, as `retypeOptions` and `splitOptions`
-    /// both rule. And no escape hatch, unlike a node's list.
-    @Test func asksOnlyWhereThereIsAChoice() throws {
-        let s = try cld()
-
-        #expect(EditorCore.edgeRetypeOptions(for: onlyEdge(s), in: s).isEmpty)
-    }
 
     @Test func offersEveryAlternativeWhereThereAreSeveral() throws {
         let s = try makeTestSession(
@@ -238,18 +178,6 @@ struct ChangeEdgeTypeTest {
                 """)
         try s.connect("a", to: "b", using: nil, notationBreak: .permitted)
         return s
-    }
-
-    @Test func changeTypeIsReachableOnAnEdgeWearingAMintedType() throws {
-        let s = try broken()
-        let edge = onlyEdge(s)
-
-        // The notation names nothing for Concept → Concept …
-        #expect(s.retypeCandidates(edge: edge).isEmpty)
-        // … and the command is still available, because declaring is the way out.
-        #expect(s.hasUnknownType(edge: edge))
-        #expect(EditorCore.availability(of: .changeType, on: edge, in: s) == .available)
-        #expect(EditorCore.edgeRetypeOptions(for: edge, in: s).map { $0.id } == ["__declare__"])
     }
 
     @Test func declaringGivesTheEdgeARealTypeAndWritesTheNotation() throws {
@@ -310,12 +238,19 @@ struct ChangeEdgeTypeTest {
                 }
                 """)
         try s.connect("a", to: "b", using: nil, notationBreak: .permitted)
+        try s.setLabel(of: onlyEdge(s), to: "drives")
+        // The comment arrives as the author would write it: in the document,
+        // above the edge that is already wearing a minted type.
+        let annotated = try s.exportVGL().replacing("edge a -> b", with: "// why this link matters\nedge a -> b")
+        try s.replaceDocument(vgl: annotated)
+        #expect(try s.exportVGL().contains("// why this link matters"))
         let edge = onlyEdge(s)
-        try s.setLabel(of: edge, to: "drives")
 
         try s.declareEdgeType(for: edge, named: "concept_to_concept")
 
-        #expect(try s.exportVGL().contains("\"drives\""))
+        let exported = try s.exportVGL()
+        #expect(exported.contains("\"drives\""))
+        #expect(exported.contains("// why this link matters"))
     }
 
     @Test func aNameTheGraphCannotTakeIsRefused() throws {

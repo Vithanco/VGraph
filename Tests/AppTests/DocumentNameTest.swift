@@ -52,19 +52,6 @@ struct DocumentNameTest {
 
     // MARK: - What an opened file turns out to be
 
-    /// Refusing an SVG we did not write beats loading its markup into the editor
-    /// and leaving the parser to complain about it. The message names the file,
-    /// because the user picked it and needs to know which one was wrong.
-    @Test("An SVG carrying no VGL is refused by name")
-    func aForeignSVGIsRefused() {
-        let opened = EditorCore.opened(
-            "<svg xmlns=\"http://www.w3.org/2000/svg\"><rect/></svg>",
-            named: "chart.svg", embeddedVGL: nil)
-
-        #expect(
-            opened == .refused("chart.svg carries no VGL — only diagrams saved by VGraph do"))
-    }
-
     /// Ours is recognised by what it carries, not by its extension — so an SVG
     /// with the VGL inside opens as the document it is.
     @Test("An SVG carrying VGL opens as that VGL")
@@ -85,11 +72,18 @@ struct DocumentNameTest {
                 == .vgl("vgraph d: IBIS \"D\" { }"))
     }
 
-    /// An XML prologue and leading whitespace are both ordinary in a file
-    /// written by another tool, and neither should get past the refusal.
-    @Test("An SVG is recognised behind whitespace and an XML prologue")
-    func svgIsRecognisedBehindItsPrologue() {
-        for text in ["  \n<svg/>", "<?xml version=\"1.0\"?><svg/>", "\t<?xml ?>"] {
+    /// Refusing an SVG we did not write beats loading its markup into the editor
+    /// and leaving the parser to complain about it. The message names the file,
+    /// because the user picked it and needs to know which one was wrong. An XML
+    /// prologue and leading whitespace are both ordinary in a file written by
+    /// another tool, and neither should get past the refusal.
+    @Test("An SVG carrying no VGL is refused by name, behind whitespace or an XML prologue")
+    func aForeignSVGIsRefused() {
+        let foreign = [
+            "<svg xmlns=\"http://www.w3.org/2000/svg\"><rect/></svg>",
+            "  \n<svg/>", "<?xml version=\"1.0\"?><svg/>", "\t<?xml ?>",
+        ]
+        for text in foreign {
             #expect(
                 EditorCore.opened(text, named: "x.svg", embeddedVGL: nil)
                     == .refused("x.svg carries no VGL — only diagrams saved by VGraph do"),

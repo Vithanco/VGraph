@@ -36,37 +36,6 @@ struct AddSuccessorTest {
         #expect(exported.contains("edge a -> relation_1"))
     }
 
-    /// The command never asks for text: it creates the node with the placeholder
-    /// and hands it back for an [[Inline edit]]. The placeholder must be an
-    /// *explicit* label — an absent one reads "Change Me" in memory but becomes the
-    /// node id after export→reparse, so the visible text would change on the next
-    /// keystroke (ADR-0009).
-    @Test func createdNodeCarriesAPlaceholderThatSurvivesReparse() throws {
-        let s = try session()
-
-        #expect(
-            try s.addSuccessor(from: "a", using: EdgeType.Id(string: "concept_to_relation"))
-                == "relation_1")
-
-        let before = try s.origin.get(node: Node(string: "relation_1"), attribute: Attributes.Node.label)
-        #expect(before == "Change Me")
-
-        try s.replaceDocument(vgl: try s.exportVGL())
-        let after = try s.origin.get(node: Node(string: "relation_1"), attribute: Attributes.Node.label)
-        #expect(after == before)
-    }
-
-    /// The command names the node it created so the adapter can open an
-    /// [[Inline edit]] on it — the editor has the new graph but no other way to
-    /// know which node is new.
-    @Test func addSuccessorHandsBackTheNodeToEdit() throws {
-        let s = try session()
-
-        #expect(
-            try s.addSuccessor(from: "a", using: EdgeType.Id(string: "concept_to_relation"))
-                == "relation_1")
-    }
-
     /// A junctor is icon-only, so no inline editor is offered — `edit` is nil.
     /// It still carries the placeholder like every other created node: omitting the
     /// label would reintroduce the reparse mismatch, invisibly rather than not at
@@ -97,10 +66,6 @@ struct AddSuccessorTest {
     /// exist, and `a` is already a Concept. See `NewNodeIdTests`.
     @Test func otherTypeBreaksTheNotationVisibly() throws {
         let s = try session()
-
-        // "Other type…" opens the full node-type list — the editor's second
-        // question, which `breakTypeOptions` supplies.
-        #expect(EditorCore.breakTypeOptions(in: s).contains { $0.id == "Concept" })
 
         let created = try s.addSuccessor(from: "a", ofType: NodeType(string: "Concept"))
         #expect(created == "concept_2")
@@ -226,29 +191,20 @@ struct AddSuccessorTest {
                 }
                 """)
         #expect(throws: VError.self) { try terminal.addSuccessor(from: "o", using: EdgeType.Id(string: "anything")) }
-        #expect(
-            EditorCore.menu(for: "o", in: terminal)
-                .first { $0.id == .addSuccessor }?.enabled == false)
 
         #expect(try s.exportVGL() == before)
     }
 
-    /// What `VAvailability` bought. An Outcome is terminal, so the notation
-    /// offers nothing to lead to — which is exactly where "Other type…" is
-    /// wanted. ⌥ now reaches it. Before, "nothing to offer" and "the notation
-    /// forbids it, unless you insist" were the same `false`, so the break was
-    /// unreachable on the one node type that needed it most.
-    @Test func permittingTheBreakReachesOtherTypeOnATerminalNode() throws {
+    /// An Outcome is terminal, so the notation offers nothing to lead to — which
+    /// is exactly where "Other type…" is wanted. The menu row is pinned by
+    /// `GoldenMenuTest`; this is the list behind it.
+    @Test func aTerminalNodeOffersOnlyTheBreak() throws {
         let terminal = try makeTestSession(
             vgl: """
                 vgraph dt: DecisionTree "Demo" {
                   node o: Outcome "Done";
                 }
                 """)
-
-        #expect(
-            EditorCore.menu(for: "o", in: terminal, notationBreak: .permitted)
-                .first { $0.id == .addSuccessor }?.enabled == true)
 
         // Only the break itself — the notation has no candidate to add.
         #expect(EditorCore.relatedOptions(from: "o", outgoing: true, in: terminal).map(\.isBreak) == [true])

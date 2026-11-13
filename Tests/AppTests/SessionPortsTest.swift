@@ -35,6 +35,25 @@ struct SentinelExporter: ForExportAGraph {
     func export(graph: VGraph) throws(VError) -> String { Self.text }
 }
 
+/// Recovers a fixed string, so a session that answers `sourceVGL` any way but
+/// through the injected renderer cannot produce it.
+struct SentinelRenderer: ForRenderAGraph {
+    static let source = "recovered by the injected renderer"
+    func sourceVGL(from rendered: String) -> String? { Self.source }
+    func render(graph: VGraph, sourceVGL: String?, darkMode: Bool, interactive: Bool)
+        throws(VError) -> String
+    { throw VError.notImplemented("sentinel renders nothing") }
+}
+
+struct SentinelRendererPorts: AppPorts {
+    let logger = NoOpLogger()
+    let parser = VGraphParser(logger: NoOpLogger())
+    let highlighter = NullHighlighter()
+    let renderer = SentinelRenderer()
+    let layoutEngine = NullLayoutEngine()
+    let documentExporter = VGLExporter()
+}
+
 struct SentinelExporterPorts: AppPorts {
     let logger = NoOpLogger()
     let parser = VGraphParser(logger: NoOpLogger())
@@ -89,6 +108,12 @@ struct SessionPortsTest {
     @Test func sessionExportsThroughTheInjectedExporter() throws {
         let session = try VGraphApplication(ports: SentinelExporterPorts()).makeSession(vgl: base)
         #expect(try session.exportVGL() == SentinelExporter.text)
+    }
+
+    @Test func sessionRecoversSourceThroughTheInjectedRenderer() throws {
+        let session = try VGraphApplication(ports: SentinelRendererPorts()).makeSession(vgl: base)
+        #expect(session.sourceVGL(from: "x") == SentinelRenderer.source)
+        #expect(try makeTestSession(vgl: base).sourceVGL(from: "x") == nil)
     }
 
     @Test func renderingWithoutARendererThrowsInsteadOfTrapping() throws {

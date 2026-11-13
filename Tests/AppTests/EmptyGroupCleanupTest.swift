@@ -9,23 +9,6 @@ import VGraph
 
 struct EmptyGroupCleanupTest {
 
-    @Test func deletingTheLastNodeRemovesTheBoundary() throws {
-        let s = try makeTestSession(
-            vgl: """
-                vgraph demo: ConceptMap "Demo" {
-                  node a: Concept "A";
-                  group g1 "G1" {
-                    node c: Concept "C";
-                  }
-                }
-                """)
-
-        try s.delete("c")
-
-        #expect(!s.origin.has(group: Group(rawValue: "g1")))
-        #expect(!(try s.exportVGL().contains("g1")))
-    }
-
     @Test func aBoundaryWithSomethingLeftInItSurvives() throws {
         let s = try makeTestSession(
             vgl: """
@@ -61,6 +44,7 @@ struct EmptyGroupCleanupTest {
 
         #expect(!s.origin.has(group: Group(rawValue: "inner")))
         #expect(!s.origin.has(group: Group(rawValue: "outer")))
+        #expect(!(try s.exportVGL().contains("inner")))
         #expect(s.origin.has(node: Node("a")))
     }
 

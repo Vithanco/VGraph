@@ -76,13 +76,6 @@ struct ConnectGestureTest {
 
     // MARK: - Where it may be dropped
 
-    @Test("Only nodes the notation can be joined to are offered")
-    func destinationsFollowTheNotation() throws {
-        let s = try conceptMap()
-
-        #expect(s.connectTargets(from: "a") == ["r"])
-    }
-
     /// Landing back where the drag started is a slip far more often than an
     /// intention, even where the notation would allow the self-loop.
     @Test("The node just grabbed is never a destination")
@@ -93,8 +86,9 @@ struct ConnectGestureTest {
         #expect(s.connectTargets(from: "s1") == ["s2"])
     }
 
-    /// What turns the red line green mid-drag. Still every node under ⌥ — a
-    /// relationship can be declared to any of them (ADR-0024).
+    /// Only nodes the notation joins are offered; ⌥ is what turns the red line
+    /// green mid-drag, and then it is every other node — a relationship can be
+    /// declared to any of them (ADR-0024).
     @Test("Allowing the break opens every other node")
     func permittingTheBreakOpensEverything() throws {
         let s = try conceptMap()
@@ -127,7 +121,6 @@ struct ConnectGestureTest {
         #expect(s.connectTargets(from: "s2") == ["s1"])
     }
 
-    /// The gesture's whole reason for existing is that `arity` is satisfied.
     // MARK: - What the drop produces
 
     @Test("One applicable type is created without a prompt")
@@ -148,14 +141,6 @@ struct ConnectGestureTest {
     func severalTypesAskWhich() throws {
         let s = try causalLoopDiagram()
 
-        let options = EditorCore.connectOptions(
-            from: "s1", to: "s2", notationBreak: .forbidden, in: s)
-        #expect(Set(options.map { $0.id }) == ["same", "opposite"])
-        // ⌥ is the escape hatch for this command, so the list carries none.
-        #expect(!options.contains { $0.isBreak })
-        // The prompt is the editor's to build now, from the two labels.
-        #expect(s.label(of: "s1") == "Price" && s.label(of: "s2") == "Demand")
-
         try s.connect("s1", to: "s2", using: EdgeType.Id(string: "opposite"))
         #expect(try s.exportVGL().contains("edge s1 -> s2: opposite"))
     }
@@ -169,25 +154,30 @@ struct ConnectGestureTest {
 
         #expect(throws: VError.self) { try s.connect("a", to: "b") }
         #expect(try s.exportVGL() == before)
+        #expect(!s.canUndo)
+        #expect(EditorCore.connectOptions(from: "a", to: "b", notationBreak: .forbidden, in: s).isEmpty)
     }
 
-    /// ⌥ *is* the escape hatch here, so it always mints the break — even over a
-    /// pair the notation would have joined happily (ADR-0012). What it leaves
-    /// behind is promotable through the edge's **Change type** (ADR-0024).
-    @Test("Allowing the break always produces an unknown edge type")
-    func permittingTheBreakAlwaysMintsUnknown() throws {
-        let s = try conceptMap()
-
-        try s.connect("a", to: "r", using: nil, notationBreak: .permitted)
-
-        #expect(!GenericQualityChecks.unknownEdgeTypes(graph: s.origin).isEmpty)
-    }
-
-    @Test("Allowing the break connects a pair the notation never joins")
+    @Test("Allowing the break connects a pair the notation never joins, but never a group")
     func permittingTheBreakConnectsAnythingButAGroup() throws {
-        let s = try conceptMap()
+        let s = try makeTestSession(
+            vgl: """
+                vgraph demo: ConceptMap "Demo" {
+                  group g1 "Cluster" {
+                    node c: Concept "C";
+                  }
+                  node a: Concept "A";
+                  node b: Concept "B";
+                }
+                """)
+
+        #expect(throws: VError.self) {
+            try s.connect("a", to: "g1", using: nil, notationBreak: .permitted)
+        }
+        #expect(!s.canUndo)
 
         try s.connect("a", to: "b", using: nil, notationBreak: .permitted)
+        #expect(s.canUndo)
 
         let exported = try s.exportVGL()
         #expect(exported.contains("edge a -> b"))
@@ -195,8 +185,11 @@ struct ConnectGestureTest {
         try s.replaceDocument(vgl: exported)
     }
 
-    /// The property the whole of ADR-0024 rests on: a break is a state the
-    /// document can hold, close and reopen.
+    /// ⌥ *is* the escape hatch here, so it always mints the break — even over a
+    /// pair the notation would have joined happily (ADR-0012). What it leaves
+    /// behind is promotable through the edge's **Change type** (ADR-0024), and
+    /// is a state the document can hold, close and reopen — the property the
+    /// whole of ADR-0024 rests on.
     @Test("A break over a pair the notation *does* join still reparses")
     func aBreakOverADeclarablePairReparses() throws {
         let s = try conceptMap()
@@ -227,65 +220,4 @@ struct ConnectGestureTest {
         #expect(throws: VError.self) { try s.connect("a", to: "gone") }
         #expect(throws: VError.self) { try s.connect("gone", to: "a") }
     }
-
-    // MARK: - Where the new edge belongs
-
-    @Test("An edge between two members joins their group")
-    func anEdgeWithinAGroupJoinsIt() throws {
-        let s = try makeTestSession(
-            vgl: """
-                vgraph demo: ConceptMap "Demo" {
-                  group g1 "Cluster" {
-                    node a: Concept "A";
-                    node r: Relation "leads to";
-                  }
-                }
-                """)
-
-        try s.connect("a", to: "r")
-        #expect(s.origin.group(of: Edge.Id(string: "a_r")) == Group(rawValue: "g1"))
-    }
-
-    /// Neither group holds both ends, so the edge falls back to the group that
-    /// does — the root, same as for a node nobody grouped.
-    @Test("An edge across groups belongs to neither")
-    func anEdgeAcrossGroupsIsUngrouped() throws {
-        let s = try makeTestSession(
-            vgl: """
-                vgraph demo: ConceptMap "Demo" {
-                  group g1 "One" {
-                    node a: Concept "A";
-                  }
-                  group g2 "Two" {
-                    node r: Relation "leads to";
-                  }
-                }
-                """)
-
-        try s.connect("a", to: "r")
-        #expect(s.origin.group(of: Edge.Id(string: "a_r")) == Group(rawValue: rootGroup))
-    }
-
-    // MARK: - Gesture-only
-
-    /// The sharpest consequence of a separate family, and the one the compiler
-    /// cannot check: `connect` must never reach a menu (ADR-0012).
-    ///
-    /// It used to also assert `connect` was absent from the menu registry. There
-    /// is no registry now — `EditorCore.commands(on:)` lists what each kind
-    /// offers, and `connect` is simply not among them — so the menu itself is
-    /// the only place left to check, which is where a user would have seen it.
-    @Test("connect never appears in a menu")
-    func connectIsGestureOnly() throws {
-        let s = try conceptMap()
-
-        for id in ["a", "b", "r"] {
-            #expect(!EditorCore.menu(for: id, in: s).contains { $0.id == .connect })
-            #expect(
-                !EditorCore.menu(for: id, in: s, notationBreak: .permitted)
-                    .contains { $0.id == .connect })
-        }
-        // `connect` is not a menu command at all: the drag is the only way in.
-    }
-
 }

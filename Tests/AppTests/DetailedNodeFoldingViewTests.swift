@@ -75,8 +75,10 @@ struct DetailedNodeFoldingViewTests {
 
     @Test("Given folded node 'customer', then the view is refused: only a group or a node type folds")
     func foldedNodeIsRefused() {
-        #expect(throws: VError.self) {
+        #expect {
             try makeTestSession(vgl: vgl + "\nvview broken { folded node customer; }\n")
+        } throws: { error in
+            "\(error)".contains("Expected 'group' or 'node type:' after 'folded'")
         }
     }
 }

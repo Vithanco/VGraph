@@ -285,6 +285,10 @@ struct ArchitectureTest {
         let onSomePort = try drivingPortMembers().values.reduce(into: Set<String>()) {
             $0.formUnion($1)
         }
+        #expect(
+            noPort.isDisjoint(with: onSomePort),
+            "listed as on no port, yet a driving port declares: \(noPort.intersection(onSomePort).sorted())")
+
         let undecided = try publicMembersOfGraphSession()
             .subtracting(onSomePort)
             .subtracting(noPort)

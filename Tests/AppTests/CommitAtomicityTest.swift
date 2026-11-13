@@ -9,8 +9,9 @@ import VGraph
 @testable import App
 
 /// Exports like the real exporter until a group is folded, then refuses: the
-/// graph a command produces is one the exporter cannot serialise.
-struct RefusesFoldedGroupsExporter: ForExportAGraph {
+/// graph a command produces is one the exporter cannot serialise. Only that
+/// trigger is refused, so earlier steps can be taken.
+private struct RefusesFoldedGroupsExporter: ForExportAGraph {
     func export(graph: VGraph) throws(VError) -> String {
         let text = try VGLExporter().export(graph: graph)
         guard !text.contains("folded") else { throw VError.notImplemented("cannot export folded") }
@@ -18,7 +19,7 @@ struct RefusesFoldedGroupsExporter: ForExportAGraph {
     }
 }
 
-struct RefusesFoldedGroupsPorts: AppPorts {
+private struct RefusesFoldedGroupsPorts: AppPorts {
     let logger = NoOpLogger()
     let parser = VGraphParser(logger: NoOpLogger())
     let highlighter = NullHighlighter()
@@ -41,6 +42,7 @@ struct CommitAtomicityTest {
 
     @Test func unexportableCommandLeavesTheSessionUntouched() throws {
         let s = try VGraphApplication(ports: RefusesFoldedGroupsPorts()).makeSession(vgl: base)
+        try s.setLabel(of: "a", to: "Renamed")
         let before = try s.exportVGL()
         let versionBefore = s.currentVersion
 
@@ -49,8 +51,9 @@ struct CommitAtomicityTest {
         }
 
         #expect(try s.exportVGL() == before)
-        #expect(s.canUndo == false)
+        #expect(s.canUndo == true, "the earlier step was lost")
         #expect(s.canRedo == false)
         #expect(s.currentVersion == versionBefore)
+        #expect(try s.undo() == base)
     }
 }

@@ -182,13 +182,4 @@ struct ShownViewTest {
         #expect(
             EditorCore.statusLine("Rendered OK", viewTitle: shown.title) == "Rendered OK — View: Containers")
     }
-
-    @Test("Given a view without a label is shown, then it is named by its name")
-    func unlabelledView() throws {
-        let s = try session(bank)
-        try s.selectView("plain")
-        let shown = EditorCore.shownView(in: EditorCore.viewOptions(in: s))
-        #expect(shown.name == "plain")
-        #expect(shown.title == "plain")
-    }
 }

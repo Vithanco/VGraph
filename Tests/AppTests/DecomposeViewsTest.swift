@@ -156,19 +156,6 @@ struct DecomposeViewsTest {
         }
         """
 
-    @Test("Given views naming bank, when bank is decomposed and undone, then the document and its views are exactly as before in one step")
-    func oneUndoStep() throws {
-        let s = try session(views: namingViews)
-        try s.selectView("v")
-        let before = try s.exportVGL()
-
-        try s.decompose("bank")
-        _ = try s.undo()
-
-        #expect(try s.exportVGL() == before)
-        #expect(!s.canUndo)
-    }
-
     @Test("Given views naming bank, from the default view and from a view, when decomposed and exported, then the export reparses to the same text")
     func theExportReparses() throws {
         for shown in [nil, "v", "w"] as [String?] {

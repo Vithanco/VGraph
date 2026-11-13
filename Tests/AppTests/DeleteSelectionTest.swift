@@ -1,6 +1,5 @@
 // Deleting a whole [[Effective selection]] at once. See ADR-0018.
 
-import EditorCore
 import Testing
 import VGraph
 
@@ -47,32 +46,35 @@ struct DeleteSelectionTest {
         #expect(try s.exportVGL() == before)
     }
 
-    /// The selection is collapsed first, so deleting `c` and `d` deletes the
-    /// boundary they complete — the group is what was selected, and a group
-    /// takes its contents with it.
+    /// The selection is collapsed first: every detail of a detailed node chosen
+    /// *is* the node chosen, so it goes whole. Only a detailed node can tell
+    /// this from tidying up afterwards — a plain group emptied by the same
+    /// deletes disappears either way, but an emptied detailed node is a node
+    /// again, which is what a lone `delete` of its last detail leaves behind.
     @Test func aPromotedGroupIsWhatGetsDeleted() throws {
-        let s = try session()
+        let vgl = """
+            vnotation Arch {
+              node type: System [nodeStyle: roundedBox, detailedBy: (Container)]
+              node type: Container [nodeStyle: roundedBox]
+            }
 
-        try s.delete(all: ["c", "d"])
+            vgraph g: Arch "G" {
+              node keep: System "Keep";
+              group core: System "Core" {
+                node api: Container "API";
+              }
+            }
+            """
+        let single = try makeTestSession(vgl: vgl)
+        try single.delete("api")
+        #expect(single.origin.has(node: Node("core")))
 
-        #expect(!s.origin.has(group: Group(rawValue: "g1")))
-        #expect(!s.origin.has(node: Node("c")))
-        #expect(s.origin.has(node: Node("a")))
-    }
+        let s = try makeTestSession(vgl: vgl)
+        try s.delete(all: ["api"])
 
-    /// Deleting a selection can never *empty* a boundary, for the same reason
-    /// grouping cannot: every member selected is exactly the promotion
-    /// condition, so the boundary is what gets deleted, contents and all. The
-    /// cleanup rule stays where the case is real — a single `delete` on one
-    /// node, which no promotion precedes.
-    @Test func aFullyChosenBoundaryIsDeletedRatherThanEmptied() throws {
-        let s = try session()
-
-        try s.delete(all: ["c", "d", "a"])
-
-        #expect(!s.origin.has(group: Group(rawValue: "g1")))
-        #expect(!s.origin.has(node: Node("a")))
-        #expect(s.origin.has(node: Node("b")))
+        #expect(!s.origin.has(group: Group(rawValue: "core")))
+        #expect(!s.origin.has(node: Node("core")))
+        #expect(s.origin.has(node: Node("keep")))
     }
 
     @Test func deletingNothingIsRefused() throws {
@@ -103,29 +105,5 @@ struct DeleteSelectionTest {
         let s = try session()
 
         #expect(throws: VError.self) { try s.delete(all: [s.rootGroupId()]) }
-    }
-
-    // MARK: - The menu offers it
-
-    @Test func severalElementsOfferGroupingAndDeleting() throws {
-        let s = try session()
-
-        let items = EditorCore.menu(forSelection: Selection(["a", "b"]), in: s)
-
-        var ids: [VCommandID] = []
-        for item in items { ids.append(item.id) }
-        #expect(ids == [.addGroup, .delete])
-    }
-
-    @Test func aGreyedDeleteRowMeansTheCommandWouldRefuse() throws {
-        let s = try session()
-        let selection = Selection([s.rootGroupId()])
-
-        let items = EditorCore.menu(forSelection: selection, in: s)
-        var delete: MenuItem?
-        for item in items where item.id == .delete { delete = item }
-
-        #expect(delete?.enabled == false)
-        #expect(throws: VError.self) { try s.delete(all: selection.effective(in: s)) }
     }
 }

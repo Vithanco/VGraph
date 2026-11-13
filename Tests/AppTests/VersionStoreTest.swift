@@ -36,6 +36,13 @@ struct VersionStoreTest {
         #expect(store.children(of: child) == [])  // the tip has no children
         #expect(store.canUndo == true)
         #expect(store.canRedo == false)
+
+        let tip = try store.record(vgl: "v3")
+        #expect(store.parent(of: tip) == child)
+        #expect(store.parent(of: child) == root)
+        #expect(store.children(of: child) == [tip])
+        #expect(store.children(of: root) == [child])
+        #expect(store.children(of: tip) == [])
     }
 
     @Test func amendReplacesCurrentContentWithoutMovingParent() throws {

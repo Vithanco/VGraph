@@ -66,7 +66,7 @@ public func zoomWheeled(
     return .fixed(clamped(shown * (1 - capped * 0.005)))
 }
 
-public func zoomLabel(_ scale: Double) -> String {
+private func zoomLabel(_ scale: Double) -> String {
     "\(Int((scale * 100).rounded()))%"
 }
 

@@ -85,15 +85,11 @@ struct ZoomTest {
         #expect(scale <= 1.25)
     }
 
-    @Test func theLabelIsAWholePercentage() {
-        #expect(zoomLabel(1) == "100%")
-        #expect(zoomLabel(0.666) == "67%")
-        #expect(zoomLabel(0.1) == "10%")
-    }
-
     @Test func fitIsLabelledAutoAndAFixedZoomByItsPercentage() {
         #expect(Zoom.fit.label == "Auto")
         #expect(Zoom.fixed(1.25).label == "125%")
+        #expect(Zoom.fixed(0.666).label == "67%")
+        #expect(Zoom.fixed(0.1).label == "10%")
     }
 
     @Test func zoomingKeepsThePointUnderTheCursorStill() {

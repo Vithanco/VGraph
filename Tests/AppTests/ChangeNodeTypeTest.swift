@@ -37,6 +37,8 @@ struct ChangeNodeTypeTest {
         #expect(options.map { $0.id } == ["Question", "Con"])
         // No "Other type…" until the user asks to go past the notation.
         #expect(!options.contains { $0.isBreak })
+        #expect(
+            EditorCore.retypeOptions(for: "p", notationBreak: .permitted, in: s).last?.isBreak == true)
 
         try s.changeType(of: "p", to: NodeType(string: "Con"))
 
@@ -70,25 +72,6 @@ struct ChangeNodeTypeTest {
         #expect(exported.contains("node p: Con \"It is quicker\" [backgroundcolor: \"#008000\"]"))
         // Still the second declaration, ahead of the Answer it hangs off.
         #expect(exported.range(of: "node p:")!.lowerBound < exported.range(of: "node a:")!.lowerBound)
-    }
-
-    /// A Concept Map joins a Relation to a Concept and to an EmphasizedConcept, so
-    /// emphasising one is the single thing the notation allows — nothing to ask.
-    @Test func theOnlySubstitutionNeedsNoQuestion() throws {
-        let s = try makeTestSession(
-            vgl: """
-                vgraph demo: ConceptMap "Demo" {
-                  node a: Concept "A";
-                  node r: Relation "leads to";
-                  edge a -> r;
-                }
-                """)
-
-        try s.changeType(of: "a", to: s.retypeCandidates(for: "a").first!)
-
-        let exported = try s.exportVGL()
-        #expect(exported.contains("node a: EmphasizedConcept \"A\""))
-        try s.replaceDocument(vgl: exported)
     }
 
     /// A Concept Map Relation can only ever be reached from a Concept, so there is
@@ -132,15 +115,7 @@ struct ChangeNodeTypeTest {
     @Test func asksWhichRelationshipWhenTheNewTypeDoesNotDecideIt() throws {
         let s = try makeTestSession(
             vgl: """
-                vnotation RiskMap {
-                  node type: Risk [nodeStyle: roundedBox, color: "#cc3333"]
-                  node type: Issue [nodeStyle: roundedBox, color: "#3366cc"]
-                  node type: Control [nodeStyle: roundedBox, color: "#339933"]
-
-                  edge type: mitigated_by from: Risk to: Control
-                  edge type: monitored_by from: Risk to: Control
-                  edge type: fixed_by from: Issue to: Control
-                }
+                \(riskMapNotation)
 
                 vgraph rm: RiskMap "Demo" {
                   node i1: Issue "Late delivery";
@@ -170,15 +145,7 @@ struct ChangeNodeTypeTest {
     @Test func asksAboutTheEdgesInDocumentOrder() throws {
         let s = try makeTestSession(
             vgl: """
-                vnotation RiskMap {
-                  node type: Risk [nodeStyle: roundedBox, color: "#cc3333"]
-                  node type: Issue [nodeStyle: roundedBox, color: "#3366cc"]
-                  node type: Control [nodeStyle: roundedBox, color: "#339933"]
-
-                  edge type: mitigated_by from: Risk to: Control
-                  edge type: monitored_by from: Risk to: Control
-                  edge type: fixed_by from: Issue to: Control
-                }
+                \(riskMapNotation)
 
                 vgraph rm: RiskMap "Demo" {
                   node i1: Issue "Late delivery";
@@ -260,7 +227,6 @@ struct ChangeNodeTypeTest {
         let s = try ibis()
         let edgeId = s.origin.edges.first!.id.id
 
-        #expect(EditorCore.menu(for: edgeId, in: s).contains { $0.id == .changeType })
         #expect(s.retypeCandidates(for: edgeId).isEmpty)
         #expect(throws: VError.self) { try s.changeType(of: edgeId, to: NodeType(string: "Con")) }
     }

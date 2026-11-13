@@ -59,7 +59,7 @@ private func viewBlock(_ name: String, in text: String) -> String {
 @Suite("Presentation goes to the shown view")
 struct ViewPresentationTests {
 
-    @Test("Given containers is shown, when bank is folded, then it is folded in the view and the document still shows it open")
+    @Test("Given containers is shown, when bank is folded, then the view folds it, the document stays open, and isFolded follows")
     func foldGoesToTheView() throws {
         let s = try session(bank)
         try s.selectView("containers")
@@ -67,13 +67,6 @@ struct ViewPresentationTests {
         let text = try s.exportVGL()
         #expect(viewBlock("containers", in: text).contains("folded group bank"))
         #expect(!model(of: text).contains("folded group"))
-    }
-
-    @Test("Given bank is folded in containers, when asked, then it is folded in that view and open in the default view")
-    func isFoldedReadsTheView() throws {
-        let s = try session(bank)
-        try s.selectView("containers")
-        try s.toggleFolding(of: "bank")
         #expect(s.isFolded("bank"))
         try s.selectView(nil)
         #expect(!s.isFolded("bank"))
@@ -152,22 +145,6 @@ struct ViewStructureTests {
         #expect(!viewBlock("containers", in: text).contains("Alpha"))
     }
 
-    @Test("Given bank is folded in the document, when a node is added into it, then the node is inside and bank stays folded")
-    func addIntoAFoldedGroupKeepsItFolded() throws {
-        let s = try session(bankFoldedInModel)
-        let id = try #require(try s.addNode(in: "bank", ofType: NodeType(string: "Concept")))
-        #expect(s.isFolded("bank"))
-        #expect(s.origin.group(of: Node(string: id))?.id.id == "bank")
-    }
-
-    @Test("Given bank is folded in the document, when a node is moved into it, then the node is inside and bank stays folded")
-    func moveIntoAFoldedGroupKeepsItFolded() throws {
-        let s = try session(bankFoldedInModel)
-        try s.move(["b"], into: "bank")
-        #expect(s.isFolded("bank"))
-        #expect(s.origin.group(of: Node("b")) == Group(rawValue: "bank"))
-    }
-
     @Test("Given bank is folded in containers, when a node is added into it, then the node is inside the document's bank and the view still folds it")
     func addIntoAGroupFoldedInTheView() throws {
         let s = try session(bank)
@@ -207,12 +184,14 @@ struct ViewManagementSessionTests {
         #expect(!s.canUndo)
     }
 
-    @Test("Given a created view, when undo is pressed once, then the view is gone")
+    @Test("Given a created view, when undo is pressed once, then the view is gone and the default view is shown")
     func createIsOneStep() throws {
         let s = try session(noViews)
         try s.createView(label: "Containers")
+        #expect(s.activeView() == "containers")
         _ = try s.undo()
         #expect(s.views().isEmpty)
+        #expect(s.activeView() == nil)
     }
 
     @Test("Given a view that folds bank, when it is duplicated as Copy, then the copy folds bank too and is shown")
@@ -246,13 +225,6 @@ struct ViewManagementSessionTests {
         let s = try session(bank)
         #expect(throws: VError.defaultViewIsFixed) { try s.renameView(nil, label: "X") }
         #expect(throws: VError.defaultViewIsFixed) { try s.deleteView(nil) }
-    }
-
-    @Test("Given a view name the document lacks, when it is relabelled or deleted, then it is refused")
-    func unknownViewRefused() throws {
-        let s = try session(bank)
-        #expect(throws: VError.unknownView("nope", available: ["containers"])) { try s.renameView("nope", label: "X") }
-        #expect(throws: VError.unknownView("nope", available: ["containers"])) { try s.deleteView("nope") }
     }
 
     @Test("Given context is shown, when containers is deleted, then it is gone and context stays shown")
@@ -323,14 +295,6 @@ struct ViewNavigationTests {
         #expect(s.activeView() == nil)
     }
 
-    @Test("Given a created view is shown, when its creation is undone, then the default view is shown")
-    func undoFallsBack() throws {
-        let s = try session(noViews)
-        try s.createView(label: "Containers")
-        _ = try s.undo()
-        #expect(s.activeView() == nil)
-    }
-
     @Test("Given containers is shown, when the VGL text drops it, then the default view is shown")
     func textEditFallsBack() throws {
         let s = try session(bank)
@@ -350,14 +314,5 @@ struct ViewNavigationTests {
         #expect(s.activeView() == "containers")
         try s.textEdited(vgl: bank.replacingOccurrences(of: "\"B\"", with: "\"Bee\""))
         #expect(s.activeView() == "containers")
-    }
-
-    @Test("Given a labelled and an unlabelled view, when listed, then they come in document order with the missing label as such")
-    func listing() throws {
-        let s = try session(bank + "\nvview plain {\n}\n")
-        #expect(
-            s.views() == [
-                ViewDeclaration(name: "containers", label: "Containers"), ViewDeclaration(name: "plain", label: nil),
-            ])
     }
 }

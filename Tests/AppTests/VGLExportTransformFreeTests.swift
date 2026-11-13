@@ -45,20 +45,40 @@ struct VGLExportTransformFreeTests {
         }
     }
 
+    /// `FoldGroups` flattens a folded group into a proxy node and deletes its
+    /// members, which would destroy the document on every save.
+    @Test func foldedGroupExportsFoldedWithItsMembers() throws {
+        let source = """
+            vgraph demo: ConceptMap "Demo" {
+              folded group g1 "Cluster" {
+                node a: Concept "A";
+                node b: Concept "B";
+              }
+            }
+            """
+        let vgl = try makeTestApp().exportToVGL(source)
+
+        #expect(vgl.contains("folded group g1"))
+        #expect(vgl.contains("node a"))
+        #expect(vgl.contains("node b"))
+    }
+
     /// `exportGraph` applies the transforms, so handing it the document exporter is
     /// the mistake this suite exists for. Both exporters share `ForExportAGraph`, so
     /// the type system cannot forbid it — `VGLExporter` refuses at runtime instead.
     @Test func exportGraphRefusesTheDocumentExporter() throws {
-        #expect {
+        let error = #expect(throws: VError.self) {
             try makeTestApp().exportGraph(
                 """
                 vgraph demo: ConceptMap "Demo" {
                     node a: Concept "A";
                 }
                 """, using: VGLExporter())
-        } throws: { error in
-            guard case .documentExportOfTransformedGraph = error as? VError else { return false }
-            return true
         }
+        guard case .documentExportOfTransformedGraph(let steps)? = error else {
+            Issue.record("expected documentExportOfTransformedGraph, got \(String(describing: error))")
+            return
+        }
+        #expect(!steps.isEmpty)
     }
 }

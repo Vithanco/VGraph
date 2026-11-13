@@ -123,7 +123,7 @@ struct SelectionTest {
 
     /// Several elements have no single element to be asked about, so the menu
     /// offers only what applies to a set.
-    @Test func severalElementsOfferOnlyTheSetCommands() throws {
+    @Test func theGroupRowIsPlainWhenNothingHasToMove() throws {
         let s = try session()
 
         let items = EditorCore.menu(forSelection: Selection(["a", "b"]), in: s)
@@ -131,13 +131,6 @@ struct SelectionTest {
         var ids: [VCommandID] = []
         for item in items { ids.append(item.id) }
         #expect(ids == [.addGroup, .delete])
-    }
-
-    @Test func theGroupRowIsPlainWhenNothingHasToMove() throws {
-        let s = try session()
-
-        let items = EditorCore.menu(forSelection: Selection(["a", "b"]), in: s)
-
         #expect(items[0].title == "Group")
         #expect(items[0].enabled)
     }

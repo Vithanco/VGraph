@@ -75,12 +75,6 @@ struct GrabAndDropTest {
                 == .move(source: "r", into: "g1"))
     }
 
-    @Test func overAnotherNodeItIsAConnect() throws {
-        #expect(
-            EditorCore.drop(.element("a"), on: "r", moveDestination: "", in: try session())
-                == .connect(from: "a", to: "r"))
-    }
-
     @Test func backOnItselfOrOverNothingItIsNothing() throws {
         let s = try session()
         #expect(EditorCore.drop(.element("a"), on: "a", moveDestination: "", in: s) == nil)

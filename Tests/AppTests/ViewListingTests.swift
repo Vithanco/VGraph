@@ -21,6 +21,9 @@ struct ViewListingTests {
         vview containers "Containers" {
             node web [fontsize: 20];
         }
+
+        vview plain {
+        }
         """
 
     let noViews = """
@@ -29,11 +32,11 @@ struct ViewListingTests {
         }
         """
 
-    @Test("Given views, when listed, then name and label come in document order")
+    @Test("Given views, when listed, then name and label come in document order, the label omitted when there is none")
     func listsInDocumentOrder() throws {
         #expect(
             try app.listViewsJSON(twoViews)
-                == #"[{"name":"context","label":"System Context"},{"name":"containers","label":"Containers"}]"#)
+                == #"[{"name":"context","label":"System Context"},{"name":"containers","label":"Containers"},{"name":"plain"}]"#)
     }
 
     @Test("Given no views, when listed, then the list is empty")

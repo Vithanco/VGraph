@@ -98,6 +98,25 @@ struct ConversationTest {
         #expect(
             options.filter { !$0.isBreak }.map(\.id)
                 == ["relation_to_concept", "relation_to_emphasized_concept"])
+        #expect(options.last == EditorCore.breakOption)
+    }
+
+    /// Predecessors are the same question the other way round: `a` has one way
+    /// out (to a Relation) and a different one way in (from a Relation), so
+    /// only the incoming list yields `relation_to_concept`.
+    @Test("A predecessor is chosen from the incoming candidates")
+    func aPredecessorUsesTheIncomingCandidates() throws {
+        let session = try conceptMap()
+
+        let (step, _) = EditorCore.begin(
+            .addPredecessor, on: "a", forcingChoice: false, in: session)
+
+        #expect(
+            step
+                == .perform(
+                    .addRelated(
+                        to: "a", outgoing: false,
+                        using: EdgeType.Id(string: "relation_to_concept"))))
     }
 
     /// A notation declaring one node type is not asked which one to make
@@ -216,28 +235,22 @@ struct ConversationTest {
 
     /// Free text is typed where it belongs, so `setURL` is the one command whose
     /// question is a field rather than a list — and it opens holding what is
-    /// already there.
-    @Test("The URL field opens holding the link already stored")
-    func theURLFieldSeedsFromWhatIsStored() throws {
+    /// already there. A link too dangerous to follow is still a link the user
+    /// typed: seeding from `urlToOpen` would hand them an empty field and
+    /// silently discard it.
+    @Test(
+        "The URL field opens holding the link as stored, even one too dangerous to follow",
+        arguments: [
+            ("q1", "https://vithanco.com/q"),
+            ("q2", "javascript:alert(1)"),
+        ])
+    func theURLFieldSeedsFromWhatIsStored(node: String, stored: String) throws {
         let session = try linked()
+        #expect(session.storedURL(of: node) == stored)
 
-        let (step, _) = EditorCore.begin(.setURL, on: "q1", forcingChoice: false, in: session)
+        let (step, _) = EditorCore.begin(.setURL, on: node, forcingChoice: false, in: session)
 
-        #expect(step == .askText(prompt: "URL", initial: "https://vithanco.com/q"))
-    }
-
-    /// The rule the seeding turns on: a link too dangerous to follow is still a
-    /// link the user typed. Seeding from `urlToOpen` would hand them an empty
-    /// field and silently discard what was there.
-    @Test("A link too dangerous to follow still seeds the field")
-    func aRefusedLinkStillSeedsTheField() throws {
-        let session = try linked()
-        #expect(session.storedURL(of: "q2") == "javascript:alert(1)")
-        #expect(session.urlToOpen(of: "q2") == nil)
-
-        let (step, _) = EditorCore.begin(.setURL, on: "q2", forcingChoice: false, in: session)
-
-        #expect(step == .askText(prompt: "URL", initial: "javascript:alert(1)"))
+        #expect(step == .askText(prompt: "URL", initial: stored))
     }
 
     @Test("Submitting the field sets the link")
@@ -326,13 +339,14 @@ struct ConversationTest {
     func connectingPastTheNotationAsksNothing() throws {
         let session = try causalLoopDiagram()
 
+        // The pair that asks without ⌥ (see the previous test), so only the break can silence it.
         let (step, _) = EditorCore.beginConnect(
-            from: "s1", to: "s2", allowingBreak: true, in: session)
+            from: "s2", to: "s1", allowingBreak: true, in: session)
 
         #expect(
             step
                 == .perform(
-                    .connect(from: "s1", to: "s2", using: nil, notationBreak: .permitted)))
+                    .connect(from: "s2", to: "s1", using: nil, notationBreak: .permitted)))
     }
 
     /// An edge left wearing a minted type: **Change type** is reachable even
@@ -397,8 +411,11 @@ struct ConversationTest {
         let (_, opened) = EditorCore.begin(
             .changeType, on: edge, forcingChoice: false, in: session)
 
+        var refusal: VError? = nil
+        do { try session.declareEdgeType(for: edge, named: "2fast") } catch { refusal = error }
+
         let step = EditorCore.next(
-            afterRefusing: .edgeTypeNameRefused(name: "2fast"), typed: "2fast", in: opened)
+            afterRefusing: try #require(refusal), typed: "2fast", in: opened)
 
         #expect(step == .askText(prompt: "Name this relationship", initial: "2fast"))
     }
@@ -461,15 +478,14 @@ struct ConversationTest {
 
     /// The escape hatch is not a candidate — picking it replaces the question
     /// rather than answering it, and what comes back is the full node-type list
-    /// ([[Notation break]]). `breakChoice` is how the next answer is read as a
-    /// node type and not an edge type.
+    /// ([[Notation break]]).
     @Test("Choosing the escape hatch asks for a node type instead")
     func theEscapeHatchOpensTheTypeList() throws {
         let session = try conceptMap()
         let (_, conversation) = EditorCore.begin(
             .addSuccessor, on: "r", forcingChoice: false, in: session)
 
-        let (step, answered) = EditorCore.next(
+        let (step, _) = EditorCore.next(
             after: EditorCore.breakOption, in: conversation, session: session)
 
         guard case .ask(let prompt, let options) = step else {
@@ -477,7 +493,6 @@ struct ConversationTest {
             return
         }
         #expect(prompt == "Node type (breaks notation)")
-        #expect(answered.breakChoice)
         #expect(options.contains { $0.id == "Concept" })
     }
 
@@ -489,8 +504,13 @@ struct ConversationTest {
     @Test("A node type chosen past the notation creates that node")
     func theBreakAnswerCreatesTheChosenType() throws {
         let session = try conceptMap()
-        let (_, opened) = EditorCore.begin(
+        let (first, opened) = EditorCore.begin(
             .addSuccessor, on: "a", forcingChoice: true, in: session)
+        guard case .ask(_, let offered) = first else {
+            Issue.record("⌥ should force the list open, got \(first)")
+            return
+        }
+        #expect(offered.contains(EditorCore.breakOption))
         let (_, asking) = EditorCore.next(
             after: EditorCore.breakOption, in: opened, session: session)
 
@@ -596,107 +616,72 @@ struct ConversationTest {
         #expect(options.contains { $0.id == "Relation" })
     }
 
-    /// `next` tests the escape hatch *once*, above the command switch. The
-    /// original tested it per command and deliberately did not test it for
-    /// `addNode`, `connect` or `reattach` — so hoisting it is equivalent only
-    /// because those three lists never carry one.
-    ///
-    /// That equivalence lives in `Menu.swift`, a different file, and nothing
-    /// else notices if it stops holding: adding a break entry to `connectOptions`
-    /// would silently turn a dropped edge into a node-type picker.
-    ///
-    /// Each list is asserted non-empty first, so the check cannot pass by
-    /// having nothing to look at.
-    @Test("The lists hoisting the escape hatch relies on never carry one")
-    func theHoistedEscapeHatchRestsOnListsThatCarryNone() throws {
-        let cld = try makeTestSession(
-            vgl: """
-                vgraph cld: CLD "Demo" {
-                  node s1: Stock "Price";
-                  node s2: Stock "Demand";
-                  node s3: Stock "Supply";
-                  edge s1 -> s2;
-                }
-                """)
-        let edgeId = cld.origin.edges.first!.id.id
-
-        // ConceptMap declares three node types, so this list is a real one.
-        let map = try conceptMap()
-        let nodeTypes = EditorCore.addNodeOptions(on: map.rootGroupId(), in: map)
-        #expect(!nodeTypes.isEmpty)
-        #expect(!nodeTypes.contains { $0.isBreak })
-
-        let connect = EditorCore.connectOptions(
-            from: "s1", to: "s3", notationBreak: .forbidden, in: cld)
-        #expect(!connect.isEmpty)
-        #expect(!connect.contains { $0.isBreak })
-
-        let reattach = EditorCore.reattachOptions(
-            edge: edgeId, end: .to, to: "s3", notationBreak: .forbidden, in: cld)
-        #expect(!reattach.isEmpty)
-        #expect(!reattach.contains { $0.isBreak })
-    }
-
     // MARK: - The retype loop, the only conversation that accumulates
 
-    /// Two edges left ambiguous by the chosen type, asked one at a time. The
-    /// state is built here rather than derived from a notation because no
-    /// shipped notation produces an ambiguous retype today — the loop is the
-    /// rule under test, not the notation that would trigger it.
-    private func retyping(_ chosen: [EdgeType.Id]) -> Conversation {
-        Conversation(
-            command: .changeType, subject: .element("a"), forceChoice: false,
-            retype: Retype(
-                type: NodeType(string: "EmphasizedConcept"),
-                ambiguous: [
-                    VAmbiguousEdge(
-                        edgeId: "e1", prompt: "A → R",
-                        options: [
-                            EdgeType(id: "concept_to_relation", from: NodeType(string: "Concept"), to: NodeType(string: "Relation"))
-                        ]),
-                    VAmbiguousEdge(
-                        edgeId: "e2", prompt: "R → B",
-                        options: [
-                            EdgeType(id: "relation_to_concept", from: NodeType(string: "Relation"), to: NodeType(string: "Concept"))
-                        ]),
-                ],
-                chosen: chosen))
+    /// Issue → Risk leaves both edges to a Control with two ways to attach each
+    /// (`mitigated_by` or `monitored_by`), so the type answer is followed by one
+    /// question per edge.
+    private func riskMap() throws -> TestSession {
+        try makeTestSession(
+            vgl: """
+                \(riskMapNotation)
+
+                vgraph rm: RiskMap "Demo" {
+                  node i1: Issue "Late delivery";
+                  node c1: Control "Weekly review";
+                  node c2: Control "Daily standup";
+                  edge i1 -> c2;
+                  edge i1 -> c1;
+                }
+                """)
     }
 
     @Test("An edge answer is kept and the next edge is asked")
     func eachEdgeAnswerAdvancesTheLoop() throws {
-        let session = try conceptMap()
+        let session = try riskMap()
+        let (first, opened) = EditorCore.begin(
+            .changeType, on: "i1", forcingChoice: false, in: session)
+        guard case .ask(let firstPrompt, _) = first else {
+            Issue.record("expected the first edge's question, got \(first)")
+            return
+        }
+        #expect(firstPrompt == "Late delivery → Daily standup")
 
-        let (step, advanced) = EditorCore.next(
-            after: VCommandOption(id: "concept_to_relation", title: "carries"),
-            in: retyping([]), session: session)
+        let (step, _) = EditorCore.next(
+            after: VCommandOption(id: "mitigated_by", title: "mitigated_by"),
+            in: opened, session: session)
 
-        guard case .ask(let prompt, _) = step else {
+        guard case .ask(let prompt, let options) = step else {
             Issue.record("expected the second edge's question, got \(step)")
             return
         }
-        #expect(prompt == "R → B")
-        #expect(advanced.retype?.chosen == [EdgeType.Id(string: "concept_to_relation")])
+        #expect(prompt == "Late delivery → Weekly review")
+        #expect(options.map(\.id) == ["mitigated_by", "monitored_by"])
     }
 
     /// The answers reach the command positionally, in the order they were asked
     /// — which is what `ambiguousEdges(ifRetyping:to:)` promises.
     @Test("The last edge answer runs the retype carrying every answer in order")
     func theFinalEdgeAnswerRunsTheCommand() throws {
-        let session = try conceptMap()
+        let session = try riskMap()
+        let (_, opened) = EditorCore.begin(
+            .changeType, on: "i1", forcingChoice: false, in: session)
+        let (_, second) = EditorCore.next(
+            after: VCommandOption(id: "mitigated_by", title: "mitigated_by"),
+            in: opened, session: session)
 
         let (step, _) = EditorCore.next(
-            after: VCommandOption(id: "relation_to_concept", title: "carries"),
-            in: retyping([EdgeType.Id(string: "concept_to_relation")]), session: session)
+            after: VCommandOption(id: "monitored_by", title: "monitored_by"),
+            in: second, session: session)
 
         #expect(
             step
                 == .perform(
                     .changeType(
-                        node: "a", to: NodeType(string: "EmphasizedConcept"),
+                        node: "i1", to: NodeType(string: "Risk"),
                         edgeTypes: [
-                            EdgeType.Id(string: "concept_to_relation"),
-                            EdgeType.Id(string: "relation_to_concept"),
+                            EdgeType.Id(string: "mitigated_by"),
+                            EdgeType.Id(string: "monitored_by"),
                         ],
                         notationBreak: .forbidden)))
     }

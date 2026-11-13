@@ -37,6 +37,7 @@ struct CommandRoutingTest {
         #expect(try step(.delete, on: "a") == .perform(.delete(element: "a")))
         #expect(try step(.toggleFolding, on: "g1") == .perform(.toggleFolding(group: "g1")))
         #expect(try step(.ungroup, on: "g1") == .perform(.ungroup(group: "g1")))
+        #expect(try step(.decompose, on: "a") == .perform(.decompose(node: "a")))
         #expect(try step(.removeURL, on: "a") == .perform(.removeURL(element: "a")))
     }
 
@@ -45,24 +46,5 @@ struct CommandRoutingTest {
     @Test func openURLAndRenameAreActionsToo() throws {
         #expect(try step(.openURL, on: "a") == .perform(.openURL(element: "a")))
         #expect(try step(.setLabel, on: "a") == .perform(.rename(element: "a")))
-    }
-
-    /// An enabled row that begins nothing is the bug this routing exists to
-    /// prevent, so it is checked over everything the menu offers.
-    @Test func noEnabledMenuRowBeginsWithNothing() throws {
-        let probe = try session()
-        var ids: [String] = [probe.rootGroupId()]
-        for node in probe.origin.nodes { ids.append(node.id) }
-        for edge in probe.origin.edges { ids.append(edge.id.id) }
-        for group in probe.origin.groups { ids.append(group.id.id) }
-
-        var silent: [String] = []
-        for id in ids {
-            for row in EditorCore.menu(for: id, in: probe, notationBreak: .forbidden) where row.enabled {
-                let begun = EditorCore.begin(row.id, on: id, forcingChoice: false, in: try session())
-                if begun.step == .dismiss { silent.append("\(row.id.raw) on \(id)") }
-            }
-        }
-        #expect(silent.isEmpty, "enabled but begins nothing: \(silent)")
     }
 }

@@ -104,8 +104,9 @@ struct GoldenMenuTest {
     /// `toggleFolding` is group-only — it is absent from the two menus above
     /// rather than greyed, which is `appliesTo` doing its job.
     @Test func groupMenu() throws {
+        let session = try conceptMap()
         #expect(
-            menu(try conceptMap(), "g1") == """
+            menu(session, "g1") == """
                 addNode | Add node… | enabled
                 toggleFolding | Fold group | enabled
                 changeType | Change type | greyed
@@ -116,6 +117,7 @@ struct GoldenMenuTest {
                 ungroup | Ungroup | enabled
                 delete | Delete | enabled
                 """)
+        #expect(menu(session, "g1", .permitted) == menu(session, "g1"))
     }
 
     /// The same menu on the [[Root group]] — what a right-click on blank canvas
@@ -138,10 +140,7 @@ struct GoldenMenuTest {
                 delete | Delete | greyed
                 layoutDirection | Layout direction… | enabled
                 """)
-    }
-
-    @Test func unknownIdOffersNothing() throws {
-        #expect(menu(try conceptMap(), "ghost") == "")
+        #expect(menu(session, session.rootGroupId(), .permitted) == menu(session, session.rootGroupId()))
     }
 
     // MARK: - What ⌥ may change

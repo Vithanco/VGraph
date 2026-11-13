@@ -60,11 +60,11 @@ private func viewBlock(_ name: String, in exported: String) -> String {
 @Suite("vview blocks: parse and export")
 struct ViewDeclarationTests {
 
-    @Test("Given two views, when parsed, then the graph lists them in declaration order with their labels")
+    @Test("Given two views, when parsed, then the graph lists them in declaration order with their labels, and nil when there is none")
     func viewsAreListed() throws {
-        let graph = try parse(banking + views)
-        #expect(graph.views.map { $0.name } == ["context", "containers"])
-        #expect(graph.views.map { $0.label } == ["System Context", "Containers"])
+        let graph = try parse(banking + views + "\nvview plain {\n}\n")
+        #expect(graph.views.map { $0.name } == ["context", "containers", "plain"])
+        #expect(graph.views.map { $0.label } == ["System Context", "Containers", nil])
     }
 
     @Test("Given a document with two views, when parsed and exported, then both views come back and a second pass changes nothing")

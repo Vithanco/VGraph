@@ -139,9 +139,6 @@ struct SplitEdgeTest {
                 """)
         let target = s.origin.edges.first!.id.id
 
-        let greyed = EditorCore.menu(for: target, in: s).first { $0.id == .split }
-        #expect(greyed?.enabled == false)
-        #expect(greyed?.title == "Split (breaks notation)")
         #expect(EditorCore.splitOptions(for: target, notationBreak: .forbidden, in: s).isEmpty)
 
         // ⌥ turns it into a question whose only entry is the break itself.
@@ -177,12 +174,17 @@ struct SplitEdgeTest {
             try s.split(target, with: s.splitCandidates(for: target).first!)
                 == "necessarycondition_2")
 
-        // Emitted inside the group's braces, not after them.
+        #expect(s.origin.group(of: Node(string: "necessarycondition_2"))?.id.id == "g1")
+
+        // And emitted within the group's braces. The exporter writes top-level
+        // nodes before groups, so "before the first }" alone also holds for a
+        // node that landed at the top level.
         let exported = try s.exportVGL()
-        let inside = exported.range(of: "node necessarycondition_2")
-        let groupEnd = exported.range(of: "}")
-        #expect(inside != nil && groupEnd != nil)
-        #expect(inside!.lowerBound < groupEnd!.lowerBound)
+        let groupStart = try #require(exported.range(of: "group g1"))
+        let inside = try #require(exported.range(of: "node necessarycondition_2"))
+        let groupEnd = try #require(exported.range(of: "}", range: groupStart.upperBound..<exported.endIndex))
+        #expect(groupStart.upperBound < inside.lowerBound)
+        #expect(inside.upperBound < groupEnd.lowerBound)
     }
 
     /// A type with no user text gets no inline editor, exactly as when a

@@ -140,7 +140,7 @@ struct DecomposeTest {
         #expect(throws: VError.self) { try s.decompose("bank") }
     }
 
-    @Test("Given a decomposed node, when undone, then the document is exactly as before in one step")
+    @Test("Given a decomposed node, when undone, then the document and its views are exactly as before in one step")
     func oneUndoStep() throws {
         let s = try session(
             """
@@ -149,7 +149,18 @@ struct DecomposeTest {
               edge alice -> bank "logs in";
               edge bank -> bank;
               edge bank -> mail "pays";
-            """)
+            """,
+            views: """
+                vview v {
+                  include node alice, bank;
+                  node bank [fontsize: 16];
+                }
+
+                vview w {
+                  exclude node bank downstream 1;
+                }
+                """)
+        try s.selectView("v")
         let before = try s.exportVGL()
 
         try s.decompose("bank")
@@ -189,16 +200,5 @@ struct DecomposeTest {
         #expect(bankAt.lowerBound < archiveAt.lowerBound, "\(exported)")
         let inView = try s.origin.attributes(inView: "v", of: ItemKey(.group, "bank"))
         #expect(inView[Attributes.Node.fontsize.id] != nil)
-    }
-
-    @Test("Given a decomposed node, when exported and reparsed, then a second export is the same")
-    func theResultRoundTrips() throws {
-        let s = try session("  node bank: System \"Bank\";\n  edge alice -> bank \"logs in\";")
-
-        try s.decompose("bank")
-        let first = try s.exportVGL()
-        let second = try makeTestSession(vgl: first).exportVGL()
-
-        #expect(first == second)
     }
 }

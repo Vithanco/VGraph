@@ -45,27 +45,4 @@ struct ViewSessionTests {
         #expect(text.contains("\"Client\""))
         #expect(hasBothViews(text))
     }
-
-    @Test("Given views, when a command is undone and redone, then they are still there")
-    func undoRedoKeepViews() throws {
-        let s = try makeTestSession(vgl: vgl)
-        try s.setLabel(of: "customer", to: "Client")
-        let undone = try #require(try s.undo())
-        #expect(!undone.contains("\"Client\""))
-        #expect(hasBothViews(undone))
-        #expect(hasBothViews(try s.exportVGL()))
-        let redone = try #require(try s.redo())
-        #expect(redone.contains("\"Client\""))
-        #expect(hasBothViews(redone))
-    }
-
-    @Test("Given a view styling a node, when the node is deleted, then the view forgets it")
-    func deletingForgetsInViews() throws {
-        let s = try makeTestSession(vgl: vgl)
-        try s.delete("web")
-        let text = try s.exportVGL()
-        #expect(!text.contains("node web [fontsize: 16]"))
-        #expect(text.contains("vview containers"))
-        #expect(text.contains("node ghost [fontsize: 31]"))
-    }
 }

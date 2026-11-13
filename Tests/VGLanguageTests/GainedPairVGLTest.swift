@@ -45,4 +45,44 @@ struct GainedPairVGLTest {
         #expect(!exported.contains("edge customer -> spa:"), "\(exported)")
         #expect(try types(parse(exported)) == ["reads", "notifies"])
     }
+
+    /// Only `uses` can describe Person → Container, so nothing ambiguates it.
+    private func unambiguous(edges: String) -> String {
+        """
+        vnotation Arch {
+          node type: Person [nodeStyle: roundedBox]
+          node type: System [nodeStyle: roundedBox, detailedBy: (Container)]
+          node type: Container [nodeStyle: roundedBox]
+          edge type: uses from: Person to: System
+          edge type: talks from: System to: System
+        }
+
+        vgraph g: Arch "G" {
+          node customer: Person "Customer"
+          node spa: Container "SPA"
+          node api: Container "API"
+        \(edges)
+        }
+        """
+    }
+
+    @Test("Given an untyped edge on an unambiguous gained pair, when parsed, then it takes the declared type")
+    func anUntypedEdgeInfersItsDeclaredType() throws {
+        #expect(try types(parse(unambiguous(edges: "edge customer -> spa"))) == ["uses"])
+    }
+
+    @Test("Given an edge between details at both ends, when parsed, then no type is gained for it")
+    func bothEndsDetailsGainNothing() throws {
+        let graph = try parse(unambiguous(edges: "edge spa -> api"))
+        let only = try #require(try types(graph).first)
+        #expect(only.hasPrefix(EdgeType.unknownPrefix))
+    }
+
+    @Test("Given a typed edge on an unambiguous gained pair, when exported, then its type is omitted and comes back on reparse")
+    func exportOmitsAnInferrableType() throws {
+        let exported = try VGLExporter().export(graph: parse(unambiguous(edges: "edge customer -> spa: uses")))
+        #expect(exported.contains("edge customer -> spa\n") || exported.contains("edge customer -> spa \""), "\(exported)")
+        #expect(!exported.contains("customer -> spa: uses"), "\(exported)")
+        #expect(try types(parse(exported)) == ["uses"])
+    }
 }

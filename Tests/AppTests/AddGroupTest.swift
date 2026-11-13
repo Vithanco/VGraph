@@ -25,30 +25,6 @@ struct AddGroupTest {
         try makeTestSession(vgl: vgl)
     }
 
-    // MARK: - The queries the menu is built from
-
-    @Test func theSessionCollapsesCompleteGroupsUpward() throws {
-        let s = try session()
-
-        #expect(s.outermostElements(of: ["c", "d"]) == ["g1"])
-    }
-
-    @Test func theSessionReportsWhereANewGroupWouldGo() throws {
-        let s = try session()
-
-        #expect(s.groupingTarget(for: ["a", "b"])?.parentId == s.rootGroupId())
-        #expect(s.groupingTarget(for: ["a", "b"])?.detached == 0)
-    }
-
-    /// Selecting everything collapses to the [[Root group]], which cannot be
-    /// wrapped — but its contents can, and that is what the user meant.
-    @Test func groupingTheWholeDiagramWrapsItsContents() throws {
-        let s = try session()
-
-        #expect(s.groupingTarget(for: ["a", "b", "g1"])?.parentId == s.rootGroupId())
-        #expect(s.groupingTarget(for: ["a", "b", "g1"])?.detached == 0)
-    }
-
     // MARK: - The command
 
     /// The id comes back so the editor can select the new group and open an
@@ -63,15 +39,6 @@ struct AddGroupTest {
         #expect(try s.exportVGL().contains("group group_2 \"Change Me\""))
     }
 
-    @Test func theMembersMoveInside() throws {
-        let s = try session()
-
-        _ = try s.addGroup(containing: ["a", "b"])
-
-        #expect(s.origin.group(of: Node("a")) == Group(rawValue: "group_2"))
-        #expect(s.origin.group(of: Node("b")) == Group(rawValue: "group_2"))
-    }
-
     @Test func aCompleteGroupIsWrappedRatherThanItsMembers() throws {
         let s = try session()
 
@@ -81,7 +48,7 @@ struct AddGroupTest {
         #expect(s.origin.group(of: Node("c")) == Group(rawValue: "g1"))
     }
 
-    // MARK: - The strict and the permissive form
+    // MARK: - The strict form
 
     @Test func theStrictFormRefusesToDetach() throws {
         let s = try session()
@@ -89,15 +56,6 @@ struct AddGroupTest {
         #expect(throws: VError.self) {
             _ = try s.addGroup(containing: ["a", "c"])
         }
-    }
-
-    @Test func thePermissiveFormDetaches() throws {
-        let s = try session()
-
-        let created = try s.addGroup(moving: ["a", "c"])
-
-        #expect(s.origin.group(of: Node("c")) == Group(rawValue: created!))
-        #expect(s.origin.group(of: Node("d")) == Group(rawValue: "g1"))
     }
 
     // MARK: - Refusals

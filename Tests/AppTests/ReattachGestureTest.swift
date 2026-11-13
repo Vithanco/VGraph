@@ -56,23 +56,6 @@ struct ReattachGestureTest {
 
     // MARK: - Where it may land
 
-    @Test("Only nodes the notation can be joined to are offered")
-    func destinationsFollowTheNotation() throws {
-        let s = try conceptMap()
-
-        #expect(s.reattachTargets(edge: onlyEdgeId(s), end: .from) == ["b"])
-    }
-
-    /// The node the end already occupies is not an edit and must not appear —
-    /// unlike `connect`, the *other* end's node is not excluded on the same
-    /// grounds, since the drag did not begin there.
-    @Test("The end's own node is excluded")
-    func theOwnNodeIsExcluded() throws {
-        let s = try conceptMap()
-
-        #expect(!s.reattachTargets(edge: onlyEdgeId(s), end: .from).contains("a"))
-    }
-
     /// A self-loop is legal wherever the notation declares one, and the drag
     /// began at a handle on the *far* node's rim — not at the node being
     /// dropped onto — so `connect`'s slip argument does not carry over.
@@ -83,6 +66,9 @@ struct ReattachGestureTest {
         #expect(s.reattachTargets(edge: onlyEdgeId(s), end: .to).contains("s1"))
     }
 
+    /// Only nodes the notation joins are offered, and never the node the end
+    /// already occupies (not an edit) — while a→r is legal, so only the
+    /// exclusion drops `a`. ⌥ opens every other node.
     @Test("Allowing the break opens every other node")
     func permittingTheBreakOpensEverything() throws {
         let s = try conceptMap()
@@ -103,7 +89,7 @@ struct ReattachGestureTest {
             vgl: """
                 vnotation Flow {
                   node type: Step [nodeStyle: roundedBox, color: "#3366cc"]
-                  edge type: next from: Step to: Step [samePairMax: 1]
+                  edge type: next from: Step to: Step [outDegreeMax: 1]
                 }
 
                 vgraph f: Flow "Demo" {
@@ -114,11 +100,6 @@ struct ReattachGestureTest {
                 }
                 """)
 
-        // s1 already has one outgoing edge — the very one being dragged — so
-        // `connectCandidates` would refuse s3 as a `totalOutDegreeMax`-free but
-        // `samePairMax`-irrelevant check; the point here is `outDegreeMax` isn't
-        // declared, so this asserts the simpler claim directly: moving the edge
-        // in hand is never blocked by the budget it is about to vacate.
         #expect(s.reattachTargets(edge: onlyEdgeId(s), end: .to).contains("s3"))
     }
 
@@ -190,10 +171,26 @@ struct ReattachGestureTest {
         #expect(!GenericQualityChecks.unknownEdgeTypes(graph: s.origin).isEmpty)
     }
 
-    @Test("Allowing the break reattaches onto a pair the notation never joins")
+    @Test("Allowing the break reattaches onto a pair the notation never joins, but never a group")
     func permittingTheBreakReattachesAnythingButAGroup() throws {
-        let s = try conceptMap()
+        let s = try makeTestSession(
+            vgl: """
+                vgraph demo: ConceptMap "Demo" {
+                  group g1 "Cluster" {
+                    node c: Concept "C";
+                  }
+                  node a: Concept "A";
+                  node r2: Relation "R2";
+                  node r: Relation "leads to";
+                  edge a -> r;
+                }
+                """)
         let edge = onlyEdgeId(s)
+
+        #expect(throws: VError.self) {
+            try s.reattach(edge, end: .from, to: "g1", using: nil, notationBreak: .permitted)
+        }
+        #expect(!s.canUndo)
 
         try s.reattach(edge, end: .from, to: "r2", using: nil, notationBreak: .permitted)
 
@@ -256,22 +253,19 @@ struct ReattachGestureTest {
     // MARK: - Gesture-only
 
     /// The sharpest consequence of a separate family, and the one the compiler
-    /// cannot check: `reattach` must never reach a menu (ADR-0021, following
-    /// ADR-0012's rule for `connect`).
-    @Test("reattach never appears in a menu")
+    /// cannot check: `reattach` and `connect` must never reach a menu (ADR-0021,
+    /// ADR-0012).
+    @Test("reattach and connect never appear in a menu")
     func reattachIsGestureOnly() throws {
         let s = try conceptMap()
         let edge = onlyEdgeId(s)
 
         for id in ["a", "b", "r2", "r", edge] {
-            #expect(!EditorCore.menu(for: id, in: s).contains { $0.id == .reattach })
-            #expect(
-                !EditorCore.menu(for: id, in: s, notationBreak: .permitted)
-                    .contains { $0.id == .reattach })
+            for notationBreak in [VNotationBreak.forbidden, .permitted] {
+                let ids = EditorCore.menu(for: id, in: s, notationBreak: notationBreak).map { $0.id }
+                #expect(!ids.contains(.reattach))
+                #expect(!ids.contains(.connect))
+            }
         }
     }
-
-    /// The same rule as `connect`, and for the same reason: ⌥ mints outright, so
-    /// a type named alongside it is refused rather than discarded.
-
 }

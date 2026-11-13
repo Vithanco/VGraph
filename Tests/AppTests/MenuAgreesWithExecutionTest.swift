@@ -130,7 +130,7 @@ struct MenuAgreesWithExecutionTest {
         return ids
     }
 
-    /// The invariant, over every command × every element of five fixtures: a
+    /// The invariant, over every command × every element of six fixtures: a
     /// named method must refuse exactly when the menu greys its entry.
     ///
     /// This used to run twice — once through `attempt` and once through the
@@ -263,8 +263,7 @@ struct MenuAgreesWithExecutionTest {
                     default:
                         // The rest need an argument chosen from a picker, and
                         // driving that here would re-implement the editor rather
-                        // than check it. TypedCommandsTest covers them against
-                        // the generic path instead.
+                        // than check it. Their own suites cover them.
                         continue
                     }
 
@@ -281,22 +280,27 @@ struct MenuAgreesWithExecutionTest {
         #expect(mismatches.isEmpty, "\(mismatches)")
     }
 
-    /// `openURL` is the odd one: it is a query now, and the menu greys it for a
-    /// link that is stored but not safe to follow. So "enabled" must mean
-    /// "`urlToOpen` gives something", not merely "a URL exists".
-    @Test func openURLIsOfferedExactlyWhenThereIsSomethingToOpen() throws {
+    /// The other half of the same promise: every enabled row *begins* something.
+    /// A row `begin` answers with `.dismiss` is a click that silently does
+    /// nothing, and each arm of its non-exhaustive switch is reached only on the
+    /// notation that offers it (loop markers on a CLD root, decompose on a
+    /// detailed node), hence every fixture.
+    @Test func noEnabledMenuRowBeginsWithNothing() throws {
+        var silent: [String] = []
+
         for (name, vgl) in fixtures {
             let session = try makeTestSession(vgl: vgl)
-            for elementId in elementIds(session) {
-                guard
-                    let entry = EditorCore.menu(for: elementId, in: session, notationBreak: .forbidden)
-                        .first(where: { $0.id == .openURL })
-                else { continue }
 
-                #expect(
-                    entry.enabled == (session.urlToOpen(of: elementId) != nil),
-                    "\(name)/\(elementId): menu and urlToOpen disagree")
+            for elementId in elementIds(session) {
+                for row in EditorCore.menu(for: elementId, in: session, notationBreak: .forbidden)
+                where row.enabled {
+                    let begun = EditorCore.begin(
+                        row.id, on: elementId, forcingChoice: false, in: session)
+                    if begun.step == .dismiss { silent.append("\(name)/\(elementId)/\(row.id.raw)") }
+                }
             }
         }
+
+        #expect(silent.isEmpty, "enabled but begins nothing: \(silent)")
     }
 }

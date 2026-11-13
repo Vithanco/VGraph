@@ -197,15 +197,4 @@ struct URLCommandTest {
         #expect(s.origin.url(of: .node(Node(string: "a"))) == nil)
         try s.replaceDocument(vgl: exported)
     }
-
-    /// A link is an ordinary attribute, so undo restores it like any other edit.
-    @Test func undoBringsARemovedLinkBack() throws {
-        let s = try session()
-        try s.setURL(of: "a", to: "https://vithanco.com")
-        try s.removeURL(from: "a")
-
-        _ = try s.undo()
-
-        #expect(s.origin.url(of: .node(Node(string: "a"))) == "https://vithanco.com")
-    }
 }

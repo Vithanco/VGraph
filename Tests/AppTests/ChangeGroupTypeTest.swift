@@ -50,17 +50,6 @@ struct ChangeGroupTypeTest {
                 """)
     }
 
-    // MARK: - Enumeration
-
-    @Test func listsTheNotationsGroupTypes() throws {
-        let types = try teams().groupTypes().map { $0.id }
-        #expect(types == ["Team", "Guild", "Chapter"])
-    }
-
-    @Test func listsNothingForANotationWithoutBoundaries() throws {
-        #expect(try conceptMap().groupTypes().isEmpty)
-    }
-
     // MARK: - The command
 
     @Test func typesAPlainGroupAndWritesItToTheDocument() throws {
@@ -120,26 +109,6 @@ struct ChangeGroupTypeTest {
 
         #expect(options.map { $0.id } == ["Guild", "Chapter", "__plain__"])
         #expect(options.last?.title == "Plain group")
-    }
-
-    /// A plain group is already plain, so clearing is not on offer.
-    @Test func offersNoPlainEntryForAnUntypedGroup() throws {
-        let options = EditorCore.groupRetypeOptions(for: "core", in: try teams())
-
-        #expect(options.map { $0.id } == ["Team", "Guild", "Chapter"])
-    }
-
-    @Test func offersNothingWhereTheNotationHasNoBoundaries() throws {
-        #expect(EditorCore.groupRetypeOptions(for: "g1", in: try conceptMap()).isEmpty)
-    }
-
-    /// Not `.forbiddenByNotation`: ⌥ must not mint a boundary kind, since the
-    /// unknown group type exists only as the result of a bad document.
-    @Test func greyedRatherThanBreakableWhereThereAreNoBoundaries() throws {
-        let s = try conceptMap()
-
-        #expect(EditorCore.availability(of: .changeType, on: "g1", in: s) == .notApplicable)
-        #expect(EditorCore.availability(of: .changeType, on: "g1", in: s).isEnabled(under: .permitted) == false)
     }
 
     @Test func availableWhereTheNotationHasGroupTypes() throws {

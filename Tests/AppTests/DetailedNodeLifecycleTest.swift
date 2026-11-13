@@ -43,7 +43,7 @@ struct DetailedNodeLifecycleTest {
         try s.delete("web")
 
         let vgl = try s.exportVGL()
-        let ibs = try #require(vgl.range(of: "node ibs: SoftwareSystem"))
+        let ibs = try #require(vgl.range(of: "node ibs: SoftwareSystem \"Internet Banking System\""))
         let mainframe = try #require(vgl.range(of: "node mainframe"))
         #expect(ibs.lowerBound < mainframe.lowerBound)
     }
@@ -89,15 +89,6 @@ struct DetailedNodeLifecycleTest {
         #expect(vgl.contains("include node ibs downstream 1"))
     }
 
-    @Test func theNodeKeepsItsLabel() throws {
-        let s = try makeTestSession(vgl: vgl)
-
-        try s.delete("web")
-        let exported = try s.exportVGL()
-
-        #expect(exported.contains("node ibs: SoftwareSystem \"Internet Banking System\""))
-    }
-
     @Test func ungroupIsNotOfferedOnADetailedNode() throws {
         let s = try makeTestSession(vgl: vgl)
 
@@ -114,31 +105,5 @@ struct DetailedNodeLifecycleTest {
 
         #expect(throws: VError.self) { try s.ungroup("ibs") }
         #expect(try s.exportVGL() == before)
-    }
-
-    @Test func aPlainGroupStillOffersUngroup() throws {
-        let s = try makeTestSession(
-            vgl: """
-                vgraph demo: ConceptMap "Demo" {
-                  group g1 "G1" {
-                    node c: Concept "C";
-                  }
-                }
-                """)
-
-        let row = try #require(menu(for: "g1", in: s).first { $0.id == .ungroup })
-
-        #expect(row.enabled)
-    }
-
-    @Test func undoRestoresTheDetailedNode() throws {
-        let s = try makeTestSession(vgl: vgl)
-        let before = try s.exportVGL()
-
-        try s.delete("web")
-        _ = try s.undo()
-
-        #expect(try s.exportVGL() == before)
-        #expect(s.origin.nodeType(of: Group(rawValue: "ibs")) == Notations.C4.NodeTypes.softwareSystem)
     }
 }

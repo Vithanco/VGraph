@@ -1,11 +1,13 @@
 // Moving elements between groups, from the diagram pane's port. See ADR-0019.
 
-import EditorCore
 import Testing
 import VGraph
 
 @testable import App
 
+/// The rules — what may go where, what an emptied boundary does — belong to
+/// `MovingElementsTests`. Here is only what the session adds: edges refused,
+/// folding left alone, one undo step.
 struct MoveTest {
     ///     root ── a, b
     ///          └─ g1 ── c, d
@@ -22,46 +24,6 @@ struct MoveTest {
 
     private func session() throws -> TestSession {
         try makeTestSession(vgl: vgl)
-    }
-
-    @Test func aNodeMovesIntoABoundary() throws {
-        let s = try session()
-
-        try s.move(["a"], into: "g1")
-
-        #expect(s.origin.group(of: Node("a")) == Group(rawValue: "g1"))
-        #expect(try s.exportVGL().contains("node a"))
-    }
-
-    @Test func movingOutIsMovingIntoTheRoot() throws {
-        let s = try session()
-
-        try s.move(["c"], into: s.rootGroupId())
-
-        #expect(s.origin.group(of: Node("c")) == Group(rawValue: rootGroup))
-    }
-
-    @Test func theSessionReportsWhereASetMayGo() throws {
-        let s = try session()
-
-        let destinations = s.moveDestinations(for: ["a"])
-
-        #expect(destinations.contains("g1"))
-        #expect(!destinations.contains(s.rootGroupId()))
-    }
-
-    // MARK: - Refusals
-
-    @Test func movingIntoItsOwnGroupIsRefused() throws {
-        let s = try session()
-
-        #expect(throws: VError.self) { try s.move(["c"], into: "g1") }
-    }
-
-    @Test func theRootGroupCannotBeMoved() throws {
-        let s = try session()
-
-        #expect(throws: VError.self) { try s.move([s.rootGroupId()], into: "g1") }
     }
 
     @Test func anEdgeCannotBeMoved() throws {
@@ -112,21 +74,5 @@ struct MoveTest {
 
         _ = try s.undo()
         #expect(try s.exportVGL() == before)
-    }
-
-    @Test func emptyingABoundaryByMovingDeletesIt() throws {
-        let s = try makeTestSession(
-            vgl: """
-                vgraph demo: ConceptMap "Demo" {
-                  node a: Concept "A";
-                  group g1 "G1" {
-                    node c: Concept "C";
-                  }
-                }
-                """)
-
-        try s.move(["c"], into: s.rootGroupId())
-
-        #expect(!s.origin.has(group: Group(rawValue: "g1")))
     }
 }

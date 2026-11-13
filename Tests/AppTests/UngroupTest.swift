@@ -31,16 +31,6 @@ struct UngroupTest {
 
     // MARK: - Ungroup: the box goes, the contents stay
 
-    @Test func ungroupingRemovesTheBoxAndKeepsTheContents() throws {
-        let s = try session()
-
-        try s.ungroup("g1")
-
-        #expect(!s.origin.has(group: Group(rawValue: "g1")))
-        #expect(s.origin.has(node: Node("c")))
-        #expect(s.origin.has(node: Node("d")))
-    }
-
     /// The contents move up one level, to where the group itself was.
     @Test func theContentsRiseToTheParent() throws {
         let s = try session()
@@ -84,12 +74,6 @@ struct UngroupTest {
         #expect(try s.exportVGL() == before)
     }
 
-    @Test func theRootGroupCannotBeUngrouped() throws {
-        let s = try session()
-
-        #expect(throws: VError.self) { try s.ungroup(s.rootGroupId()) }
-    }
-
     @Test func onlyAGroupCanBeUngrouped() throws {
         let s = try session()
 
@@ -101,18 +85,6 @@ struct UngroupTest {
     /// The other intention, and the fix for a command that used to lose the
     /// contents without deleting them — they left the group structure, so the
     /// exporter stopped writing them and they vanished at the next reparse.
-    @Test func deletingAGroupTakesItsContentsWithIt() throws {
-        let s = try session()
-
-        try s.delete("g1")
-
-        #expect(!s.origin.has(group: Group(rawValue: "g1")))
-        #expect(!s.origin.has(group: Group(rawValue: "g2")))
-        #expect(!s.origin.has(node: Node("c")))
-        #expect(!s.origin.has(node: Node("e")))
-        #expect(s.origin.has(node: Node("a")))
-    }
-
     @Test func whatSurvivesADeleteIsWhatIsExported() throws {
         let s = try session()
 
@@ -120,8 +92,13 @@ struct UngroupTest {
         let vgl = try s.exportVGL()
 
         #expect(vgl.contains("node a:"))
+        #expect(!vgl.contains("group g1"))
+        #expect(!s.origin.has(group: Group(rawValue: "g2")))
         #expect(!vgl.contains("node c:"))
         #expect(!vgl.contains("node e:"))
+        #expect(!s.origin.has(node: Node("c")))
+        #expect(!s.origin.has(node: Node("e")))
+        #expect(s.origin.has(node: Node("a")))
     }
 
     /// Deleting a group can empty its parent, and the cleanup rule applies to

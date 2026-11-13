@@ -13,6 +13,7 @@ struct DerivedEdgeSessionTests {
                   node A: Stock "A";
                   node h: Stock "h";
                   node C: Stock "C";
+                  node D: Stock "D";
                   edge A -> h: same;
                   edge h -> C: same;
                 }
@@ -28,15 +29,14 @@ struct DerivedEdgeSessionTests {
         """
         Given a view that hides a middle node, \
         when the editor lists edge types for connecting two shown nodes, \
-        then the derived type is not among them and the model's edge types are unchanged
+        then the derived type is not among them and the model declares none
         """
     )
     func derivedTypeNotOffered() throws {
         let s = try session()
-        let before = s.origin.edgeTypes.map { $0.id.id }
+        #expect(s.connectCandidates(from: "A", to: "D").map { $0.id.id } == ["same", "opposite"])
         #expect(!s.connectCandidates(from: "A", to: "C").contains { $0.isDerived })
-        #expect(s.origin.edgeTypes.map { $0.id.id } == before)
-        #expect(!before.contains { $0.hasPrefix(EdgeType.derivedPrefix) })
+        #expect(!s.origin.edgeTypes.contains { $0.id.id.hasPrefix(EdgeType.derivedPrefix) })
     }
 
     @Test("Given a derived edge's stamp, when the session is asked to retype or reattach it, then the command is refused as an unknown edge")
@@ -44,6 +44,8 @@ struct DerivedEdgeSessionTests {
         let s = try session()
         #expect(s.retypeCandidates(edge: "derived-A-C").isEmpty)
         #expect(throws: VError.self) { try s.changeType(of: "derived-A-C") }
+        #expect(s.reattachTargets(edge: "derived-A-C", end: .to).isEmpty)
+        #expect(throws: VError.self) { try s.reattach("derived-A-C", end: .to, to: "A") }
     }
 
     @Test("Given a derived edge in the session, when it is right-clicked, then no command and no target are offered")
@@ -71,7 +73,6 @@ struct DerivedEdgeSessionTests {
                   }
                 }
                 vview v {
-                  exclude node nothere;
                 }
                 """,
             versionStore: InMemoryVersionStore(), observer: NullDocumentObserver(),

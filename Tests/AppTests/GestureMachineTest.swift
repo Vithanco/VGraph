@@ -193,19 +193,18 @@ struct GestureMachineTest {
         #expect(step.effects.contains(.drawLine(from: anchor, to: p(40, 0), legal: false)))
     }
 
-    /// Before the threshold there is no line to repaint, but ⌥ is still the
-    /// drag's and must reach the drop.
-    @Test func altBeforeTheThresholdDrawsNothingButIsKept() throws {
+    /// Before the threshold there is no line to repaint. The drop reads ⌥ from
+    /// the release, so nothing is kept.
+    @Test func altBeforeTheThresholdDrawsNothing() throws {
         let s = try session()
         let pressed = run(GestureState(), press(.element("a")), in: s).state
         let step = run(pressed, .key("Alt", alt: true), in: s)
         #expect(step.consumed)
         #expect(step.effects.isEmpty)
-        guard case .drag(let drag) = step.state.press else {
+        guard case .drag = step.state.press else {
             Issue.record("the press was lost")
             return
         }
-        #expect(drag.alt)
     }
 
     /// The pointer came up somewhere this editor never saw.
@@ -387,8 +386,7 @@ struct GestureMachineTest {
     @Test func aDragCarriesTheSelectionThatCoversIt() throws {
         let s = try session()
         let both = Selection(["r", "b"])
-        #expect(EditorCore.cargo(grabbing: "r", holding: both, in: s) == both.effective(in: s))
-        #expect(both.effective(in: s).count == 2)
+        #expect(Set(EditorCore.cargo(grabbing: "r", holding: both, in: s)) == ["r", "b"])
         #expect(EditorCore.cargo(grabbing: "r", holding: Selection(["b"]), in: s) == ["r"])
     }
 }
