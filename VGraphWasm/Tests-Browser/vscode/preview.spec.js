@@ -1,29 +1,38 @@
-// Zoom in VS Code's Markdown preview, through the stand-in in helpers.js. VS Code
-// replaces the whole document only for another note; after an edit it patches the
-// same nodes back to the new markup (morphdom) and sends a
-// `vscode.markdown.updateContent` event.
+// Zoom in VS Code's Markdown preview, through the stand-in in helpers.js.
 
 import { test, expect } from '@playwright/test';
 import {
-  svgHtml, placeholderHtml, diagram, wide, wideScale, longText, block, zoomLabel, press, rect, overflow,
+  rendered, rendering, wide, wideScale, longText, block, zoomLabel, press, rect, overflow,
   expectSameSpotUnder, openPreview,
 } from './helpers.js';
 
-async function patchInPlace(page, blocks) {
-  await page.evaluate((html) => {
+// The preview's updates (VS Code's media/index.js). After an edit, morphdom
+// patches the nodes it has to the new markup by position, without keys: a node
+// that already matches is left alone, one of the same tag is patched in place,
+// whatever is left over is added or removed. Another note replaces the document.
+async function update(page, blocks, { anotherNote = false } = {}) {
+  await page.evaluate(({ html, anotherNote }) => {
     const root = document.querySelector('.markdown-body');
     const fresh = new DOMParser().parseFromString(`<div class="markdown-body">${html}</div>`, 'text/html').body.firstElementChild;
-    // What morphdom leaves of an element whose content did not change: the
-    // same node, with the new markup's attributes and text.
-    const sync = (from, to) => {
+    const morph = (from, to) => {
+      if (from.isEqualNode(to)) return;
+      if (from.nodeName !== to.nodeName) return from.replaceWith(to.cloneNode(true));
+      if (from.nodeType !== Node.ELEMENT_NODE) return void (from.nodeValue = to.nodeValue);
       for (const a of [...from.attributes]) if (!to.hasAttribute(a.name)) from.removeAttribute(a.name);
       for (const a of [...to.attributes]) from.setAttribute(a.name, a.value);
-      if (from.children.length === 0) from.textContent = to.textContent;
-      [...from.children].forEach((child, i) => sync(child, to.children[i]));
+      morphChildren(from, to);
     };
-    sync(root, fresh);
+    const morphChildren = (from, to) => {
+      [...to.childNodes].forEach((child, i) => {
+        if (from.childNodes[i]) morph(from.childNodes[i], child);
+        else from.appendChild(child.cloneNode(true));
+      });
+      while (from.childNodes.length > to.childNodes.length) from.lastChild.remove();
+    };
+    if (anotherNote) root.replaceWith(fresh);
+    else morphChildren(root, fresh);
     window.dispatchEvent(new CustomEvent('vscode.markdown.updateContent'));
-  }, blocks.join(''));
+  }, { html: blocks.join(''), anotherNote });
 }
 
 // Returns whether the page's own handling (scroll, zoom) was cancelled.
@@ -103,14 +112,14 @@ test('a plain wheel scrolls the preview and leaves the zoom alone', async ({ pag
 });
 
 test('each diagram keeps its zoom when an edit updates the preview', async ({ page }) => {
-  const blocks = [wide, svgHtml(diagram(1200, 300))];
+  const blocks = [wide, rendered('second', 1200, 300)];
   await openPreview(page, blocks);
   await press(page, 'in', 1);
   await press(page, 'in', 1);
   await expect(zoomLabel(page, 1)).toHaveText('75%');
 
-  await patchInPlace(page, blocks);
-  await patchInPlace(page, blocks);
+  await update(page, blocks);
+  await update(page, blocks);
 
   await expect(zoomLabel(page, 0)).toHaveText('Auto');
   await expect(zoomLabel(page, 1)).toHaveText('75%');
@@ -119,6 +128,53 @@ test('each diagram keeps its zoom when an edit updates the preview', async ({ pa
   // Bound once, however many updates: one press is one step.
   await press(page, 'in', 1);
   await expect(zoomLabel(page, 1)).toHaveText('90%');
+});
+
+test('a diagram keeps its zoom when another is added above it', async ({ page }) => {
+  const second = rendered('second', 1200, 300);
+  await openPreview(page, [wide, second]);
+  await press(page, 'in', 1);
+  await press(page, 'in', 1);
+  await expect(zoomLabel(page, 1)).toHaveText('75%');
+
+  await update(page, [rendered('added', 800, 200), wide, second]);
+
+  await expect(zoomLabel(page, 0)).toHaveText('Auto');
+  await expect(zoomLabel(page, 1)).toHaveText('Auto');
+  await expect(zoomLabel(page, 2)).toHaveText('75%');
+});
+
+test('a diagram keeps its zoom while an edit to it renders again', async ({ page }) => {
+  await openPreview(page, [wide]);
+  await press(page, 'in');
+  await expect(zoomLabel(page)).toHaveText('50%');
+
+  await update(page, [rendering('wide')]);
+  await update(page, [rendered('wide', 1600, 500)]);
+
+  await expect(zoomLabel(page)).toHaveText('50%');
+});
+
+test('two diagrams with the same graph id keep a zoom each', async ({ page }) => {
+  const blocks = [rendered('same', 1600, 400), rendered('same', 1200, 300)];
+  await openPreview(page, blocks);
+  await press(page, 'in', 1);
+  await press(page, 'in', 1);
+
+  await update(page, blocks);
+
+  await expect(zoomLabel(page, 0)).toHaveText('Auto');
+  await expect(zoomLabel(page, 1)).toHaveText('75%');
+});
+
+test("another note's diagrams start fitted, whatever their graph ids", async ({ page }) => {
+  await openPreview(page, [wide]);
+  await press(page, 'in');
+  await expect(zoomLabel(page)).toHaveText('50%');
+
+  await update(page, [wide], { anotherNote: true });
+
+  await expect(zoomLabel(page)).toHaveText('Auto');
 });
 
 // VS Code's own double-click handler (markdown.preview.doubleClickToSwitchToEditor)
@@ -137,7 +193,7 @@ test('two quick presses on + zoom twice and do not leave the preview', async ({ 
 });
 
 test('a block still rendering offers no zoom', async ({ page }) => {
-  await openPreview(page, [placeholderHtml('vgraph x: IBIS "x" {}'), wide]);
+  await openPreview(page, [rendering('x'), wide]);
 
   await expect(page.locator('.vgraph-loading .vithanco-zoom-bar')).toHaveCount(0);
   await expect(zoomLabel(page, 0)).toHaveText('Auto');

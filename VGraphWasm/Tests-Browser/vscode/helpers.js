@@ -8,14 +8,18 @@ import { expect } from '@playwright/test';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const pluginDir = path.resolve(process.env.VSCODE_PLUGIN_DIR ?? path.join(here, '../../../vscode-vithanco'));
-export const { svgHtml, placeholderHtml } = await import(path.join(pluginDir, 'src/html.ts'));
+const { svgHtml, placeholderHtml } = await import(path.join(pluginDir, 'src/html.ts'));
 
 // The engine sets width and height to the viewBox's.
-export const diagram = (w, h) =>
+const diagram = (w, h) =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
   `<rect width="${w}" height="${h}" fill="#dde"/><circle cx="${w / 2}" cy="${h / 2}" r="${h / 3}" fill="#88a"/></svg>`;
+const vgl = (graphId) => `vgraph ${graphId}: IBIS "${graphId}" {}`;
+export const rendered = (graphId, w, h) => svgHtml(vgl(graphId), diagram(w, h));
+export const rendering = (graphId) => placeholderHtml(vgl(graphId));
+
 const WIDE_WIDTH = 1600;
-export const wide = svgHtml(diagram(WIDE_WIDTH, 400));
+export const wide = rendered('wide', WIDE_WIDTH, 400);
 export const wideScale = (r) => r.width / WIDE_WIDTH;
 
 // Lets the page scroll down, so zooming around a point can keep it under the pointer.
