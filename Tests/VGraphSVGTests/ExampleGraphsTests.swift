@@ -49,6 +49,33 @@ struct ExampleGraphsTests {
         #expect(missing.isEmpty, "add an example graph for: \(missing)")
     }
 
+    private var lateProject: ExampleGraph? {
+        exampleGraphs.first { $0.name == "CLD — Why Does the Project Keep Slipping?" }
+    }
+
+    private func loopStyles(_ vgl: String) throws -> [LoopStyle] {
+        try app.parseGraph(vgl).loopsToMark.map { $0.loopStyle }
+    }
+
+    // vithanco.com's front page tells visitors what to look for in this example.
+    @Test("Given the late-project CLD, then it has three reinforcing loops and two balancing ones")
+    func lateProjectLoops() throws {
+        let styles = try loopStyles(try #require(lateProject).vgl)
+        #expect(styles.filter { $0 == .reinforcing }.count == 3)
+        #expect(styles.filter { $0 == .balancing }.count == 2)
+    }
+
+    @Test("Given the late-project CLD, when hiring no longer costs onboarding effort, then one reinforcing loop goes")
+    func lateProjectWithoutOnboarding() throws {
+        let lines = try #require(lateProject).vgl.split(separator: "\n", omittingEmptySubsequences: false)
+        let without = lines.filter { !$0.contains("edge hiring -> onboarding") }
+        #expect(without.count == lines.count - 1)
+
+        let styles = try loopStyles(without.joined(separator: "\n"))
+        #expect(styles.filter { $0 == .reinforcing }.count == 2)
+        #expect(styles.filter { $0 == .balancing }.count == 2)
+    }
+
     private var banking: ExampleGraph? { exampleGraphs.first { $0.name.hasPrefix("C4 — Internet Banking") } }
 
     private static let people = ["customer", "serviceStaff", "backOfficeStaff"]

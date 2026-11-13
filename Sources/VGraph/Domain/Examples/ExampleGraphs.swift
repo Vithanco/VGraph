@@ -96,6 +96,53 @@ public let exampleGraphs: [ExampleGraph] = [
             }
             """#),
     ExampleGraph(
+        name: #"ConceptMap — The Water Cycle"#,
+        vgl: #"""
+            vgraph waterCycle: ConceptMap "The Water Cycle" {
+                node cycle: Concept "The Water Cycle";
+                node sun: Concept "The Sun";
+                node gravity: Concept "Gravity";
+                node water: Concept "Water";
+                node evaporation: Concept "Evaporation";
+                node condensation: Concept "Condensation";
+                node precipitation: Concept "Precipitation";
+                node collection: Concept "Collection";
+                node liquid: Concept "Liquid Water";
+                node vapour: Concept "Water Vapour";
+                node ice: Concept "Ice and Snow";
+                node clouds: Concept "Clouds";
+                node oceans: Concept "Oceans";
+                node rivers: Concept "Rivers and Lakes";
+                node ground: Concept "Groundwater";
+                node plants: Concept "Plants";
+
+                node rDriven: Relation "is driven by";
+                node rMoves: Relation "moves";
+                node rStages: Relation "has four stages";
+                node rExists: Relation "exists as";
+                node rPowers: Relation "powers";
+                node rPulls: Relation "pulls down";
+                node rProduces: Relation "produces";
+                node rForms: Relation "forms";
+                node rFalls: Relation "falls as";
+                node rGathers: Relation "gathers in";
+                node rRelease: Relation "release";
+
+                edge cycle -> rDriven;       edge rDriven -> sun;          edge rDriven -> gravity;
+                edge cycle -> rMoves;        edge rMoves -> water;
+                edge cycle -> rStages;       edge rStages -> evaporation;  edge rStages -> condensation;
+                                             edge rStages -> precipitation; edge rStages -> collection;
+                edge water -> rExists;       edge rExists -> liquid;       edge rExists -> vapour;  edge rExists -> ice;
+                edge sun -> rPowers;         edge rPowers -> evaporation;
+                edge gravity -> rPulls;      edge rPulls -> precipitation;
+                edge evaporation -> rProduces; edge rProduces -> vapour;
+                edge condensation -> rForms; edge rForms -> clouds;
+                edge precipitation -> rFalls; edge rFalls -> liquid;       edge rFalls -> ice;
+                edge collection -> rGathers; edge rGathers -> oceans;      edge rGathers -> rivers; edge rGathers -> ground;
+                edge plants -> rRelease;     edge rRelease -> vapour;
+            }
+            """#),
+    ExampleGraph(
         name: #"Annotation extension — Product Strategy Map"#,
         vgl: #"""
             vgraph productStrategy: ConceptMap, Annotation "Product Strategy Map" {
@@ -1036,6 +1083,46 @@ public let exampleGraphs: [ExampleGraph] = [
                 edge twelve -> divideOp: divide_first_operand;
                 edge four -> divideOp: divide_second_operand;
                 edge divideOp -> eqDivide: divide_result;
+            }
+            """#),
+    ExampleGraph(
+        name: #"CLD — Why Does the Project Keep Slipping?"#,
+        vgl: #"""
+            vgraph lateProject: CLD "Why does the project keep slipping?" {
+                node pressure: Stock "Schedule Pressure";
+                node overtime: Stock "Overtime";
+                node done: Stock "Work Completed";
+                node backlog: Stock "Work Remaining";
+                node fatigue: Stock "Fatigue";
+                node errors: Stock "Errors";
+                node rework: Stock "Rework";
+                node productivity: Stock "Productivity";
+                node hiring: Stock "Hiring";
+                node team: Stock "Team Size";
+                node onboarding: Stock "Onboarding Effort";
+
+                // Work harder: overtime gets more done, which relieves the pressure.
+                edge pressure -> overtime: same;
+                edge overtime -> done: same;
+                edge done -> backlog: opposite;
+                edge backlog -> pressure: same;
+
+                // Burnout: tired people make mistakes, and mistakes come back as work.
+                edge overtime -> fatigue: same;
+                edge fatigue -> errors: same;
+                edge errors -> rework: same;
+                edge rework -> backlog: same;
+                edge fatigue -> productivity: opposite;
+                edge productivity -> done: same;
+
+                // Add people: a bigger team gets more done...
+                edge pressure -> hiring: same;
+                edge hiring -> team: same;
+                edge team -> done: same;
+
+                // ...after the existing team has spent time bringing them up to speed.
+                edge hiring -> onboarding: same;
+                edge onboarding -> productivity: opposite;
             }
             """#),
     ExampleGraph(
