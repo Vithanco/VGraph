@@ -184,8 +184,8 @@ How large the diagram is *drawn* in the Preview pane ([[Editor panes]]): fitted 
 default, and it keeps following the pane) or a fixed percentage. View state of
 the browser session only — never in the document, [[History]] or a view.
 
-The Obsidian and VS Code plugins give each diagram in a note the same zoom,
-fitted to the note's width, for as long as the note is open.
+The Obsidian and VS Code plugins give each diagram in a note a zoom of its own,
+starting fitted to the note's width. They never save it either.
 
 Not C4's "zoom": that is the notation's word for a [[Fold state]] — which level
 of detail the model shows, not how large it is drawn (ADR-0003).

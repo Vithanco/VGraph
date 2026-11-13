@@ -47,8 +47,8 @@ for p in json.load(open("plugins.json"))["plugins"]:
 # `build` does not produce, so `plugins-build` and `release` build them.
 EMPTY=$(mktemp -d)
 trap 'rm -rf "$EMPTY"' EXIT
-for recipe in plugins-build _plugin-lint-if-present; do
-    out=$(just --justfile justfile --working-directory "$EMPTY" "$recipe" 2>&1) \
+for recipe in plugins-build "_if-cloned obsidian-vithanco obsidian-lint" "_if-cloned vscode-vithanco vscode-preview"; do
+    out=$(just --justfile justfile --working-directory "$EMPTY" $recipe 2>&1) \
         || fail "$recipe fails when the plugin repos are absent"
     echo "$out" | grep -q "plugins-setup" || fail "$recipe does not say how to get the plugins"
 done
@@ -57,12 +57,14 @@ done
 WITH=$(mktemp -d)
 trap 'rm -rf "$EMPTY" "$WITH"' EXIT
 mkdir "$WITH/obsidian-vithanco" "$WITH/vscode-vithanco"
-printf 'config := "debug"\nobsidian-build:\n\t@echo BUILT obsidian\nvscode-build:\n\t@echo BUILT vscode\nobsidian-lint:\n\t@echo LINTED obsidian\n' > "$WITH/justfile"
+printf 'config := "debug"\nobsidian-build:\n\t@echo BUILT obsidian\nvscode-build:\n\t@echo BUILT vscode\nobsidian-lint:\n\t@echo LINTED obsidian\nvscode-preview:\n\t@echo PREVIEWED vscode\n' > "$WITH/justfile"
 out=$(just --justfile justfile --working-directory "$WITH" plugins-build 2>&1)
 echo "$out" | grep -q "BUILT obsidian" && echo "$out" | grep -q "BUILT vscode" \
     || fail "plugins-build skips plugins that are cloned: $out"
-out=$(just --justfile justfile --working-directory "$WITH" _plugin-lint-if-present 2>&1)
-echo "$out" | grep -q "LINTED obsidian" || fail "_plugin-lint-if-present skips a cloned plugin: $out"
+out=$(just --justfile justfile --working-directory "$WITH" _if-cloned obsidian-vithanco obsidian-lint 2>&1)
+echo "$out" | grep -q "LINTED obsidian" || fail "_if-cloned skips a cloned plugin: $out"
+out=$(just --justfile justfile --working-directory "$WITH" _if-cloned vscode-vithanco vscode-preview 2>&1)
+echo "$out" | grep -q "PREVIEWED vscode" || fail "_if-cloned skips a cloned plugin: $out"
 
 just --dump --dump-format json | python3 -c '
 import json, sys
@@ -73,7 +75,9 @@ for plugin in ("obsidian-build", "vscode-build", "plugins-build", "_plugins-if-p
 if "plugins-build" not in json.dumps(r["release"]["body"]): print("release does not build the plugins")
 test = json.dumps(r["test"]["body"])
 if "just obsidian-lint" in test: print("test lints the obsidian plugin unconditionally")
-if "_plugin-lint-if-present" not in test: print("test does not lint the plugins that are present")
+if "just vscode-preview" in test: print("test runs the vscode preview unconditionally")
+if "_if-cloned obsidian-vithanco obsidian-lint" not in test: print("test does not lint the plugins that are present")
+if "_if-cloned vscode-vithanco vscode-preview" not in test: print("test does not run the vscode preview when it is present")
 ' | while read -r line; do fail "$line"; done
 
 # `just doctor` is what a contributor runs first; gcloud only serves the maintainer's deploy.

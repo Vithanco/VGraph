@@ -63,22 +63,13 @@ plugins-build:
         fi
     done
 
-_plugin-lint-if-present:
+_if-cloned plugin recipe:
     #!/usr/bin/env bash
     set -euo pipefail
-    if [ -d obsidian-vithanco ]; then
-        just obsidian-lint
+    if [ -d {{plugin}} ]; then
+        just {{recipe}}
     else
-        echo "· skipping obsidian-lint: obsidian-vithanco/ is not cloned (just plugins-setup)"
-    fi
-
-_vscode-preview-if-present:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    if [ -d vscode-vithanco ]; then
-        just vscode-preview
-    else
-        echo "· skipping vscode-preview: vscode-vithanco/ is not cloned (just plugins-setup)"
+        echo "· skipping {{recipe}}: {{plugin}}/ is not cloned (just plugins-setup)"
     fi
 
 # Build + deploy the WASM package. FLAGS: --release / --use-cdn / --skip-smoke.
@@ -268,8 +259,8 @@ test filter='': build
     ./scripts/licence.test.sh
     ./scripts/audit-public.test.sh
     ./scripts/publish-plugins.test.sh
-    just _plugin-lint-if-present
-    just _vscode-preview-if-present
+    just _if-cloned obsidian-vithanco obsidian-lint
+    just _if-cloned vscode-vithanco vscode-preview
 
 # Node WASM smoke tests (vitest) against the deployed website/Package.
 [group('test')]
@@ -511,7 +502,7 @@ vscode-package: (_require-plugin "vscode-vithanco")
 plugin-api:
     ./scripts/check-plugin-api.sh
 
-# Review aid (NOT a gate): diff the shared render core between the two plugins.
+# Review aid (NOT a gate): diff the shared render core and src/zoom.ts between the two plugins.
 [group('plugins')]
 parity: (_require-plugin "obsidian-vithanco") (_require-plugin "vscode-vithanco")
     #!/usr/bin/env bash
@@ -544,7 +535,7 @@ parity: (_require-plugin "obsidian-vithanco") (_require-plugin "vscode-vithanco"
         diff <(echo "$a") <(echo "$b") || true
         status=1
     fi
-    # Zoom is one file in each, kept byte-identical.
+    # Zoom is one whole file in each, so any difference at all is drift.
     if diff obsidian-vithanco/src/zoom.ts vscode-vithanco/src/zoom.ts; then
         echo "✓ parity OK — src/zoom.ts is identical in both plugins."
     else

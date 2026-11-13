@@ -187,21 +187,57 @@ test('the same blocks render in the dark theme, in dark colours', async () => {
 });
 
 // The zoom's behaviour is the shared src/zoom.ts, tested in depth by
-// vscode/preview.spec.js; this is that it is wired up in Obsidian.
+// vscode/preview.spec.js; this is that it is wired up in Obsidian, with
+// Obsidian's styles.
+const diagramBlock = () => page.locator('.markdown-reading-view .vithanco-container').first();
+const zoomLabel = () => diagramBlock().locator('.vithanco-zoom-reset');
+const svgWidth = () => diagramBlock().locator('svg').evaluate((e) => e.getBoundingClientRect().width);
+
 test('+ enlarges a rendered diagram, and its label fits it again', async () => {
   await renderIn('moonstone');
-  const block = page.locator('.markdown-reading-view .vithanco-container').first();
-  const width = () => block.locator('svg').evaluate((e) => e.getBoundingClientRect().width);
-  const fitted = await width();
+  const fitted = await svgWidth();
 
-  await block.hover();
-  await block.locator('.vithanco-zoom-in').click();
-  await expect(block.locator('.vithanco-zoom-reset')).toHaveText(/^\d+%$/);
-  expect(await width()).toBeGreaterThan(fitted * 1.1);
+  await diagramBlock().hover();
+  await diagramBlock().locator('.vithanco-zoom-in').click();
+  await expect(zoomLabel()).toHaveText(/^\d+%$/);
+  await expect.poll(svgWidth).toBeGreaterThan(fitted * 1.1);
 
-  await block.locator('.vithanco-zoom-reset').click();
-  await expect(block.locator('.vithanco-zoom-reset')).toHaveText('Auto');
-  expect(await width()).toBeCloseTo(fitted, 0);
+  await zoomLabel().click();
+  await expect(zoomLabel()).toHaveText('Auto');
+  await expect.poll(svgWidth).toBeCloseTo(fitted, 0);
+});
+
+test('a diagram zoomed wider than the note scrolls sideways inside its block', async () => {
+  await renderIn('moonstone');
+  const blockWidth = (await diagramBlock().boundingBox()).width;
+
+  await diagramBlock().hover();
+  for (let press = 0; press < 12 && (await zoomLabel().textContent()) !== '400%'; press++) {
+    await diagramBlock().locator('.vithanco-zoom-in').click();
+  }
+
+  await expect(zoomLabel()).toHaveText('400%');
+  expect(await svgWidth()).toBeGreaterThan(blockWidth);
+  const viewport = diagramBlock().locator('.vithanco-zoom-viewport');
+  const scrolled = () => viewport.evaluate((e) => e.scrollLeft);
+  const before = await scrolled();
+  await viewport.hover();
+  await page.mouse.wheel(200, 0);
+  await expect.poll(scrolled).toBeGreaterThan(before);
+  expect((await diagramBlock().boundingBox()).width).toBeCloseTo(blockWidth, 0);
+});
+
+test('a zoom is gone when the note is opened again', async () => {
+  await renderIn('moonstone');
+  await diagramBlock().hover();
+  await diagramBlock().locator('.vithanco-zoom-in').click();
+  await expect(zoomLabel()).not.toHaveText('Auto');
+
+  await showOnly(PLAIN_NOTE);
+  await showOnly(NOTE);
+
+  await expect(diagramBlock().locator('svg')).toBeVisible();
+  await expect(zoomLabel()).toHaveText('Auto');
 });
 
 // Switching layout reloads the window, which may destroy the context mid-call,
@@ -248,23 +284,26 @@ async function restartPlugin() {
 }
 
 // Most launches show no diagram, and on a phone each launch would pay for it.
+// A start unpacks the engine first, synchronously, so one begun in onload has
+// already counted by the time the plugin is enabled.
 test('the engine starts with the first diagram shown, and only once', async () => {
   await showOnly(PLAIN_NOTE);
   await page.evaluate(() => {
-    const compile = WebAssembly.compile;
-    window.vithancoCompiles = 0;
-    WebAssembly.compile = (...args) => { window.vithancoCompiles++; return compile.apply(WebAssembly, args); };
-    window.vithancoRestoreCompile = () => { WebAssembly.compile = compile; };
+    const Unpack = window.DecompressionStream;
+    window.vithancoStarts = 0;
+    window.DecompressionStream = class extends Unpack {
+      constructor(...args) { super(...args); window.vithancoStarts++; }
+    };
+    window.vithancoRestoreUnpack = () => { window.DecompressionStream = Unpack; };
   });
   try {
     await restartPlugin();
-    await page.waitForTimeout(2000);
-    expect(await page.evaluate(() => window.vithancoCompiles)).toBe(0);
+    expect(await page.evaluate(() => window.vithancoStarts)).toBe(0);
 
     await renderIn('moonstone');
-    expect(await page.evaluate(() => window.vithancoCompiles)).toBe(1);
+    expect(await page.evaluate(() => window.vithancoStarts)).toBe(1);
   } finally {
-    await page.evaluate(() => window.vithancoRestoreCompile());
+    await page.evaluate(() => window.vithancoRestoreUnpack());
   }
 });
 

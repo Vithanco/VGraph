@@ -53,25 +53,24 @@ struct ExampleGraphsTests {
         exampleGraphs.first { $0.name == "CLD — Why Does the Project Keep Slipping?" }
     }
 
-    private func loopStyles(_ vgl: String) throws -> [LoopStyle] {
-        try app.parseGraph(vgl).loopsToMark.map { $0.loopStyle }
+    private func loopStyles(_ graph: VGraph) -> [LoopStyle] {
+        graph.loopsToMark.map { $0.loopStyle }
     }
 
     // vithanco.com's front page tells visitors what to look for in this example.
     @Test("Given the late-project CLD, then it has three reinforcing loops and two balancing ones")
     func lateProjectLoops() throws {
-        let styles = try loopStyles(try #require(lateProject).vgl)
+        let styles = loopStyles(try app.parseGraph(try #require(lateProject).vgl))
         #expect(styles.filter { $0 == .reinforcing }.count == 3)
         #expect(styles.filter { $0 == .balancing }.count == 2)
     }
 
     @Test("Given the late-project CLD, when hiring no longer costs onboarding effort, then one reinforcing loop goes")
     func lateProjectWithoutOnboarding() throws {
-        let lines = try #require(lateProject).vgl.split(separator: "\n", omittingEmptySubsequences: false)
-        let without = lines.filter { !$0.contains("edge hiring -> onboarding") }
-        #expect(without.count == lines.count - 1)
+        let graph = try app.parseGraph(try #require(lateProject).vgl)
+        let edge = try #require(graph.edges.first { $0.from.id == "hiring" && $0.to.id == "onboarding" })
 
-        let styles = try loopStyles(without.joined(separator: "\n"))
+        let styles = loopStyles(try graph.delete(edge: edge.id))
         #expect(styles.filter { $0 == .reinforcing }.count == 2)
         #expect(styles.filter { $0 == .balancing }.count == 2)
     }

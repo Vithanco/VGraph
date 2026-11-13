@@ -38,5 +38,6 @@ and a reload starts fitted with the source shown.
   policy is `self`, so the site's own iframes can go fullscreen with no `allow`
   attribute; a host that withholds it gets the editor on a page of its own
   instead, which is why the document travels in the link.
-- Pinch zoom is not available on touch: the preview is pan-only so that a press
-  on a node can drag (0018). The buttons zoom instead.
+- Pinch zoom is not available on touch in the Editor: the preview is pan-only so
+  that a press on a node can drag (0018). The buttons zoom instead. The Obsidian
+  and VS Code plugins have no node to drag, so they pinch.

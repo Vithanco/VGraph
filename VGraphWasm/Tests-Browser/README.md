@@ -56,12 +56,8 @@ elsewhere.
 
 ## The VS Code preview
 
-`vscode/` is run by `just vscode-preview` (and by `just test` when
-`vscode-vithanco/` is cloned). No test can open VS Code's Markdown preview, so it
-loads what the extension contributes to it — the block markup from
-`src/html.ts`, the built preview script and the styles — into Chromium, and
-updates it the way the preview does after an edit. It is also the in-depth test
-of `src/zoom.ts`, which the Obsidian plugin shares, so it runs in WebKit too
-(Obsidian's engine on iOS) and `touch.spec.js` pinches on an iPhone-sized page.
-WebKit will not construct a `Touch`, as on iOS, so those touch events are plain
-events carrying a `touches` list.
+`vscode/` runs with `just vscode-preview`, and with `just test` when
+`vscode-vithanco/` is cloned. It drives the extension's markup, preview script
+and styles in a plain page (`vscode/helpers.js` says why). That makes it the
+in-depth test of the shared `src/zoom.ts`, but not of Obsidian's styles, which
+`obsidian/smoke.spec.js` checks inside Obsidian.
