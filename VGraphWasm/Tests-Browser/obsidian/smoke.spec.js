@@ -17,6 +17,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const pluginDir = path.resolve(process.env.OBSIDIAN_PLUGIN_DIR ?? path.join(here, '../../../obsidian-vithanco'));
 const obsidianBin = process.env.OBSIDIAN_BIN ?? '/Applications/Obsidian.app/Contents/MacOS/Obsidian';
 const NOTE = 'Vithanco smoke.md';
+const PLAIN_NOTE = 'No diagrams.md';
 
 // The installer's bundled app.asar lags the version users run; Obsidian loads
 // the newest obsidian-<ver>.asar it finds in its user-data dir.
@@ -68,6 +69,7 @@ function writeVault(workDir) {
     '```',
     '',
   ].join('\n'));
+  fs.writeFileSync(path.join(vault, PLAIN_NOTE), 'Just text.\n');
   return userData;
 }
 
@@ -229,6 +231,66 @@ test('in the mobile layout the zoom controls show without hovering, at finger si
     await emulateMobile(false);
   }
 });
+
+async function showOnly(note) {
+  await page.evaluate(async (note) => {
+    const file = app.vault.getAbstractFileByPath(note);
+    for (const leaf of new Set([app.workspace.getLeaf(false), ...app.workspace.getLeavesOfType('markdown')])) {
+      await leaf.openFile(file, { state: { mode: 'preview' } });
+    }
+  }, note);
+}
+
+// Obsidian evaluates main.js afresh on enable, so this starts from no engine.
+async function restartPlugin() {
+  await page.evaluate(() => app.plugins.disablePlugin('vithanco'));
+  await enablePlugin();
+}
+
+// Most launches show no diagram, and on a phone each launch would pay for it.
+test('the engine starts with the first diagram shown, and only once', async () => {
+  await showOnly(PLAIN_NOTE);
+  await page.evaluate(() => {
+    const compile = WebAssembly.compile;
+    window.vithancoCompiles = 0;
+    WebAssembly.compile = (...args) => { window.vithancoCompiles++; return compile.apply(WebAssembly, args); };
+    window.vithancoRestoreCompile = () => { WebAssembly.compile = compile; };
+  });
+  try {
+    await restartPlugin();
+    await page.waitForTimeout(2000);
+    expect(await page.evaluate(() => window.vithancoCompiles)).toBe(0);
+
+    await renderIn('moonstone');
+    expect(await page.evaluate(() => window.vithancoCompiles)).toBe(1);
+  } finally {
+    await page.evaluate(() => window.vithancoRestoreCompile());
+  }
+});
+
+// A phone has no developer console to send anyone to.
+for (const [missing, reason] of [
+  ['DecompressionStream', /iOS or iPadOS 16\.4 or newer/],
+  ['WebAssembly', /Lockdown Mode/],
+]) {
+  test(`without ${missing}, each block says why the engine cannot start`, async () => {
+    await showOnly(PLAIN_NOTE);
+    await page.evaluate((name) => { window.vithancoStash = window[name]; delete window[name]; }, missing);
+    try {
+      await restartPlugin();
+      await showOnly(NOTE);
+      const errors = page.locator('.markdown-reading-view .vithanco-error-block');
+      await expect(errors).toHaveCount(2);
+      for (const error of await errors.all()) {
+        await expect(error).toContainText(reason);
+        await expect(error).not.toContainText(/console/i);
+      }
+    } finally {
+      await page.evaluate((name) => { window[name] = window.vithancoStash; }, missing);
+      await restartPlugin();
+    }
+  });
+}
 
 // Obsidian 1.13+ indexes `settingItems` for its settings search and renders the
 // tab from the same definitions; a tab that only implements display() has neither.
