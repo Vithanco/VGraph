@@ -1,12 +1,13 @@
 #!/bin/bash
-# Bump and rebuild every editor plugin listed in plugins.json, against the
-# current monorepo's VGraphWasm.wasm. Each plugin's own ./release.sh handles
-# the bump + build; this orchestrator just walks the registry, calls them
-# with the right args, and updates plugins.json with the new versions.
+# Bump every engine consumer listed in plugins.json. Each consumer's own
+# ./release.sh knows which files carry its version; this orchestrator walks the
+# registry, asks each one to bump only, and writes the new versions back to
+# plugins.json. Nothing is built: `just release` builds what ships, so a build
+# here would be thrown away.
 #
-# Does NOT commit / tag / push / publish — same rationale as the per-plugin
-# scripts. The per-plugin scripts print the suggested commands; this one
-# prints a final roll-up.
+# Commits nothing: `just plugins-release` commits VGraph's half on a release
+# branch, and `just publish-plugins` commits each plugin's bump together with
+# the engine it ships.
 #
 # Usage:
 #   ./release-plugins.sh                # patch bump every plugin
@@ -16,10 +17,6 @@
 #                                       # (use the 'path' field from plugins.json,
 #                                       # e.g. 'obsidian-vithanco')
 #   ./release-plugins.sh <plugin-path> --minor
-#
-# The monorepo's `just build` should have been run first so that
-# website/Package/VGraphWasm.wasm is up to date — each plugin's release.sh
-# copies that file in when VGRAPH_REPO is set (which this orchestrator does).
 
 set -euo pipefail
 
@@ -86,7 +83,7 @@ while IFS=$'\t' read -r PLUGIN_PATH OLD_VERSION; do
 
     echo ""
     echo "━━━ $PLUGIN_PATH (current $OLD_VERSION) ━━━"
-    ( cd "$PLUGIN_DIR" && VGRAPH_REPO="$MONOREPO" ./release.sh ${BUMP_FLAG:-} )
+    ( cd "$PLUGIN_DIR" && ./release.sh --bump-only ${BUMP_FLAG:-} )
 
     # Read what the plugin landed on. Both plugins keep their version in their
     # manifest (Obsidian) or package.json — manifest.json if present, else
@@ -128,10 +125,4 @@ echo "✓ Plugin bumps complete"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 printf '%s' "$SUMMARY" | while IFS= read -r s; do echo "  $s"; done
 echo ""
-echo "plugins.json updated. Nothing committed, tagged or pushed."
-echo ""
-echo "Next, in this order (just release refuses an uncommitted VGraph):"
-echo "  1. commit plugins.json and vgraph-mcp-node here in a PR and merge it; main takes no direct pushes"
-echo "  2. git switch main && git pull"
-echo "  3. just release              # builds what publish-plugins ships"
-echo "  4. just publish-plugins      # commits the plugins' bumps, tags and creates both GitHub releases"
+echo "plugins.json updated. Nothing built or committed."

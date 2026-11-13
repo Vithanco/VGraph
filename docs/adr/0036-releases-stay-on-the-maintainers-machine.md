@@ -1,6 +1,6 @@
 # 36. Releases stay on the maintainer's machine
 
-Date: 2026-11-08 (revised 2026-11-12)
+Date: 2026-11-08 (revised 2026-11-13)
 
 ## Status
 
@@ -23,9 +23,10 @@ maintainer's own credentials: `just plugins-release`, `just release`, then
 `just publish-all` or the `publish-*` recipes it runs. No repository holds a
 publish or cross-repository credential.
 
-`just plugins-release` builds the optimized engine itself before bumping, since
-each plugin's `release.sh` copies `website/Package` in and a fresh checkout has
-none. Every engine build records the commit it built from and the wasm's hash in
+`just plugins-release` only bumps: each consumer's `release.sh --bump-only`
+writes its version and builds nothing, because `just release` builds and tests
+what ships, from the merged bump, and an earlier build would be thrown away.
+Every engine build records the commit it built from and the wasm's hash in
 `website/Package/VGRAPH_BUILD` (`scripts/record-engine-build.sh`, run by
 `build-wasm.sh`), because that folder is not tracked and each build replaces it.
 
@@ -55,6 +56,13 @@ depend on the Node version that builds it.
 
 The version bump in VGraph (`plugins.json`, `vgraph-mcp-node`) reaches `main`
 through a PR like any other change, because `main` takes no direct pushes.
+`plugins-release` commits it on `release/<version>` and opens that PR. Each
+plugin's bump stays uncommitted until `publish-plugins` commits it with the
+engine it ships, so a plugin's release is one commit.
+
+`publish-plugins` pushes the `.vsix` to the VS Code Marketplace after both GitHub
+releases when a credential is reachable, and otherwise says how to upload it by
+hand: the Marketplace may have no automated credential.
 
 `publish-plugins` refuses a plugin checkout that is not on `main`: it tags and
 pushes whatever is checked out.
