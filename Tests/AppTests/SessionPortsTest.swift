@@ -28,6 +28,22 @@ struct SpyPorts: AppPorts {
     let documentExporter = VGLExporter()
 }
 
+/// Answers a fixed string, so a session that exports through anything but the
+/// injected exporter cannot produce it.
+struct SentinelExporter: ForExportAGraph {
+    static let text = "exported by the injected exporter"
+    func export(graph: VGraph) throws(VError) -> String { Self.text }
+}
+
+struct SentinelExporterPorts: AppPorts {
+    let logger = NoOpLogger()
+    let parser = VGraphParser(logger: NoOpLogger())
+    let highlighter = NullHighlighter()
+    let renderer = NullRenderer()
+    let layoutEngine = NullLayoutEngine()
+    let documentExporter = SentinelExporter()
+}
+
 /// Succeeds without doing anything, so a render can reach the renderer.
 struct IdentityLayoutEngine: ForLayoutAGraph {
     func layout(graph: VGraph) throws(VError) -> VGraph { graph }
@@ -71,15 +87,14 @@ struct SessionPortsTest {
     }
 
     @Test func sessionExportsThroughTheInjectedExporter() throws {
-        let session = try makeTestSession(vgl: base)
-        let exported = try session.exportVGL()
-        #expect(exported.contains("node a"))
+        let session = try VGraphApplication(ports: SentinelExporterPorts()).makeSession(vgl: base)
+        #expect(try session.exportVGL() == SentinelExporter.text)
     }
 
     @Test func renderingWithoutARendererThrowsInsteadOfTrapping() throws {
         let app = VGraphApplication(ports: NoRendererPorts())
 
-        #expect(throws: VError.self) {
+        #expect(throws: VError.notImplemented("No renderer available")) {
             _ = try app.renderGraph(base)
         }
     }

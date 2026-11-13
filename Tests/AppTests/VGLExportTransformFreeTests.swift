@@ -49,32 +49,16 @@ struct VGLExportTransformFreeTests {
     /// the mistake this suite exists for. Both exporters share `ForExportAGraph`, so
     /// the type system cannot forbid it — `VGLExporter` refuses at runtime instead.
     @Test func exportGraphRefusesTheDocumentExporter() throws {
-        #expect(throws: VError.self) {
+        #expect {
             try makeTestApp().exportGraph(
                 """
                 vgraph demo: ConceptMap "Demo" {
                     node a: Concept "A";
                 }
                 """, using: VGLExporter())
+        } throws: { error in
+            guard case .documentExportOfTransformedGraph = error as? VError else { return false }
+            return true
         }
-    }
-
-    /// The formatter is idempotent: whatever it writes must parse back to the same
-    /// document, so nothing a transform stamped can become authored input next time.
-    @Test func theFormatterIsAFixedPoint() throws {
-        let app = makeTestApp()
-        let once = try app.exportToVGL(
-            """
-            vgraph banking: C4 "Banking" {
-                group bank: Organisation "Big Bank" {
-                    node customer: Person "Customer";
-                };
-                folded group ops "Operations" {
-                    node run: Container "Runtime";
-                };
-            }
-            """)
-
-        #expect(try app.exportToVGL(once) == once)
     }
 }

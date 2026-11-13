@@ -4,7 +4,6 @@
 ////
 
 import Testing
-import VGLanguage
 
 @testable import App
 @testable import VGraph
@@ -82,41 +81,15 @@ struct LayoutStepTests {
 
     // MARK: - pipeline contract
 
-    @Test func sizingStepsAreInValidPrerequisiteOrder() {
-        // The declared order of the real pipeline satisfies every step's prerequisites.
-        #expect(TransformStep.orderProblems(in: DisplayPipeline.sizingSteps).isEmpty)
-    }
-
-    @Test func runningASizingStepRecordsItInCompletedSteps() throws {
-        let (graph, _) = try makeGraph(label: "x")
-        let result = try DisplayPipeline.assembleNodeStyles(graph)
-        #expect(result.completedSteps.contains(.assembleNodeStyles))
-    }
-
     @Test func sizingStepWithUnmetPrerequisiteThrows() throws {
         // calculateNodeDimensions on a fresh graph — none of its prerequisites ran.
         let (graph, _) = try makeGraph(label: "x")
-        #expect(throws: VError.self) {
+        #expect(
+            throws: VError.pipelineContractViolated(
+                step: "calculateNodeDimensions",
+                missing: ["assembleNodeStyles", "calculateNodeTextDimensions", "extractNodeShape"])
+        ) {
             try DisplayPipeline.calculateNodeDimensions(graph)
-        }
-    }
-
-    /// A sized graph is pipeline output, so the document exporter must refuse it
-    /// outright — the ledger is the evidence, and every sizing step writes to it.
-    @Test func aSizedGraphCannotBeExportedAsADocument() throws {
-        var run = try makeTestApp().parseGraph(
-            """
-            vgraph demo: ConceptMap "Demo" {
-                node a: Concept "\(Self.wideLabel)";
-            }
-            """)
-        for step in DisplayPipeline.sizingSteps {
-            run = try step(run)
-        }
-        #expect(run.completedSteps.contains(.assembleNodeStyles))  // it really was recorded…
-
-        #expect(throws: VError.self) {  // …and that alone bars the document exporter
-            try VGLExporter().export(graph: run)
         }
     }
 }

@@ -36,35 +36,55 @@ struct AssembleNodeStyleStepTests {
 
     // MARK: - Style Assembly Tests
 
-    @Test func assembleIconWithText() throws {
-        let icon = IconInfo(iconPosition: .top, iconName: "and", iconColor: .blue, iconSize: 24)
-        let color = VColor(hexString: "#EDE7F6")!
-        let graph = try makeGraph(nodeStyle: .iconWithText, backgroundColor: color, iconInfo: icon)
-
-        let assembled = try assembledStyle(from: graph)
-        let expected = NodeStyleLayout.iconWithText(backgroundColor: color, icon: icon)
-
-        #expect(assembled.asString == expected.asString)
+    /// One row per `effectiveNodeLayout` arm: each keeps its own input and the layout
+    /// it must produce, so a swapped arm or a dropped icon/colour fails its row.
+    struct Row: Sendable {
+        let style: NodeStyle
+        let color: VColor
+        let icon: IconInfo?
+        let category: String?
+        let expected: String
     }
 
-    @Test func assembleSimpleRoundedText() throws {
-        let color = VColor(hexString: "#7DB3FF")!
-        let graph = try makeGraph(nodeStyle: .simpleRoundedText, backgroundColor: color)
+    private static let iconWithText = IconInfo(iconPosition: .top, iconName: "and", iconColor: .blue, iconSize: 24)
+    private static let star = IconInfo(iconPosition: .top, iconName: "star.fill", iconColor: .white, iconSize: 24)
+    private static let plus = IconInfo(iconPosition: .top, iconName: "plus.circle", iconColor: .black, iconSize: 16)
 
-        let assembled = try assembledStyle(from: graph)
-        let expected = NodeStyleLayout.simpleRoundedText(color: color)
-
-        #expect(assembled.asString == expected.asString)
+    static var rows: [Row] {
+        let lavender = VColor(hexString: "#EDE7F6")!
+        let blue = VColor(hexString: "#7DB3FF")!
+        let steel = VColor(hexString: "#4682B4")!
+        let red = VColor(hexString: "#E53935")!
+        return [
+            Row(
+                style: .iconWithText, color: lavender, icon: iconWithText, category: nil,
+                expected: NodeStyleLayout.iconWithText(backgroundColor: lavender, icon: iconWithText).asString),
+            Row(
+                style: .simpleRoundedText, color: blue, icon: nil, category: nil,
+                expected: NodeStyleLayout.simpleRoundedText(color: blue).asString),
+            Row(
+                style: .simpleRoundedBox, color: .red, icon: nil, category: nil,
+                expected: NodeStyleLayout.simpleRoundedBox(color: .red).asString),
+            Row(
+                style: .withCategoryAndIcon, color: red, icon: star, category: "Attack",
+                expected: NodeStyleLayout.withCategoryAndIcon(category: "Attack", categoryColor: red, icon: star).asString),
+            Row(
+                style: .iconOnly, color: .white, icon: plus, category: nil,
+                expected: NodeStyleLayout.iconOnly(icon: plus).asString),
+            Row(
+                style: .circle, color: steel, icon: nil, category: nil,
+                expected: NodeStyleLayout.circle(color: steel).asString),
+            Row(style: .bareText, color: .white, icon: nil, category: nil, expected: NodeStyleLayout.bareText.asString),
+            Row(style: .hidden, color: .white, icon: nil, category: nil, expected: NodeStyleLayout.hidden.asString),
+        ]
     }
 
-    @Test func assembleSimpleRoundedBox() throws {
-        let color = VColor.red
-        let graph = try makeGraph(nodeStyle: .simpleRoundedBox, backgroundColor: color)
+    @Test(arguments: rows)
+    func assemblesTheLayoutOfItsStyle(_ row: Row) throws {
+        let graph = try makeGraph(
+            nodeStyle: row.style, backgroundColor: row.color, iconInfo: row.icon, category: row.category)
 
-        let assembled = try assembledStyle(from: graph)
-        let expected = NodeStyleLayout.simpleRoundedBox(color: color)
-
-        #expect(assembled.asString == expected.asString)
+        #expect(try assembledStyle(from: graph).asString == row.expected)
     }
 
     @Test func assembleWithCategory() throws {
@@ -92,60 +112,6 @@ struct AssembleNodeStyleStepTests {
 
         let assembled = try assembledStyle(from: graph, nodeTypeName: "Goal")
         let expected = NodeStyleLayout.withCategory(category: "Goal", categoryColor: color)
-
-        #expect(assembled.asString == expected.asString)
-    }
-
-    @Test func assembleWithCategoryAndIcon() throws {
-        let icon = IconInfo(iconPosition: .top, iconName: "star.fill", iconColor: .white, iconSize: 24)
-        let color = VColor(hexString: "#E53935")!
-        let graph = try makeGraph(
-            nodeStyle: .withCategoryAndIcon,
-            backgroundColor: color,
-            iconInfo: icon,
-            category: "Attack"
-        )
-
-        let assembled = try assembledStyle(from: graph)
-        let expected = NodeStyleLayout.withCategoryAndIcon(category: "Attack", categoryColor: color, icon: icon)
-
-        #expect(assembled.asString == expected.asString)
-    }
-
-    @Test func assembleIconOnly() throws {
-        let icon = IconInfo(iconPosition: .top, iconName: "plus.circle", iconColor: .black, iconSize: 16)
-        let graph = try makeGraph(nodeStyle: .iconOnly, iconInfo: icon)
-
-        let assembled = try assembledStyle(from: graph)
-        let expected = NodeStyleLayout.iconOnly(icon: icon)
-
-        #expect(assembled.asString == expected.asString)
-    }
-
-    @Test func assembleCircle() throws {
-        let color = VColor(hexString: "#4682B4")!
-        let graph = try makeGraph(nodeStyle: .circle, backgroundColor: color)
-
-        let assembled = try assembledStyle(from: graph)
-        let expected = NodeStyleLayout.circle(color: color)
-
-        #expect(assembled.asString == expected.asString)
-    }
-
-    @Test func assembleBareText() throws {
-        let graph = try makeGraph(nodeStyle: .bareText)
-
-        let assembled = try assembledStyle(from: graph)
-        let expected = NodeStyleLayout.bareText
-
-        #expect(assembled.asString == expected.asString)
-    }
-
-    @Test func assembleHidden() throws {
-        let graph = try makeGraph(nodeStyle: .hidden)
-
-        let assembled = try assembledStyle(from: graph)
-        let expected = NodeStyleLayout.hidden
 
         #expect(assembled.asString == expected.asString)
     }

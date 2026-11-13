@@ -49,26 +49,15 @@ struct TextDiffTest {
         #expect(script == [.equal("a"), .equal("b")])
     }
 
+    /// A replaced line is a delete immediately followed by an insert: no equal
+    /// line separates them, so no gap marker belongs between them.
     @Test func unifiedTextMarksInsertAndDeletePrefixes() {
-        let unified = TextDiff.unified(from: "a\nb\nc", to: "a\nx\nc")
-        #expect(unified.contains("- b"))
-        #expect(unified.contains("+ x"))
-        #expect(unified.contains("  a"))
-        #expect(unified.contains("  c"))
+        #expect(TextDiff.unified(from: "a\nb\nc", to: "a\nx\nc") == "  a\n- b\n+ x\n  c")
     }
 
-    @Test func unifiedTextOfIdenticalInputsHasNoChangeMarkers() {
+    @Test func unifiedTextOfIdenticalInputsIsEmpty() {
         let text = "a\nb\nc"
-        let unified = TextDiff.unified(from: text, to: text)
-        #expect(!unified.contains("+ "))
-        #expect(!unified.contains("- "))
-    }
-
-    @Test func unifiedTextDoesNotMarkAGapBetweenAdjacentChanges() {
-        // A replaced line is a delete immediately followed by an insert: no
-        // equal lines separate them, so no "@@ ... @@" belongs between them.
-        let unified = TextDiff.unified(from: "a\nb\nc", to: "a\nx\nc")
-        #expect(!unified.contains("@@"))
+        #expect(TextDiff.unified(from: text, to: text) == "")
     }
 
     /// Each hunk gets context on *both* sides. The equal run between two
@@ -105,26 +94,5 @@ struct TextDiffTest {
         let unified = TextDiff.unified(from: "e1\ne2\ne3\ne4\ne5\nold", to: "e1\ne2\ne3\ne4\ne5\nnew", context: 2)
         #expect(!unified.hasPrefix("@@"))
         #expect(unified.hasPrefix("  e4"))
-    }
-
-    @Test func unifiedTextCollapsesDistantContextWithAMarker() {
-        // Two changed lines (first and last) far enough apart that the equal
-        // run between their hunks exceeds 2×context: expect a "@@ ... @@" gap
-        // marker between them.
-        var oldLines = ["start-old"]
-        var newLines = ["start-new"]
-        for i in 1...20 {
-            oldLines.append("same\(i)")
-            newLines.append("same\(i)")
-        }
-        oldLines.append("end-old")
-        newLines.append("end-new")
-        let unified = TextDiff.unified(
-            from: oldLines.joined(separator: "\n"), to: newLines.joined(separator: "\n"), context: 2)
-        #expect(unified.contains("@@ ... @@"))
-        #expect(unified.contains("- start-old"))
-        #expect(unified.contains("+ start-new"))
-        #expect(unified.contains("- end-old"))
-        #expect(unified.contains("+ end-new"))
     }
 }

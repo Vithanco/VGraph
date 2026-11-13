@@ -43,6 +43,9 @@ struct NodeColourInVGLTests {
             """
         #expect(fills(try styled(vgl, node: "tinted")).first?.hasPrefix("#b6e6bd") == true)
         #expect(fills(try styled(vgl, node: "plain")).first?.hasPrefix("#438dd5") == true)
+        // a pale fill flips the card's text to dark
+        let tinted = try #require(try styled(vgl, node: "tinted"))
+        #expect(!textColors(of: tinted).contains { $0.isLight })
     }
 
     @Test("a node without its own colour gets no per-node style")
@@ -55,21 +58,6 @@ struct NodeColourInVGLTests {
             }
             """
         #expect(try !hasOwnStyle(vgl, node: "plain"))
-    }
-
-    @Test("text flips to dark on a pale fill")
-    func textFlipsForContrast() throws {
-        let vgl = """
-            vgraph t: C4 "T" {
-                node p: Person "Op";
-                group s "Sys" {
-                    node tinted: Container "Tinted" [color: "#b6e6bd"];
-                };
-                edge p -> tinted "Uses";
-            }
-            """
-        let layout = try #require(try styled(vgl, node: "tinted"))
-        #expect(!textColors(of: layout).contains { $0.isLight })
     }
 
     @Test("fontColor overrides the contrast rule")

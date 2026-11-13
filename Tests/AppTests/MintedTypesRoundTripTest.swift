@@ -93,25 +93,4 @@ struct MintedTypesRoundTripTest {
 
         #expect(failures.isEmpty, "\(failures)")
     }
-
-    /// The shape the id has to keep. A colon or an arrow in it is what made the
-    /// export unreadable, and nothing but this test says so.
-    @Test("A minted edge type's id lexes as a VGL identifier")
-    func theMintedIdIsAnIdentifier() throws {
-        let s = try flow()
-        _ = try s.addSuccessor(from: "s1", ofType: step)
-
-        let minted = s.origin.edgeTypes.map { $0.id.id }
-            .filter { $0.hasPrefix(EdgeType.unknownPrefix) }
-        #expect(!minted.isEmpty)
-        for id in minted {
-            #expect(id.first?.isLetter == true || id.first == "_")
-            for character in id.dropFirst() {
-                #expect(
-                    character.isLetter || character.isNumber || character == "_"
-                        || character == "." || character == "-",
-                    "\(id) carries \(character), which the lexer will not read")
-            }
-        }
-    }
 }

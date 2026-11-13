@@ -8,6 +8,25 @@ import VGraph
 
 @testable import App
 
+/// Exports like the real exporter until a group is folded, then refuses: the
+/// graph a command produces is one the exporter cannot serialise.
+struct RefusesFoldedGroupsExporter: ForExportAGraph {
+    func export(graph: VGraph) throws(VError) -> String {
+        let text = try VGLExporter().export(graph: graph)
+        guard !text.contains("folded") else { throw VError.notImplemented("cannot export folded") }
+        return text
+    }
+}
+
+struct RefusesFoldedGroupsPorts: AppPorts {
+    let logger = NoOpLogger()
+    let parser = VGraphParser(logger: NoOpLogger())
+    let highlighter = NullHighlighter()
+    let renderer = NullRenderer()
+    let layoutEngine = NullLayoutEngine()
+    let documentExporter = RefusesFoldedGroupsExporter()
+}
+
 struct CommitAtomicityTest {
     let base = """
         vgraph demo: ConceptMap "Demo" {
@@ -20,26 +39,18 @@ struct CommitAtomicityTest {
         }
         """
 
-    /// Deleting the root group is the reachable way to build a graph the
-    /// exporter cannot serialise: the elements survive with nothing to hold
-    /// them, and the export throws on the missing group.
     @Test func unexportableCommandLeavesTheSessionUntouched() throws {
-        let s = try makeTestSession(vgl: base)
-        let initial = try s.exportVGL()
-        try s.toggleFolding(of: "g1")  // one step of history to preserve
+        let s = try VGraphApplication(ports: RefusesFoldedGroupsPorts()).makeSession(vgl: base)
         let before = try s.exportVGL()
-        let nodesBefore = s.origin.nodes.count
+        let versionBefore = s.currentVersion
 
-        #expect(throws: VError.self) { try s.delete(rootGroup) }
+        #expect(throws: VError.notImplemented("cannot export folded")) {
+            try s.toggleFolding(of: "g1")
+        }
 
-        // The refusal changed nothing: origin still exports, and to the same text.
         #expect(try s.exportVGL() == before)
-        #expect(s.origin.nodes.count == nodesBefore)
-        #expect(s.canUndo == true)
+        #expect(s.canUndo == false)
         #expect(s.canRedo == false)
-
-        // And the session still works — the failed command left no wreckage.
-        #expect(try s.undo() == base)
-        #expect(try s.exportVGL() == initial)
+        #expect(s.currentVersion == versionBefore)
     }
 }

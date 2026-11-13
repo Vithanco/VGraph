@@ -33,6 +33,24 @@ struct VGraphLayersTests {
         #expect(try styled.get(node: q1, attribute: Attributes.Node.fontsize) == Attributes.Node.fontsize.defaultValue)
     }
 
+    @Test("Given a value on a node's group, when the node resolves the same attribute, then the group's value does not apply")
+    func aNodeTakesNothingFromItsGroup() throws(VError) {
+        let labelled = try graph().set(group: inner, attribute: Attributes.Group.label.attribute("Inner"))
+        #expect(try labelled.get(node: q1, attribute: Attributes.Group.label) == Attributes.Group.label.defaultValue)
+    }
+
+    @Test("Given values on the graph, the type and the node, when the node's attributes are read, then only the type's and its own are held")
+    func aNodesAttributesHoldOnlyItsOwnAndItsTypes() throws(VError) {
+        let styled = try graph()
+            .set(graphAttribute: Attributes.Node.tooltip.attribute("graph"))
+            .set(nodeType: question, attribute: Attributes.Node.label.attribute("type"))
+            .set(node: q1, attribute: Attributes.Node.position.attribute(VPoint(x: 42, y: 42).asString))
+        let held = try styled.getAttributes(node: q1)
+        #expect(held.count == 2)
+        #expect(held.value(for: Attributes.Node.label) == "type")
+        #expect(held.value(for: Attributes.Node.position) == VPoint(x: 42, y: 42).asString)
+    }
+
     @Test("Given a labelled parent group, when its child resolves its label, then it has its own or the default")
     func aGroupInheritsNothingFromItsParent() throws(VError) {
         let labelled = try graph().set(group: outer, attribute: Attributes.Group.label.attribute("Outer"))

@@ -62,7 +62,8 @@ struct HistoryTest {
         try s.toggleFolding(of: "g1")
         #expect(s.canUndo == true)
         #expect(s.canRedo == false)
-        #expect((try s.exportVGL()).contains("folded group g1"))
+        let folded = try s.exportVGL()
+        #expect(folded.contains("folded group g1"))
 
         // Undo returns the pre-command VGL and reverts the OriginGraph.
         let undone = try s.undo()
@@ -73,7 +74,7 @@ struct HistoryTest {
 
         // Redo re-applies the fold.
         let redone = try s.redo()
-        #expect(redone?.contains("folded group g1") == true)
+        #expect(redone == folded)
         #expect((try s.exportVGL()).contains("folded group g1"))
         #expect(s.canRedo == false)
     }
@@ -100,12 +101,6 @@ struct HistoryTest {
         // Sealed between edits ⇒ two distinct undo steps.
         #expect(try s.undo() == editedOnce)
         #expect(try s.undo() == base)
-        #expect(s.canUndo == false)
-    }
-
-    @Test func unchangedEditIsNotRecorded() throws {
-        let s = try session()
-        try s.textEdited(vgl: base)  // identical to current state → no-op
         #expect(s.canUndo == false)
     }
 

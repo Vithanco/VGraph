@@ -33,6 +33,7 @@ struct VersionStoreTest {
         #expect(store.vgl(of: child) == "v2")
         #expect(store.parent(of: child) == root)
         #expect(store.children(of: root) == [child])
+        #expect(store.children(of: child) == [])  // the tip has no children
         #expect(store.canUndo == true)
         #expect(store.canRedo == false)
     }
@@ -81,20 +82,6 @@ struct VersionStoreTest {
         #expect(store.current == tip)
     }
 
-    @Test func parentAndChildrenAreMirrorImages() throws {
-        var store = InMemoryVersionStore()
-        try store.reset(vgl: "v1")
-        let a = store.current
-        let b = try store.record(vgl: "v2")
-        let c = try store.record(vgl: "v3")
-
-        #expect(store.parent(of: c) == b)
-        #expect(store.children(of: b) == [c])
-        #expect(store.parent(of: b) == a)
-        #expect(store.children(of: a) == [b])
-        #expect(store.children(of: c) == [])  // tip has no children
-    }
-
     @Test func recordingAfterUndoDivergesAndDropsTheOldTail() throws {
         var store = InMemoryVersionStore()
         try store.reset(vgl: "v1")
@@ -108,17 +95,6 @@ struct VersionStoreTest {
         #expect(store.canRedo == false)
         // The abandoned "v2" version number is never reassigned.
         #expect(diverged.number == 3)
-    }
-
-    @Test func versionNumbersAreMonotonicAndWholeAndNeverReused() throws {
-        var store = InMemoryVersionStore()
-        try store.reset(vgl: "v1")  // number 1
-        let v2 = try store.record(vgl: "v2")  // number 2
-        #expect(v2.number == 2)
-        _ = try store.undo()
-        let v3 = try store.record(vgl: "v2-alt")  // number 3, not reusing 2
-        #expect(v3.number == 3)
-        #expect(v3.number != v2.number)
     }
 
     @Test func capBoundsDepthAndDropsOldestByDefault() throws {

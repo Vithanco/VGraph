@@ -155,7 +155,10 @@ struct C4NotationTests {
             edge customer -> mainframe "Uses";
             """)
 
-        #expect(!result.errors.isEmpty)
+        #expect(
+            result.errors.contains {
+                $0.target == .node("mainframe") && $0.message.contains("unknown node type")
+            })
     }
 }
 

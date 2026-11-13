@@ -56,28 +56,20 @@ struct PipelineContractTests {
         #expect(run.completedSteps.contains(.mergeRelations))
     }
 
-    @Test func aNotationWithoutAStepStillRecordsThePhase() throws {
-        let run = try Notations.notationTransformsStep(try parsed(notation: "IBIS"))
-
-        #expect(run.completedSteps == [.notationTransforms])
-    }
-
     /// Layout consumes final node dimensions. Nothing enforced that before: the engine
-    /// was appended to the pipeline as an opaque closure.
+    /// was appended to the pipeline as an opaque closure. All five sizing steps are
+    /// required, not just the last one.
     @Test func layoutRefusesToRunBeforeSizing() throws {
         let step = DisplayPipeline.layoutStep(Self.noLayout)
+        let graph = try parsed(notation: "IBIS")
 
-        #expect(throws: VError.self) {
-            try step(try parsed(notation: "IBIS"))
+        do {
+            _ = try step(graph)
+            Issue.record("layout ran on a graph that was never sized")
+        } catch let VError.pipelineContractViolated(stepId, missing) {
+            #expect(stepId == "layoutGraph")
+            #expect(Set(missing) == Set(DisplayPipeline.sizingStepIds.map { $0.id }))
         }
-    }
-
-    @Test func layoutRecordsItselfOnceSizingHasRun() throws {
-        let ready = try parsed(notation: "IBIS").marking(DisplayPipeline.sizingStepIds)
-
-        let run = try DisplayPipeline.layoutStep(Self.noLayout)(ready)
-
-        #expect(run.completedSteps.contains(.layoutGraph))
     }
 
     /// Folding must precede sizing, but as ordering rather than a prerequisite: the

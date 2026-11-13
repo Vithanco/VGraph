@@ -385,6 +385,7 @@ struct MenuQueriesTest {
         #expect(s.kind(of: "g1") == .group)
         #expect(s.kind(of: s.origin.edges.first!.id.id) == .edge)
         #expect(s.kind(of: "ghost") == nil)
+        #expect(s.label(of: "ghost") == nil)
     }
 
     @Test func theTwoDynamicTitlesHaveTheirQueries() throws {

@@ -30,29 +30,6 @@ private struct TextPane<Session: ForEditVGL> {
     }
 }
 
-/// A diagram pane. Changes the graph by command or gesture; has no way to touch
-/// the text, and no way to read the graph beyond one element's label.
-private struct DiagramPane<Session: ForEditAGraphVisually> {
-    let session: Session
-
-    func label(of id: String) -> String? { session.label(of: id) }
-    func fold(_ groupId: String) throws { try session.toggleFolding(of: groupId) }
-    func isFolded(_ groupId: String) -> Bool { session.isFolded(groupId) }
-    func dropTargets(dragging id: String) -> [String] {
-        session.connectTargets(from: id, notationBreak: .forbidden)
-    }
-}
-
-/// The toolbar: the document as a whole, neither pane.
-private struct Toolbar<Session: ForManageADocument> {
-    let session: Session
-
-    var undoEnabled: Bool { session.canUndo }
-    var redoEnabled: Bool { session.canRedo }
-    func saveVGL() throws -> String { try session.exportVGL() }
-    func open(_ vgl: String) throws { try session.replaceDocument(vgl: vgl) }
-}
-
 /// A diagram pane that also wants ⌘Z, so it holds the document's port too — the
 /// composition constraint the ADR flagged as unproven in Embedded Swift. Still
 /// static dispatch; nothing here is an existential.
@@ -121,28 +98,6 @@ struct DrivingPortsTest {
         // The pane never names `VGraphApplication`, yet still reaches the
         // highlighter behind it — the reason `highlightHTML` is on this port.
         #expect(pane.overlay(for: base).contains("<span class=\"vg-kw\">vgraph</span>"))
-    }
-
-    @Test func aDiagramPaneReadsAndChangesThroughItsPortAlone() throws {
-        let pane = DiagramPane(session: try makeTestSession(vgl: base))
-        #expect(pane.label(of: "a") == "A")
-        #expect(pane.label(of: "ghost") == nil)
-        #expect(pane.isFolded("g1") == false)
-        try pane.fold("g1")
-        #expect(pane.isFolded("g1") == true)
-
-        #expect(pane.dropTargets(dragging: "a") == ["r"])
-    }
-
-    @Test func aToolbarManagesTheDocumentThroughItsPortAlone() throws {
-        let toolbar = Toolbar(session: try makeTestSession(vgl: base))
-        #expect(toolbar.undoEnabled == false)
-        #expect(try toolbar.saveVGL().contains("node a"))
-
-        try toolbar.open(edited)
-        // A load resets history rather than adding to it.
-        #expect(toolbar.undoEnabled == false)
-        #expect(toolbar.redoEnabled == false)
     }
 
     /// The `A & B` composition the ADR asked to see compile before relying on it.

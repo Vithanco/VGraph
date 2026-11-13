@@ -18,7 +18,50 @@ private func swiftFiles(under path: String) -> [URL] {
     }
 }
 
+/// A scan over a folder that has moved checks nothing and passes; fail instead.
+private func requiredSwiftFiles(under path: String) throws -> [URL] {
+    let files = swiftFiles(under: path)
+    try #require(!files.isEmpty, "no Swift files under \(path) — did the folder move?")
+    return files
+}
+
+/// The module each `import` line names, whatever precedes it (`@testable`,
+/// `@preconcurrency`, `public`, ...) or follows it (`import struct M.T`).
+private func importedModules(in source: String) -> [String] {
+    let accessLevels: Set<String> = ["public", "internal", "package", "private", "fileprivate"]
+    let kinds: Set<String> = [
+        "struct", "class", "enum", "protocol", "typealias", "func", "var", "let",
+    ]
+    var result: [String] = []
+    for raw in source.split(separator: "\n") {
+        var words = raw.split(whereSeparator: { $0 == " " || $0 == "\t" })[...]
+        while let first = words.first, first.hasPrefix("@") || accessLevels.contains(String(first)) {
+            words = words.dropFirst()
+        }
+        guard words.first == "import" else { continue }
+        words = words.dropFirst()
+        if let first = words.first, kinds.contains(String(first)) { words = words.dropFirst() }
+        guard let path = words.first else { continue }
+        result.append(String(path.prefix { $0 != "." }))
+    }
+    return result
+}
+
 struct ArchitectureTest {
+    @Test func importScanSeesAttributedAndAccessLevelImports() {
+        let source = """
+            import A
+            @testable import B
+            @preconcurrency import C
+            public import D
+            @_exported public import E
+            import struct F.Type
+            // import G
+            let importantValue = 1
+            """
+        #expect(importedModules(in: source) == ["A", "B", "C", "D", "E", "F"])
+    }
+
     /// The use-case layer must see ports only. An adapter import here means a
     /// concrete technology reached the domain and the seam is gone; the wiring
     /// belongs in `Sources/App/Composition/`.
@@ -26,13 +69,10 @@ struct ArchitectureTest {
         let allowed: Set<String> = ["VGraph", "MathUtils"]
         var violations: [String] = []
 
-        for file in swiftFiles(under: "Sources/App/Domain") {
+        for file in try requiredSwiftFiles(under: "Sources/App/Domain") {
             let source = try String(contentsOf: file, encoding: .utf8)
-            for line in source.split(separator: "\n") where line.hasPrefix("import ") {
-                let module = line.dropFirst("import ".count).trimmingCharacters(in: .whitespaces)
-                if !allowed.contains(module) {
-                    violations.append("\(file.lastPathComponent): import \(module)")
-                }
+            for module in importedModules(in: source) where !allowed.contains(module) {
+                violations.append("\(file.lastPathComponent): import \(module)")
             }
         }
 
@@ -57,15 +97,12 @@ struct ArchitectureTest {
 
         for driver in [
             "Sources/VGraphCLI", "Sources/VGraphMCP", "Sources/VGraphMCPHTTP",
-            "Sources/VGraphMCPTools", "Tests/TestSupport",
+            "Sources/VGraphMCPHTTPKit", "Sources/VGraphMCPTools", "Tests/TestSupport",
         ] {
-            for file in swiftFiles(under: driver) {
+            for file in try requiredSwiftFiles(under: driver) {
                 let source = try String(contentsOf: file, encoding: .utf8)
-                for line in source.split(separator: "\n") where line.hasPrefix("import ") {
-                    let module = line.dropFirst("import ".count).trimmingCharacters(in: .whitespaces)
-                    if adapters.contains(module) {
-                        violations.append("\(file.lastPathComponent): import \(module)")
-                    }
+                for module in importedModules(in: source) where adapters.contains(module) {
+                    violations.append("\(file.lastPathComponent): import \(module)")
                 }
             }
         }
@@ -142,7 +179,13 @@ struct ArchitectureTest {
     /// everything still compiles and every behavioural test still passes.
     @Test func drivingPortSurfacesAreDisjoint() throws {
         let ports = try drivingPortMembers()
-        #expect(ports.count == 3, "expected three driving ports, found \(ports.keys.sorted())")
+        // A port `Ports/Inbound/` re-exports but the core does not declare drops
+        // out of `ports`, so this also holds the rule that every driving port is
+        // declared once in the core as `VFor*`.
+        let offered = try drivingPortNames()
+        #expect(
+            Set(ports.keys) == offered,
+            "driving ports not declared in VStdPorts: \(offered.subtracting(ports.keys).sorted())")
 
         var overlaps: [String] = []
         for (one, two) in pairs(of: ports.keys.sorted()) {
@@ -253,26 +296,6 @@ struct ArchitectureTest {
             \(undecided.sorted()). Put each on one of the three driving ports, or \
             add it to `noPort` above with a reason.
             """)
-    }
-
-    /// A driving port obeys the same two-name rule as a driven one: declared
-    /// once in the core as `VFor*`, re-exported under its plain name by the
-    /// hexagon that speaks it (AGENTS.md, "Each port protocol is declared in the
-    /// core"). ADR-0013 originally exempted them and let `Ports/Inbound/`
-    /// declare its own protocols; that exemption is withdrawn, so the two port
-    /// folders now read alike.
-    ///
-    /// The mirror of `everyCorePortIsReExportedUnderItsPlainName`: that one
-    /// checks every core port reaches a hexagon, this one that no driving port
-    /// skips the core on its way there.
-    @Test func everyDrivingPortIsDeclaredInTheCore() throws {
-        let declaredInCore = try protocolMembers(under: "Sources/VGraph/VStdPorts").keys
-        var missing: [String] = []
-        for port in try drivingPortNames() where !declaredInCore.contains("V\(port)") {
-            missing.append(port)
-        }
-
-        #expect(missing.isEmpty, "driving ports not declared in VStdPorts: \(missing.sorted())")
     }
 
     /// `Ports/Inbound/` holds re-exports and nothing else. A `protocol` here is

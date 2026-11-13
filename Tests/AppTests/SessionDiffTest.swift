@@ -18,13 +18,6 @@ struct SessionDiffTest {
           node d: Concept "D";
         }
         """
-    let grouped = """
-        vgraph demo: ConceptMap "Demo" {
-          group g1 "Cluster" {
-            node a: Concept "A";
-          }
-        }
-        """
 
     @Test func freshSessionHasNothingToDiffAgainst() throws {
         let s = try makeTestSession(vgl: base)
@@ -66,25 +59,5 @@ struct SessionDiffTest {
         // Reversed, the same change reads as a deletion.
         let reversed = try #require(s.diff(from: second, to: first))
         #expect(reversed.contains(.delete("  node d: Concept \"D\";")))
-    }
-
-    @Test func diffToParentAfterACommandDescribesTheCommandsEdit() throws {
-        let s = try makeTestSession(vgl: grouped)
-
-        try s.toggleFolding(of: "g1")
-        let unified = try #require(s.unifiedDiffToParent())
-        #expect(unified.contains("folded group g1"))
-    }
-
-    /// A command records the *re-exported* VGL, so history and the text the
-    /// editor writes back to the textarea cannot drift apart.
-    @Test func recordedCommandVersionIsTheReExportedVGL() throws {
-        let s = try makeTestSession(vgl: grouped)
-
-        try s.toggleFolding(of: "g1")
-        let exported = try s.exportVGL()
-
-        _ = try s.undo()
-        #expect(try s.redo() == exported)
     }
 }
