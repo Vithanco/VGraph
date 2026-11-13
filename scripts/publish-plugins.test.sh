@@ -25,7 +25,8 @@ echo "$*" >> "$NPX_LOG"
 case "$1 $2" in
     "vsce show") [ -n "${MARKETPLACE_VERSION:-}" ] || exit 1
                  printf '{"versions":[{"version":"%s"}]}\n' "$MARKETPLACE_VERSION" ;;
-    "vsce verify-pat") exit 1 ;;
+    # Like vsce with no stored token: it reads one from stdin (a timeout, not a hang).
+    "vsce verify-pat") read -r -t 2 pat && [ -n "$pat" ] ;;
 esac
 EOF
 printf '#!/bin/sh\nexit 1\n' > "$ROOT/bin/security"
@@ -194,6 +195,13 @@ given_plugins_at 1.2.3
 publish || fail "publishing without a Marketplace credential failed: $(cat "$WORK/out")"
 pushed_to_marketplace && fail "pushed to the Marketplace without a credential"
 grep -q 'vithanco-1.2.3.vsix' "$WORK/out" || fail "does not name the .vsix to upload: $(cat "$WORK/out")"
+
+# Given no stored credential and a terminal on stdin, when publishing, then the
+# credential check does not read it: its prompt is hidden, so it would wait
+# silently instead of saying how to upload by hand.
+given_plugins_at 1.2.3
+echo 'typed-token' | publish || fail "publishing with input on stdin failed: $(cat "$WORK/out")"
+pushed_to_marketplace && fail "the credential check read a token from stdin"
 
 # Given the Marketplace already at this version, when publishing, then it is not
 # pushed again: vsce refuses a version it already has.

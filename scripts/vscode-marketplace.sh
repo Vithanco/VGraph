@@ -21,12 +21,14 @@ PUBLISHER=$(node -p "require('./package.json').publisher")
 # secret out of the keychain, and a process without a TTY is not granted that —
 # so it reports "no credential" for a developer who is perfectly well logged in.
 # The keychain *entry* can be seen without unlocking it, which is the signal
-# that survives both contexts. None of these prove the token is still valid: an
-# expired one fails at the publish itself.
+# that survives both contexts. With no token stored, verify-pat reads one from
+# stdin behind a prompt we discard, so it gets /dev/null rather than a terminal.
+# None of these prove the token is still valid: an expired one fails at the
+# publish itself.
 has_credential() {
     [ -n "${VSCE_PAT:-}" ] \
         || security find-generic-password -s vscode-vsce -a "$PUBLISHER" >/dev/null 2>&1 \
-        || npx vsce verify-pat "$PUBLISHER" >/dev/null 2>&1
+        || npx vsce verify-pat "$PUBLISHER" </dev/null >/dev/null 2>&1
 }
 
 if [ "${1:-}" = --has-credential ]; then
