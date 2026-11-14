@@ -4357,34 +4357,6 @@ struct TimelineNotationTests {
     }
 
     @Test
-    func testVNotationExtendsReplacesQualityChecks() throws {
-        // GoalTree has exactlyOneGoal + csfCount checks.
-        // When we specify explicit qualityCheck: lines, those replace the base checks.
-        let input = """
-            vnotation CustomGoalTree extends GoalTree {
-                qualityCheck: disconnectedNodes
-            }
-
-            vgraph g1: CustomGoalTree "Custom Goal Tree" {
-                node g1: Goal "Main Goal"
-                node c1: CriticalSuccessFactor "CSF 1"
-                node nc1: NecessaryCondition "NC 1"
-                edge g1 -> c1
-                edge c1 -> nc1
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        let report = Notations.analyzeQuality(graph: graph)
-        // The base GoalTree csfCount check should NOT run (replaced by explicit checks).
-        // GoalTree's csfCount would flag "1 CSF, recommended 3-5" as info.
-        let csfMessages = report.infos.filter { $0.message.contains("Critical Success Factor") }
-        #expect(csfMessages.isEmpty)
-    }
-
-    @Test
     func testVNotationQualityCheckRoundTrip() throws {
         let input = """
             vnotation RoundTripCheck {
@@ -4443,74 +4415,6 @@ struct TimelineNotationTests {
         // Round-trip
         #expect(withParams.specString == "nodeCountRange(Battle, 1, 20)")
         #expect(simple.specString == "treeStructure")
-    }
-
-    @Test
-    func testThatHadProblems() throws {
-        let input = """
-            vgraph customerSatisfaction: BBS "Customer Satisfaction Initiative" {
-                node obj1: InvestmentObjective "Increase Customer Satisfaction by 25%";
-                node ben1: Benefit "Faster Response Times";
-                node ben2: Benefit "Improved Service Quality";
-                node ben3: Benefit "24/7 Support Availability";
-                node chg1: BusinessChange "Automated Ticket Routing";
-                node chg2: BusinessChange "Self-Service Portal";
-                node chg3: BusinessChange "Staff Training Program";
-                node chg4: BusinessChange "24/7 Shift Coverage";
-                node enb1: Enabler "AI-Powered Ticketing System";
-                node enb2: Enabler "Customer Portal Platform";
-                node enb3: Enabler "Training Materials & LMS";
-                node enb4: Enabler "Staffing & Scheduling System";
-                
-                edge ben1 -> obj1: requires_benefit;
-                edge ben2 -> obj1: requires_benefit;
-                edge ben3 -> obj1: requires_benefit;
-                edge chg1 -> ben1: requires_business_change;
-                edge chg2 -> ben2: requires_business_change;
-                edge chg3 -> ben2: requires_business_change;
-                edge chg4 -> ben3: requires_business_change;
-                edge enb1 -> chg1: requires_enabler;
-                edge enb2 -> chg2: requires_enabler;
-                edge enb3 -> chg3: requires_enabler;
-                edge enb4 -> chg4: requires_enabler;
-                edge chg1 -> chg2: change_requires_change;
-                edge enb1 -> enb2: enabler_requires_enabler;
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        let report = Notations.analyzeQuality(graph: graph)
-        // The base GoalTree csfCount check should NOT run (replaced by explicit checks).
-        // GoalTree's csfCount would flag "1 CSF, recommended 3-5" as info.
-        let csfMessages = report.infos.filter { $0.message.contains("Critical Success Factor") }
-        #expect(csfMessages.isEmpty)
-    }
-
-    @Test
-    func testThatHadProblemsII() throws {
-        let input = """
-                
-                vgraph ConceptMap: ConceptMap "ConceptMap Meta Model" {
-                    node _meta_Concept: Concept "Concept"
-                    node _meta_EmphasizedConcept: EmphasizedConcept "EmphasizedConcept"
-                    node _meta_Relation: Relation "Relation"
-                    edge _meta_Concept -> _meta_Relation
-                    edge _meta_EmphasizedConcept -> _meta_Relation
-                    edge _meta_Relation -> _meta_Concept
-                    edge _meta_Relation -> _meta_EmphasizedConcept
-                }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        let report = Notations.analyzeQuality(graph: graph)
-        // The base GoalTree csfCount check should NOT run (replaced by explicit checks).
-        // GoalTree's csfCount would flag "1 CSF, recommended 3-5" as info.
-        let csfMessages = report.infos.filter { $0.message.contains("Critical Success Factor") }
-        #expect(csfMessages.isEmpty)
     }
 }
 

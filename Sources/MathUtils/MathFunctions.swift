@@ -85,8 +85,4 @@ extension Double {
     public var floored: Double {
         return Double(Math.floor(self))
     }
-
-    public func isEqual(to: Double, precision: Double) -> Bool {
-        return abs(self - to) <= precision
-    }
 }

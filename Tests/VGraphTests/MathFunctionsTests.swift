@@ -9,23 +9,23 @@ struct MathFunctionsTests {
 
     @Test
     func testCos() {
-        #expect(Math.cos(0).isEqual(to: 1.0, precision: 0.0001))
-        #expect(Math.cos(Double.pi).isEqual(to: -1.0, precision: 0.0001))
-        #expect(Math.cos(Double.pi / 2).isEqual(to: 0.0, precision: 0.0001))
+        #expect(isClose(Math.cos(0), 1.0))
+        #expect(isClose(Math.cos(Double.pi), -1.0))
+        #expect(isClose(Math.cos(Double.pi / 2), 0.0))
     }
 
     @Test
     func testSin() {
-        #expect(Math.sin(0).isEqual(to: 0.0, precision: 0.0001))
-        #expect(Math.sin(Double.pi / 2).isEqual(to: 1.0, precision: 0.0001))
-        #expect(Math.sin(-Double.pi / 2).isEqual(to: -1.0, precision: 0.0001))
+        #expect(isClose(Math.sin(0), 0.0))
+        #expect(isClose(Math.sin(Double.pi / 2), 1.0))
+        #expect(isClose(Math.sin(-Double.pi / 2), -1.0))
     }
 
     @Test
     func testAtan2() {
-        #expect(Math.atan2(0, 1).isEqual(to: 0.0, precision: 0.0001))
-        #expect(Math.atan2(1, 0).isEqual(to: Double.pi / 2, precision: 0.0001))
-        #expect(Math.atan2(1, 1).isEqual(to: Double.pi / 4, precision: 0.0001))
+        #expect(isClose(Math.atan2(0, 1), 0.0))
+        #expect(isClose(Math.atan2(1, 0), Double.pi / 2))
+        #expect(isClose(Math.atan2(1, 1), Double.pi / 4))
     }
 
     @Test
@@ -44,10 +44,10 @@ struct MathFunctionsTests {
 
     @Test
     func testPow() {
-        #expect(Math.pow(base: 2.0, exponent: 3.0).isEqual(to: 8.0, precision: 0.0001))
-        #expect(Math.pow(base: 2.0, exponent: -3.0).isEqual(to: 0.125, precision: 0.0001))
-        #expect(Math.pow(base: -2.0, exponent: 3.0).isEqual(to: -8.0, precision: 0.0001))
-        #expect(Math.pow(base: 2.0, exponent: 0.5).isEqual(to: 1.414213562, precision: 0.0001))
+        #expect(isClose(Math.pow(base: 2.0, exponent: 3.0), 8.0))
+        #expect(isClose(Math.pow(base: 2.0, exponent: -3.0), 0.125))
+        #expect(isClose(Math.pow(base: -2.0, exponent: 3.0), -8.0))
+        #expect(isClose(Math.pow(base: 2.0, exponent: 0.5), 1.414213562))
     }
 
     @Test
@@ -61,10 +61,8 @@ struct MathFunctionsTests {
         let value = 3.7
         #expect(value.floored == 3.0)
     }
+}
 
-    @Test
-    func testDoubleExtensionIsEqual() {
-        #expect(3.14159.isEqual(to: 3.14160, precision: 0.0001))
-        #expect(!3.14159.isEqual(to: 3.15, precision: 0.0001))
-    }
+private func isClose(_ a: Double, _ b: Double) -> Bool {
+    abs(a - b) <= 0.0001
 }

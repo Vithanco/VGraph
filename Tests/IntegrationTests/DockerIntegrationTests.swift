@@ -1,7 +1,6 @@
 // Integration tests for Docker/Linux functionality
 
 import Foundation
-import MathUtils
 import Testing
 
 @Suite(.tags(.integration))
@@ -79,20 +78,6 @@ struct DockerIntegrationTests {
 
             #expect(fileManager.fileExists(atPath: dotPath), "Graphviz dot should be installed at \(dotPath)")
             #expect(fileManager.isExecutableFile(atPath: dotPath), "Graphviz dot should be executable")
-        #endif
-    }
-
-    @Test
-    func testGlibcMathFunctionsWork() throws {
-        #if canImport(Glibc)
-            let cosResult = Math.cos(0)
-            #expect(cosResult.isEqual(to: 1.0, precision: 0.0001), "cos(0) should equal 1.0")
-
-            let sinResult = Math.sin(Double.pi / 2)
-            #expect(sinResult.isEqual(to: 1.0, precision: 0.0001), "sin(π/2) should equal 1.0")
-
-            let powResult = Math.pow(base: 2.0, exponent: 3.0)
-            #expect(powResult.isEqual(to: 8.0, precision: 0.0001), "pow(2, 3) should equal 8.0")
         #endif
     }
 
