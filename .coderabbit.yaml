@@ -88,9 +88,9 @@ reviews:
         The image serves the public MCP endpoint on Cloud Run. It runs as a non-root
         user; flag anything that adds secrets to the image, widens what gets copied in,
         or unpins a base image or download.
-    - path: "{CONTEXT.md,docs/adr/**}"
+    - path: "{GLOSSARY.md,docs/adr/**}"
       instructions: |
-        CONTEXT.md is the glossary; a new term should not duplicate one listed under
+        GLOSSARY.md is the glossary; a new term should not duplicate one listed under
         Avoid. An ADR states the decision as it stands now; ADR numbers are never reused.
 
   pre_merge_checks:

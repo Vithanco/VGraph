@@ -156,6 +156,6 @@ the field on what was typed, the path `setURL` already walks.
   only the base.
 - **Unknown node and group types are untouched**, and deliberately: they are not
   breaks. Only the parser produces them, from a document naming a type the
-  notation lacks, and `CONTEXT.md` already separates them from a deliberate
+  notation lacks, and `GLOSSARY.md` already separates them from a deliberate
   deviation. They round-trip today, losing the authored word — a separate
   question, and not this one.

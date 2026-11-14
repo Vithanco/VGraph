@@ -27,7 +27,7 @@ goes in the target that matches what it needs;
 
 **Keep documentation small and about why.** Comments that repeat the code are
 noise, and a test is better than a comment that describes behaviour. Decisions
-worth keeping go in `docs/adr/`, vocabulary in `CONTEXT.md`, language changes in
+worth keeping go in `docs/adr/`, vocabulary in `GLOSSARY.md`, language changes in
 `docs/VGL_GUIDE.md`.
 
 **Follow the architecture.** `AGENTS.md` is the short version of the rules, for

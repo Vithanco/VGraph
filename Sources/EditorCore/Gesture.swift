@@ -29,7 +29,7 @@ public func grab(
 }
 
 /// Not checked for legality here: a drop never supplies judgement, the command
-/// does (CONTEXT.md [[Gesture]]).
+/// does (GLOSSARY.md [[Gesture]]).
 public enum Drop: Sendable, Equatable {
     case connect(from: String, to: String)
     case move(source: String, into: String)

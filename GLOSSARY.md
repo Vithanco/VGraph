@@ -1,4 +1,4 @@
-# VGraph — Context & Glossary
+# VGraph — Glossary
 
 This is a glossary of the domain language, not a spec. It captures what terms
 *mean* so that code, docs, and conversation stay aligned. No implementation

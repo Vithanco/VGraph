@@ -15,7 +15,7 @@ touches these, in order. Each step is its own commit in practice.
 5. **Swift MCP** — `Sources/VGraphMCPTools/VGraphTool.swift`; test in `Tests/VGraphMCPTests/`.
 6. **Wasm** — `VGraphWasm/Sources/Main.swift` (BridgeJS regenerates `Sources/Generated/` on `./build-wasm.sh`); editor UI in `VGraphWasm/VGraphEditor/`; JS smoke tests in `VGraphWasm/Tests-JS/` (`fixtures.js`, `smoke.test.js`); editor browser tests (Playwright) in `VGraphWasm/Tests-Browser/`.
 7. **Node MCP** — `vgraph-mcp-node/src/` (`server.mjs`, `render.mjs`), tests in `vgraph-mcp-node/test/`.
-8. **Docs** — `docs/VGL_GUIDE.md` for language changes, `CONTEXT.md` for new terms, `docs/adr/` for decisions.
+8. **Docs** — `docs/VGL_GUIDE.md` for language changes, `GLOSSARY.md` for new terms, `docs/adr/` for decisions.
 
 ## Adding a port
 

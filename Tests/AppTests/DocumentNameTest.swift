@@ -6,7 +6,7 @@
 //
 //  There is no file *handle* behind the [[File menu]] — the browser gives none
 //  a page may write back through — so "save" is always a download and the name
-//  is the only trace an open leaves (CONTEXT.md [[File menu]]).
+//  is the only trace an open leaves (GLOSSARY.md [[File menu]]).
 //
 //  Pure string rules, and they were in the wasm target where no Swift test
 //  could reach them.

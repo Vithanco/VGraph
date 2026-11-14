@@ -85,7 +85,7 @@ public enum ConversationStep: Sendable, Equatable {
 /// A retype the user has settled the *type* of, and the edge questions that
 /// choice left behind. The only accumulating state in any conversation, because
 /// `changeType` is the only command whose question count depends on an earlier
-/// answer (CONTEXT.md [[VCommand]]).
+/// answer (GLOSSARY.md [[VCommand]]).
 public struct Retype: Sendable, Equatable {
     public let type: NodeType
     public let ambiguous: [VAmbiguousEdge]

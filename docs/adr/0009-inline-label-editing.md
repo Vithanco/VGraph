@@ -101,7 +101,7 @@ stamps `#node-<id>` / `#edge-<id>` / `#group-<id>`.
   off to the inline editor must open it *after* its render, not before.
 - **The rule here is narrower than the one it gets quoted for.** *(Added
   2026-08-16.)* This ADR is cited — by [0012](./0012-drag-to-connect.md) and by
-  `CONTEXT.md` — as "interaction chrome lives outside the SVG". What it actually
+  `GLOSSARY.md` — as "interaction chrome lives outside the SVG". What it actually
   argues is that chrome holding **uncommitted state** must, because a render
   destroys it and the user loses something they cannot get back: typed text, a
   half-made drag. Chrome that is a *pure function* of adapter state loses nothing,

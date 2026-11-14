@@ -4,14 +4,14 @@ How the engineering skills consume this repo's domain documentation.
 
 ## Before exploring, read these
 
-- **`CONTEXT.md`** at the repo root: the glossary. `grep -n "^### " CONTEXT.md` lists the terms; read the section before naming or placing a concept.
+- **`GLOSSARY.md`** at the repo root: the glossary. `grep -n "^### " GLOSSARY.md` lists the terms; read the section before naming or placing a concept.
 - **`docs/adr/`**: read the ADRs that touch the area you're about to work in.
 
-This repo has one context. There is no `GLOSSARY.md` or `GLOSSARY-MAP.md`; where a skill says `GLOSSARY.md`, read `CONTEXT.md`.
+This repo has one context. There is no `GLOSSARY-MAP.md`; where an older skill says `CONTEXT.md`, read `GLOSSARY.md`.
 
 ## Use the glossary's vocabulary
 
-When your output names a domain concept (an issue title, a refactor proposal, a hypothesis, a test name), use the term as `CONTEXT.md` defines it. Don't drift to synonyms it lists under *Avoid*.
+When your output names a domain concept (an issue title, a refactor proposal, a hypothesis, a test name), use the term as `GLOSSARY.md` defines it. Don't drift to synonyms it lists under *Avoid*.
 
 If the concept you need isn't in the glossary yet, either you're inventing language the project doesn't use (reconsider), or there's a real gap (note it for `/domain-modeling`).
 

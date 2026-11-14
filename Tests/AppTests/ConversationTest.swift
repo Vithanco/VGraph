@@ -2,7 +2,7 @@
 //  ConversationTest.swift
 //  VGraph
 //
-//  The multi-step command conversation (CONTEXT.md [[VCommand]]): which
+//  The multi-step command conversation (GLOSSARY.md [[VCommand]]): which
 //  question a command opens with, what each answer decides, and when there is
 //  no question at all.
 //
@@ -297,7 +297,7 @@ struct ConversationTest {
     // MARK: - Gestures, which have no menu target
 
     /// A [[Gesture]] names two elements, so it never arrives through the menu
-    /// (CONTEXT.md [[VCommand]]). ConceptMap joins Concept to Relation exactly
+    /// (GLOSSARY.md [[VCommand]]). ConceptMap joins Concept to Relation exactly
     /// one way, so the drop settles itself and `using: nil` lets the named
     /// method pick.
     @Test("A drop with one possible edge type connects unasked")
@@ -687,7 +687,7 @@ struct ConversationTest {
     }
 
     /// The ordinary path: a candidate the notation offered is an edge type, and
-    /// the new node's type follows from its far end (CONTEXT.md [[Candidate]]).
+    /// the new node's type follows from its far end (GLOSSARY.md [[Candidate]]).
     @Test("A candidate chosen from the list creates that relationship")
     func aCandidateAnswerCreatesTheRelationship() throws {
         let session = try conceptMap()

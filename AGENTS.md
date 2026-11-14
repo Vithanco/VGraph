@@ -7,7 +7,7 @@ already says. Anything worth keeping goes in `/docs` and stays updated.
 
 ## Where to look
 
-- `CONTEXT.md` — the domain vocabulary. `grep -n "^### " CONTEXT.md` lists the
+- `GLOSSARY.md` — the domain vocabulary. `grep -n "^### " GLOSSARY.md` lists the
   terms; read the section before naming or placing a new concept.
 - `docs/adr/` — why things are the way they are. Read the ADR before reversing
   a design.
@@ -138,4 +138,4 @@ The five default triage roles, each label named after its role. See `docs/agents
 
 ### Domain docs
 
-Single context: `CONTEXT.md` is the glossary, ADRs are in `docs/adr/`. See `docs/agents/domain.md`.
+Single context: `GLOSSARY.md` is the glossary, ADRs are in `docs/adr/`. See `docs/agents/domain.md`.
