@@ -235,13 +235,14 @@ struct ConceptMapQualityChecksTests {
         let graph = try conceptMap([("r1", .relation, label), ("c1", .concept, "relates to")])
 
         #expect(
-            CM.vagueRelationsCheck(graph) == (flagged
-                ? [
-                    MessageWithSeverity(
-                        message:
-                            "Relation \"\(label)\" is too vague — use a specific verb that forms a falsifiable proposition",
-                        severity: .warning, target: .node("r1"))
-                ] : []))
+            CM.vagueRelationsCheck(graph)
+                == (flagged
+                    ? [
+                        MessageWithSeverity(
+                            message:
+                                "Relation \"\(label)\" is too vague — use a specific verb that forms a falsifiable proposition",
+                            severity: .warning, target: .node("r1"))
+                    ] : []))
     }
 
     @Test("Only concepts without edges are unconnected; an edgeless relation is not one")
@@ -343,13 +344,14 @@ struct ConceptMapQualityChecksTests {
             ], links: [("a", "r1"), ("r1", "c"), ("b", "r2"), ("r2", secondTarget)])
 
         #expect(
-            CM.unreusedRelations(graph, topology: topology(graph)) == (flagged
-                ? [
-                    MessageWithSeverity(
-                        message:
-                            "Relations with label \"is a\" appear 2 times with same targets -- consider reusing a single relation node",
-                        severity: .warning)
-                ] : []))
+            CM.unreusedRelations(graph, topology: topology(graph))
+                == (flagged
+                    ? [
+                        MessageWithSeverity(
+                            message:
+                                "Relations with label \"is a\" appear 2 times with same targets -- consider reusing a single relation node",
+                            severity: .warning)
+                    ] : []))
     }
 }
 
