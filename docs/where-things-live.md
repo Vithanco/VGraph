@@ -46,3 +46,30 @@ SwiftPM lets a target import its transitive graph, but a *test* target compiles 
 
 `AppTests` does not depend on `VGraphSVG` or `VGraphvizLib`, so a render test written there fails to build; put it in `VGraphSVGTests`.
 `VGraphTestApp` is the native wiring with a silent logger (`Tests/TestSupport/VGraphTestApp.swift`).
+
+## Which test owns a contract
+
+Each contract has one owning test. A copy elsewhere adds nothing but a second
+place to change; extend the owner's table instead.
+
+| Contract | Owner |
+| --- | --- |
+| a menu's rows (id, title, enabled) | `GoldenMenuTest` |
+| whether a command asks, and what | `ConversationTest`, through `begin` / `next` |
+| what an option list contains | the command's own file (`AddNodeTest`, `ChangeNodeTypeTest`, …) |
+| the menu and the command agree, on every fixture | `MenuAgreesWithExecutionTest` |
+| graph rules a session passes on (moving, grouping) | `VGraphTests` |
+| parser and exporter rows | `VGLanguageTests` |
+
+A session test asserts what the session adds: history, refusal, the exported
+document.
+
+A test proves its contract once it has been seen **red**: break the owner once
+(drop a guard, swap an argument), watch the test fail for that reason, restore.
+What made tests here pass without proving anything:
+
+- a refusal that tripped an earlier guard — assert the exact `VError` case;
+- a fixture that cannot show the difference — make the excluded type present,
+  the pair have candidates, the bound be reached;
+- an expected value read back from the code under test — write the literal;
+- hand-built editor state — go through `begin` / `next`, `menu`, `rightClick`.

@@ -12,8 +12,8 @@ already says. Anything worth keeping goes in `/docs` and stays updated.
 - `docs/adr/` — why things are the way they are. Read the ADR before reversing
   a design.
 - `docs/where-things-live.md` — the layer chain a feature crosses (domain, port,
-  app, editor, MCP, wasm, node) and which test target and entry point a test
-  uses. Read it before tracing by hand.
+  app, editor, MCP, wasm, node), and which test target, entry point and owning
+  test a test belongs to. Read it before tracing by hand or adding a test.
 - `docs/design/` — the normative visual reference for the default theme (light
   and dark). Read its `README.md` before adding or changing a notation, colour,
   token or dark-mode behaviour; renderer output that disagrees with the guide
