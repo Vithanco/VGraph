@@ -77,25 +77,15 @@ struct AddingGroupTests {
         #expect(g.groupingTarget(for: []) == nil)
     }
 
-    /// The whole diagram collapses to the [[Root group]], which has no outside to
-    /// be wrapped in. `nil` here is what greys the menu row (ADR-0016, ADR-0018).
-    @Test("The root group cannot be grouped")
-    func theRootHasNoTarget() throws {
-        let g = try graph()
-
-        // The diagram cannot be wrapped, but its contents can — and that is what
-        // "select everything, then group" means. Found in the browser: on a
-        // two-node diagram, selecting both nodes *is* selecting everything, so
-        // refusing here greyed the button in the commonest case there is.
-        let target = g.groupingTarget(for: ["a", "b", "g1", "g2"])
-        #expect(target?.parentId == rootGroup)
-        #expect(target?.detached == 0)
-    }
-
+    /// The diagram cannot be wrapped, but its contents can — and that is what
+    /// "select everything, then group" means. Found in the browser: on a
+    /// two-node diagram, selecting both nodes *is* selecting everything, so
+    /// refusing here greyed the button in the commonest case there is.
     @Test("Grouping everything wraps the diagram's contents")
     func groupingEverythingWrapsTheContents() throws {
         let g = try graph()
 
+        #expect(g.groupingTarget(for: ["a", "b", "g1", "g2"]) == VGroupingTarget(parentId: rootGroup, detached: 0))
         let (changed, created) = try g.addingGroup(of: ["a", "b", "g1", "g2"], detaching: false)
 
         #expect(changed.parentGroup(of: created) == Group(rawValue: rootGroup))
@@ -114,13 +104,6 @@ struct AddingGroupTests {
         let g = try VGraphParser(logger: NoOpLogger()).parse(source: vgl)
 
         #expect(g.groupingTarget(for: [rootGroup]) == nil)
-    }
-
-    @Test("One element is a legitimate group of one")
-    func aSingleElementCanBeWrapped() throws {
-        let g = try graph()
-
-        #expect(g.groupingTarget(for: ["a"])?.detached == 0)
     }
 
     /// Grouping can never empty a group, and the reason is a proof rather than a
@@ -180,15 +163,6 @@ struct AddingGroupTests {
         #expect(changed.parentGroup(of: created) == Group(rawValue: "g1"))
     }
 
-    @Test("A group can be wrapped, not only nodes")
-    func takesGroupsAsMembers() throws {
-        let g = try graph()
-
-        let (changed, created) = try g.addingGroup(of: ["a", "g1"], detaching: false)
-
-        #expect(changed.parentGroup(of: Group(rawValue: "g1")) == created)
-    }
-
     // MARK: - Detaching
 
     @Test("The strict form refuses to pull an element out of its group")
@@ -211,22 +185,10 @@ struct AddingGroupTests {
         #expect(changed.group(of: Node("d")) == Group(rawValue: "g1"))
     }
 
-    // MARK: - What comes for free
+    // MARK: - Export
 
-    /// An edge is in the innermost group holding both its ends, computed on
-    /// demand (ADR-0017), so grouping two connected nodes puts their edge in the
-    /// new group without `addingGroup` touching it.
-    @Test("An edge between two grouped nodes follows them in")
-    func edgesFollowTheirEndpoints() throws {
-        let g = try graph()
-
-        let (changed, created) = try g.addingGroup(of: ["a", "b"], detaching: false)
-
-        let edge = changed.edges.first { $0.from == Node("a") && $0.to == Node("b") }
-        #expect(edge != nil)
-        #expect(changed.group(of: edge!.id) == created)
-    }
-
+    /// The members were declared before the group that now holds them, so the
+    /// exporter has to write membership from the structure, not the order.
     @Test("The group survives an export and reparse with its members inside it")
     func roundTripsThroughVGL() throws {
         let g = try graph()

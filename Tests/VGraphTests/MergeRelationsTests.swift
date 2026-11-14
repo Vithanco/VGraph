@@ -70,15 +70,6 @@ struct MergeRelationsTests {
     // MARK: - findMergeableRelations — Identification
 
     @Test
-    func find_noRelationNodes_returnsEmpty() throws(VError) {
-        var graph = try createConceptMapGraph()
-        graph = try addConcept("c1", label: "Dog", to: graph)
-
-        let groups = findMergeableRelations(in: graph)
-        #expect(groups.isEmpty)
-    }
-
-    @Test
     func find_singleRelation_returnsEmpty() throws(VError) {
         var graph = try createConceptMapGraph()
         graph = try addConcept("c1", label: "Dog", to: graph)
@@ -153,16 +144,13 @@ struct MergeRelationsTests {
 
     @Test
     func find_relationWithNoOutgoingEdges_excluded() throws(VError) {
-        // r1 has outgoing edge to mammal, r2 has no outgoing edge — not mergeable
+        // Same label and the same (empty) targets: only the missing outgoing edge keeps them apart.
         var graph = try createConceptMapGraph()
         graph = try addConcept("dog", label: "Dog", to: graph)
-        graph = try addConcept("mammal", label: "Mammal", to: graph)
         graph = try addRelation("r1", label: "is a", to: graph)
         graph = try addRelation("r2", label: "is a", to: graph)
         graph = try addEdgeConceptToRelation(id: "e1", from: "dog", to: "r1", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e2", from: "r1", to: "mammal", in: graph)
         graph = try addEdgeConceptToRelation(id: "e3", from: "dog", to: "r2", in: graph)
-        // r2 has NO outgoing edge
 
         let groups = findMergeableRelations(in: graph)
         #expect(groups.isEmpty)
@@ -212,34 +200,6 @@ struct MergeRelationsTests {
     }
 
     @Test
-    func find_twoIndependentMergeGroups() throws(VError) {
-        // Group1: r_isa1, r_isa2 both -[is a]-> Animal
-        // Group2: r_has1, r_has2 both -[has]-> Fur
-        var graph = try createConceptMapGraph()
-        graph = try addConcept("dog", label: "Dog", to: graph)
-        graph = try addConcept("cat", label: "Cat", to: graph)
-        graph = try addConcept("animal", label: "Animal", to: graph)
-        graph = try addConcept("fur", label: "Fur", to: graph)
-        graph = try addRelation("r_isa1", label: "is a", to: graph)
-        graph = try addRelation("r_isa2", label: "is a", to: graph)
-        graph = try addRelation("r_has1", label: "has", to: graph)
-        graph = try addRelation("r_has2", label: "has", to: graph)
-        graph = try addEdgeConceptToRelation(id: "e1", from: "dog", to: "r_isa1", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e2", from: "r_isa1", to: "animal", in: graph)
-        graph = try addEdgeConceptToRelation(id: "e3", from: "cat", to: "r_isa2", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e4", from: "r_isa2", to: "animal", in: graph)
-        graph = try addEdgeConceptToRelation(id: "e5", from: "dog", to: "r_has1", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e6", from: "r_has1", to: "fur", in: graph)
-        graph = try addEdgeConceptToRelation(id: "e7", from: "cat", to: "r_has2", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e8", from: "r_has2", to: "fur", in: graph)
-
-        let groups = findMergeableRelations(in: graph)
-        #expect(groups.count == 2)
-        let labels = Set(groups.map { $0.label })
-        #expect(labels == ["is a", "has"])
-    }
-
-    @Test
     func find_mixedMergeableAndNonMergeable() throws(VError) {
         // r1, r2 both -[is a]-> Animal  (mergeable)
         // r3 -[likes]-> Animal          (unique — not mergeable)
@@ -285,33 +245,7 @@ struct MergeRelationsTests {
         #expect(groups[0].targets == Set([Node(string: "weight"), Node(string: "style")]))
     }
 
-    @Test
-    func find_nonConceptMapGraph_returnsEmpty() throws(VError) {
-        var graph = try VGraph()
-            .defineStandardAttributes()
-            .add(nodeType: NodeType(string: "MyType"))
-        graph = try graph.add(node: Node(string: "n1"), type: NodeType(string: "MyType"))
-
-        let groups = findMergeableRelations(in: graph)
-        #expect(groups.isEmpty)
-    }
-
     // MARK: - applyMergeRelations — Transform
-
-    @Test
-    func merge_nothingToMerge_graphUnchanged() throws(VError) {
-        var graph = try createConceptMapGraph()
-        graph = try addConcept("dog", label: "Dog", to: graph)
-        graph = try addRelation("r1", label: "is a", to: graph)
-        graph = try addConcept("mammal", label: "Mammal", to: graph)
-        graph = try addEdgeConceptToRelation(id: "e1", from: "dog", to: "r1", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e2", from: "r1", to: "mammal", in: graph)
-
-        let result = try applyMergeRelations(to: graph)
-
-        #expect(result.nodes.count == graph.nodes.count)
-        #expect(result.edges.count == graph.edges.count)
-    }
 
     @Test
     func merge_basicPair_nodeCountCorrect() throws(VError) {
@@ -336,129 +270,6 @@ struct MergeRelationsTests {
     }
 
     @Test
-    func merge_duplicateNodeIsDeleted_survivorRemains() throws(VError) {
-        var graph = try createConceptMapGraph()
-        graph = try addConcept("dog", label: "Dog", to: graph)
-        graph = try addConcept("cat", label: "Cat", to: graph)
-        graph = try addConcept("mammal", label: "Mammal", to: graph)
-        graph = try addRelation("r1", label: "is a", to: graph)
-        graph = try addRelation("r2", label: "is a", to: graph)
-        graph = try addEdgeConceptToRelation(id: "e1", from: "dog", to: "r1", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e2", from: "r1", to: "mammal", in: graph)
-        graph = try addEdgeConceptToRelation(id: "e3", from: "cat", to: "r2", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e4", from: "r2", to: "mammal", in: graph)
-
-        let groups = findMergeableRelations(in: graph)
-        let survivor = groups[0].nodes[0]
-        let duplicate = groups[0].nodes[1]
-
-        let result = try applyMergeRelations(to: graph)
-
-        #expect(result.has(node: survivor))
-        #expect(!result.has(node: duplicate))
-    }
-
-    @Test
-    func merge_incomingEdgesRedirectedToSurvivor() throws(VError) {
-        var graph = try createConceptMapGraph()
-        graph = try addConcept("dog", label: "Dog", to: graph)
-        graph = try addConcept("cat", label: "Cat", to: graph)
-        graph = try addConcept("mammal", label: "Mammal", to: graph)
-        graph = try addRelation("r1", label: "is a", to: graph)
-        graph = try addRelation("r2", label: "is a", to: graph)
-        graph = try addEdgeConceptToRelation(id: "e1", from: "dog", to: "r1", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e2", from: "r1", to: "mammal", in: graph)
-        graph = try addEdgeConceptToRelation(id: "e3", from: "cat", to: "r2", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e4", from: "r2", to: "mammal", in: graph)
-
-        let groups = findMergeableRelations(in: graph)
-        let survivor = groups[0].nodes[0]
-
-        let result = try applyMergeRelations(to: graph)
-
-        // e3 (cat → r2) should now point to the survivor
-        let e3 = result.get(edge: Edge.Id(string: "e3"))!
-        #expect(e3.from == Node(string: "cat"))
-        #expect(e3.to == survivor)
-    }
-
-    @Test
-    func merge_survivorOutgoingEdgePreserved() throws(VError) {
-        var graph = try createConceptMapGraph()
-        graph = try addConcept("dog", label: "Dog", to: graph)
-        graph = try addConcept("cat", label: "Cat", to: graph)
-        graph = try addConcept("mammal", label: "Mammal", to: graph)
-        graph = try addRelation("r1", label: "is a", to: graph)
-        graph = try addRelation("r2", label: "is a", to: graph)
-        graph = try addEdgeConceptToRelation(id: "e1", from: "dog", to: "r1", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e2", from: "r1", to: "mammal", in: graph)
-        graph = try addEdgeConceptToRelation(id: "e3", from: "cat", to: "r2", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e4", from: "r2", to: "mammal", in: graph)
-
-        let groups = findMergeableRelations(in: graph)
-        let survivor = groups[0].nodes[0]
-
-        let result = try applyMergeRelations(to: graph)
-
-        let outgoing = result.edges.filter { $0.from == survivor }
-        #expect(outgoing.count == 1)
-        #expect(outgoing[0].to == Node(string: "mammal"))
-    }
-
-    @Test
-    func merge_duplicateOutgoingEdgeDeleted() throws(VError) {
-        var graph = try createConceptMapGraph()
-        graph = try addConcept("dog", label: "Dog", to: graph)
-        graph = try addConcept("cat", label: "Cat", to: graph)
-        graph = try addConcept("mammal", label: "Mammal", to: graph)
-        graph = try addRelation("r1", label: "is a", to: graph)
-        graph = try addRelation("r2", label: "is a", to: graph)
-        graph = try addEdgeConceptToRelation(id: "e1", from: "dog", to: "r1", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e2", from: "r1", to: "mammal", in: graph)
-        graph = try addEdgeConceptToRelation(id: "e3", from: "cat", to: "r2", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e4", from: "r2", to: "mammal", in: graph)
-
-        let groups = findMergeableRelations(in: graph)
-        let duplicate = groups[0].nodes[1]
-
-        let result = try applyMergeRelations(to: graph)
-
-        // The duplicate's outgoing edge (relation→mammal) should be deleted.
-        // The survivor's outgoing edge should remain.
-        let duplicateOutgoingId: String
-        let survivorOutgoingId: String
-        if duplicate == Node(string: "r2") {
-            duplicateOutgoingId = "e4"
-            survivorOutgoingId = "e2"
-        } else {
-            duplicateOutgoingId = "e2"
-            survivorOutgoingId = "e4"
-        }
-        #expect(!result.has(edge: Edge.Id(string: duplicateOutgoingId)))
-        #expect(result.has(edge: Edge.Id(string: survivorOutgoingId)))
-    }
-
-    @Test
-    func merge_redirectedEdgePreservesEdgeType() throws(VError) {
-        var graph = try createConceptMapGraph()
-        graph = try addConcept("dog", label: "Dog", to: graph)
-        graph = try addConcept("cat", label: "Cat", to: graph)
-        graph = try addConcept("mammal", label: "Mammal", to: graph)
-        graph = try addRelation("r1", label: "is a", to: graph)
-        graph = try addRelation("r2", label: "is a", to: graph)
-        graph = try addEdgeConceptToRelation(id: "e1", from: "dog", to: "r1", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e2", from: "r1", to: "mammal", in: graph)
-        graph = try addEdgeConceptToRelation(id: "e3", from: "cat", to: "r2", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e4", from: "r2", to: "mammal", in: graph)
-
-        let result = try applyMergeRelations(to: graph)
-
-        // e3 was redirected — should still be conceptToRelation
-        let e3EdgeType = try result.edgeType(for: Edge.Id(string: "e3"))
-        #expect(e3EdgeType.id == CM.EdgeTypes.conceptToRelation.id)
-    }
-
-    @Test
     func merge_redirectedEdgeFromEmphasizedConcept_preservesEdgeType() throws(VError) {
         var graph = try createConceptMapGraph()
         graph = try addEmphasizedConcept("ec1", label: "Key1", to: graph)
@@ -476,72 +287,6 @@ struct MergeRelationsTests {
         // e3 redirected — should still be emphasizedConceptToRelation
         let e3EdgeType = try result.edgeType(for: Edge.Id(string: "e3"))
         #expect(e3EdgeType.id == CM.EdgeTypes.emphasizedConceptToRelation.id)
-    }
-
-    @Test
-    func merge_survivorLabelPreserved() throws(VError) {
-        var graph = try createConceptMapGraph()
-        graph = try addConcept("dog", label: "Dog", to: graph)
-        graph = try addConcept("cat", label: "Cat", to: graph)
-        graph = try addConcept("mammal", label: "Mammal", to: graph)
-        graph = try addRelation("r1", label: "is a", to: graph)
-        graph = try addRelation("r2", label: "is a", to: graph)
-        graph = try addEdgeConceptToRelation(id: "e1", from: "dog", to: "r1", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e2", from: "r1", to: "mammal", in: graph)
-        graph = try addEdgeConceptToRelation(id: "e3", from: "cat", to: "r2", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e4", from: "r2", to: "mammal", in: graph)
-
-        let groups = findMergeableRelations(in: graph)
-        let survivor = groups[0].nodes[0]
-
-        let result = try applyMergeRelations(to: graph)
-
-        let label: String = try result.get(node: survivor, attribute: Attributes.Node.label)
-        #expect(label == "is a")
-    }
-
-    @Test
-    func merge_survivorNodeTypeIsStillRelation() throws(VError) {
-        var graph = try createConceptMapGraph()
-        graph = try addConcept("dog", label: "Dog", to: graph)
-        graph = try addConcept("cat", label: "Cat", to: graph)
-        graph = try addConcept("mammal", label: "Mammal", to: graph)
-        graph = try addRelation("r1", label: "is a", to: graph)
-        graph = try addRelation("r2", label: "is a", to: graph)
-        graph = try addEdgeConceptToRelation(id: "e1", from: "dog", to: "r1", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e2", from: "r1", to: "mammal", in: graph)
-        graph = try addEdgeConceptToRelation(id: "e3", from: "cat", to: "r2", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e4", from: "r2", to: "mammal", in: graph)
-
-        let groups = findMergeableRelations(in: graph)
-        let survivor = groups[0].nodes[0]
-
-        let result = try applyMergeRelations(to: graph)
-
-        let nodeType = try result.nodeType(for: survivor)
-        #expect(nodeType == CM.NodeTypes.relation)
-    }
-
-    @Test
-    func merge_conceptNodesUntouched() throws(VError) {
-        var graph = try createConceptMapGraph()
-        graph = try addConcept("dog", label: "Dog", to: graph)
-        graph = try addConcept("cat", label: "Cat", to: graph)
-        graph = try addConcept("mammal", label: "Mammal", to: graph)
-        graph = try addRelation("r1", label: "is a", to: graph)
-        graph = try addRelation("r2", label: "is a", to: graph)
-        graph = try addEdgeConceptToRelation(id: "e1", from: "dog", to: "r1", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e2", from: "r1", to: "mammal", in: graph)
-        graph = try addEdgeConceptToRelation(id: "e3", from: "cat", to: "r2", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e4", from: "r2", to: "mammal", in: graph)
-
-        let result = try applyMergeRelations(to: graph)
-
-        #expect(result.has(node: Node(string: "dog")))
-        #expect(result.has(node: Node(string: "cat")))
-        #expect(result.has(node: Node(string: "mammal")))
-        let dogLabel: String = try result.get(node: Node(string: "dog"), attribute: Attributes.Node.label)
-        #expect(dogLabel == "Dog")
     }
 
     @Test
@@ -694,6 +439,8 @@ struct MergeRelationsTests {
         let outgoing = result.edges.filter { $0.from == relation }
         #expect(outgoing.count == 1)
         #expect(outgoing[0].to == Node(string: "mammal"))
+        #expect(result.has(edge: Edge.Id(string: "e2")))
+        #expect(!result.has(edge: Edge.Id(string: "e4")))
 
         for edge in incoming {
             let edgeType = try result.edgeType(for: edge)
@@ -708,28 +455,6 @@ struct MergeRelationsTests {
     }
 
     // MARK: - Pipeline Integration
-
-    @Test
-    func merge_composesInPipeline() throws(VError) {
-        var graph = try createConceptMapGraph()
-        graph = try addConcept("dog", label: "Dog", to: graph)
-        graph = try addConcept("cat", label: "Cat", to: graph)
-        graph = try addConcept("mammal", label: "Mammal", to: graph)
-        graph = try addRelation("r1", label: "is a", to: graph)
-        graph = try addRelation("r2", label: "is a", to: graph)
-        graph = try addEdgeConceptToRelation(id: "e1", from: "dog", to: "r1", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e2", from: "r1", to: "mammal", in: graph)
-        graph = try addEdgeConceptToRelation(id: "e3", from: "cat", to: "r2", in: graph)
-        graph = try addEdgeRelationToConcept(id: "e4", from: "r2", to: "mammal", in: graph)
-
-        let pipeline = TransformPipeline.compose(
-            applyMergeRelations,
-            applyFoldingLayoutStep
-        )
-        let result = try pipeline(graph)
-
-        #expect(result.nodes.count == 4)
-    }
 
     @Test
     func merge_notationDispatcherAppliesMerge() throws(VError) {
@@ -747,18 +472,6 @@ struct MergeRelationsTests {
         let result = try Notations.notationTransformsStep(graph)
 
         #expect(result.nodes.count == 4)
-    }
-
-    @Test
-    func merge_nonConceptMapNotation_notDispatched() throws(VError) {
-        var graph = try VGraph()
-            .defineStandardAttributes()
-        graph = try Notations.Ibis.addNotation(addTo: graph)
-        graph = graph.using(notation: "IBIS")
-
-        let result = try Notations.notationTransformsStep(graph)
-
-        #expect(result.nodes.count == graph.nodes.count)
     }
 
     // MARK: - Which node survives

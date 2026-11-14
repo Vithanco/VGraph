@@ -67,13 +67,8 @@ public struct LayerAdmission: VProtocol {
     }
 }
 
-public enum AttributeSource: VProtocol {
-    case direct
-    case rule(String)
-}
-
 public enum AttributeProvenance: VProtocol {
-    case layer(AttributeLayer, key: ItemKey, source: AttributeSource)
+    case layer(AttributeLayer, key: ItemKey)
     case `default`
 }
 

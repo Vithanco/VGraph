@@ -12,10 +12,6 @@ public struct GraphTopology {
     /// of the contract. `VGraph.edges` is grouped by source node, not by line.
     private let incident: [Node: [Edge]]
 
-    public static func analyze(_ graph: VGraph) -> GraphTopology {
-        GraphTopology(edges: graph.edges)
-    }
-
     public init(edges: some Sequence<Edge>) {
         var outgoing: [Node: Set<Node>] = [:]
         var incoming: [Node: Set<Node>] = [:]

@@ -22,6 +22,15 @@ struct DetailedNodeFoldAndBoundaryTests {
         #expect(try detailed().resolvedBoundaryChrome(ibs) == nil)
     }
 
+    @Test("Given a detailed node holding a group style, then the style draws no boundary: its look is its node type's")
+    func aGroupStyleDoesNotReachADetailedNode() throws(VError) {
+        let graph = try detailed().set(
+            group: ibs, attribute: Attributes.Group.groupStyle.attribute(GroupStyle(folded: .empty, unfolded: dotted)))
+
+        #expect(graph.resolvedGroupStyle(ibs) != nil)
+        #expect(graph.resolvedBoundaryChrome(ibs) == nil)
+    }
+
     @Test("Given a detailed node, when its node type declares a boundary, then the detailed node draws it")
     func boundaryFollowsTheNodeType() throws(VError) {
         let graph = try detailed().set(

@@ -1,10 +1,7 @@
 public struct QualityReport {
     public let messages: [MessageWithSeverity]
 
-    public let notationName: String
-
-    public init(notationName: String, messages: [MessageWithSeverity]) {
-        self.notationName = notationName
+    public init(messages: [MessageWithSeverity]) {
         self.messages = messages
     }
 

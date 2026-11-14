@@ -1,5 +1,5 @@
 ////  The pipeline as a declared list of steps rather than opaque closures. Before
-////  this, only `sizingSteps` was a `[TransformStep]`, so `orderProblems` could see
+////  this, only `sizingSteps` was a `[TransformStep]`, so the prerequisite checks could see
 ////  five of the nine steps and the ledger was silently incomplete: the notation
 ////  phase and layout recorded nothing at all.
 ////
@@ -26,12 +26,7 @@ struct PipelineContractTests {
             """)
     }
 
-    @Test func wholePipelineIsInValidPrerequisiteOrder() {
-        let steps = DisplayPipeline.fullSteps(layout: Self.noLayout)
-        #expect(TransformStep.orderProblems(in: steps).isEmpty)
-    }
-
-    /// `orderProblems` accepts a duplicated id silently, so uniqueness is its own check.
+    /// The ledger is a set, so a duplicated id would pass unseen; uniqueness is its own check.
     @Test func everyPipelineStepIdIsUnique() {
         let ids = DisplayPipeline.fullSteps(layout: Self.noLayout).map { $0.id }
         #expect(Set(ids).count == ids.count)

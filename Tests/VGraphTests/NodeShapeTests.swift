@@ -5,13 +5,9 @@ import Testing
 @Suite
 struct NodeShapeTests {
 
-    @Test("Given the cylinder shape, when serialized and parsed back, then it round-trips")
-    func cylinderRoundTrips() throws(VError) {
-        #expect(try NodeShape.fromString(NodeShape.cylinder.asString) == .cylinder)
-    }
-
-    @Test("Given the person shape, when serialized and parsed back, then it round-trips")
-    func personRoundTrips() throws(VError) {
-        #expect(try NodeShape.fromString(NodeShape.person.asString) == .person)
+    @Test("Given a node shape, when serialized and parsed back, then it round-trips",
+        arguments: [NodeShape.box, .circle, .point, .cylinder, .person])
+    func shapeRoundTrips(_ shape: NodeShape) throws(VError) {
+        #expect(try NodeShape.fromString(shape.asString) == shape)
     }
 }

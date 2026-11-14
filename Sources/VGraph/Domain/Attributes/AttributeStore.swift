@@ -1,10 +1,4 @@
 public struct AttributeStore: VProtocol {
-    public struct Counts: VProtocol {
-        let definitions: Int
-        /// Values held, across every layer.
-        let entries: Int
-    }
-
     public private(set) var definitions: AttributeDefContainer
 
     struct LayerInfo: VProtocol {
@@ -16,8 +10,6 @@ public struct AttributeStore: VProtocol {
 
     var layers: [AttributeLayer: LayerInfo]
     var layerValues: [AttributeLayer: LayerValues]
-    /// Only values a rule produced; every other value was written directly.
-    var ruleSources: [AttributeLayer: [ItemKey: [Attribute.Id: String]]]
 
     public init() {
         self.definitions = [:]
@@ -29,7 +21,6 @@ public struct AttributeStore: VProtocol {
             .model: LayerInfo(parent: .vnotation, admission: .model),
         ]
         self.layerValues = [:]
-        self.ruleSources = [:]
     }
 
     /// Every layer, by name: the order of a dictionary changes between runs.
@@ -68,15 +59,5 @@ public struct AttributeStore: VProtocol {
             }
         }
         return result
-    }
-
-    public var counts: Counts {
-        var entries = 0
-        for (_, byKind) in layerValues {
-            for (_, byId) in byKind {
-                for (_, container) in byId { entries += container.count }
-            }
-        }
-        return Counts(definitions: definitions.count, entries: entries)
     }
 }

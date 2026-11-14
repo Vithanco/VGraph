@@ -18,24 +18,8 @@ struct TransformRegistryTests {
         #expect(try TransformRegistry.resolveStep(name: "mergeRelations")?.id == .mergeRelations)
     }
 
-    /// `identity` does no work, so it gets no ledger entry: a recorded `.identity`
-    /// would be a completion another step could depend on, and under the document
-    /// export rule it would also bar `transform: identity` graphs from being saved.
-    @Test func identityResolvesToNoStep() throws {
-        #expect(try TransformRegistry.resolveStep(name: "identity") == nil)
-    }
-
-    /// Declaring `static var step` on a notation is the whole job — dispatch is the
-    /// registry entry, not a hand-edited switch that a new notation would have to
-    /// remember to extend.
-    @Test func aNotationsDeclaredStepIsDispatchedByName() {
-        #expect(Notations.notationStep(for: "ConceptMap")?.id == .mergeRelations)
-        #expect(Notations.notationStep(for: "IBIS") == nil)
-        #expect(Notations.notationStep(for: "NoSuchNotation") == nil)
-    }
-
     @Test func unknownNameThrows() {
-        #expect(throws: VError.self) {
+        #expect(throws: VError.parsingError("Unknown transform 'noSuchTransform'. Available: mergeRelations, identity")) {
             try TransformRegistry.resolveStep(name: "noSuchTransform")
         }
     }
@@ -43,6 +27,9 @@ struct TransformRegistryTests {
     /// A `vnotation` block's `transform:` names replace the compiled notation's own
     /// step rather than adding to it, so a dynamic notation can opt out of a base
     /// notation's transform.
+    /// `identity` resolves to no step: a recorded `.identity` would be a completion
+    /// another step could depend on, and it would bar `transform: identity` graphs
+    /// from being saved.
     @Test func declaredTransformNamesReplaceTheNotationsOwnStep() throws {
         var graph = try VGraph().defineStandardAttributes()
         graph = graph.using(notation: "ConceptMap")

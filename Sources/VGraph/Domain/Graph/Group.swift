@@ -590,32 +590,6 @@ extension Group {
 }
 
 extension VGraph {
-    public func isVisible(node: Node) -> Bool {
-        if let group = groupStructure.group(of: node) {
-            let foldingState = foldingState(group: group)
-            return foldingState == .normal
-        }
-        return true
-    }
-
-    public func getVisibleNode(for node: Node) -> Node? {
-        if let group = group(of: node) {
-            let foldingState = foldingState(group: group)
-            if foldingState == .normal {
-                return node
-            }
-            var visibleGroup = group
-            while self.foldingState(group: visibleGroup) != FoldingState.folded {
-                guard let parent = parentGroup(of: visibleGroup) else {
-                    return Node(visibleGroup)
-                }
-                visibleGroup = parent
-            }
-            return Node(visibleGroup)
-        }
-        return node
-    }
-
     public func foldingState(group: Group) -> FoldingState {
         if let parent = groupStructure.parentGroup(of: group) {
             let parentFoldingState = foldingState(group: parent)
@@ -656,18 +630,6 @@ extension VGraph {
 
     public func parentGroup(of group: Group) -> Group? {
         return groupStructure.parentGroup(of: group)
-    }
-
-    public var groupsOrderedByOwnership: [Group] {
-        return groups.sorted { lhs, rhs in
-            if groupStructure.isParent(parent: lhs, child: rhs) {
-                return true
-            }
-            if groupStructure.isParent(parent: rhs, child: lhs) {
-                return false
-            }
-            return true
-        }
     }
 
     public func getFont(forGroup group: Group) -> VFont {

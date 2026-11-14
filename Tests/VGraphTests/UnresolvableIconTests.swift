@@ -17,35 +17,17 @@ struct UnresolvableIconTests {
         GenericQualityChecks.unresolvableIcons(graph: graph)
     }
 
-    @Test("It names the node type and the icon")
-    func itNamesBoth() throws {
-        let graph = try parse(
-            """
-            vnotation RiskMap {
-                node type: Control [nodeStyle: iconWithText, backgroundColor: "#339933", icon: "shield"]
-                edge type: rel from: Control to: Control
-            }
-
-            vgraph rm: RiskMap "Risks" {
-                node c1: Control "Weekly reviews";
-            }
-            """)
-
-        let messages = iconMessages(graph)
-        #expect(messages.count == 1)
-        #expect(messages.first?.message.contains("Control") == true)
-        #expect(messages.first?.message.contains("shield") == true)
-        #expect(messages.first?.severity == .warning, "the diagram still renders, so this is not an error")
-    }
-
     @Test("A notation whose icons all resolve says nothing")
     func aGoodNotationIsQuiet() throws {
         let graph = try parse(
             """
-            vgraph i1: IBIS "Fine" {
-                node q1: Question "Q";
-                node a1: Answer "A";
-                edge q1 -> a1;
+            vnotation Gates {
+                node type: Gate [nodeStyle: iconWithText, backgroundColor: "#339933", icon: "and"]
+                edge type: rel from: Gate to: Gate
+            }
+
+            vgraph g: Gates "Fine" {
+                node g1: Gate "Both";
             }
             """)
 

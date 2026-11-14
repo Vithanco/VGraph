@@ -6,15 +6,6 @@
 ////  balancing loop indicators (R/B arcs with arrowheads) that mark each
 ////  detected cycle's rotation direction.
 ////
-////  Note on analysis location: the architectural plan calls for CycleAnalysis
-////  to move into the layout pipeline (stamped as a graph attribute). That
-////  would require `AttributeType` conformance on `[TLoop]` (~100 lines of
-////  serialization ceremony). Since CycleAnalysis is microseconds for typical
-////  CLD graphs, this provider computes inline instead, calling
-////  `CycleAnalysis.analyze` and `TLoop.fromCycles` each render. A future
-////  refactor can move analysis upstream once a second consumer justifies the
-////  ceremony.
-////
 
 import VGraph
 

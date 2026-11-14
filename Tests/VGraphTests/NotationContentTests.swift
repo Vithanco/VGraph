@@ -11,17 +11,6 @@ struct NotationContentTests {
     func blank() throws(VError) -> VGraph { try VGraph().defineStandardAttributes() }
 
     @Test
-    func aNotationsContentNeedsNoGraph() {
-        let content = Notations.Ibis.content
-        #expect(content.nodeTypes == Notations.Ibis.NodeTypes.all)
-        #expect(content.edgeTypes == Notations.Ibis.EdgeTypes.all)
-        let fontsize = content.values.first { $0.key == question }?.attributes.first {
-            $0.id == Attributes.Node.fontsize.id
-        }
-        #expect(fontsize?.stringValue == "13.0")
-    }
-
-    @Test
     func placedContentLandsInTheLayerItIsPlacedIn() throws(VError) {
         let graph = try blank().placing(Notations.Ibis.content, in: .builtin)
         #expect(graph.has(nodeType: Notations.Ibis.NodeTypes.question))
@@ -50,14 +39,6 @@ struct NotationContentTests {
     }
 
     @Test
-    func anExtensionPlacedInTheBuiltInLayerStaysThere() throws(VError) {
-        let graph = try blank().placing(Notations.Annotation.nodeContent, in: .builtin)
-        let annotation = ItemKey(.nodeType, Notations.Annotation.annotation.description)
-        #expect(try !graph.attributes(in: .builtin, of: annotation).isEmpty)
-        #expect(try graph.attributes(in: .vnotation, of: annotation).isEmpty)
-    }
-
-    @Test
     func placedValuesArePrunedLikeWrites() throws(VError) {
         let circle = NodeType(rawValue: "Circle")
         let base = NotationContent(nodeTypes: [circle], values: [.nodeType(circle, [Attributes.Node.fontsize(13)])])
@@ -70,7 +51,9 @@ struct NotationContentTests {
     func aLayerThatDoesNotAdmitAValueRefusesItsPlacement() throws(VError) {
         let circle = NodeType(rawValue: "Circle")
         let content = NotationContent(nodeTypes: [circle], values: [.nodeType(circle, [Attributes.Node.fontsize(13)])])
-        #expect(throws: VError.self) { try blank().placing(content, in: .model) }
+        #expect(throws: VError.attributeNotAdmitted(Attributes.Node.fontsize.id, key: ItemKey(.nodeType, "Circle"), layer: .model)) {
+            try blank().placing(content, in: .model)
+        }
     }
 
     @Test

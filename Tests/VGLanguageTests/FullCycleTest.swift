@@ -4429,13 +4429,6 @@ struct TimelineNotationTests {
     }
 
     @Test
-    func testVNotationUnknownTransformThrows() throws {
-        #expect(throws: VError.self) {
-            _ = try TransformRegistry.resolve(name: "nonExistentTransform")
-        }
-    }
-
-    @Test
     func testQualityCheckSpecParsing() {
         // Simple name
         let simple = QualityCheckSpec.parse("treeStructure")

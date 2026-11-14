@@ -31,7 +31,7 @@ public enum DisplayPipeline {
         Notations.extensionSteps + sizingSteps
     }
 
-    /// All five sizing ids, not just the last: `orderProblems` takes no transitive
+    /// All five sizing ids, not just the last: the prerequisite check takes no transitive
     /// closure, and the sizing chain has two roots. App decides where layout sits in
     /// the order; the port still decides how it works.
     public static func layoutStep(_ layout: @escaping GraphTransform) -> TransformStep {

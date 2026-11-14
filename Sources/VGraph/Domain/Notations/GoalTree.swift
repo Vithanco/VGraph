@@ -146,10 +146,6 @@ extension Notations {
             ]
         }
 
-        public func addGraphConfiguration(addTo graph: VGraph) throws(VError) -> VGraph {
-            return graph
-        }
-
         // MARK: - Quality Checks
 
         public static var qualityChecks: [QualityCheck] {

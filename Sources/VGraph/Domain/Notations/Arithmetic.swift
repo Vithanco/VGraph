@@ -245,10 +245,6 @@ extension Notations {
             return preset + styles + bounds + equation + [.diagram([Attributes.Group.layoutDirection(.leftToRight)])]
         }
 
-        public func addGraphConfiguration(addTo graph: VGraph) throws(VError) -> VGraph {
-            return graph
-        }
-
     }
 
 }

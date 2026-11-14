@@ -8,7 +8,6 @@ import Testing
 struct LayeredAttributeStoreTests {
     let n1 = ItemKey(.node, "n1")
     let circle = ItemKey(.nodeType, "Circle")
-    let square = ItemKey(.nodeType, "Square")
     let g = ItemKey(.group, "g")
     let boundary = ItemKey(.groupType, "Boundary")
     let viewA = AttributeLayer("viewA")
@@ -41,16 +40,6 @@ struct LayeredAttributeStoreTests {
         try store.resolve(id, for: key, through: layer, chains: chains).value
     }
 
-    @Test
-    func anUndefinedAttributeCannotBeWritten() {
-        let stranger = AttributeDefinition(
-            id: .init(rawValue: "node.shade"), name: "shade", description: "", defaultValue: "", target: .node,
-            typeAsString: "String")
-        #expect(throws: VError.attributeNotFound(stranger.id)) {
-            try store.set(stranger.attribute(fromString: "dark"), for: n1, in: .model, chains: chains)
-        }
-    }
-
     /// Values stay strings, so the store checks the type a write claims, not
     /// the text itself; a typed definition parses the text before it gets here.
     @Test
@@ -78,16 +67,6 @@ struct LayeredAttributeStoreTests {
     }
 
     @Test
-    func aNodeAndANodeTypeMayShareAnId() throws {
-        let shared =
-            try store
-            .set(colour(red), for: ItemKey(.nodeType, "Question"), in: .builtin, chains: chains)
-            .set(colour(blue), for: ItemKey(.node, "Question"), in: .model, chains: chains)
-        #expect(try shared.values(in: .builtin, for: ItemKey(.nodeType, "Question"))[colour.id] == red)
-        #expect(try shared.values(in: .model, for: ItemKey(.node, "Question"))[colour.id] == blue)
-    }
-
-    @Test
     func withNothingSetTheDefaultIsReturned() throws {
         let resolved = try store.resolve(colour.id, for: n1, through: .model, chains: chains)
         #expect(resolved == ResolvedAttribute(colour.asDefinition.defaultValue, from: .default))
@@ -97,13 +76,7 @@ struct LayeredAttributeStoreTests {
     func anElementFallsBackToItsType() throws {
         let typed = try store.set(colour(red), for: circle, in: .builtin, chains: chains)
         let resolved = try typed.resolve(colour.id, for: n1, through: .model, chains: chains)
-        #expect(resolved == ResolvedAttribute(red, from: .layer(.builtin, key: circle, source: .direct)))
-    }
-
-    @Test
-    func aGroupTypeResolvesForItsGroups() throws {
-        let typed = try store.set(folded(true), for: boundary, in: .builtin, chains: chains)
-        #expect(try value(typed, Attributes.Group.isFolded.id, g) == "true")
+        #expect(resolved == ResolvedAttribute(red, from: .layer(.builtin, key: circle)))
     }
 
     @Test
@@ -152,8 +125,8 @@ struct LayeredAttributeStoreTests {
         let all = try styled.resolveAll(for: n1, through: .model, chains: chains)
         #expect(
             all == [
-                colour.id: ResolvedAttribute(red, from: .layer(.builtin, key: circle, source: .direct)),
-                Attributes.Node.label.id: ResolvedAttribute("Hello", from: .layer(.model, key: n1, source: .direct)),
+                colour.id: ResolvedAttribute(red, from: .layer(.builtin, key: circle)),
+                Attributes.Node.label.id: ResolvedAttribute("Hello", from: .layer(.model, key: n1)),
             ])
     }
 
@@ -206,21 +179,15 @@ struct LayeredAttributeStoreTests {
         #expect(try same.values(in: .builtin, for: circle).isEmpty)
     }
 
-    @Test
-    func aValueEqualToItsTypesIsNotStored() throws {
-        let repeated = try store.set(colour(red), for: circle, in: .builtin, chains: chains).set(colour(red), for: n1, in: .model, chains: chains)
-        #expect(try repeated.values(in: .model, for: n1).isEmpty)
-    }
-
-    /// ADR-0030: "a model `false` beats a type's `true`".
-    /// A computed display value is a fact, not an override: "wrapped to no
+    /// A computed value is a fact, not an override: "wrapped to no
     /// lines" must not read back as "never wrapped".
     @Test
-    func aDisplayValueEqualToTheDefaultIsKept() throws {
+    func aComputedValueEqualToTheDefaultIsKept() throws {
         let wrapped = try store.set(Attributes.Node.wrappedText.attribute([]), for: n1, in: .model, chains: chains)
         #expect(try wrapped.values(in: .model, for: n1)[Attributes.Node.wrappedText.id] != nil)
     }
 
+    /// ADR-0030: "a model `false` beats a type's `true`".
     @Test
     func unfoldedBeatsAFoldedType() throws {
         let unfolded = try store.set(folded(true), for: boundary, in: .builtin, chains: chains).set(folded(false), for: g, in: .model, chains: chains)
@@ -249,15 +216,6 @@ struct LayeredAttributeStoreTests {
         let pruned = try store.set(colour(blue), for: n1, in: .model, chains: chains).set(colour(blue), for: circle, in: .vnotation, chains: chains)
         #expect(try pruned.values(in: .model, for: n1).isEmpty)
         #expect(try value(pruned, colour.id, n1) == blue)
-    }
-
-    @Test
-    func retypingAnElementPrunesAgainstItsNewType() throws {
-        let squareChains = ChainTable([n1: square])
-        let retyped = try store.set(colour(red), for: square, in: .builtin, chains: chains)
-            .set(colour(red), for: n1, in: .model, chains: chains)
-            .repruning(n1, chains: squareChains)
-        #expect(try retyped.values(in: .model, for: n1).isEmpty)
     }
 
     @Test
@@ -298,13 +256,13 @@ struct LayeredAttributeStoreTests {
         #expect(try exposed.values(in: viewA, for: n1).isEmpty)
     }
 
-    /// Whatever order the dictionary yields, the type value is in place
-    /// before the element's override is judged.
+    /// A bulk write judges values only after all are in place, so the type
+    /// value is there before the element's override is judged.
     @Test
-    func aReplacedLayerKeepsAnOverrideOfItsOwnTypeValue() throws {
-        let replaced = try store.set(colour(red), for: n1, in: .model, chains: chains)
-            .replaceLayer(viewA, with: [n1: [colour.id: red], circle: [colour.id: green]], chains: chains)
-        #expect(try value(replaced, colour.id, n1, through: viewA) == red)
+    func aMergedOverrideOfItsOwnTypeValueIsKept() throws {
+        let merged = try store.set(colour(red), for: n1, in: .model, chains: chains)
+            .merging([(n1, colour(red)), (circle, colour(green))], into: viewA, chains: chains)
+        #expect(try value(merged, colour.id, n1, through: viewA) == red)
     }
 
     @Test
@@ -315,20 +273,13 @@ struct LayeredAttributeStoreTests {
     }
 
     @Test
-    func replacingALayerPrunesItAndItsDescendants() throws {
-        let replaced = try store.set(colour(blue), for: n1, in: .model, chains: chains)
-            .replaceLayer(.builtin, with: [circle: [colour.id: blue]], chains: chains)
-        #expect(try replaced.values(in: .model, for: n1).isEmpty)
+    func mergingIntoALayerPrunesItsDescendantsAndChecksAdmission() throws {
+        let merged = try store.set(colour(blue), for: n1, in: .model, chains: chains)
+            .merging([(circle, colour(blue))], into: .builtin, chains: chains)
+        #expect(try merged.values(in: .model, for: n1).isEmpty)
         #expect(throws: VError.attributeNotAdmitted(colour.id, key: n1, layer: .builtin)) {
-            try store.replaceLayer(.builtin, with: [n1: [colour.id: blue]], chains: chains)
+            try store.merging([(n1, colour(blue))], into: .builtin, chains: chains)
         }
-    }
-
-    @Test
-    func aRuleIsReportedAsTheSource() throws {
-        let ruled = try store.set(colour(red), for: n1, in: .model, source: .rule("important"), chains: chains)
-        let resolved = try ruled.resolve(colour.id, for: n1, through: viewA, chains: chains)
-        #expect(resolved == ResolvedAttribute(red, from: .layer(.model, key: n1, source: .rule("important"))))
     }
 
     @Test
@@ -346,7 +297,7 @@ struct LayeredAttributeStoreTests {
     /// How a detailed node turns into a node and back, keeping its values (ADR-0032).
     @Test
     func rekeyingMovesAKeysValuesInEveryLayer() throws {
-        let moved = try store.set(colour(blue), for: g, in: .model, source: .rule("important"), chains: chains)
+        let moved = try store.set(colour(blue), for: g, in: .model, chains: chains)
             .set(colour(green), for: g, in: viewA, chains: chains)
             .set(colour(red), for: circle, in: .builtin, chains: chains)
             .rekeying(from: g, to: n1)
@@ -356,7 +307,7 @@ struct LayeredAttributeStoreTests {
         #expect(try moved.values(in: viewA, for: n1)[colour.id] == green)
         #expect(
             try moved.resolve(colour.id, for: n1, through: .model, chains: chains)
-                == ResolvedAttribute(blue, from: .layer(.model, key: n1, source: .rule("important"))))
+                == ResolvedAttribute(blue, from: .layer(.model, key: n1)))
         #expect(try moved.values(in: .builtin, for: circle)[colour.id] == red)
     }
 

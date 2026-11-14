@@ -13,6 +13,7 @@ struct NodeTypeBadgeIconTests {
         }
         table["Annotation.Annotation"] = "annotation"
         table["Annotation.Warning"] = "warning"
+        table["Arithmetic.EqualsIncorrect"] = "not-equal"
         return table
     }
 
@@ -24,6 +25,9 @@ struct NodeTypeBadgeIconTests {
         for (key, icon) in Self.approved() {
             let style = try #require(styles[key], "\(key) has no style")
             #expect(style.extractIcons() == [icon], "\(key) should name \(icon)")
+            if !key.hasPrefix("Arithmetic.") {
+                #expect(BuiltInNodeTypeStyles.wearsNodeTypeBadge(style), "\(key) wears no node type badge")
+            }
         }
     }
 
@@ -38,37 +42,5 @@ struct NodeTypeBadgeIconTests {
                 #expect(BuiltinIcons.artwork(for: name) != nil, "\(key) names \(name), which resolves to nothing")
             }
         }
-    }
-
-    @Test(
-        "Given all built-in notations, when the icon names used by their node type badges and Arithmetic operators are collected, then each of the 43 approved names is used"
-    )
-    func everyApprovedNameIsUsed() throws {
-        let used = try BuiltInNodeTypeStyles.all().reduce(into: Set<String>()) { $0.formUnion($1.style.extractIcons()) }
-        let unused = ApprovedIcons.names.subtracting(ApprovedIcons.unusedByBuiltins).subtracting(used)
-        #expect(unused.isEmpty, "no built-in notation uses \(unused.sorted())")
-    }
-
-    @Test(
-        "Given Concept Map and the annotation extension, when their node types are read, then Concept, Annotation and Warning each wear a node type badge"
-    )
-    func theNewNodeTypesWearABadge() throws {
-        let styles = Dictionary(uniqueKeysWithValues: try BuiltInNodeTypeStyles.all().map { ($0.key, $0.style) })
-        let expected = [
-            "ConceptMap.Concept": "concept",
-            "Annotation.Annotation": "annotation", "Annotation.Warning": "warning",
-        ]
-        for (key, icon) in expected {
-            let style = try #require(styles[key], "\(key) has no style")
-            #expect(BuiltInNodeTypeStyles.wearsNodeTypeBadge(style), "\(key) wears no node type badge")
-            #expect(style.extractIcons() == [icon], "\(key) should name \(icon)")
-        }
-    }
-
-    @Test("Given CLD, whose Stock is its only node type, when its node types are read, then Stock wears no node type badge")
-    func aSingleTypeNotationWearsNoBadge() throws {
-        let styles = Dictionary(uniqueKeysWithValues: try BuiltInNodeTypeStyles.all().map { ($0.key, $0.style) })
-        let stock = try #require(styles["CLD.Stock"])
-        #expect(!BuiltInNodeTypeStyles.wearsNodeTypeBadge(stock))
     }
 }

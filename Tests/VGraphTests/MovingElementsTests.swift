@@ -80,15 +80,6 @@ struct MovingElementsTests {
         #expect(changed.group(of: Node("c")) == Group(rawValue: rootGroup))
     }
 
-    @Test("Out of a nested group means into the enclosing one")
-    func movingOutOneLevelLandsInTheParent() throws {
-        let g = try graph()
-
-        let changed = try g.moving(["f"], into: "g2")
-
-        #expect(changed.group(of: Node("f")) == Group(rawValue: "g2"))
-    }
-
     // MARK: - The cycle guard
 
     /// The model has allowed a cyclic group tree since it was written — nothing
@@ -112,19 +103,6 @@ struct MovingElementsTests {
         }
     }
 
-    /// The guard has to survive the graph it would corrupt: after a refused move
-    /// the structure is still walkable, which is the assertion that would hang if
-    /// the cycle had been written.
-    @Test("A refused move leaves the group tree intact")
-    func arefusedMoveChangesNothing() throws {
-        let g = try graph()
-
-        _ = try? g.moving(["g2"], into: "g3")
-
-        #expect(g.parentGroup(of: Group(rawValue: "g3")) == Group(rawValue: "g2"))
-        #expect(g.groupStructure.isParent(parent: Group(rawValue: "g2"), child: Group(rawValue: "g3")))
-    }
-
     // MARK: - The other refusals
 
     @Test("Moving into the group it already occupies is refused")
@@ -136,13 +114,16 @@ struct MovingElementsTests {
         }
     }
 
+    /// Built through the API, where a group need not sit under the root: the
+    /// parser puts every group there, and then the cycle guard refuses too.
     @Test("The root group cannot be moved")
     func theRootCannotMove() throws {
-        let g = try graph()
+        let g = try VGraph().add(group: Group(rawValue: "g1"))
 
-        #expect(throws: VError.self) {
+        #expect(throws: VError.commandUnavailable(.move, target: rootGroup)) {
             _ = try g.moving([rootGroup], into: "g1")
         }
+        #expect(g.moveDestinations(for: [rootGroup]).isEmpty)
     }
 
     @Test("Moving nothing is refused")
@@ -158,7 +139,7 @@ struct MovingElementsTests {
     func anUnknownDestinationIsRefused() throws {
         let g = try graph()
 
-        #expect(throws: VError.self) {
+        #expect(throws: VError.commandUnavailable(.move, target: "no-such-group")) {
             _ = try g.moving(["a"], into: "no-such-group")
         }
     }
@@ -198,39 +179,6 @@ struct MovingElementsTests {
         #expect(!changed.has(group: Group(rawValue: "g2")))
     }
 
-    /// An edge is in the innermost group holding both its ends (ADR-0017), so it
-    /// follows the nodes without `moving` touching it.
-    @Test("An edge follows its endpoints")
-    func edgesFollowTheirEndpoints() throws {
-        let vgl = """
-            vgraph demo: ConceptMap "Demo" {
-              node a: Concept "A";
-              node b: Concept "B";
-              group box "Box" {
-                node inside: Concept "Inside";
-              }
-              edge a -> b;
-            }
-            """
-        let g = try VGraphParser(logger: NoOpLogger()).parse(source: vgl)
-
-        let changed = try g.moving(["a", "b"], into: "box")
-
-        let edge = changed.edges.first { $0.from == Node("a") && $0.to == Node("b") }
-        #expect(changed.group(of: edge!.id) == Group(rawValue: "box"))
-    }
-
-    @Test("A move survives an export and reparse")
-    func roundTripsThroughVGL() throws {
-        let g = try graph()
-
-        let changed = try g.moving(["a"], into: "g1")
-        let vgl = try VGLExporter().export(graph: changed)
-        let reparsed = try VGraphParser(logger: NoOpLogger()).parse(source: vgl)
-
-        #expect(reparsed.group(of: Node("a")) == Group(rawValue: "g1"))
-    }
-
     // MARK: - Where a set may go
 
     @Test("Destinations exclude the current parent and the element itself")
@@ -266,10 +214,4 @@ struct MovingElementsTests {
         }
     }
 
-    @Test("The root has nowhere to go")
-    func theRootHasNoDestinations() throws {
-        let g = try graph()
-
-        #expect(g.moveDestinations(for: [rootGroup]).isEmpty)
-    }
 }

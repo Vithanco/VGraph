@@ -156,10 +156,6 @@ extension Notations {
             ]
         }
 
-        public func addGraphConfiguration(addTo graph: VGraph) throws(VError) -> VGraph {
-            return graph
-        }
-
         public static var step: TransformStep? { mergeStep }
 
         // MARK: - Quality Checks

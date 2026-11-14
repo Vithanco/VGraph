@@ -1,6 +1,7 @@
 // An unfolded typed group is stamped with its GroupType's BoundaryChrome (dashed
 // border, boundary colour, transparent fill) rather than the generic cluster look.
 
+import TestSupport
 import Testing
 
 @testable import VGraph
@@ -43,7 +44,7 @@ struct BoundaryChromeStepTests {
     @Test func chromeRefusesToRunBeforeFolding() throws {
         let (graph, _) = try graphWithTeam()
 
-        #expect(throws: VError.self) {
+        #expect(throws: VError.pipelineContractViolated(step: "boundaryChrome", missing: ["foldGroups"])) {
             try Notations.boundaryChromeStep(graph)
         }
     }

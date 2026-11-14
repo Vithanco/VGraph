@@ -123,22 +123,3 @@ extension GraphStructureTraverser where Result == String {
         )
     }
 }
-
-extension GraphStructureTraverser where Result == Void {
-    public static func forSideEffects(
-        onEnterGroup: @escaping (Group, VGraph, Int) throws(VError) -> Void,
-        onExitGroup: @escaping (Group, VGraph, Int) throws(VError) -> Void,
-        onNode: @escaping (Node, VGraph, Int) throws(VError) -> Void,
-        onEdge: @escaping (Edge, VGraph) throws(VError) -> Void,
-        order: TraversalOrder = .groupsFirst
-    ) -> GraphStructureTraverser<Void> {
-        GraphStructureTraverser<Void>(
-            onEnterGroup: onEnterGroup,
-            onExitGroup: onExitGroup,
-            onNode: onNode,
-            onEdge: onEdge,
-            combine: { _ in },
-            order: order
-        )
-    }
-}

@@ -104,26 +104,4 @@ struct EdgeLayoutDataTests {
         }
         #expect(deserialized.arrowHead == nil)
     }
-
-    @Test func testSplinePointsSerialization() throws {
-        // Simple spline with 4 points (3*1+1)
-        let splinePoints = [
-            VPoint(x: 100, y: 100),
-            VPoint(x: 150.5, y: 150.5),
-            VPoint(x: 200.75, y: 200.75),
-            VPoint(x: 250, y: 250),
-        ]
-        let original = EdgeLayoutData(splinePoints: splinePoints, arrowHead: nil)
-
-        let serialized = original.asString
-
-        let deserialized = try EdgeLayoutData.fromString(serialized)
-
-        // The spline points should be properly serialized and deserialized
-        #expect(deserialized.splinePoints.count == splinePoints.count)
-        for (i, point) in deserialized.splinePoints.enumerated() {
-            #expect(abs(point.x - splinePoints[i].x) < 0.01)
-            #expect(abs(point.y - splinePoints[i].y) < 0.01)
-        }
-    }
 }

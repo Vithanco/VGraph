@@ -16,21 +16,6 @@ struct DetailedNodeTests {
         try VGraph().defineStandardAttributes().add(nodeType: softwareSystem).add(group: ibs)
     }
 
-    @Test("Given a group typed as a node type, then it is a detailed node of that type and has no group type")
-    func typingAsANodeTypeMakesADetailedNode() throws(VError) {
-        let graph = try graph().typing(group: ibs, as: softwareSystem)
-
-        #expect(graph.nodeType(of: ibs) == softwareSystem)
-        #expect(graph.groupType(of: ibs) == nil)
-    }
-
-    @Test("Given a plain group, then it carries no node type")
-    func aPlainGroupIsNotDetailed() throws(VError) {
-        let graph = try graph().typing(group: ibs, as: organisation)
-
-        #expect(graph.nodeType(of: ibs) == nil)
-    }
-
     @Test("Given a detailed node, when it is given a group type, then it is a plain group again")
     func aGroupTypeReplacesTheNodeType() throws(VError) {
         let graph = try graph().typing(group: ibs, as: softwareSystem).typing(group: ibs, as: organisation)
@@ -77,7 +62,7 @@ struct DetailedNodeTests {
 
     @Test("Typing a group that does not exist fails")
     func typingAMissingGroupFails() throws {
-        #expect(throws: VError.self) {
+        #expect(throws: VError.groupNotFound(Group(rawValue: "nope"))) {
             try graph().typing(group: Group(rawValue: "nope"), as: softwareSystem)
         }
     }

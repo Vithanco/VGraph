@@ -308,14 +308,4 @@ extension TypedGraph {
         return TypedGraph(
             previous: self, graph: graph, metagraph: metagraph, nodeTypes: nodeTypes, edgeTypes: edgeTypes)
     }
-
-    #if DEBUG
-        var _countsViaGraph: Counts {
-            return Counts(graph: graph, metagraph: metagraph)
-        }
-
-        var _countsViaMapping: Counts {
-            return Counts(nodes: nodeTypeMapping.counts(), edges: edgeTypeMapping.counts())
-        }
-    #endif
 }

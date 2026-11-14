@@ -38,14 +38,6 @@ struct GroupTypeTests {
         #expect(readBack == team)
     }
 
-    @Test("Given a group with no assigned type, when its type is requested, then no group type is present")
-    func untypedGroupHasNoType() throws(VError) {
-        let graph = try baseGraph().add(group: group1)
-
-        let readBack = graph.groupType(of: group1)
-        #expect(readBack == nil)
-    }
-
     @Test("Given a typed group, when it is typed as nothing, then it is a plain group again")
     func typingAsNothingMakesAGroupPlain() throws(VError) {
         let graph = try baseGraph().add(group: group1).typing(group: group1, as: team)
@@ -144,11 +136,6 @@ struct GroupTypeTests {
         #expect(graph.notationDefinition.declaredTransforms == ["identity"])
     }
 
-    @Test("Given a graph with no group types registered, when it is asked for them, then the list is empty")
-    func unregisteredGraphEnumeratesNothing() throws(VError) {
-        #expect(try baseGraph().groupTypes.isEmpty)
-    }
-
     @Test("Given a registered group type, when a name is checked against the graph, then only registered names are recognised")
     func membershipFollowsRegistration() throws(VError) {
         let graph = try baseGraph().add(groupType: team)
@@ -190,7 +177,7 @@ struct GroupTypeTests {
         #expect(messages[0].message.contains("Banking"))
     }
 
-    @Test("Given only well-typed and plain groups, when quality is analysed, then nothing is reported")
+    @Test("Given a group of a registered type, when quality is analysed, then nothing is reported")
     func wellTypedGroupsAreNotReported() throws(VError) {
         var graph = try baseGraph().add(groupType: team).add(group: group1)
         graph = try graph.typing(group: group1, as: team)

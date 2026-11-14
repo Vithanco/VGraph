@@ -1,21 +1,12 @@
-public struct NodeTypePair: Hashable, Sendable {
-    public let from: NodeType
-    public let to: NodeType
-
-    public init(from: NodeType, to: NodeType) {
-        self.from = from
-        self.to = to
-    }
+struct NodeTypePair: Hashable, Sendable {
+    let from: NodeType
+    let to: NodeType
 }
 
 /// Which `(from, to)` pairs an edge type holds (ADR-0032). Gained pairs are
 /// derived from the installed detailings on every ask, so they follow each
 /// layer that installs and never reach a file.
 extension VGraph {
-    public func pairs(of edgeType: EdgeType) -> [NodeTypePair] {
-        [NodeTypePair(from: edgeType.from, to: edgeType.to)] + gainedPairs(of: edgeType, declared: declaredPairs)
-    }
-
     /// A pair some type declares is never also gained.
     public func edgeTypes(holdingFrom from: NodeType, to: NodeType) -> [EdgeType] {
         let pair = NodeTypePair(from: from, to: to)

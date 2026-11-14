@@ -40,20 +40,4 @@ public enum DiagramLogic: HasReadableNames {
     }
 
     public static let typeName: String = "DiagramLogic"
-
-    public var relationshipName: String {
-        switch self {
-        case .noLogic: return "points at"
-        case .sufficientCause: return "sufficient causes"
-        case .necessaryCondition: return "is necessary for"
-        }
-    }
-
-    public var connectionName: String {
-        switch self {
-        case .noLogic: return "connection"
-        case .sufficientCause: return "sufficient cause"
-        case .necessaryCondition: return "necessary condition"
-        }
-    }
 }

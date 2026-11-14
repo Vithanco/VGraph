@@ -302,7 +302,7 @@ extension Notations {
         // criteria judge diagrams: Stock → Stock twice is two edge types, not a
         // parallel edge, and one Goal Tree node of each type is not one CSF.
         guard !graph.isMetagraph else {
-            return QualityReport(notationName: graph.notationName, messages: [])
+            return QualityReport(messages: [])
         }
         var messages: [MessageWithSeverity] = []
 
@@ -325,7 +325,7 @@ extension Notations {
             messages.append(contentsOf: check(graph))
         }
 
-        return QualityReport(notationName: notationName, messages: messages)
+        return QualityReport(messages: messages)
     }
 }
 

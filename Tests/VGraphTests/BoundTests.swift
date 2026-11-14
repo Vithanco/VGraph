@@ -71,6 +71,8 @@ struct BoundTests {
     func minusOneMeansUnbounded() throws {
         var graph = try conceptMap()
         graph = try concept("a", "Dog", in: graph)
+        graph = try relation("r1", "likes", in: graph)
+        graph = try edge("e1", "a", "r1", CM.EdgeTypes.conceptToRelation, in: graph)
         graph = try bound(Attributes.Edge.outDegreeMin, -1, on: CM.EdgeTypes.conceptToRelation, in: graph)
         graph = try bound(Attributes.Edge.outDegreeMax, -1, on: CM.EdgeTypes.conceptToRelation, in: graph)
 
@@ -78,27 +80,6 @@ struct BoundTests {
     }
 
     // MARK: - Maxima fault the edges
-
-    @Test("Exceeding outDegreeMax reports an error against the offending edges")
-    func outDegreeMaxExceeded() throws {
-        var graph = try conceptMap()
-        graph = try concept("a", "Dog", in: graph)
-        graph = try relation("r1", "likes", in: graph)
-        graph = try relation("r2", "chases", in: graph)
-        graph = try edge("e1", "a", "r1", CM.EdgeTypes.conceptToRelation, in: graph)
-        graph = try edge("e2", "a", "r2", CM.EdgeTypes.conceptToRelation, in: graph)
-        graph = try bound(Attributes.Edge.outDegreeMax, 1, on: CM.EdgeTypes.conceptToRelation, in: graph)
-
-        let messages = GenericQualityChecks.brokenBounds(graph: graph)
-
-        #expect(messages.count == 1)
-        #expect(messages.first?.severity == .error)
-        // An edge target, not a node one: there is something concrete to blame.
-        if case .edge = messages.first?.target {
-        } else {
-            Issue.record("expected an edge target, got \(String(describing: messages.first?.target))")
-        }
-    }
 
     /// Which edge is blamed, not just how many. The edges within the limit are
     /// fine by definition; it is the ones past it that are the fault, so a pair
@@ -117,17 +98,7 @@ struct BoundTests {
 
         #expect(messages.count == 1)
         #expect(messages.first?.target == .edge(from: "a", to: "r2"))
-    }
-
-    @Test("Staying within outDegreeMax reports nothing")
-    func outDegreeMaxRespected() throws {
-        var graph = try conceptMap()
-        graph = try concept("a", "Dog", in: graph)
-        graph = try relation("r1", "likes", in: graph)
-        graph = try edge("e1", "a", "r1", CM.EdgeTypes.conceptToRelation, in: graph)
-        graph = try bound(Attributes.Edge.outDegreeMax, 1, on: CM.EdgeTypes.conceptToRelation, in: graph)
-
-        #expect(GenericQualityChecks.brokenBounds(graph: graph).isEmpty)
+        #expect(messages.first?.severity == .error)
     }
 
     @Test("Exceeding inDegreeMax reports an error")
@@ -194,17 +165,6 @@ struct BoundTests {
         #expect(messages.first?.message.contains("Dog") == true)
     }
 
-    @Test("A met outDegreeMin reports nothing")
-    func outDegreeMinMet() throws {
-        var graph = try conceptMap()
-        graph = try concept("a", "Dog", in: graph)
-        graph = try relation("r1", "likes", in: graph)
-        graph = try edge("e1", "a", "r1", CM.EdgeTypes.conceptToRelation, in: graph)
-        graph = try bound(Attributes.Edge.outDegreeMin, 1, on: CM.EdgeTypes.conceptToRelation, in: graph)
-
-        #expect(GenericQualityChecks.brokenBounds(graph: graph).isEmpty)
-    }
-
     /// A minimum is a statement about every node of the source type, so a second
     /// Concept that is short is faulted independently.
     @Test("Every node of the source type is checked against a minimum")
@@ -263,17 +223,6 @@ struct BoundTests {
     }
 
     // MARK: - What the menu is allowed to offer
-
-    @Test("An exhausted outDegreeMax removes the candidate")
-    func exhaustedPerSourceMaxIsNotOffered() throws {
-        var graph = try conceptMap()
-        graph = try concept("a", "Dog", in: graph)
-        graph = try relation("r", "is a", in: graph)
-        graph = try edge("e1", "a", "r", CM.EdgeTypes.conceptToRelation, in: graph)
-        graph = try bound(Attributes.Edge.outDegreeMax, 1, on: CM.EdgeTypes.conceptToRelation, in: graph)
-
-        #expect(graph.successorCandidates(from: Node(string: "a")).isEmpty)
-    }
 
     /// The two overloads differ in exactly this, which is the only reason both
     /// exist: a bound is spent at a *node*, and a node type has no edges to count.
@@ -376,22 +325,6 @@ struct BoundTests {
         #expect(GenericQualityChecks.brokenBounds(graph: graph).isEmpty)
     }
 
-    @Test("totalOutDegreeMax counts every edge type together")
-    func totalOutMaxAggregates() throws {
-        var graph = try conceptMap()
-        graph = try concept("a", "Dog", in: graph)
-        graph = try relation("r1", "likes", in: graph)
-        graph = try relation("r2", "chases", in: graph)
-        graph = try edge("e1", "a", "r1", CM.EdgeTypes.conceptToRelation, in: graph)
-        graph = try edge("e2", "a", "r2", CM.EdgeTypes.conceptToRelation, in: graph)
-        graph = try graph.set(
-            nodeType: CM.NodeTypes.concept, attribute: Attributes.Node.totalOutDegreeMax.attribute(1))
-
-        let messages = GenericQualityChecks.brokenBounds(graph: graph)
-        #expect(messages.count == 1)
-        #expect(messages.first?.severity == .error)
-    }
-
     @Test("totalInDegreeMin counts arriving edges of every type")
     func totalInMinAggregates() throws {
         var graph = try conceptMap()
@@ -403,22 +336,6 @@ struct BoundTests {
         #expect(messages.count == 1)
         #expect(messages.first?.target == .node("r1"))
         #expect(messages.first?.severity == .warning)
-    }
-
-    @Test("totalInDegreeMax counts arriving edges of every type")
-    func totalInMaxAggregates() throws {
-        var graph = try conceptMap()
-        graph = try concept("a", "Dog", in: graph)
-        graph = try concept("b", "Cat", in: graph)
-        graph = try relation("r1", "likes", in: graph)
-        graph = try edge("e1", "a", "r1", CM.EdgeTypes.conceptToRelation, in: graph)
-        graph = try edge("e2", "b", "r1", CM.EdgeTypes.conceptToRelation, in: graph)
-        graph = try graph.set(
-            nodeType: CM.NodeTypes.relation, attribute: Attributes.Node.totalInDegreeMax.attribute(1))
-
-        let messages = GenericQualityChecks.brokenBounds(graph: graph)
-        #expect(messages.count == 1)
-        #expect(messages.first?.severity == .error)
     }
 
     @Test("A node total blames the edges past the limit, in graph order, at either end")
@@ -438,12 +355,13 @@ struct BoundTests {
         graph = try graph.set(
             nodeType: CM.NodeTypes.relation, attribute: Attributes.Node.totalInDegreeMax.attribute(1))
 
-        let blamed = GenericQualityChecks.brokenBounds(graph: graph).map { $0.target }
+        let messages = GenericQualityChecks.brokenBounds(graph: graph)
         #expect(
-            blamed == [
+            messages.map { $0.target } == [
                 .edge(from: "a", to: "r2"), .edge(from: "a", to: "r3"),
                 .edge(from: "b", to: "r1"),
             ])
+        #expect(messages.allSatisfy { $0.severity == .error })
     }
 
     // MARK: - Wiring

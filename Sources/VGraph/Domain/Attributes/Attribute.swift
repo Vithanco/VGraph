@@ -12,20 +12,12 @@ public struct Attribute: VProtocol, CustomDebugStringConvertible {
         self.stringValue = value.asString
     }
 
-    public func updateValue(new: String) throws(VError) -> Attribute {
-        return Attribute(definition: self.definition, value: new)
-    }
-
     public var type: String {
         return definition.typeAsString
     }
 
     public static func == (lhs: Attribute, rhs: Attribute) -> Bool {
         return lhs.stringValue == rhs.stringValue
-    }
-
-    public func isEqual(to other: Attribute) -> Bool {
-        return definition == definition && self.stringValue == other.stringValue
     }
 
     public var debugDescription: String {

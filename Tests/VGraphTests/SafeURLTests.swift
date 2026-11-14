@@ -53,8 +53,8 @@ struct SafeURLTests {
         #expect(VURL.safe("mailto:") == nil)
         // Whitespace inside would break both quoting and the browser.
         #expect(VURL.safe("https://exa mple.com") == nil)
-        // Not a host at all — no dot, no scheme.
         #expect(VURL.safe("just some notes") == nil)
+        // Not a host at all — no dot, no scheme.
         #expect(VURL.safe("notes") == nil)
     }
 }

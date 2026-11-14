@@ -1,55 +1,6 @@
-/// Maps `nodeStyle:` string values from `vnotation` declarations to `NodeStyleLayout` instances.
-///
-/// Adding a new `PredefinedStyle` requires one new `case` in `buildStyle` — no other file changes.
-/// The parser treats `nodeStyle:` values as opaque strings; this is the single semantic layer
-/// that validates them and constructs the corresponding `NodeStyleLayout`.
+/// Helpers that turn `vnotation` `nodeStyle:` attributes into colours and icons for `NodeStyleLayout`.
+/// The parser treats `nodeStyle:` values as opaque strings.
 public enum StyleFactories {
-
-    // MARK: - Public API
-
-    /// Throws `VError.parsingError` if `spec.nodeStyle` is not a known value.
-    public static func buildStyle(for spec: NodeTypeSpec) throws(VError) -> NodeStyleLayout {
-        switch spec.nodeStyle {
-        case "iconWithText":
-            return .iconWithText(
-                backgroundColor: color(from: spec.rawAttrs),
-                icon: makeIcon(from: spec.rawAttrs, defaultIconColorHex: "#ffffff")
-            )
-        case "simpleRoundedText":
-            return .simpleRoundedText(color: color(from: spec.rawAttrs))
-        case "roundedBox":
-            return .simpleRoundedBox(color: color(from: spec.rawAttrs))
-        case "withCategory":
-            return .withCategory(
-                category: spec.rawAttrs["category"] ?? spec.name,
-                categoryColor: color(from: spec.rawAttrs)
-            )
-        case "withCategoryAndIcon":
-            return .withCategoryAndIcon(
-                category: spec.rawAttrs["category"] ?? spec.name,
-                categoryColor: color(from: spec.rawAttrs),
-                icon: makeIcon(from: spec.rawAttrs, defaultIconColorHex: "#ffffff")
-            )
-        case "iconOnly":
-            return .iconOnly(icon: makeIcon(from: spec.rawAttrs, defaultIconColorHex: "#000000"))
-        case "circle":
-            return .circle(color: color(from: spec.rawAttrs))
-        case "bareText":
-            return .bareText
-        case "hidden":
-            return .hidden
-        // `custom` is an explicit escape hatch: falls back to bareText in v1.
-        // Reserved for when full NodeStyleLayout expressions become VGL-expressible.
-        case "custom":
-            return .bareText
-        default:
-            throw VError.parsingError(
-                "Unknown nodeStyle '\(spec.nodeStyle ?? "unknown")' for node type '\(spec.name)'. "
-                    + "Valid values: iconWithText, simpleRoundedText, roundedBox, withCategory, "
-                    + "withCategoryAndIcon, iconOnly, circle, bareText, hidden, custom"
-            )
-        }
-    }
 
     // MARK: - Helpers (used by DynamicNotation)
 

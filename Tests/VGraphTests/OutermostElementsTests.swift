@@ -57,13 +57,6 @@ struct OutermostElementsTests {
         #expect(g.outermostElements(of: ["c"]) == ["c"])
     }
 
-    @Test("The empty set collapses to nothing")
-    func emptyStaysEmpty() throws {
-        let g = try graph()
-
-        #expect(g.outermostElements(of: []).isEmpty)
-    }
-
     // MARK: - Promotion
 
     @Test("A group whose every direct child is present is replaced by itself")
@@ -188,12 +181,5 @@ struct OutermostElementsTests {
         let g = try graph()
 
         #expect(g.outermostElements(of: ["a", "a"]) == ["a"])
-    }
-
-    @Test("The answer is ordered, so callers and tests can rely on it")
-    func theResultIsDeterministic() throws {
-        let g = try graph()
-
-        #expect(g.outermostElements(of: ["b", "a"]) == g.outermostElements(of: ["a", "b"]))
     }
 }

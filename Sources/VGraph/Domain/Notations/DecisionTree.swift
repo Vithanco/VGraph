@@ -127,10 +127,6 @@ extension Notations {
                 .diagram([Attributes.Group.layoutDirection(.topToBottom)]),
             ]
         }
-
-        public func addGraphConfiguration(addTo graph: VGraph) throws(VError) -> VGraph {
-            return graph
-        }
     }
 
 }

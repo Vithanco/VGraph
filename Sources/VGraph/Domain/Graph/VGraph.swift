@@ -1,10 +1,4 @@
 public struct VGraph {
-    public struct Counts: VProtocol {
-        let graphCount: TypedGraph.Counts
-        let adsCount: AttributeStore.Counts
-        let groupCount: GroupStructure.Counts
-    }
-
     private let graph: TypedGraph
     let ads: AttributeStore
     public let groupStructure: GroupStructure
@@ -647,10 +641,6 @@ extension VGraph {
 
     public func edgeType(for edge: Edge) throws(VError) -> EdgeType {
         return try edgeType(for: edge.id)
-    }
-
-    public var counts: Counts {
-        return Counts(graphCount: graph.counts, adsCount: ads.counts, groupCount: groupStructure.counts)
     }
 }
 

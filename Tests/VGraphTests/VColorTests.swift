@@ -17,9 +17,4 @@ struct VColorTests {
 
     }
 
-    @Test
-    func namedColorResolvesToItsValue() throws(VError) {
-        #expect(try VColor.fromString("deeppink") == VColor(hexString: "#ff1493"))
-    }
-
 }

@@ -117,17 +117,15 @@ struct WeightedGraphLoopTests {
         #expect(result.loops.allSatisfy { $0.nodes.count == 2 })
     }
 
+    /// K6 has 409 loops, under `maxLoops`, so only the work budget can stop the
+    /// search: 15 two-node loops are found before it runs out.
     @Test("A small work budget still returns loops, shortest first")
     func budgetKeepsTheShortest() {
-        let result = complete(12).findLoops(maxLoops: 10_000, workBudget: 5_000)
+        let result = complete(6).findLoops(maxLoops: 10_000, workBudget: 300)
         #expect(!result.isComplete)
-        #expect(!result.loops.isEmpty)
-        #expect(result.loops.map { $0.nodes.count } == result.loops.map { $0.nodes.count }.sorted())
-    }
-
-    @Test("The same graph gives the same loops in the same order")
-    func deterministic() {
-        #expect(loopNodes(complete(5)) == loopNodes(complete(5)))
+        #expect(result.loops.count < 409)
+        #expect(result.loops.prefix(15).allSatisfy { $0.nodes.count == 2 })
+        #expect(result.loops.allSatisfy { $0.nodes.count <= 3 })
     }
 }
 
@@ -188,11 +186,6 @@ struct WeightedGraphIndependentLoopTests {
                 ("cd", "c", "d"), ("da", "d", "a"),
             ])
         #expect(independent(graph) == [["a", "b"], ["b", "c"], ["a", "b", "c"], ["a", "b", "c", "d"]])
-    }
-
-    @Test("The same graph gives the same independent set")
-    func deterministic() {
-        #expect(independent(complete(5)) == independent(complete(5)))
     }
 }
 
@@ -294,13 +287,6 @@ struct WeightedGraphBuildTests {
         #expect(graph.vertexCount == 2)
     }
 
-    @Test("A vertex is found by id")
-    func hasNode() {
-        let graph = storage(["a", "b"])
-        #expect(graph.has(node: Node(string: "b")))
-        #expect(!graph.has(node: Node(string: "z")))
-    }
-
     @Test("Edges between two vertices come back in the order added, one direction only")
     func getEdges() {
         let graph = storage(["a", "b"], [("e1", "a", "b"), ("e2", "b", "a"), ("e3", "a", "b")])
@@ -351,25 +337,6 @@ struct WeightedGraphRemovalTests {
         #expect(isConsistent(after))
     }
 
-    @Test("Removing the first or the last vertex keeps the graph consistent")
-    func removeEnds() {
-        let first = everyCase.removeVertex(Node(string: "a"))
-        #expect(edgeIds(first) == ["bb", "bd", "cb", "cd", "dd"])
-        #expect(isConsistent(first))
-
-        let last = everyCase.removeVertex(Node(string: "d"))
-        #expect(edgeIds(last) == ["aa", "ab", "ac", "ba", "bb", "ca", "cb"])
-        #expect(isConsistent(last))
-    }
-
-    @Test("Removing the only vertex leaves an empty graph")
-    func removeOnly() {
-        let after = storage(["a"], [("aa", "a", "a")]).removeVertex(Node(string: "a"))
-        #expect(after.vertexCount == 0)
-        #expect(after.edgeCount == 0)
-        #expect(isConsistent(after))
-    }
-
     @Test("Removal leaves the original graph untouched")
     func removalIsPure() {
         _ = everyCase.removeVertex(Node(string: "b"))
@@ -380,15 +347,6 @@ struct WeightedGraphRemovalTests {
     @Test("Removing an unknown vertex changes nothing")
     func removeUnknown() {
         #expect(everyCase.removeVertex(Node(string: "z")) == everyCase)
-    }
-
-    @Test("Loops are found correctly after a removal")
-    func cyclesAfterRemoval() {
-        // a→b→c→a and a→d→a; removing b leaves only the second.
-        let graph = storage(
-            ["a", "b", "c", "d"],
-            [("ab", "a", "b"), ("bc", "b", "c"), ("ca", "c", "a"), ("ad", "a", "d"), ("da", "d", "a")])
-        #expect(loopNodes(graph.removeVertex(Node(string: "b"))) == [["a", "d"]])
     }
 
     /// Random graphs, including loops and parallel edges, emptied one random

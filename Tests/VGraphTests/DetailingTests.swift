@@ -111,10 +111,4 @@ struct DetailingTests {
             try notation.addNotation(addTo: blank())
         }
     }
-
-    @Test("Given a notation without detailings, when it installs, then no type has detail types")
-    func aFlatNotationHasNoDetailings() throws(VError) {
-        let graph = try blank().placing(Notations.Ibis.content, in: .builtin)
-        #expect(graph.nodeTypes.allSatisfy { graph.detailTypes(of: $0).isEmpty })
-    }
 }

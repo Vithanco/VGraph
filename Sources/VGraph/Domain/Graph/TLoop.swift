@@ -60,16 +60,6 @@ public struct TLoop: VProtocol {
         self.ambiguousLinks = ambiguousLinks
     }
 
-    init<GA: GetAttribute>(edges: [Edge], nodes: [Node], getter: GA) {
-        self.edges = edges
-        self.nodes = nodes
-        self.ambiguousLinks = []
-        self.loopStyle = edges.reduce(.reinforcing) { result, edge in
-            let thisStyle = edge.loopStyle(in: getter)
-            return edge.loopStyle(soFar: result, next: thisStyle)
-        }
-    }
-
     /// From node loops (ADR-0028), which may realise a step with several links. One
     /// polarity among them is that step's; two make the loop's `.ambiguous`.
     public static func fromLoops(_ loops: [TypedGraph.Graph.Loop], in graph: VGraph) -> [TLoop] {
@@ -89,14 +79,6 @@ public struct TLoop: VProtocol {
             return TLoop(
                 edges: loop.steps.compactMap { $0.first }, nodes: loop.nodes, loopStyle: style,
                 ambiguousLinks: ambiguous)
-        }
-    }
-
-    /// Build TLoops from raw cycle analysis results, adding CLD-specific loop style.
-    public static func fromCycles<GA: GetAttribute>(_ cycles: [[Edge]], getter: GA) -> [TLoop] {
-        cycles.map { edges in
-            let nodes = edges.map { $0.from }
-            return TLoop(edges: edges, nodes: nodes, getter: getter)
         }
     }
 }
@@ -128,10 +110,6 @@ extension Edge {
             return .none
         }
         return style
-    }
-
-    func loopStyle(soFar: LoopStyle, next: LoopStyle) -> LoopStyle {
-        Self.loopStyle(soFar: soFar, next: next)
     }
 
     /// `.none` anywhere means the loop has no polarity to show; otherwise one

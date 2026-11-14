@@ -20,15 +20,6 @@ extension HasReadableNames {
     // Embedded Swift `"\(self)"` does not return the enum case name (no reflection),
     // so every conformer must provide an explicit `switch self`. The pre-Embedded
     // reflection-based defaults were deleted in the Phase 1 embedded migration.
-
-    // Closures (not key paths) — Embedded Swift doesn't support key paths.
-    static var readableNames: [String] {
-        return allCases.map { $0.readableName }
-    }
-
-    static var toolTips: [String] {
-        return allCases.map { $0.toolTip }
-    }
 }
 
 extension HasReadableNames {

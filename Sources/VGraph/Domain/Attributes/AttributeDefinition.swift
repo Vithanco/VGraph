@@ -44,17 +44,8 @@ public struct AttributeDefinition: VProtocol {
         return id.description.lowercased()
     }
 
-    var asAttribute: Attribute {
-        return Attribute(definition: self, value: defaultValue)
-    }
-
     public func attribute(fromString: String) throws(VError) -> Attribute {
         return Attribute(definition: self, value: fromString)
-    }
-
-    public func attribute<AType: AttributeType>(fromValue: AType) -> Attribute {
-        assert(AType.typeName == self.typeAsString, "it is \(self.typeAsString) instead of \(AType.typeName)")
-        return Attribute(definition: self, value: fromValue.asString)
     }
 
     /// A value that fails to parse is equal only to the same spelling.
@@ -120,10 +111,6 @@ public struct TypedAttributeDefinition<T: AttributeType>: VProtocol {
         self.description = description
         self.defaultValue = defaultValue
         self.target = target
-    }
-
-    var asAttribute: Attribute {
-        return Attribute(definition: self.asDefinition, value: defaultValue.asString)
     }
 
     public var asDefinition: AttributeDefinition {

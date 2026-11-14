@@ -118,32 +118,6 @@ struct ArithmeticEvaluationTests {
         #expect(outcomes[Node(string: "eq")] == .correct(value: 3))
     }
 
-    @Test("7 − 4 = 2 + 2 evaluates incorrect with no typed label — both computed values carried")
-    func bothSidesDisagreeWithNoLabel() throws {
-        var graph = try blank()
-        graph = try number("seven", "7", in: graph)
-        graph = try number("four", "4", in: graph)
-        graph = try number("two", "2", in: graph)
-        graph = try operatorNode("minusOp", A.NodeTypes.minus, in: graph)
-        graph = try operatorNode("plusOp", A.NodeTypes.plus, in: graph)
-        graph = try equalsNode("eq", nil, in: graph)
-        graph = try edge("e1", "seven", "minusOp", A.EdgeTypes.minusFirstOperand, in: graph)
-        graph = try edge("e2", "four", "minusOp", A.EdgeTypes.minusSecondOperand, in: graph)
-        graph = try edge("e3", "minusOp", "eq", A.EdgeTypes.minusResult, in: graph)
-        graph = try edge("e4", "two", "plusOp", A.EdgeTypes.plusFirstOperand, in: graph)
-        graph = try edge("e5", "four", "plusOp", A.EdgeTypes.plusSecondOperand, in: graph)
-        graph = try edge("e6", "plusOp", "eq", A.EdgeTypes.plusResult, in: graph)
-
-        // minus = 3, plus = 6
-        let outcomes = ArithmeticEvaluation.evaluate(graph)
-        guard case .incorrect(let computed, let expected) = outcomes[Node(string: "eq")] else {
-            Issue.record("Expected .incorrect")
-            return
-        }
-        #expect(Set(computed) == Set([3, 6]))
-        #expect(expected == nil)
-    }
-
     /// The painter sorts before it shows anything, but `Outcome` is public and
     /// carries the order as it stands. That is `VGraph.edges` order — grouped by
     /// source node — so Minus, added first, leads though its result edge is last.
@@ -167,22 +141,24 @@ struct ArithmeticEvaluationTests {
         #expect(outcomes[Node(string: "eq")] == .incorrect(computed: [3, 6], expected: nil))
     }
 
-    // MARK: - Division
+    // MARK: - Multiplication
 
-    @Test("6 : 2 = 3 evaluates correct")
-    func divisionEvaluatesCorrect() throws {
+    @Test("6 × 7 = 42 evaluates correct")
+    func multiplicationEvaluatesCorrect() throws {
         var graph = try blank()
         graph = try number("six", "6", in: graph)
-        graph = try number("two", "2", in: graph)
-        graph = try operatorNode("op", A.NodeTypes.divide, in: graph)
-        graph = try equalsNode("eq", "3", in: graph)
-        graph = try edge("e1", "six", "op", A.EdgeTypes.divideFirstOperand, in: graph)
-        graph = try edge("e2", "two", "op", A.EdgeTypes.divideSecondOperand, in: graph)
-        graph = try edge("e3", "op", "eq", A.EdgeTypes.divideResult, in: graph)
+        graph = try number("seven", "7", in: graph)
+        graph = try operatorNode("op", A.NodeTypes.times, in: graph)
+        graph = try equalsNode("eq", "42", in: graph)
+        graph = try edge("e1", "six", "op", A.EdgeTypes.timesFirstOperand, in: graph)
+        graph = try edge("e2", "seven", "op", A.EdgeTypes.timesSecondOperand, in: graph)
+        graph = try edge("e3", "op", "eq", A.EdgeTypes.timesResult, in: graph)
 
         let outcomes = ArithmeticEvaluation.evaluate(graph)
-        #expect(outcomes[Node(string: "eq")] == .correct(value: 3))
+        #expect(outcomes[Node(string: "eq")] == .correct(value: 42))
     }
+
+    // MARK: - Division
 
     @Test("7 : 2 = 3.5 evaluates correct — non-integer values compare within epsilon")
     func nonIntegerDivisionEvaluatesCorrect() throws {
@@ -232,7 +208,7 @@ struct ArithmeticEvaluationTests {
     }
 
     @Test("7 − 5 = 3 paints red with the not-equal icon")
-    func paintStepShowsComputedThenExpectedWhenIncorrect() throws {
+    func paintStepShowsNotEqualWhenIncorrect() throws {
         let graph = try minusPuzzle(secondValue: "5")
         let painted = try ArithmeticEvaluation.paintEqualsStep(graph)
 
@@ -270,29 +246,8 @@ struct ArithmeticEvaluationTests {
         #expect(style.asString == Notations.Arithmetic.equalsNeutralStyle.asString)
     }
 
-    @Test("Two disagreeing operator results with no typed label paint the not-equal icon")
-    func paintStepShowsSortedPairWhenNoExpected() throws {
-        var graph = try blank()
-        graph = try number("seven", "7", in: graph)
-        graph = try number("four", "4", in: graph)
-        graph = try number("two", "2", in: graph)
-        graph = try operatorNode("minusOp", A.NodeTypes.minus, in: graph)
-        graph = try operatorNode("plusOp", A.NodeTypes.plus, in: graph)
-        graph = try equalsNode("eq", nil, in: graph)
-        graph = try edge("e1", "seven", "minusOp", A.EdgeTypes.minusFirstOperand, in: graph)
-        graph = try edge("e2", "four", "minusOp", A.EdgeTypes.minusSecondOperand, in: graph)
-        graph = try edge("e3", "minusOp", "eq", A.EdgeTypes.minusResult, in: graph)
-        graph = try edge("e4", "two", "plusOp", A.EdgeTypes.plusFirstOperand, in: graph)
-        graph = try edge("e5", "four", "plusOp", A.EdgeTypes.plusSecondOperand, in: graph)
-        graph = try edge("e6", "plusOp", "eq", A.EdgeTypes.plusResult, in: graph)
-
-        let painted = try ArithmeticEvaluation.paintEqualsStep(graph)
-        let style: NodeStyleLayout = try painted.get(node: Node(string: "eq"), attribute: Attributes.Node.style)
-        #expect(style.extractIcons() == ["not-equal"])
-    }
-
     @Test("Three disagreeing operator results with no typed label paint the not-equal icon")
-    func paintStepShowsBareNotEqualForThreeWayDisagreement() throws {
+    func paintStepChecksEveryResultAgainstTheFirst() throws {
         var graph = try blank()
         graph = try number("seven", "7", in: graph)
         graph = try number("four", "4", in: graph)
@@ -320,7 +275,7 @@ struct ArithmeticEvaluationTests {
     }
 
     @Test("Two operators both landing on the same wrong value paint the not-equal icon")
-    func paintStepDedupesRepeatedComputedValues() throws {
+    func paintStepAgreeingResultsStillDisagreeWithADifferentLabel() throws {
         var graph = try blank()
         graph = try number("seven", "7", in: graph)
         graph = try number("four", "4", in: graph)

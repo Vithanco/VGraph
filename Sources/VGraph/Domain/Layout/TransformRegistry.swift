@@ -15,9 +15,4 @@ public enum TransformRegistry {
             throw VError.parsingError("Unknown transform '\(name)'. Available: mergeRelations, identity")
         }
     }
-
-    public static func resolve(name: String) throws(VError) -> GraphTransform {
-        guard let step = try resolveStep(name: name) else { return TransformPipeline.identity }
-        return step.asTransform
-    }
 }

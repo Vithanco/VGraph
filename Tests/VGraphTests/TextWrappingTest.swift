@@ -1,4 +1,3 @@
-import Foundation
 import Testing
 
 @testable import VGraph
@@ -39,22 +38,6 @@ struct TextWrappingTest {
     }
 
     @Test
-    func countWordsSimple() {
-        let text = "What should we do"
-        let count = TextWrapping.countWords(text)
-
-        #expect(count == 4)
-    }
-
-    @Test
-    func countWordsEmpty() {
-        let text = ""
-        let count = TextWrapping.countWords(text)
-
-        #expect(count == 0)
-    }
-
-    @Test
     func splitTextIntoOneLineReturnsSameText() {
         let text = "What should we do"
         let lines = TextWrapping.splitText(text, numberOfLines: 1)
@@ -64,35 +47,25 @@ struct TextWrappingTest {
 
     @Test
     func splitTextIntoTwoLines() {
-        let text = "What should we do about this important issue"
-        let lines = TextWrapping.splitText(text, numberOfLines: 2)
+        let lines = TextWrapping.splitText("What should we do about this important issue", numberOfLines: 2)
 
-        #expect(lines.count == 2)
-
-        // Each line should be non-empty
-        for line in lines {
-            #expect(!line.isEmpty)
-        }
-
-        let rejoined = lines.joined(separator: " ")
-        #expect(TextWrapping.countWords(rejoined) == TextWrapping.countWords(text))
+        #expect(lines == ["What should we do about", "this important issue"])
     }
 
-    @Test
-    func splitTextIntoThreeLines() {
-        let text = "What should we do about this important issue"
-        let lines = TextWrapping.splitText(text, numberOfLines: 3)
-
-        #expect(lines.count == 3)
-
-        // Lines should be relatively balanced (least raggedness)
-        let lengths = lines.map { $0.count }
-        let maxLen = lengths.max() ?? 0
-        let minLen = lengths.min() ?? 0
-
-        // The difference between longest and shortest shouldn't be too extreme
-        // This is a characteristic of the least raggedness algorithm
-        #expect(maxLen - minLen < text.count)
+    @Test(
+        "Three lines are as even as the words allow",
+        arguments: [
+            (
+                "What should we do about this important issue",
+                ["What should we", "do about this", "important issue"]
+            ),
+            (
+                "The quick brown fox jumps over the lazy dog",
+                ["The quick brown", "fox jumps over", "the lazy dog"]
+            ),
+        ])
+    func splitTextIntoThreeLines(text: String, expected: [String]) {
+        #expect(TextWrapping.splitText(text, numberOfLines: 3) == expected)
     }
 
     @Test
@@ -113,50 +86,28 @@ struct TextWrappingTest {
         #expect(lines.isEmpty)
     }
 
-    @Test
-    func findOptimalLineBreaksSimpleText() {
-        let text = "What should we do about this important issue"
-        let result = TextWrapping.findOptimalLineBreaks(text)
-
-        #expect(result.lineCount > 0)
-        #expect(!result.lines.isEmpty)
-        #expect(result.width > 0)
-        #expect(result.height > 0)
-
-        // Line count should match lines array
-        #expect(result.lineCount == result.lines.count)
-
-        // All original words should be present
-        let rejoined = result.lines.joined(separator: " ")
-        #expect(TextWrapping.countWords(rejoined) == TextWrapping.countWords(text))
-    }
-
+    /// Two lines are the fewest that fit, but three give the smaller block:
+    /// 15 characters × 3 lines against 23 × 2.
     @Test
     func findOptimalLineBreaksMinimizesArea() {
-        let text = "What should we do about this important issue"
-        let optimal = TextWrapping.findOptimalLineBreaks(text)
+        let result = TextWrapping.findOptimalLineBreaks(
+            "What should we do about this important issue",
+            characterWidthToHeightRatio: 0.6,
+            lineHeightMultiplier: 1.2,
+            maxWidth: 15.0
+        )
 
-        let oneLine = TextWrapping.splitText(text, numberOfLines: 1)
-        let oneLineWidth = Double((oneLine.first?.count ?? 0)) * 0.6
-        let oneLineHeight = 1.0 * 1.2
-        let oneLineArea = oneLineWidth * oneLineHeight
-
-        let wordCount = TextWrapping.countWords(text)
-        let manyLines = TextWrapping.splitText(text, numberOfLines: wordCount)
-        let manyLinesWidth = Double((manyLines.map { $0.count }.max() ?? 0)) * 0.6
-        let manyLinesHeight = Double(manyLines.count) * 1.2
-        let manyLinesArea = manyLinesWidth * manyLinesHeight
-
-        let optimalArea = optimal.width * optimal.height
-
-        // Optimal should be better than at least one of the extremes
-        #expect(optimalArea <= oneLineArea || optimalArea <= manyLinesArea)
+        #expect(result.lines == ["What should we", "do about this", "important issue"])
     }
 
     @Test
     func findOptimalLineBreaksWithEmptyText() {
-        let text = ""
-        let result = TextWrapping.findOptimalLineBreaks(text)
+        let result = TextWrapping.findOptimalLineBreaks(
+            "   ",
+            characterWidthToHeightRatio: 0.6,
+            lineHeightMultiplier: 1.2,
+            maxWidth: 30.0
+        )
 
         #expect(result.lineCount == 0)
         #expect(result.lines.isEmpty)
@@ -165,59 +116,17 @@ struct TextWrappingTest {
     }
 
     @Test
-    func findOptimalLineBreaksWithCustomRatios() {
-        let text = "What should we do"
-        let result = TextWrapping.findOptimalLineBreaks(
-            text,
-            characterWidthToHeightRatio: 0.5,
-            lineHeightMultiplier: 1.5
-        )
-
-        #expect(result.lineCount > 0)
-        #expect(!result.lines.isEmpty)
-
-        // Dimensions should reflect custom ratios
-        #expect(result.height > 0)
-        #expect(result.width > 0)
-    }
-
-    @Test
     func findOptimalLineBreaksSingleWord() {
         let text = "Hello"
-        let result = TextWrapping.findOptimalLineBreaks(text)
+        let result = TextWrapping.findOptimalLineBreaks(
+            text,
+            characterWidthToHeightRatio: 0.6,
+            lineHeightMultiplier: 1.2,
+            maxWidth: 30.0
+        )
 
         #expect(result.lineCount == 1)
         #expect(result.lines == ["Hello"])
-    }
-
-    @Test
-    func leastRaggednessProducesBalancedLines() {
-        let text = "The quick brown fox jumps over the lazy dog"
-        let lines = TextWrapping.splitText(text, numberOfLines: 3)
-
-        #expect(lines.count == 3)
-
-        // Calculate variance in line lengths
-        let lengths = lines.map { $0.count }
-        let avgLength = Double(lengths.reduce(0, +)) / Double(lengths.count)
-        let variance = lengths.map { pow(Double($0) - avgLength, 2) }.reduce(0, +) / Double(lengths.count)
-
-        // Variance should be relatively low for well-balanced lines
-        // This is somewhat arbitrary but the algorithm should produce reasonable results
-        #expect(variance < 100)
-    }
-
-    @Test
-    func consistentResultsForSameInput() {
-        let text = "What should we do about this important issue"
-
-        let result1 = TextWrapping.findOptimalLineBreaks(text)
-        let result2 = TextWrapping.findOptimalLineBreaks(text)
-
-        #expect(result1.lineCount == result2.lineCount)
-        #expect(result1.lines == result2.lines)
-        #expect(result1.width == result2.width)
-        #expect(result1.height == result2.height)
     }
 
     @Test
@@ -225,7 +134,7 @@ struct TextWrappingTest {
         let text = "It will improve performance lslkj alkj asl klsjhf ladf lkasjd faklsdj"
         let charWidth = 0.6
         let lineHeight = 1.2
-        let maxWidth = 30.0  // Force wrapping: text is 69 chars, so max ~18 chars per line
+        let maxWidth = 30.0  // 50 characters per line: the 69-character text must wrap
 
         let result = TextWrapping.findOptimalLineBreaks(
             text,
@@ -244,7 +153,7 @@ struct TextWrappingTest {
         #expect(result.lineCount > 1, "Text should wrap to multiple lines with width constraint")
 
         let rejoined = result.lines.joined(separator: " ")
-        #expect(TextWrapping.countWords(rejoined) == TextWrapping.countWords(text))
+        #expect(TextWrapping.splitText(rejoined).count == TextWrapping.splitText(text).count)
     }
 
     // MARK: - Regression: silent label loss when a token overflows maxWidth
@@ -309,52 +218,5 @@ struct TextWrappingTest {
 
         #expect(!result.lines.isEmpty, "Safety net must keep the label visible")
         #expect(result.lines.first == text, "Single token cannot be subdivided")
-    }
-
-    @Test
-    func plainTextWrappingUnchangedByTokenizerExtension() {
-        let text = "What should we do about this important issue"
-        let result = TextWrapping.findOptimalLineBreaks(
-            text,
-            characterWidthToHeightRatio: 0.6,
-            lineHeightMultiplier: 1.2,
-            maxWidth: nil
-        )
-
-        #expect(!result.lines.isEmpty)
-        let rejoined = result.lines.joined(separator: " ")
-        #expect(TextWrapping.countWords(rejoined) == TextWrapping.countWords(text))
-    }
-
-    @Test
-    func findOptimalLineBreaksWithMaxWidthVsNoConstraint() {
-        let text = "It will improve performance lslkj alkj asl klsjhf ladf lkasjd faklsdj"
-        let charWidth = 0.6
-        let lineHeight = 1.2
-        let maxWidth = 30.0  // Same constraint as other test
-
-        let unconstrained = TextWrapping.findOptimalLineBreaks(
-            text,
-            characterWidthToHeightRatio: charWidth,
-            lineHeightMultiplier: lineHeight,
-            maxWidth: nil
-        )
-
-        let constrained = TextWrapping.findOptimalLineBreaks(
-            text,
-            characterWidthToHeightRatio: charWidth,
-            lineHeightMultiplier: lineHeight,
-            maxWidth: maxWidth
-        )
-
-        // Constrained version should have more lines (since width is limited)
-        #expect(
-            constrained.lineCount >= unconstrained.lineCount,
-            "Constrained should have at least as many lines as unconstrained")
-
-        // Constrained version should not exceed max width
-        #expect(
-            constrained.width <= maxWidth,
-            "Constrained width \(constrained.width) should not exceed max \(maxWidth)")
     }
 }

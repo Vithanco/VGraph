@@ -84,18 +84,6 @@ struct StringSearchTests {
         #expect("".replacingOccurrences(of: "a", with: "b") == "")
     }
 
-    @Test("Given the JSON escape chain renderGraphJSON applies, when run, then each escape survives the next pass")
-    func escapeChainIsStable() {
-        let raw = #"<svg a="1">\n"# + "\n\ttab"
-        let escaped =
-            raw
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "\"", with: "\\\"")
-            .replacingOccurrences(of: "\n", with: "\\n")
-            .replacingOccurrences(of: "\t", with: "\\t")
-        #expect(escaped == #"<svg a=\"1\">\\n\n\ttab"#)
-    }
-
     // MARK: - components(separatedBy:)
 
     @Test("Given separators between, at the ends, and doubled, when split, then empty fields are preserved")

@@ -21,7 +21,7 @@ struct VGraphLayersTests {
     }
 
     @Test("Given a node attribute, when it is written to a plain group, then the group refuses it")
-    func aNodeInheritsNothingFromItsGroup() throws(VError) {
+    func aPlainGroupRefusesANodeAttribute() throws(VError) {
         #expect(throws: VError.wrongTarget(is: .node, insteadOf: .graph)) {
             try graph().set(group: inner, attribute: Attributes.Node.fontsize.attribute(30))
         }
@@ -127,6 +127,13 @@ struct LayerRoutingTests {
     @Test(arguments: NotationRegistry.entries.map { $0.id })
     func aBuiltInNotationLeavesTheVNotationLayerEmpty(_ notation: String) throws {
         let graph = try parse(#"vgraph g: \#(notation) "G" { }"#)
+        #expect(graph.ads.keys(in: .vnotation).isEmpty, "\(graph.ads.keys(in: .vnotation))")
+    }
+
+    @Test
+    func anExtensionNamedInTheHeaderLeavesTheVNotationLayerEmpty() throws {
+        let graph = try parse(#"vgraph g: IBIS, Annotation "G" { }"#)
+        #expect(graph.has(nodeType: Notations.Annotation.annotation))
         #expect(graph.ads.keys(in: .vnotation).isEmpty, "\(graph.ads.keys(in: .vnotation))")
     }
 

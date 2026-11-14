@@ -83,6 +83,17 @@ struct StyleGuideSyncTests {
         }
     }
 
+    /// The watermark's light hex is another token's dark hex, so the CSS/CHROME_DARK
+    /// maps cannot hold it; only the guide's watermark spec rows do.
+    @Test func theWatermarkMatchesTheGuide() {
+        func row(_ label: String) -> String? {
+            Self.matches("<td>Color \\(\(label) canvas\\)</td><td><code>(#[0-9a-fA-F]{6})</code>", in: Self.guide)
+                .first?[1].lowercased()
+        }
+        #expect(row("light") == SemanticColor.watermark.lightHex.lowercased())
+        #expect(row("dark") == SemanticColor.watermark.darkHex.lowercased())
+    }
+
     private typealias Triple = (SemanticColor, SemanticColor, SemanticColor)
 
     /// Every guide node type, by `<CONST>.<name>`. A type added to the guide fails

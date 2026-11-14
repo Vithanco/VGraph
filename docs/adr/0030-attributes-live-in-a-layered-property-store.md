@@ -203,8 +203,7 @@ Provenance names the layer, so it already says whether a rule set a value; the
   - `values(in: layer, for: key)` returns what one layer holds;
   - `set` and `remove` go through the layer's admission, and `set` prunes a
     redundant value as it writes;
-  - `removeKey` removes a key from every layer, `replaceLayer` swaps a layer,
-    and `repruning` judges a retyped element's values again.
+  - `removeKey` removes a key from every layer, and `repruning` judges a retyped element's values again.
 - **It is functional, but need not be persistent.** Every operation is pure
   and returns a new store, yet no old version outlives the edit that replaced
   it. History is VGL text (0006), and a view is declared in VGL, so an edit to

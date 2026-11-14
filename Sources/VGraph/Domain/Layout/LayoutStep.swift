@@ -9,16 +9,6 @@ extension TransformStep.Id {
 
 public enum TransformPipeline {
 
-    public static func compose(_ transforms: GraphTransform...) -> GraphTransform {
-        return { graph in
-            var result = graph
-            for transform in transforms {
-                result = try transform(result)
-            }
-            return result
-        }
-    }
-
     public static func compose(_ transforms: [GraphTransform]) -> GraphTransform {
         return { graph in
             var result = graph
@@ -27,9 +17,5 @@ public enum TransformPipeline {
             }
             return result
         }
-    }
-
-    public static var identity: GraphTransform {
-        return { $0 }
     }
 }

@@ -16,8 +16,8 @@ struct GraphExportOrderPreservationTests {
         graph = try graph.add(node: n2, type: nt1)
         graph = try graph.add(node: n3, type: nt1)
 
-        // Nodes should be sorted by their itemOrder (which is auto-assigned in order of addition)
-        let sorted = try GraphExportOrderPreservation.sortByItemOrder(graph.nodes, in: graph)
+        // Handed over in reverse, so only the sort can restore declaration order
+        let sorted = try GraphExportOrderPreservation.sortByItemOrder(graph.nodes.reversed(), in: graph)
 
         #expect(sorted.count == 3)
         #expect(sorted[0].id == n1.id)
@@ -45,8 +45,7 @@ struct GraphExportOrderPreservationTests {
         graph = try graph.add(edge: e1, edgeType: et1)
         graph = try graph.add(edge: e2, edgeType: et1)
 
-        // Edges should be sorted by their itemOrder
-        let sorted = try GraphExportOrderPreservation.sortByItemOrder(graph.edges, in: graph)
+        let sorted = try GraphExportOrderPreservation.sortByItemOrder(graph.edges.reversed(), in: graph)
 
         #expect(sorted.count == 2)
         #expect(sorted[0].from.id == n1.id)
@@ -75,8 +74,7 @@ struct GraphExportOrderPreservationTests {
         // Filter out the internal root group
         let nonRootGroups = allGroups.filter { $0.id.description != rootGroup }
 
-        // Sort the filtered groups
-        let sorted = try GraphExportOrderPreservation.sortByItemOrder(nonRootGroups, in: graph)
+        let sorted = try GraphExportOrderPreservation.sortByItemOrder(nonRootGroups.reversed(), in: graph)
 
         #expect(sorted.count == 2)
         #expect(sorted[0].id == g1.id)

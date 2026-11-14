@@ -194,18 +194,3 @@ public struct GroupStructure: VProtocol {
         return false
     }
 }
-
-extension GroupStructure {
-    public struct Counts: VProtocol {
-        let groupCount: Int
-        let nodeCount: Int
-        let groupsInGroupCount: Int
-    }
-
-    public var counts: Counts {
-        let (groupEntries, nodeEntries) = splitEntries(mapping.getAllManys)
-        // Exclude the internal rootGroup from the public count (always present)
-        return Counts(
-            groupCount: subGroups.count - 1, nodeCount: nodeEntries.count, groupsInGroupCount: groupEntries.count)
-    }
-}

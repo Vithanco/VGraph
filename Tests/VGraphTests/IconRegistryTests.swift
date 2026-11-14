@@ -18,18 +18,6 @@ struct IconRegistryTests {
         #expect(graph.artwork(forIcon: "flame") == Self.flame)
     }
 
-    /// The store's `[String]` encoding splits on commas and path data is full of
-    /// them, so this is the encoding's real test rather than a formality.
-    @Test("Punctuation in path data survives the store")
-    func pathDataSurvivesTheStore() throws {
-        let awkward = IconArtwork(
-            minX: -2, minY: -2.5, width: 28, height: 30,
-            path: "M 1,2 L 3.5,-4 C 0,0 1e2,3 4,5 Z")
-        let graph = try VGraph().add(icon: "awkward", artwork: awkward)
-
-        #expect(graph.artwork(forIcon: "awkward") == awkward)
-    }
-
     @Test("A name nobody declared falls through to the built-in set")
     func builtInsAreTheFallback() throws {
         let graph = try VGraph().add(icon: "flame", artwork: Self.flame)

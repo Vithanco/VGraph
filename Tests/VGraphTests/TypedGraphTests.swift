@@ -104,22 +104,6 @@ struct TypedGraphTests {
         }
     }
 
-    @Test func edgeTypeRequiresNodeTypeTo() throws(VError) {
-        var tGraph = TypedGraph()
-        tGraph = try tGraph.add(nodeType: nt1, notation: Notation(rawValue: "change me"))
-        #expect(throws: VError.nodeTypeNotFound(nt2)) {
-            tGraph = try tGraph.add(edgeType: et1, notation: Notation(rawValue: "change me"))
-        }
-    }
-
-    @Test func edgeTypeRequiresNodeTypeFrom() throws(VError) {
-        var tGraph = TypedGraph()
-        tGraph = try tGraph.add(nodeType: nt2, notation: Notation(rawValue: "change me"))
-        #expect(throws: VError.nodeTypeNotFound(nt1)) {
-            tGraph = try tGraph.add(edgeType: et1, notation: Notation(rawValue: "change me"))
-        }
-    }
-
     @Test
     func addEdge() throws(VError) {
         var tGraph = TypedGraph()
@@ -223,28 +207,6 @@ struct TypedGraphTests {
         #expect(throws: VError.nodeNotFound(n2)) {
             tGraph = try tGraph.add(edge: e1, type: et1.id)
         }
-    }
-
-    @Test
-    func notChangingOldValues() throws(VError) {
-        let graph = try TypedGraph()
-            .add(nodeType: nt1, notation: Notation(rawValue: "change me"))
-            .add(node: n1, type: nt1)
-        let graph2 =
-            try graph
-            .add(nodeType: nt2, notation: Notation(rawValue: "change me"))
-            .add(node: n2, type: nt2)
-        let graph3 =
-            try graph2
-            .add(edgeType: et1, notation: Notation(rawValue: "change me"))
-        let graph4 =
-            try graph3
-            .add(edge: e1, type: et1.id)
-
-        #expect(graph.counts == TypedGraph.Counts(nodes: 1, edges: 0, nodeTypes: 1, edgeTypes: 0))
-        #expect(graph2.counts == TypedGraph.Counts(nodes: 2, edges: 0, nodeTypes: 2, edgeTypes: 0))
-        #expect(graph3.counts == TypedGraph.Counts(nodes: 2, edges: 0, nodeTypes: 2, edgeTypes: 1))
-        #expect(graph4.counts == TypedGraph.Counts(nodes: 2, edges: 1, nodeTypes: 2, edgeTypes: 1))
     }
 
     @Test

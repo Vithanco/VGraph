@@ -16,18 +16,6 @@ struct NodeStyleEnumTests {
 
     // MARK: - fromString
 
-    @Test func fromStringIconWithText() throws {
-        #expect(try NodeStyle.fromString("iconWithText") == .iconWithText)
-    }
-
-    @Test func fromStringSimpleRoundedText() throws {
-        #expect(try NodeStyle.fromString("simpleRoundedText") == .simpleRoundedText)
-    }
-
-    @Test func fromStringSimpleRoundedBox() throws {
-        #expect(try NodeStyle.fromString("simpleRoundedBox") == .simpleRoundedBox)
-    }
-
     @Test func fromStringRoundedBoxAlias() throws {
         #expect(try NodeStyle.fromString("roundedBox") == .simpleRoundedBox)
     }
@@ -54,6 +42,7 @@ struct NodeStyleEnumTests {
         #expect(NodeStyle.circle.asString == "circle")
         #expect(NodeStyle.bareText.asString == "bareText")
         #expect(NodeStyle.hidden.asString == "hidden")
+        #expect(NodeStyle.presetLayout.asString == "presetLayout")
     }
 
     // MARK: - needsIcon / needsCategory

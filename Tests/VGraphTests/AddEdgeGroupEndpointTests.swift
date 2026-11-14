@@ -20,7 +20,6 @@ struct AddEdgeGroupEndpointTests {
     let nodeB = Node("b")
 
     let group1 = Group(rawValue: "g1")
-    let group2 = Group(rawValue: "g2")
 
     /// Graph with one node type, one edge type, two nodes, and one group — baseline for all tests.
     private func baseGraph() throws(VError) -> VGraph {
@@ -54,29 +53,5 @@ struct AddEdgeGroupEndpointTests {
         #expect(throws: VError.edgeEndpointIsGroup(edge: edge.id, endpoint: group1)) {
             _ = try graph.add(edge: edge, edgeType: edgeType)
         }
-    }
-
-    @Test("Given two groups 'g1' and 'g2', when an edge is added between them, then an edgeEndpointIsGroup error is thrown")
-    func rejectsGroupOnBothEnds() throws(VError) {
-        var graph = try baseGraph()
-        graph = try graph.add(group: group2)
-        let edge = Edge(string: "e1", from: group1.id.id, to: group2.id.id)
-
-        // The source is checked first — either group would be a valid failure.
-        #expect(throws: VError.edgeEndpointIsGroup(edge: edge.id, endpoint: group1)) {
-            _ = try graph.add(edge: edge, edgeType: edgeType)
-        }
-    }
-
-    // MARK: - Normal cases still work
-
-    @Test("Given two nodes 'a' and 'b', when a valid edge between them is added, then the graph contains the edge")
-    func allowsEdgeBetweenNodes() throws(VError) {
-        let graph = try baseGraph()
-        let edge = Edge(string: "e1", from: nodeA.id, to: nodeB.id)
-
-        let result = try graph.add(edge: edge, edgeType: edgeType)
-
-        #expect(result.edges.contains { $0.id == edge.id })
     }
 }

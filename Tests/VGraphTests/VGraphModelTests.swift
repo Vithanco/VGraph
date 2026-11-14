@@ -4,37 +4,29 @@ import Testing
 
 struct VGraphModelTests {
     let nt1: NodeType
-    let nt2: NodeType
     let et1_1: EdgeType
-    let et1_2: EdgeType
     let n1: Node
     let n2: Node
     let n3: Node
-    let n4: Node
     let e1_2: Edge
     let e2_3: Edge
     let g1: Group
     let g2: Group
-    let g3: Group
 
     init() {
         nt1 = NodeType("nt1")
-        nt2 = NodeType("nt2")
 
         et1_1 = EdgeType(id: "et1", from: nt1, to: nt1)
-        et1_2 = EdgeType(id: "et1", from: nt1, to: nt2)
 
         n1 = Node("n1")
         n2 = Node("n2")
         n3 = Node("n3")
-        n4 = Node("n4")
 
         e1_2 = Edge(id: "e1_2", from: n1, to: n2)
         e2_3 = Edge(id: "e2_3", from: n1, to: n3)
 
         g1 = Group(rawValue: "c1")
         g2 = Group(rawValue: "c2")
-        g3 = Group(rawValue: "c3")
     }
 
     @Test
@@ -96,11 +88,9 @@ struct VGraphModelTests {
         #expect(network.groups.contains(g1))
         #expect(try network.getDirectContent(group: g1) == ([g2], [n1]))
         #expect(try network.getAllContent(group: g1) == ([g2], [n1, n2]))
-        #expect(
-            network.groupStructure.counts == GroupStructure.Counts(groupCount: 2, nodeCount: 2, groupsInGroupCount: 1))
         network = try network.delete(node: n2)
-        #expect(
-            network.groupStructure.counts == GroupStructure.Counts(groupCount: 2, nodeCount: 1, groupsInGroupCount: 1))
+        #expect(try network.getAllContent(group: g1) == ([g2], [n1]))
+        #expect(network.group(of: n2) == nil)
     }
 
     @Test
@@ -115,29 +105,7 @@ struct VGraphModelTests {
         #expect(network.groups.contains(g1))
         #expect(try network.getDirectContent(group: g1) == ([], []))
         #expect(try network.getAllContent(group: g1) == ([], []))
-        #expect(
-            network.groupStructure.counts == GroupStructure.Counts(groupCount: 2, nodeCount: 0, groupsInGroupCount: 0))
-    }
-
-    @Test
-    func notChangingOldValues() throws(VError) {
-        let network = try VGraph()
-            .add(group: g1)
-        let network2 = try network.add(nodeType: nt1).add(node: n1, type: nt1)
-        #expect(
-            network2.counts
-                == VGraph
-                .Counts(
-                    graphCount: TypedGraph.Counts(nodes: 1, edges: 0, nodeTypes: 1, edgeTypes: 0),
-                    adsCount: AttributeStore.Counts(definitions: VGraph().attributeDefinitions.count, entries: 0),
-                    groupCount: GroupStructure.Counts(groupCount: 1, nodeCount: 0, groupsInGroupCount: 0)))
-        #expect(
-            network.counts
-                == VGraph
-                .Counts(
-                    graphCount: TypedGraph.Counts(nodes: 0, edges: 0, nodeTypes: 0, edgeTypes: 0),
-                    adsCount: AttributeStore.Counts(definitions: VGraph().attributeDefinitions.count, entries: 0),
-                    groupCount: GroupStructure.Counts(groupCount: 1, nodeCount: 0, groupsInGroupCount: 0)))
+        #expect(network.group(of: n1) == nil)
     }
 
     @Test

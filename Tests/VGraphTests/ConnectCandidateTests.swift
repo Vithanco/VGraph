@@ -125,21 +125,10 @@ struct ConnectCandidateTests {
 
     /// The bound only `connectCandidates` can read: with both endpoints known,
     /// "how many join *these two* nodes" is finally a question that can be asked.
-    @Test("An exhausted samePairMax removes the candidate")
-    func exhaustedSamePairMax() throws {
-        var graph = try conceptMap()
-        graph = try node("a", CM.NodeTypes.concept, in: graph)
-        graph = try node("r", CM.NodeTypes.relation, in: graph)
-        graph = try edge("e1", "a", "r", CM.EdgeTypes.conceptToRelation, in: graph)
-        graph = try bound(Attributes.Edge.samePairMax, 1, on: CM.EdgeTypes.conceptToRelation, in: graph)
-
-        #expect(candidates(graph, "a", "r").isEmpty)
-    }
-
-    /// samePairMax counts one pair, so a second Relation is still reachable.
-    @Test("samePairMax spent on one pair leaves another pair open")
+    /// It counts one pair, so a second Relation is still reachable.
+    @Test("An exhausted samePairMax closes that pair and leaves another open")
     func samePairMaxIsPerPair() throws {
-        var graph = try conceptMap()
+        var graph = try boundsOnly(conceptMap())
         graph = try node("a", CM.NodeTypes.concept, in: graph)
         graph = try node("r1", CM.NodeTypes.relation, in: graph)
         graph = try node("r2", CM.NodeTypes.relation, in: graph)

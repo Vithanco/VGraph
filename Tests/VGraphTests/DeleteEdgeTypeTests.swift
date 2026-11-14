@@ -78,17 +78,4 @@ struct DeleteEdgeTypeTests {
             _ = try graph.delete(edgeType: absent)
         }
     }
-
-    /// Declared types are ordinary here — nothing about this is special to a
-    /// minted one.
-    @Test("A declared type the notation brought is removable once unused")
-    func aDeclaredTypeIsRemovableTooWhenUnused() throws {
-        let graph = try conceptMap()
-        let declared = CM.EdgeTypes.conceptToRelation.id
-        #expect(graph.get(edgeType: declared) != nil)
-
-        let cleaned = try graph.delete(edgeType: declared)
-
-        #expect(cleaned.get(edgeType: declared) == nil)
-    }
 }

@@ -29,11 +29,11 @@ struct GroupStyleTests {
         #expect(readBack.unfolded.asString == boundary.asString)
     }
 
-    @Test("Given a group with no assigned style, when its style is requested, then the default group style is returned")
-    func unstyledGroupResolvesToDefault() throws(VError) {
+    @Test("Given a group with no assigned style, when its style is read, then it is the default group style, which round-trips")
+    func anUnstyledGroupReadsTheDefault() throws(VError) {
         let graph = try baseGraph().add(group: group1)
-
         let readBack = try graph.get(group: group1, attribute: Attributes.Group.groupStyle)
         #expect(readBack.asString == GroupStyle.default.asString)
+        #expect(try GroupStyle.fromString(readBack.asString).asString == readBack.asString)
     }
 }

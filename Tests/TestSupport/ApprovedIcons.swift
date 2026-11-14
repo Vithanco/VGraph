@@ -38,13 +38,6 @@ public enum ApprovedIcons {
 
     public static var names: Set<String> { Set(artworks.values.flatMap { $0 }) }
 
-    /// Approved and still shipped, but drawn by no built-in notation: CLD's only type,
-    /// Stock, has no badge (Style Guide §01). Kept so an author's VGL naming it still resolves.
-    public static let unusedByBuiltins: Set<String> = ["variable"]
-
-    /// What was already built in before the approved set.
-    public static let existing: Set<String> = ["and", "or", "conflict", "default", "vithanco"]
-
     /// The icon a built-in notation's node type draws, keyed "Notation.NodeType".
     public static let nodeTypes: [String: String] = [
         "ADTree.Attack": "attack", "ADTree.Defense": "defense",

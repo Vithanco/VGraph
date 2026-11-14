@@ -5,24 +5,16 @@ import Testing
 @Suite("OneToManyLookup Tests")
 struct OneToManyLookupTests {
 
-    func testInvariants<S, T>(_ lookup: OneToManyLookup<S, T>) {
-        #expect(lookup._oneToMany.keys.count == lookup._manyToOne.values.asSet.count)
-        #expect(lookup._manyToOne.keys.count == lookup._oneToMany.values.reduce(0) { $0 + $1.count })
-    }
-
     @Test
     func addAndRemoveOne() throws(VError) {
         var lookup = OneToManyLookup<String, String>()
 
         lookup = lookup.add(many: "node1", one: "type1")
-        #expect(lookup.counts() == OneToManyLookup.Counts(ones: 1, manys: 1))
-        testInvariants(lookup)
         #expect(lookup.getOne(many: "node1") == "type1")
         #expect(lookup.getMany(one: "type1") == ["node1"])
 
         lookup = lookup.remove(many: "node1")
-        #expect(lookup.counts() == OneToManyLookup.Counts(ones: 0, manys: 0))
-        testInvariants(lookup)
+        #expect(lookup == OneToManyLookup<String, String>())
     }
 
     @Test
@@ -31,18 +23,15 @@ struct OneToManyLookupTests {
 
         lookup = lookup.add(many: "node1", one: "type1")
         lookup = lookup.add(many: "node2", one: "type1")
-        #expect(lookup.counts() == OneToManyLookup.Counts(ones: 1, manys: 2))
-        testInvariants(lookup)
         #expect(lookup.getOne(many: "node1") == "type1")
         #expect(lookup.getMany(one: "type1") == ["node1", "node2"])
 
         lookup = lookup.remove(many: "node1")
-        #expect(lookup.counts() == OneToManyLookup.Counts(ones: 1, manys: 1))
-        testInvariants(lookup)
+        #expect(lookup.getOne(many: "node1") == nil)
+        #expect(lookup.getMany(one: "type1") == ["node2"])
 
         lookup = lookup.remove(many: "node2")
-        #expect(lookup.counts() == OneToManyLookup.Counts(ones: 0, manys: 0))
-        testInvariants(lookup)
+        #expect(lookup == OneToManyLookup<String, String>())
     }
 
     @Test
@@ -53,12 +42,11 @@ struct OneToManyLookupTests {
         lookup = lookup.add(many: "node2", one: "type1")
 
         lookup = lookup.remove(one: "type1")
-        #expect(lookup.counts() == OneToManyLookup.Counts(ones: 0, manys: 0))
-        testInvariants(lookup)
+        #expect(lookup == OneToManyLookup<String, String>())
     }
 
     @Test
-    func lookupWorks() async throws(VError) {
+    func lookupWorks() throws(VError) {
         var lookup = OneToManyLookup<String, String>()
 
         lookup = lookup.add(many: "node1", one: "type1")
@@ -66,21 +54,6 @@ struct OneToManyLookupTests {
 
         #expect(lookup.getMany(one: "type2") == nil)
         #expect(lookup.getOne(many: "node3") == nil)
-    }
-
-    /// Undo keeps old versions around, so a change must never reach back into one.
-    @Test
-    func changingANewValueLeavesTheOldOneAlone() {
-        let old = OneToManyLookup<String, String>()
-            .add(many: "node1", one: "type1")
-            .add(many: "node2", one: "type1")
-
-        let new = old.add(many: "node3", one: "type1").remove(many: "node1").remove(one: "type1")
-
-        #expect(new.counts() == OneToManyLookup.Counts(ones: 0, manys: 0))
-        #expect(old.getMany(one: "type1") == ["node1", "node2"])
-        #expect(old.getOne(many: "node1") == "type1")
-        #expect(old.getOne(many: "node3") == nil)
     }
 
     @Test
@@ -93,8 +66,7 @@ struct OneToManyLookupTests {
         #expect(lookup.getOne(many: "node1") == "type2")
         #expect(lookup.getMany(one: "type2") == ["node1"])
         #expect(lookup.getMany(one: "type1") == nil)
-        #expect(lookup.counts() == OneToManyLookup.Counts(ones: 1, manys: 1))
-        testInvariants(lookup)
+        #expect(lookup.getAllOnes == ["type2"])
     }
 
     @Test
@@ -113,14 +85,13 @@ struct OneToManyLookupTests {
     }
 
     @Test
-    func listsAllOnesAndAllManys() {
+    func listsAllOnes() {
         let lookup = OneToManyLookup<String, String>()
             .add(many: "node1", one: "type1")
             .add(many: "node2", one: "type1")
             .add(many: "node3", one: "type2")
 
         #expect(lookup.getAllOnes.asSet == ["type1", "type2"])
-        #expect(lookup.getAllManys == ["node1", "node2", "node3"])
     }
 
     /// Equality is by content, so the order things were added in must not matter.

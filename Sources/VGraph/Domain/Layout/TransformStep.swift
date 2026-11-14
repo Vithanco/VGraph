@@ -39,20 +39,6 @@ extension TransformStep {
     public static func pipeline(_ steps: [TransformStep]) -> GraphTransform {
         TransformPipeline.compose(steps.map { $0.asTransform })
     }
-
-    /// Catches a mis-ordered pipeline without running it: one problem per step whose
-    /// prerequisite runs later (empty == valid).
-    public static func orderProblems(in steps: [TransformStep]) -> [String] {
-        var satisfied: Set<Id> = []
-        var problems: [String] = []
-        for step in steps {
-            for prerequisite in step.prerequisites where !satisfied.contains(prerequisite) {
-                problems.append("\(step.id) requires \(prerequisite), which does not run earlier")
-            }
-            satisfied.insert(step.id)
-        }
-        return problems
-    }
 }
 
 extension VGraph {
@@ -67,17 +53,6 @@ extension VGraph {
         var ids = completedSteps
         ids.insert(step)
         return try set(graphAttribute: Attributes.Group.completedSteps.attribute(ids.map { $0.id }.sorted()))
-    }
-
-    /// Records several completed steps at once. Primarily for tests and setup code
-    /// that needs to satisfy a step's prerequisites without running its predecessors
-    /// (e.g. `graph.marking(calculateNodeDimensions.prerequisites)`).
-    public func marking(_ steps: [TransformStep.Id]) throws(VError) -> VGraph {
-        var result = self
-        for step in steps {
-            result = try result.recordCompletion(of: step)
-        }
-        return result
     }
 
     /// Gate for *document* exporters: pipeline output must never be written back into

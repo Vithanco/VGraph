@@ -19,7 +19,6 @@ extension AttributeStore {
         var result = self
         result.layers[layer] = nil
         result.layerValues[layer] = nil
-        result.ruleSources[layer] = nil
         return result
     }
 
@@ -30,14 +29,14 @@ extension AttributeStore {
     }
 
     public func set(
-        _ attribute: Attribute, for key: ItemKey, in layer: AttributeLayer, source: AttributeSource = .direct,
+        _ attribute: Attribute, for key: ItemKey, in layer: AttributeLayer,
         chains: some ChainSource
     ) throws(VError) -> AttributeStore {
         let definition = try checked(attribute, for: key, in: layer)
         let redundant =
             definition.category != .computed
             && isRedundant(attribute.stringValue, attribute.id, for: key, in: layer, definition, chains)
-        return writing(redundant ? nil : attribute.stringValue, source: source, attribute.id, for: key, in: layer)
+        return writing(redundant ? nil : attribute.stringValue, attribute.id, for: key, in: layer)
             .repruned(affected(by: key, chains), fromLayer: layer, chains)
     }
 
@@ -50,7 +49,7 @@ extension AttributeStore {
         var touched: Set<ItemKey> = []
         for (key, attribute) in values {
             _ = try checked(attribute, for: key, in: layer)
-            result = result.writing(attribute.stringValue, source: .direct, attribute.id, for: key, in: layer)
+            result = result.writing(attribute.stringValue, attribute.id, for: key, in: layer)
             touched.formUnion(affected(by: key, chains))
         }
         return result.repruned(touched, fromLayer: layer, chains)
@@ -73,7 +72,7 @@ extension AttributeStore {
         _ id: Attribute.Id, for key: ItemKey, in layer: AttributeLayer, chains: some ChainSource
     ) throws(VError) -> AttributeStore {
         _ = try admitted(id, key: key, in: layer)
-        return writing(nil, source: .direct, id, for: key, in: layer)
+        return writing(nil, id, for: key, in: layer)
             .repruned(affected(by: key, chains), fromLayer: layer, chains)
     }
 
@@ -81,12 +80,11 @@ extension AttributeStore {
         var result = self
         for (layer, values) in layerValues where values[key.kind]?[key.id] != nil {
             result.layerValues[layer]?[key.kind]?[key.id] = nil
-            result.ruleSources[layer]?[key] = nil
         }
         return result
     }
 
-    /// The same values, rule sources included, under another key in every layer:
+    /// The same values under another key in every layer:
     /// a node becoming a detailed node and back keeps what it had (ADR-0032).
     /// Neither admitted nor pruned here — the caller's chains changed with the key.
     public func rekeying(from old: ItemKey, to new: ItemKey) -> AttributeStore {
@@ -96,8 +94,6 @@ extension AttributeStore {
             guard let container = values[old.kind]?[old.id] else { continue }
             result.layerValues[layer]?[old.kind]?[old.id] = nil
             result.layerValues[layer, default: [:]][new.kind, default: [:]][new.id] = container
-            result.ruleSources[layer]?[new] = ruleSources[layer]?[old]
-            result.ruleSources[layer]?[old] = nil
         }
         return result
     }
@@ -108,27 +104,10 @@ extension AttributeStore {
         for layer in layerValues.keys {
             for (id, _) in layerValues[layer]?[key.kind]?[key.id] ?? [:] {
                 guard let definition = definitions[id], discard(definition) else { continue }
-                result = result.writing(nil, source: .direct, id, for: key, in: layer)
+                result = result.writing(nil, id, for: key, in: layer)
             }
         }
         return result
-    }
-
-    /// Swaps a layer's contents, as when a document's `vnotation` is reparsed.
-    /// Every value is checked as `set` would check it.
-    public func replaceLayer(
-        _ layer: AttributeLayer, with values: [ItemKey: AttributeContainer], chains: some ChainSource
-    ) throws(VError) -> AttributeStore {
-        var result = self
-        result.layerValues[layer] = nil
-        result.ruleSources[layer] = nil
-        for (key, container) in values {
-            for (id, value) in container {
-                _ = try admitted(id, key: key, in: layer)
-                result = result.writing(value, source: .direct, id, for: key, in: layer)
-            }
-        }
-        return result.repruned(nil, fromLayer: layer, chains)
     }
 
     public func resolve(
@@ -141,7 +120,7 @@ extension AttributeStore {
         while let name = current {
             for step in keys {
                 if let value = layerValues[name]?[step.kind]?[step.id]?[id] {
-                    return ResolvedAttribute(value, from: .layer(name, key: step, source: source(id, step, name)))
+                    return ResolvedAttribute(value, from: .layer(name, key: step))
                 }
             }
             current = layers[name]?.parent
@@ -160,7 +139,7 @@ extension AttributeStore {
         while let name = current {
             for step in keys {
                 for (id, value) in layerValues[name]?[step.kind]?[step.id] ?? [:] where result[id] == nil {
-                    result[id] = ResolvedAttribute(value, from: .layer(name, key: step, source: source(id, step, name)))
+                    result[id] = ResolvedAttribute(value, from: .layer(name, key: step))
                 }
             }
             current = layers[name]?.parent
@@ -218,10 +197,6 @@ extension AttributeStore {
         return result
     }
 
-    private func source(_ id: Attribute.Id, _ key: ItemKey, _ layer: AttributeLayer) -> AttributeSource {
-        ruleSources[layer]?[key]?[id].map { AttributeSource.rule($0) } ?? .direct
-    }
-
     /// Whether `value` on `key` in `layer` changes no resolution through
     /// `layer`: neither the key's own nor that of any element it is the type
     /// of. A view's value on a type is not redundant while it beats a model
@@ -258,19 +233,12 @@ extension AttributeStore {
     }
 
     private func writing(
-        _ value: String?, source: AttributeSource, _ id: Attribute.Id, for key: ItemKey, in layer: AttributeLayer
+        _ value: String?, _ id: Attribute.Id, for key: ItemKey, in layer: AttributeLayer
     ) -> AttributeStore {
         var result = self
         var container = layerValues[layer]?[key.kind]?[key.id] ?? [:]
         container[id] = value
         result.layerValues[layer, default: [:]][key.kind, default: [:]][key.id] = container.isEmpty ? nil : container
-        var rules = ruleSources[layer]?[key] ?? [:]
-        if value != nil, case .rule(let rule) = source {
-            rules[id] = rule
-        } else {
-            rules[id] = nil
-        }
-        result.ruleSources[layer, default: [:]][key] = rules.isEmpty ? nil : rules
         return result
     }
 
@@ -301,7 +269,7 @@ extension AttributeStore {
                     guard let definition = definitions[attribute], definition.category != .computed,
                         result.isRedundant(value, attribute, for: key, in: name, definition, chains)
                     else { continue }
-                    result = result.writing(nil, source: .direct, attribute, for: key, in: name)
+                    result = result.writing(nil, attribute, for: key, in: name)
                 }
             }
         }

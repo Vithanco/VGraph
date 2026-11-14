@@ -55,7 +55,7 @@ struct VGLExportRequiresPristineGraphTests {
     /// The error names every step that ran, so the message points at the pipeline
     /// that produced the graph rather than just the first thing it noticed.
     @Test func theErrorListsEveryCompletedStep() throws {
-        let touched = try parsed().marking([.boundaryChrome, .foldGroups])
+        let touched = try parsed().recordCompletion(of: .boundaryChrome).recordCompletion(of: .foldGroups)
 
         #expect(throws: VError.documentExportOfTransformedGraph(steps: ["boundaryChrome", "foldGroups"])) {
             try VGLExporter().export(graph: touched)

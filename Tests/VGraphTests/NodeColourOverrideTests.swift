@@ -169,14 +169,6 @@ struct SVGColorKeywordTests {
         }
     }
 
-    /// The reason names are never derived back from a colour.
-    @Test("the standard contains exact duplicates")
-    func duplicatesExist() {
-        #expect(VColor(named: "grey") == VColor(named: "gray"))
-        #expect(VColor(named: "aqua") == VColor(named: "cyan"))
-        #expect(VColor(named: "magenta") == VColor(named: "fuchsia"))
-    }
-
     @Test("hex still parses, and wins")
     func hexStillParses() throws {
         #expect(try VColor.fromString("#b6e6bd") == VColor(hexString: "#b6e6bd"))

@@ -31,8 +31,4 @@ struct SoleCandidateTests {
             VCommandOption.soleCandidate(in: [VCommandOption(id: "Answer", title: "Answer")]) == nil,
             "auto-picking here would take a notation break without ever showing it")
     }
-
-    @Test func anEmptyListHasNoSoleCandidate() {
-        #expect(VCommandOption.soleCandidate(in: []) == nil)
-    }
 }

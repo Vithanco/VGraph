@@ -23,10 +23,6 @@ public struct TextWrapping {
         ).map { String($0) }
     }
 
-    public static func countWords(_ text: String) -> Int {
-        return splitText(text).count
-    }
-
     /// Tokenize for line-wrapping. Like `splitText(_:)`, but additionally introduces
     /// *soft breaks* after `/` and `-` (the break character stays attached to the left
     /// token). `softBreakBefore[i] == true` means token `i` follows a soft break — no
@@ -170,9 +166,9 @@ public struct TextWrapping {
     /// - Returns: Tuple of (optimal line count, lines array, estimated width, estimated height)
     public static func findOptimalLineBreaks(
         _ text: String,
-        characterWidthToHeightRatio: Double = 0.6,
-        lineHeightMultiplier: Double = 1.2,
-        maxWidth: Double? = nil
+        characterWidthToHeightRatio: Double,
+        lineHeightMultiplier: Double,
+        maxWidth: Double
     ) -> (lineCount: Int, lines: [String], width: Double, height: Double) {
 
         let (tokens, softBreakBefore) = tokenizeForWrapping(text)
@@ -181,31 +177,24 @@ public struct TextWrapping {
             return (0, [], 0, 0)
         }
 
-        let minLinesForWidth: Int
-        if let maxWidth = maxWidth {
-            let maxCharsPerLine = Int(floor(maxWidth / characterWidthToHeightRatio))
+        let maxCharsPerLine = Int(floor(maxWidth / characterWidthToHeightRatio))
 
-            // Find minimum lines needed to fit text within width.
-            // A soft break preceding a token costs 0 chars; a hard break costs 1.
-            var currentLineLength = 0
-            var requiredLines = 1
+        // Find minimum lines needed to fit text within width.
+        // A soft break preceding a token costs 0 chars; a hard break costs 1.
+        var currentLineLength = 0
+        var minLinesForWidth = 1
 
-            for (index, word) in tokens.enumerated() {
-                let wordLength = word.count
-                let gap = (index > 0 && !softBreakBefore[index]) ? 1 : 0
-                let spaceNeeded = currentLineLength + gap + wordLength
+        for (index, word) in tokens.enumerated() {
+            let wordLength = word.count
+            let gap = (index > 0 && !softBreakBefore[index]) ? 1 : 0
+            let spaceNeeded = currentLineLength + gap + wordLength
 
-                if spaceNeeded > maxCharsPerLine && currentLineLength > 0 {
-                    requiredLines += 1
-                    currentLineLength = wordLength
-                } else {
-                    currentLineLength = spaceNeeded
-                }
+            if spaceNeeded > maxCharsPerLine && currentLineLength > 0 {
+                minLinesForWidth += 1
+                currentLineLength = wordLength
+            } else {
+                currentLineLength = spaceNeeded
             }
-
-            minLinesForWidth = requiredLines
-        } else {
-            minLinesForWidth = 1
         }
 
         // Start searching around the square root of word count, but respect width constraint
@@ -226,7 +215,7 @@ public struct TextWrapping {
             let estimatedWidth = Double(maxLineLength) * characterWidthToHeightRatio
             let estimatedHeight = Double(numLines) * lineHeightMultiplier
 
-            if let maxWidth = maxWidth, estimatedWidth > maxWidth {
+            if estimatedWidth > maxWidth {
                 continue
             }
 

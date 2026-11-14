@@ -1,18 +1,7 @@
-// Pins the exact strings produced today by the reflection-based
-// `HasReadableNames` / `NameDescribable` defaults — i.e. `"\(self)"` for
-// enum cases and `"\(type(of: self))"` for type names.
-//
-// Embedded Swift has no enum-case reflection. Phase 1 of the embedded
-// migration replaces these defaults with hand-written `switch self` per
-// conforming enum and explicit `static let typeName` per conforming type.
-// This file is the wire-format contract Phase 1 must reproduce byte-for-byte.
-//
-// Each test pins:
-//  - `value`         — programmatic case-name (defaults to `"\(self)"`)
-//  - `readableName`  — UI/display string (defaults to `"\(self)"`, often overridden)
-//  - `alias`         — alias of readableName (defaults to readableName, sometimes overridden)
-//  - `asString`      — VGL wire format (defaults to alias)
-//  - `typeName`      — static type identifier (defaults to "\(type(of: self))"-derived)
+// The spellings VGL and stored attributes carry for the enums that name
+// themselves: `asString` is what is stored and written, `value` the vnotation
+// spelling. No default derives them, so a consistent rename would pass every
+// round trip; these tables are the guard for existing documents.
 
 import Testing
 
@@ -22,10 +11,6 @@ import Testing
 struct ReflectionContractTests_HasReadableNames {
 
     // MARK: DiagramLogic
-
-    @Test func diagramLogic_typeName() {
-        #expect(DiagramLogic.typeName == "DiagramLogic")
-    }
 
     @Test func diagramLogic_cases() {
         let cases: [(c: DiagramLogic, value: String, readableName: String, alias: String, asString: String)] = [
@@ -42,10 +27,6 @@ struct ReflectionContractTests_HasReadableNames {
     }
 
     // MARK: AttributeTarget
-
-    @Test func attributeTarget_typeName() {
-        #expect(AttributeTarget.typeName == "AttributeTarget")
-    }
 
     @Test func attributeTarget_cases() {
         let cases: [(c: AttributeTarget, value: String, readableName: String, alias: String, asString: String)] = [
@@ -67,10 +48,6 @@ struct ReflectionContractTests_EnumAttributeType_Simple {
 
     // MARK: LoopDirection
 
-    @Test func loopDirection_typeName() {
-        #expect(LoopDirection.typeName == "LoopDirection")
-    }
-
     @Test func loopDirection_cases() {
         let cases: [(c: LoopDirection, value: String, readableName: String, alias: String, asString: String)] = [
             (.clockwise, "clockwise", "Clockwise", "Clockwise", "Clockwise"),
@@ -86,10 +63,6 @@ struct ReflectionContractTests_EnumAttributeType_Simple {
     }
 
     // MARK: LoopStyle  (no overrides — value == readableName == alias == asString == case name)
-
-    @Test func loopStyle_typeName() {
-        #expect(LoopStyle.typeName == "LoopStyle")
-    }
 
     @Test func loopStyle_cases() {
         let cases: [(c: LoopStyle, name: String)] = [
@@ -107,10 +80,6 @@ struct ReflectionContractTests_EnumAttributeType_Simple {
 
     // MARK: FoldingState
 
-    @Test func foldingState_typeName() {
-        #expect(FoldingState.typeName == "FoldingState")
-    }
-
     @Test func foldingState_cases() {
         let cases: [(c: FoldingState, name: String)] = [
             (.normal, "normal"),
@@ -126,10 +95,6 @@ struct ReflectionContractTests_EnumAttributeType_Simple {
     }
 
     // MARK: LayoutDirection
-
-    @Test func layoutDirection_typeName() {
-        #expect(LayoutDirection.typeName == "LayoutDirection")
-    }
 
     @Test func layoutDirection_cases() {
         let cases: [(c: LayoutDirection, value: String, readableName: String, alias: String, asString: String)] = [
@@ -147,10 +112,6 @@ struct ReflectionContractTests_EnumAttributeType_Simple {
     }
 
     // MARK: GraphStyleType  (no overrides anywhere)
-
-    @Test func graphStyleType_typeName() {
-        #expect(GraphStyleType.typeName == "GraphStyleType")
-    }
 
     @Test func graphStyleType_cases() {
         let cases: [(c: GraphStyleType, name: String)] = [
@@ -173,11 +134,6 @@ struct ReflectionContractTests_EnumAttributeType_AliasOverride {
 
     // MARK: Attributes.Group.StyleType  (alias="" for .empty)
 
-    @Test func groupStyleType_typeName() {
-        // Nested type → pinned current behaviour (whatever reflection produces today)
-        #expect(Attributes.Group.StyleType.typeName == "StyleType")
-    }
-
     @Test func groupStyleType_cases() {
         let cases: [(c: Attributes.Group.StyleType, value: String, readableName: String, alias: String, asString: String)] = [
             (.empty, "empty", "empty", "", ""),
@@ -196,10 +152,6 @@ struct ReflectionContractTests_EnumAttributeType_AliasOverride {
 
     // MARK: Attributes.Group.Labeljust  (alias="" for .c)
 
-    @Test func groupLabeljust_typeName() {
-        #expect(Attributes.Group.Labeljust.typeName == "Labeljust")
-    }
-
     @Test func groupLabeljust_cases() {
         let cases: [(c: Attributes.Group.Labeljust, value: String, readableName: String, alias: String, asString: String)] = [
             (.r, "r", "r", "r", "r"),
@@ -215,10 +167,6 @@ struct ReflectionContractTests_EnumAttributeType_AliasOverride {
     }
 
     // MARK: Attributes.Edge.StyleType  (alias="" for .empty; String-raw enum)
-
-    @Test func edgeStyleType_typeName() {
-        #expect(Attributes.Edge.StyleType.typeName == "StyleType")
-    }
 
     @Test func edgeStyleType_cases() {
         let cases: [(c: Attributes.Edge.StyleType, value: String, readableName: String, alias: String, asString: String)] = [
@@ -244,10 +192,6 @@ struct ReflectionContractTests_EnumAttributeType_AliasOverride {
 struct ReflectionContractTests_AssociatedValueEnums {
 
     // MARK: RatioType  (mixed: non-assoc cases + numeric(Double))
-
-    @Test func ratioType_typeName() {
-        #expect(RatioType.typeName == "Ratio")
-    }
 
     @Test func ratioType_nonAssocCases() {
         let cases: [(c: RatioType, readableName: String, asString: String)] = [
