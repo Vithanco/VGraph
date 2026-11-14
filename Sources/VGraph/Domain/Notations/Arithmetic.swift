@@ -2,9 +2,8 @@ extension Notations {
 
     /// Rejected in design: integer-only values, and `=` as an edge rather than a node.
     ///
-    /// `=` being a node is this codebase's junctor pattern, as in `ADTree`'s
-    /// `andJunctor`: it lets several things meet and be asserted equal, which is how
-    /// `7 − 4 = 2 + 1` is drawn with no answer node at all.
+    /// `=` is a node so that several terms can meet and be asserted equal, which is
+    /// how `7 − 4 = 2 + 1` is drawn with no answer node at all.
     public struct Arithmetic: NotationDeclaration {
         public static let id: Identifier<Notation> = .init(rawValue: "Arithmetic")
         public static let description =
@@ -28,9 +27,8 @@ extension Notations {
 
         public static let history: String = """
             Designed for VGraph's own kids' maths game rather than adapted from an external \
-            standard. The `=` node follows this codebase's existing junctor pattern (as seen in \
-            ADTree's AND junctor and CurrentRealityTree's OR junctor) rather than introducing a \
-            new kind of construct.
+            standard. `=` is a node rather than an edge, so that several terms can meet at it \
+            and be asserted equal.
             """
 
         public static let references: [NotationReference] = []
@@ -239,8 +237,12 @@ extension Notations {
                     TypeValues.edgeType(spec.result, [Attributes.Edge.outDegreeMax(1)]),
                 ]
             }
+            // An equation is one claim, so hovering any part of it shows all of it;
+            // a Number, which can sit in several, ends the walk (ADR-0037).
+            let equation = NodeTypes.all.filter { $0 != NodeTypes.number }
+                .map { TypeValues.nodeType($0, [Attributes.Node.addsToNeighborhood(.all)]) }
             // Left-to-right reads as the equation does, ending on the Equals.
-            return preset + styles + bounds + [.diagram([Attributes.Group.layoutDirection(.leftToRight)])]
+            return preset + styles + bounds + equation + [.diagram([Attributes.Group.layoutDirection(.leftToRight)])]
         }
 
         public func addGraphConfiguration(addTo graph: VGraph) throws(VError) -> VGraph {

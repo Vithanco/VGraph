@@ -377,6 +377,17 @@ A single edge into a folded box is not a bundle.
 *Avoid*: "implied relationship" — nothing is inferred; they are real edges drawn
 together.
 
+### Neighbourhood
+What stays lit while the pointer rests on an element, everything else dimmed: a
+node's edges and the nodes at their far ends. A node type may carry it further:
+to **all** its ends, where they make one claim — a [[Junctor]], an equation's
+`=` and its operators — or only **onward**, in the direction it came in, where each pair is
+its own claim — a Concept Map Relation. So a Concept's neighbourhood is exactly
+the [[Proposition]]s it is part of, and an edge's is the claims it belongs to.
+Several such nodes in a row each carry it by their own rule; any other node ends
+it. It is not a [[Selector]]'s reach, which counts edges.
+*Avoid*: "highlight" for the set — that is how it is drawn.
+
 ### GraphSession
 The stateful coordinator that owns one [[OriginGraph]] and composes the pure
 [[Engine]] functions: it applies a [[VCommand]]'s [[graph change]], re-runs the
@@ -728,6 +739,22 @@ setting of the diagram, so a [[View]] may make its own.
 *Avoid*: "loop indicator" in conversation (the code's name), "SILS" for the
 option — ours covers every link but does not claim Oliva's full set.
 
+### Proposition
+One sentence a Concept Map claims: a subject Concept, a Relation and an object
+Concept — "Prompt carries Method" — each open to dispute on its own, which is
+the method's point. A Relation with several subjects or objects makes one
+proposition per pair, never a single combined claim.
+*Avoid*: "statement", "triple"; "relationship" for the Relation.
+
+### Junctor
+A logical connective — AND or OR — drawn as a node. It is not a thing in its own
+right: it joins the conditions on its inputs into one, so "A and B together cause
+C" and "C needs A, or else B" are each a single claim. A Concept Map Relation is
+not a junctor: it relates two concepts, and each of its pairs is its own
+[[Proposition]].
+*Avoid*: "junctor" for a node merely drawn as its icon alone, or for any node
+that is not a thing.
+
 ### Graph criterion
 A rule about the **shape of the whole graph** rather than about any one type:
 "this is a tree", "no node stands alone", "at most one edge between any two
@@ -920,9 +947,9 @@ master and `BuiltinIcons` is the copy the renderer reads. Several names may shar
 one drawing.
 
 An icon is drawn in one of two ways. Most sit on the **icon background** — the
-coloured circle — of a [[Node type badge]]. A junctor's icon (AND, OR, the
-Evaporating Cloud's conflict) and the `default` icon carry their own background
-and are drawn as the whole node; what they cut out shows the page or group
+coloured circle — of a [[Node type badge]]. Some icons — a [[Junctor]]'s AND
+and OR, the Evaporating Cloud's conflict — and the `default` icon carry their own
+background and are drawn as the whole node; what they cut out shows the page or group
 behind. A node type whose style needs an icon but names none draws the `default`.
 
 A name that resolves to neither is not an error and not nothing: it draws a

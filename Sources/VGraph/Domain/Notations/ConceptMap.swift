@@ -145,6 +145,8 @@ extension Notations {
                 .preset(NodeTypes.emphasizedConcept, .contentNode(fill: emphFill, border: emphBorder, textColor: emphText)),
                 // Relation: ghost pill — subtle tinted capsule, visually subordinate
                 .preset(NodeTypes.relation, .ghostPill, fontsize: 11),
+                // Each subject–object pair is its own proposition (ADR-0037).
+                .nodeType(NodeTypes.relation, [Attributes.Node.addsToNeighborhood(.onward)]),
                 .edgeType(EdgeTypes.conceptToRelation, fromConcept),
                 .edgeType(EdgeTypes.relationToConcept, toConcept),
                 .edgeType(EdgeTypes.emphasizedConceptToRelation, fromConcept),

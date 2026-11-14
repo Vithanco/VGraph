@@ -240,7 +240,7 @@ public struct DynamicNotation {
         if let boundary = try BoundaryChrome.declared(in: spec.rawAttrs, over: .default) {
             result.append(Attributes.Group.boundaryChrome(boundary))
         }
-        return result + (try boundValues(spec.rawAttrs, nodeType))
+        return result + (try boundValues(spec.rawAttrs, nodeType)) + (try neighborhoodValues(spec.rawAttrs))
     }
 
     /// `currentStyle` is what the type's `nodeStyle` resolves to before this
@@ -274,7 +274,7 @@ public struct DynamicNotation {
         if let boundary = try BoundaryChrome.declared(in: spec.rawAttrs, over: currentBoundary) {
             result.append(Attributes.Group.boundaryChrome(boundary))
         }
-        return result + (try boundValues(spec.rawAttrs, nodeType))
+        return result + (try boundValues(spec.rawAttrs, nodeType)) + (try neighborhoodValues(spec.rawAttrs))
     }
 
     private func edgeValues(_ spec: EdgeTypeSpec) throws(VError) -> [Attribute] {
@@ -308,6 +308,12 @@ public struct DynamicNotation {
             }
         }
         return result
+    }
+
+    /// Matched case-insensitively: the exporter writes every key lowercased.
+    private func neighborhoodValues(_ rawAttrs: [String: String]) throws(VError) -> [Attribute] {
+        guard let raw = StyleFactories.value(of: Attributes.Node.addsToNeighborhood.name, in: rawAttrs) else { return [] }
+        return [Attributes.Node.addsToNeighborhood(try AddsToNeighborhood.fromString(raw))]
     }
 
     private func boundValues(_ rawAttrs: [String: String], _ nodeType: NodeType) throws(VError) -> [Attribute] {

@@ -13,7 +13,7 @@ struct NodeLabelVisibilityTests {
     }
 
     /// Evaporating Cloud is the discriminating notation: `conflict` is icon-only
-    /// but is *not* a junctor, so an `isJunctor`-based rule would offer a label
+    /// but is *not* a junctor, so a junctor-based rule would offer a label
     /// prompt for text the node can never display.
     @Test func iconOnlyTypesDisplayNoLabelEvenWhenNotJunctors() throws {
         let graph = try evaporatingCloud()

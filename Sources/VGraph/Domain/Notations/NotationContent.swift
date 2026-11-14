@@ -117,7 +117,7 @@ extension TypeValues {
 
     /// An AND or OR junctor, drawn as its icon alone.
     public static func junctor(_ type: NodeType, _ iconName: String) -> TypeValues {
-        .nodeType(type, [Attributes.Node.isJunctor(true)] + iconAlone(iconName))
+        .nodeType(type, [Attributes.Node.addsToNeighborhood(.all)] + iconAlone(iconName))
     }
 
     private static func iconAlone(_ iconName: String) -> [Attribute] {

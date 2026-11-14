@@ -3351,6 +3351,8 @@ struct AttributeRoundTripTests {
             return "compress"
         case LoopMarkers.typeName:
             return LoopMarkers.none.asString
+        case AddsToNeighborhood.typeName:
+            return AddsToNeighborhood.onward.asString
         case NodeShape.typeName:
             return NodeShape.circle.asString
         case NodeStyle.typeName:

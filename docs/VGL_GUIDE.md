@@ -1456,6 +1456,18 @@ no boundary of its own, from the block or the notation it extends, draws the
 generic cluster. These are the only keys `group type:` takes; a group type
 declared in a `vnotation` folds into the generic folded box.
 
+**What hovering lights.** Hovering a node lights its edges and the nodes at
+their far ends. `addsToNeighborhood:` on a node type lets the highlight go
+further, for a node that is part of how a claim is written rather than a thing:
+
+- `all` passes it to every end, because together they make one claim. The AND
+  and OR junctors work this way, as do an equation's `=` and its operators.
+- `onward` passes it only to the ends that continue in the direction it came
+  in, because each pair is its own claim. A Concept Map Relation works this way,
+  so hovering a concept lights exactly the propositions it is part of.
+
+Without the key, the highlight stops at the node.
+
 A `vgraph` then references it by name exactly like a built-in notation.
 **`vnotation` blocks must appear before any `vgraph` or `metagraph` that
 references them**, which allows single-pass parsing.

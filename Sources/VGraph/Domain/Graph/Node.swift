@@ -121,12 +121,12 @@ extension Attributes {
             target: .node
         )
 
-        public static let isJunctor = TypedAttributeDefinition<Bool>(
-            id: "vithanco.node.isJunctor",
-            name: "Is Junctor",
+        public static let addsToNeighborhood = TypedAttributeDefinition<AddsToNeighborhood>(
+            id: "node.addsToNeighborhood",
+            name: "addsToNeighborhood",
             description:
-                "True when this node type is a logical AND/OR junctor, not a real node; consumers may treat it as a transparent pass-through",
-            defaultValue: false,
+                "What hovering a neighbour lights beyond this node: none, all of its ends, or only those onward",
+            defaultValue: .none,
             target: .node
         )
 
@@ -336,7 +336,7 @@ extension Attributes {
             Node.wrappedText.asDefinition,
             Node.nodeTextSize.asDefinition,
             Node.shape.asDefinition,
-            Node.isJunctor.asDefinition,
+            Node.addsToNeighborhood.asDefinition,
             Node.minWidth.asDefinition,
             Node.alignGroup.asDefinition,
             Node.foldedNodeCount.asDefinition,

@@ -466,6 +466,10 @@ public struct VGLExporter: ForExportAGraph {
             }
         }
 
+        let adds = (try? graph.get(nodeType: nodeType, attribute: Attributes.Node.addsToNeighborhood)) ?? .none
+        let baseAdds = (isInBase ? base?.value(Attributes.Node.addsToNeighborhood, of: key) : nil) ?? .none
+        if adds != baseAdds { attrs.append(("addsToNeighborhood", adds.asString)) }
+
         attrs.append(
             contentsOf: boundAttrs(
                 Bound.nodeBounds,

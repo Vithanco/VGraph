@@ -38,9 +38,9 @@ struct LayerContractTests {
             "edge.comment", "edge.headlabel", "edge.inDegreeMax", "edge.inDegreeMin", "edge.label", "edge.menutitle",
             "edge.outDegreeMax", "edge.outDegreeMin", "edge.samePairMax", "edge.samePairMin", "edge.taillabel",
             "edge.trailingComment", "edge.url", "graph.diagramLogic", "group.comment", "group.id", "group.label",
-            "group.trailingComment", "group.url", "node.category", "node.comment", "node.label", "node.position",
+            "group.trailingComment", "group.url", "node.addsToNeighborhood", "node.category", "node.comment", "node.label", "node.position",
             "node.tooltip", "node.totalInDegreeMax", "node.totalInDegreeMin", "node.totalOutDegreeMax",
-            "node.totalOutDegreeMin", "node.trailingComment", "node.url", "vithanco.node.isJunctor",
+            "node.totalOutDegreeMin", "node.trailingComment", "node.url",
         ]
         let actual = Set(VGraph().attributeDefinitions.values.filter { $0.category == .content }.map { $0.id.description })
         #expect(actual.subtracting(content).isEmpty, "Undecided, so content by default: \(actual.subtracting(content).sorted())")

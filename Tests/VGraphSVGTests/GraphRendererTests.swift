@@ -493,7 +493,7 @@ struct SVGRendererTests {
         #expect(svg.contains("svg:has(#node-a:hover) #node-c"))
     }
 
-    // Separate from the AND test because each notation wires `isJunctor` itself,
+    // Separate from the AND test because each notation marks its own junctor,
     // and OR uses a different junctor id ("OR" vs "AndJunctor").
     @Test func testOrJunctorNeighbourhoodJumpsThrough() throws {
         let input = """
