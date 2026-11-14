@@ -164,6 +164,25 @@ struct ViewDeclarationTests {
         #expect(viewBlock("v", in: exported).contains("node type: Database [backgroundcolor: \"#ffd27fff\"]"))
     }
 
+    @Test(
+        "Given a view that recolours a type and sets one of its elements back to the model's colour, when parsed and re-exported, then the element keeps the model's colour in that view whatever the statement order",
+        arguments: [
+            "node db [backgroundColor: \"#aaaaaa\"];\n node type: Database [backgroundColor: \"#00ff00\"];",
+            "node type: Database [backgroundColor: \"#00ff00\"];\n node db [backgroundColor: \"#aaaaaa\"];",
+        ])
+    func anElementOverrideSurvivesItsTypesRecolouring(_ statements: String) throws {
+        let source =
+            banking.replacingOccurrences(
+                of: "node db: Database \"Database\"", with: "node db: Database \"Database\" [backgroundColor: \"#aaaaaa\"]")
+            + "\nvview v {\n \(statements)\n}\n"
+        let db = Node(string: "db")
+        let parsed = try parse(source)
+        let reparsed = try parse(VGLExporter().export(graph: parsed))
+        for graph in [parsed, reparsed] {
+            #expect(try graph.displaying(view: "v").get(node: db, attribute: Attributes.Node.backgroundColor).hexString == "#aaaaaa")
+        }
+    }
+
     @Test("Given a view type value that only beats a model value, when the model value goes, then the view value goes too")
     func viewTypeValueFollowsTheModel() throws {
         let graph = try parse(recolouredDatabase)

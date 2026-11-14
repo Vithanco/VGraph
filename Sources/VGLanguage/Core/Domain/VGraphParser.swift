@@ -348,10 +348,10 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
 
     /// A name the model lacks is kept all the same: stored, written back, affecting nothing.
     private func convert(view: VViewDecl, to graph: VGraph) throws(VError) -> VGraph {
-        var result = try graph.declaring(view: ViewDeclaration(name: view.name, label: view.label, rules: view.rules))
+        let result = try graph.declaring(view: ViewDeclaration(name: view.name, label: view.label, rules: view.rules))
+        var values: [(key: ItemKey, attribute: Attribute)] = []
         for (key, value) in view.attrs {
-            let attribute = try viewAttribute(key, value, for: [.graph], in: result)
-            result = try result.settingInView(view.name, attribute, for: .root)
+            values.append((.root, try viewAttribute(key, value, for: [.graph], in: result)))
         }
         for statement in view.statements {
             let kind: ItemKind
@@ -363,12 +363,12 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
             }
             for (name, value) in statement.attrs {
                 for id in statement.names {
-                    let attribute = try viewAttribute(name, value, for: targets(of: ItemKey(kind, id), in: result), in: result)
-                    result = try result.settingInView(view.name, attribute, for: ItemKey(kind, id))
+                    let key = ItemKey(kind, id)
+                    values.append((key, try viewAttribute(name, value, for: targets(of: key, in: result), in: result)))
                 }
             }
         }
-        return result
+        return try result.mergingInView(view.name, values)
     }
 
     /// A group named in a view speaks its own namespace, which a detailed node

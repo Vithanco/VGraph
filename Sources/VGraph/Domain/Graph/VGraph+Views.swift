@@ -118,6 +118,14 @@ extension VGraph {
         return updatedSelfWith(ads: try ads.set(attribute, for: key, in: layer, chains: self))
     }
 
+    /// All at once, so what is pruned does not depend on the order the values
+    /// arrive in: an element set back to its model value survives its type
+    /// being recoloured in the same view.
+    public func mergingInView(_ name: String, _ values: [(key: ItemKey, attribute: Attribute)]) throws(VError) -> VGraph {
+        let layer = try viewLayer(name)
+        return updatedSelfWith(ads: try ads.merging(values, into: layer, chains: self))
+    }
+
     public func attributes(inView name: String, of key: ItemKey) throws(VError) -> AttributeContainer {
         try ads.values(in: try viewLayer(name), for: key)
     }
