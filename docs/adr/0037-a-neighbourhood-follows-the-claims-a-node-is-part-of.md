@@ -4,7 +4,7 @@ Date: 2026-11-14
 
 ## Status
 
-Accepted.
+Accepted. Its reach for views is decided in [0038](./0038-a-selectors-reach-adds-neighbourhoods.md).
 
 ## Context
 
@@ -48,9 +48,8 @@ The setting names what it does to the neighbourhood rather than what the node
 is. "Junctor" keeps its meaning from logic, AND/OR only. `isJunctor` is removed:
 this walk was its only consumer, and `vnotation` never documented it.
 
-The neighbourhood is still a presentation of the display graph. A selector's
-reach (`+n`, `downstream n`) still counts edges. Whether it should count
-propositions instead is a separate VGL decision.
+A selector's reach adds neighbourhoods too, decided separately in
+[0038](./0038-a-selectors-reach-adds-neighbourhoods.md).
 
 ## Considered and rejected
 

@@ -117,8 +117,10 @@ lacks is kept and affects nothing.
 
 A view also chooses *what* it shows, with rules applied in order. `include` and
 `exclude` take a selector — `node`/`group` ids, `node type:`/`group type:`
-names, or `*` — optionally widened along edges by `+n` (n steps either way),
-`downstream n` or `upstream n`; `expand n` widens the result so far. A view whose
+names, or `*` — optionally widened by `+n` (n neighbourhoods either way),
+`downstream n` or `upstream n`; `expand n` widens the result so far. A
+neighbourhood is what hovering a node lights, so a claim is never cut in half:
+`downstream 1` from one input of an AND also brings its other inputs. A view whose
 first rule is `include` starts empty, any other starts with everything.
 Selectors always read the model, never what earlier rules left. Edges are never
 selected: one shows when both its ends do, and where a view hides the middle of

@@ -326,8 +326,10 @@ result, not the recipe.
 
 ### Selector
 The one language that picks elements: `node`, `group`, `node type:`,
-`group type:`, lists, `*`, and a reach along edges (`+n`, `downstream n`,
-`upstream n`). It is always evaluated on the [[OriginGraph]], never on a graph
+`group type:`, lists, `*`, and a reach (`+n`, `downstream n`, `upstream n`)
+that adds n rounds of [[Neighbourhood]]s. A direction chooses only which edges
+an ordinary node is left by and where the next round goes on from; a node that
+carries the neighbourhood brings all of it. It is always evaluated on the [[OriginGraph]], never on a graph
 earlier rules have thinned out, so `downstream 1` means what the model says
 whatever else the view hides. Edges are never selected: one shows when both its
 ends do.
@@ -378,14 +380,15 @@ A single edge into a folded box is not a bundle.
 together.
 
 ### Neighbourhood
-What stays lit while the pointer rests on an element, everything else dimmed: a
-node's edges and the nodes at their far ends. A node type may carry it further:
+The claims an element is part of — what stays lit while the pointer rests on
+it, and what a [[Selector]]'s reach adds: a node's edges and the nodes at their
+far ends. A node type may carry it further:
 to **all** its ends, where they make one claim — a [[Junctor]], an equation's
 `=` and its operators — or only **onward**, in the direction it came in, where each pair is
 its own claim — a Concept Map Relation. So a Concept's neighbourhood is exactly
 the [[Proposition]]s it is part of, and an edge's is the claims it belongs to.
 Several such nodes in a row each carry it by their own rule; any other node ends
-it. It is not a [[Selector]]'s reach, which counts edges.
+it.
 *Avoid*: "highlight" for the set — that is how it is drawn.
 
 ### GraphSession

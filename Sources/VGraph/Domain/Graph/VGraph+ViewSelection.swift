@@ -27,7 +27,7 @@ extension VGraph {
                 chosen.nodes.subtract(picked.nodes)
                 chosen.groups.subtract(picked.groups)
             case .expand(let steps):
-                chosen.nodes.formUnion(reach(from: chosen.nodes, .around(steps)))
+                chosen.nodes.formUnion(try reach(from: chosen.nodes, .around(steps)))
             }
         }
         return shown(chosen)
@@ -57,7 +57,7 @@ extension VGraph {
             picked = try containing(groups.filter { group in groupType(of: group).map { names.contains($0.id) } ?? false })
         }
         if let around = selector.reach {
-            picked.nodes.formUnion(reach(from: picked.nodes, around))
+            picked.nodes.formUnion(try reach(from: picked.nodes, around))
         }
         return picked
     }
@@ -74,38 +74,39 @@ extension VGraph {
         return picked
     }
 
-    private func reach(from start: Set<String>, _ reach: Selector.Reach) -> Set<String> {
+    /// Each round adds the [[Neighbourhood]] of the nodes the last one stopped
+    /// at (ADR-0038). Direction picks only the edges an ordinary node is left
+    /// by, and where the next round goes on from.
+    private func reach(from start: Set<String>, _ reach: Selector.Reach) throws(VError) -> Set<String> {
         let steps: Int
-        var forward = false
-        var backward = false
+        let heading: Neighbourhood.Heading?
         switch reach {
-        case .downstream(let n):
-            steps = n
-            forward = true
-        case .upstream(let n):
-            steps = n
-            backward = true
-        case .around(let n):
-            steps = n
-            forward = true
-            backward = true
+        case .downstream(let n): (steps, heading) = (n, .along)
+        case .upstream(let n): (steps, heading) = (n, .against)
+        case .around(let n): (steps, heading) = (n, nil)
         }
-        var seen = start
-        var frontier = start
-        var taken = 0
-        while taken < steps, !frontier.isEmpty {
-            var next: Set<String> = []
-            for edge in edges {
-                let from = edge.from.id
-                let to = edge.to.id
-                if forward, frontier.contains(from), !seen.contains(to) { next.insert(to) }
-                if backward, frontier.contains(to), !seen.contains(from) { next.insert(from) }
-            }
-            seen.formUnion(next)
-            frontier = next
-            taken += 1
+        let topology = GraphTopology(edges: edges)
+        let carriers = try Neighbourhood.carriers(in: self)
+        // A node that carries the walk is left by every edge, so it is never
+        // shown with half its claim.
+        func leaves(_ node: Node, by edge: Edge) -> Bool {
+            carriers[node] != nil || (heading.map { $0.continues(edge, from: node) } ?? true)
         }
-        return seen.subtracting(start)
+        var reached = start
+        var frontier = Set(start.map { Node(rawValue: $0) })
+        // A node first reached sideways, as another input of an AND, may be
+        // reached in the reach's direction later, so this is not `reached`.
+        var started = frontier
+        for _ in 0..<steps where !frontier.isEmpty {
+            let round = Neighbourhood(
+                from: frontier.map { node in .leaving(node, by: topology.incidentEdges(of: node).filter { leaves(node, by: $0) }) },
+                topology: topology, carriers: carriers)
+            reached.formUnion(round.nodes.map { $0.id })
+            frontier = Set(round.stops.filter { stop in heading.map { $0 == stop.heading } ?? true }.map { $0.node })
+                .subtracting(started)
+            started.formUnion(frontier)
+        }
+        return reached.subtracting(start)
     }
 
     /// Adds the groups that enclose a shown node to the ones a rule named.

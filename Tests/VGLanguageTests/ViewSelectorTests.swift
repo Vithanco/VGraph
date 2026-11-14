@@ -39,8 +39,8 @@ private func parseFails(_ source: String, mentioning fragment: String) {
     }
 }
 
-private func document(_ rules: String) -> String {
-    banking + "\n\nvview v {\n\(rules)\n}\n"
+private func document(_ rules: String, in model: String = banking) -> String {
+    model + "\n\nvview v {\n\(rules)\n}\n"
 }
 
 /// What a view shows, as ids: nodes, groups and edges ("a->b").
@@ -68,8 +68,8 @@ private func shown(_ rules: String) throws -> Shown {
     Shown(try parse(document(rules)).displaying(view: "v"))
 }
 
-private func nodesShown(_ rules: String) throws -> Set<String> {
-    try shown(rules).nodes
+private func nodesShown(_ rules: String, in model: String = banking) throws -> Set<String> {
+    Set(try parse(document(rules, in: model)).displaying(view: "v").nodes.map { $0.id })
 }
 
 private func viewBlock(_ name: String, in exported: String) -> String {
@@ -327,5 +327,157 @@ struct ViewSelectorVGLTests {
     func edgesAreNeverSelected() {
         parseFails(document("include edge customer -> web;"), mentioning: "edges are never selected")
         parseFails(document("edge customer -> web;"), mentioning: "edges are never selected")
+    }
+}
+
+/// `carries` and `offers` each make two propositions; `needs` one more.
+private let concepts = """
+    vgraph cm: ConceptMap "Propositions" {
+        node skill: Concept "Skill"
+        node prompt: Concept "Prompt"
+        node method: Concept "Method"
+        node context: Concept "Context"
+        node server: Concept "Server"
+        node tool: Concept "Tool"
+        node carries: Relation "carries"
+        node offers: Relation "offers"
+        node needs: Relation "needs"
+        edge skill -> carries
+        edge prompt -> carries
+        edge carries -> method
+        edge server -> offers
+        edge offers -> tool
+        edge offers -> prompt
+        edge method -> needs
+        edge needs -> context
+    }
+    """
+
+/// a and b together cause c; b also causes e on its own; c causes d.
+private let causes = """
+    vgraph crt: CRT "Causes" {
+        node a: Changeable "A"
+        node b: Changeable "B"
+        node and1: AndJunctor
+        node c: UndesirableEffect "C"
+        node d: UndesirableEffect "D"
+        node e: UndesirableEffect "E"
+        edge a -> and1
+        edge b -> and1
+        edge and1 -> c
+        edge c -> d
+        edge b -> e
+    }
+    """
+
+/// b is another input of a's AND, and also downstream of a through m.
+private let sideways = """
+    vgraph crt: CRT "Sideways" {
+        node a: Changeable "A"
+        node b: Changeable "B"
+        node m: Changeable "M"
+        node and1: AndJunctor
+        node c: UndesirableEffect "C"
+        node e: UndesirableEffect "E"
+        edge a -> and1
+        edge b -> and1
+        edge and1 -> c
+        edge a -> m
+        edge m -> b
+        edge b -> e
+    }
+    """
+
+@Suite("View selectors: reach adds neighbourhoods (ADR-0038)")
+struct ViewSelectorNeighbourhoodTests {
+
+    @Test("Given include node prompt +1, then every proposition prompt is part of is shown whole, and no other subject of a shared Relation")
+    func aroundAConcept() throws {
+        #expect(try nodesShown("include node prompt +1;", in: concepts) == ["prompt", "carries", "method", "offers", "server"])
+    }
+
+    @Test("Given include node prompt +2, then the propositions of method and server are added too")
+    func twiceAroundAConcept() throws {
+        #expect(
+            try nodesShown("include node prompt +2;", in: concepts) == [
+                "prompt", "carries", "method", "offers", "server", "skill", "needs", "context", "tool",
+            ])
+    }
+
+    @Test("Given include node prompt downstream 1, then only the propositions prompt is subject of are shown")
+    func downstreamOfAConcept() throws {
+        #expect(try nodesShown("include node prompt downstream 1;", in: concepts) == ["prompt", "carries", "method"])
+    }
+
+    @Test("Given include node method upstream 1, then every proposition method is object of is shown, with all their subjects")
+    func upstreamOfAConcept() throws {
+        #expect(try nodesShown("include node method upstream 1;", in: concepts) == ["method", "carries", "skill", "prompt"])
+    }
+
+    @Test("Given include node prompt then expand 1, then the same as include node prompt +1 is shown")
+    func expandAddsANeighbourhood() throws {
+        #expect(try nodesShown("include node prompt;\nexpand 1;", in: concepts) == ["prompt", "carries", "method", "offers", "server"])
+    }
+
+    @Test("Given include node a downstream 1, then the AND is shown with all its inputs and its output")
+    func downstreamThroughAnAnd() throws {
+        #expect(try nodesShown("include node a downstream 1;", in: causes) == ["a", "and1", "b", "c"])
+    }
+
+    @Test("Given include node a downstream 2, then it goes on from the AND's output only, not from its other input")
+    func downstreamGoesOnInItsDirection() throws {
+        #expect(try nodesShown("include node a downstream 2;", in: causes) == ["a", "and1", "b", "c", "d"])
+    }
+
+    @Test("Given include node a +2, then it goes on from every node the first round reached")
+    func aroundGoesOnFromEverything() throws {
+        #expect(try nodesShown("include node a +2;", in: causes) == ["a", "and1", "b", "c", "d", "e"])
+    }
+
+    @Test("Given include node and1 downstream 1, then the AND is shown with its inputs as well as its output")
+    func downstreamFromAnAnd() throws {
+        #expect(try nodesShown("include node and1 downstream 1;", in: causes) == ["and1", "a", "b", "c"])
+    }
+
+    @Test("Given include node carries downstream 1, then its subjects come as well as its object")
+    func downstreamFromARelation() throws {
+        #expect(try nodesShown("include node carries downstream 1;", in: concepts) == ["carries", "skill", "prompt", "method"])
+    }
+
+    @Test("Given include node carries downstream 2, then the second round goes on from its object only")
+    func downstreamFromARelationGoesOnFromItsObject() throws {
+        #expect(
+            try nodesShown("include node carries downstream 2;", in: concepts) == [
+                "carries", "skill", "prompt", "method", "needs", "context",
+            ])
+    }
+
+    @Test("Given include node carries upstream 2, then the second round goes on from its subjects only")
+    func upstreamFromARelationGoesOnFromItsSubjects() throws {
+        #expect(
+            try nodesShown("include node carries upstream 2;", in: concepts) == [
+                "carries", "skill", "prompt", "method", "offers", "server",
+            ])
+    }
+
+    @Test("Given include node and1, c downstream 1, then the AND brings its whole claim and c only what it causes")
+    func startsMixingAnAndAndAnOrdinaryNode() throws {
+        #expect(try nodesShown("include node and1, c downstream 1;", in: causes) == ["and1", "a", "b", "c", "d"])
+    }
+
+    @Test("Given a node first reached as another input of an AND and later downstream, then downstream goes on from it")
+    func downstreamGoesOnFromANodeFirstReachedSideways() throws {
+        #expect(try nodesShown("include node a downstream 2;", in: sideways) == ["a", "and1", "b", "c", "m"])
+        #expect(try nodesShown("include node a downstream 3;", in: sideways) == ["a", "and1", "b", "c", "m", "e"])
+    }
+
+    @Test("Given exclude node prompt +1, then prompt's whole neighbourhood goes")
+    func excludeANeighbourhood() throws {
+        #expect(try nodesShown("exclude node prompt +1;", in: concepts) == ["skill", "context", "tool", "needs"])
+    }
+
+    @Test("Given include node c upstream 1, then the AND is shown with all its inputs")
+    func upstreamThroughAnAnd() throws {
+        #expect(try nodesShown("include node c upstream 1;", in: causes) == ["c", "and1", "a", "b"])
     }
 }

@@ -14,7 +14,7 @@ struct SVGHoverStylesTests {
 
     private func rules(_ source: String) throws -> String {
         let graph = try VGraphParser(logger: TestLogger()).parse(source: source)
-        return SVGHoverStyles.rules(graph: graph)
+        return try SVGHoverStyles.rules(graph: graph)
     }
 
     /// One line per hover scope: the hovered id, then every id it lights up, in
@@ -38,7 +38,7 @@ struct SVGHoverStylesTests {
         for node in graph.nodes { names[SVGElementId.displayNode(node, in: graph)] = node.id }
         for edge in graph.edges { names[SVGElementId.edge(edge.id.id)] = edge.from.id + "->" + edge.to.id }
         var result: [String: Set<String>] = [:]
-        for line in SVGHoverStyles.rules(graph: graph).split(separator: "\n") where line.contains("drop-shadow") {
+        for line in try SVGHoverStyles.rules(graph: graph).split(separator: "\n") where line.contains("drop-shadow") {
             let selectors = line.prefix { $0 != "{" }.split(separator: ",")
             let hoveredId = String(selectors[0].split(separator: "#")[1].prefix { $0 != ":" })
             let hovered = names[hoveredId] ?? hoveredId

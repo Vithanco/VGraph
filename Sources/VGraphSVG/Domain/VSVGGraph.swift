@@ -104,7 +104,7 @@ public enum VSVGGraph {
         // an exported file carrying handles but not the rule that hides them
         // would show them permanently (ADR-0021).
         let rules =
-            SVGHoverStyles.rules(graph: graph) + (overlay?.hoverStyleRules(graph) ?? "")
+            try SVGHoverStyles.rules(graph: graph) + (overlay?.hoverStyleRules(graph) ?? "")
             + (interactive ? SVGHoverStyles.edgeEndRules : "")
         content.append(rules.isEmpty ? .empty : VSVGBuilder.style(css: rules))
 

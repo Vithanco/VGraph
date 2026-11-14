@@ -10,6 +10,7 @@ declarable in VGL", is this. Builds on [0027](./0027-judge-the-origin-graph-pres
 The *two cascades* and the *look* are superseded by
 [0030](./0030-attributes-live-in-a-layered-property-store.md): one stack of
 layers, with views limited to presentation attributes.
+Reach amended by [0038](./0038-a-selectors-reach-adds-neighbourhoods.md).
 
 ## Context
 
@@ -43,9 +44,9 @@ example using it.
   `folded` prefix stays. A view declares state the same way
   (`folded group type: SystemBoundary`), never as an action.
 - **A view chooses elements by ordered rules.** `include`/`exclude` over
-  `node`, `group`, `node type`, `group type`, lists and `*`; neighbourhood
-  (`+n`, `downstream n`, `upstream n`) on any selector; `expand n` on the result
-  so far. A view whose first rule is `include` starts empty, any other starts
+  `node`, `group`, `node type`, `group type`, lists and `*`; a reach
+  (`+n`, `downstream n`, `upstream n`) on any selector, adding whole
+  neighbourhoods rather than single edges; `expand n` on the result so far. A view whose first rule is `include` starts empty, any other starts
   with everything. Edges are never selected: one shows when both its ends do.
 - **Hiding the middle of a chain draws a derived edge** — dotted, one per pair
   and direction — unless the view turns them off. *Amended with OLD-206: it carries
@@ -85,8 +86,8 @@ example using it.
 
 ## Amendments
 
-- **Selectors run on the origin graph.** `downstream 1` follows the model's
-  edges, not a graph the earlier rules thinned; otherwise a result would depend
+- **Selectors run on the origin graph.** `downstream 1` walks the model,
+  not a graph the earlier rules thinned; otherwise a result would depend
   on the other statements and on derived edges.
 - **A result is a set of nodes and groups.** A node adds its enclosing groups
   implicitly; `include group g` adds the group itself and its members, and the
