@@ -235,12 +235,6 @@ struct DerivedEdgeExampleTests {
     private let app = VGraphTestApp()
     private var example: ExampleGraph? { exampleGraphs.first { $0.name.hasPrefix("CLD — Hiding") } }
 
-    @Test("Given the new example, when parsed, then it has no errors")
-    func parses() throws {
-        let example = try #require(example)
-        #expect(!(try app.parseGraph(example.vgl)).nodes.isEmpty)
-    }
-
     @Test("Given the new example, when its views are listed, then it has an overview with derived edges and a plain one with derivedEdges: false")
     func listsViews() throws {
         let example = try #require(example)

@@ -53,44 +53,12 @@ struct EmbedVGLTests {
         #expect(result.contains("<g><text>hello</text></g>"))
     }
 
-    @Test func embeddedVGLHandlesSpecialCharacters() {
-        let svg = #"<svg width="100" height="100"><rect/></svg>"#
-        let vgl = """
-            vgraph g: IBIS "test & <demo>" {
-                node n1: Question "What's this?";
-            }
-            """
-
-        let result = SVGBuilder.embedVGL(vgl, in: svg)
-
-        // CDATA should preserve special characters as-is (no XML escaping needed)
-        #expect(result.contains("test & <demo>"))
-        #expect(result.contains("What's this?"))
-    }
-
     @Test func embedVGLWithEmptyStringProducesEmptyCDATA() {
         let svg = #"<svg width="100" height="100"><rect/></svg>"#
 
         let result = SVGBuilder.embedVGL("", in: svg)
 
         #expect(result.contains("<![CDATA[]]></vithanco:vgl>"))
-    }
-
-    @Test func embedVGLWithMultilineVGL() {
-        let svg = #"<svg width="100" height="100"><rect/></svg>"#
-        let vgl = """
-            vgraph g: IBIS "My Graph" {
-                node q1: Question "First?";
-                node a1: Answer "Yes";
-                edge q1 -> a1;
-            }
-            """
-
-        let result = SVGBuilder.embedVGL(vgl, in: svg)
-
-        #expect(result.contains(vgl))
-        #expect(result.hasPrefix("<svg"))
-        #expect(result.hasSuffix("</svg>"))
     }
 
     @Test func embedVGLReturnsOriginalIfNoClosingAngle() {

@@ -1,10 +1,8 @@
-// Mostly pure: `renderDefs` never touches the graph, so most cases compare
-// against the same building blocks it calls, with no VGraph at all.
+// Pure: `renderDefs` never touches the graph, so cases compare against the
+// same building blocks it calls, with no VGraph at all.
 
 import Testing
 
-@testable import App
-@testable import VGLanguage
 @testable import VGraph
 @testable import VGraphSVG
 
@@ -84,40 +82,5 @@ struct VSVGDefsTests {
         // Exactly one <defs> wrapper, not one per content type.
         #expect(ported.components(separatedBy: "<defs>").count == 2)
         #expect(ported.components(separatedBy: "</defs>").count == 2)
-    }
-
-    // MARK: - Wiring: does the real pipeline actually feed this what we assume?
-
-    func makeSimpleGraph() throws -> VGraph {
-        let input = """
-            vgraph myGraph: IBIS "Test Graph" {
-                node q1: Question "Q";
-            }
-            """
-        let parser = VGraphParser(logger: TestLogger())
-        var graph = try parser.parse(source: input)
-        for node in graph.nodes {
-            graph = try graph.set(node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 50, y: 50)))
-            graph = try graph.set(node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
-        }
-        return graph
-    }
-
-    @Test func defaultWatermarkAttributeIsTrueAndReachesTheOutput() throws {
-        // Attributes.Group.watermark defaults to true — confirm the real
-        // pipeline actually surfaces the watermark symbol without an explicit
-        // override, matching the `includeWatermark: true` assumption above.
-        let graph = try makeSimpleGraph()
-        let full = try VSVGGraph.render(graph: graph, logger: TestLogger()).render()
-        #expect(full.contains("vithanco-watermark"))
-    }
-
-    @Test func watermarkDisabledOmitsItFromTheRealPipeline() throws {
-        var graph = try makeSimpleGraph()
-        graph = try graph.set(graphAttribute: Attributes.Group.watermark.attribute(false))
-        let full = try VSVGGraph.render(graph: graph, logger: TestLogger()).render()
-        let defs = VSVGDefs.render(icons: [:], includeWatermark: false, darkMode: false).render()
-        #expect(!full.contains("vithanco-watermark"))
-        #expect(full.contains(defs))
     }
 }

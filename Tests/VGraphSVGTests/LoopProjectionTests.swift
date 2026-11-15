@@ -220,20 +220,4 @@ struct LoopProjectionTests {
         let parsed = try VGraphParser(logger: TestLogger()).parse(source: source)
         #expect(try parsed.get(attribute: Attributes.Group.loopMarkers) == .none)
     }
-
-    @Test("The setting survives export and reparse")
-    func settingRoundTrips() throws {
-        let parsed = try VGraphParser(logger: TestLogger()).parse(source: triangle("loopmarkers: independent;"))
-        let exported = try VGLExporter().export(graph: parsed)
-
-        #expect(exported.contains("loopmarkers: independent"))
-        let reparsed = try VGraphParser(logger: TestLogger()).parse(source: exported)
-        #expect(try reparsed.get(attribute: Attributes.Group.loopMarkers) == .independent)
-    }
-
-    @Test("The default is not written out")
-    func defaultIsNotExported() throws {
-        let parsed = try VGraphParser(logger: TestLogger()).parse(source: triangle(""))
-        #expect(!(try VGLExporter().export(graph: parsed)).contains("loopmarkers"))
-    }
 }

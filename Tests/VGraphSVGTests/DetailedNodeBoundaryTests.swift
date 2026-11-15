@@ -123,4 +123,18 @@ struct DetailedNodeBoundaryTests {
 
         #expect(rect.contains("stroke-dasharray=\"6,3\""))
     }
+
+    @Test("Given an unfolded detailed node, when rendered, then its boundary is titled with the node label")
+    func theBoundaryIsTitledWithTheNodeLabel() throws {
+        let source = """
+            vgraph arch: C4 "Architecture" {
+                group ibs: SoftwareSystem "Internet Banking System" {
+                    isfolded: false
+                    node web: Container "Web App";
+                }
+            }
+            """
+
+        #expect(try app.renderGraph(source).svg.contains(">INTERNET BANKING SYSTEM<"))
+    }
 }

@@ -32,30 +32,12 @@ struct VNotationIconDefaultTests {
 
         let app = VGraphTestApp()
         let svg = try app.renderGraph(graph: try app.parseGraph(vgl), sourceVGL: vgl).svg
-        #expect(!svg.isEmpty)
+        #expect(svg.contains(##"href="#icon-default""##))
     }
 
     @Test("The default icon names a symbol the renderer has")
     func theDefaultIconResolves() {
         let icon = StyleFactories.makeIcon(from: [:], defaultIconColorHex: "#ffffff")
         #expect(BuiltinIcons.artwork(for: icon.iconName) != nil)
-    }
-
-    @Test("Given a vnotation node type with an icon style and no icon, when the document is rendered, then the node draws the fallback seal")
-    func theNodeDrawsTheFallbackSeal() throws {
-        let vgl = """
-            vnotation Custom {
-                node type: Thing [nodeStyle: iconOnly, backgroundColor: "#b0d5f8"]
-                edge type: rel from: Thing to: Thing
-            }
-
-            vgraph t: Custom "T" {
-                node a: Thing "A";
-            }
-            """
-
-        let app = VGraphTestApp()
-        let svg = try app.renderGraph(graph: try app.parseGraph(vgl), sourceVGL: vgl).svg
-        #expect(svg.contains(##"href="#icon-default""##))
     }
 }

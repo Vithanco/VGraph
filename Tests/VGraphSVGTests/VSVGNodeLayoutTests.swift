@@ -11,17 +11,19 @@ struct VSVGNodeLayoutTests {
     let bounds = VRect(origin: VPoint(x: 10, y: 20), size: VSize(width: 150, height: 80))
     let font = VFont(size: 14)
 
+    @discardableResult
     func expectSnapshot(
         _ style: NodeStyleLayout, wrappedText: [String] = ["Test Node"],
         bounds: VRect? = nil, nodeTextSize: VSize? = nil, variant: String? = nil,
         name: String = #function, sourceLocation: SourceLocation = #_sourceLocation
-    ) throws {
+    ) throws -> String {
         let rendered = try VSVGNodeLayout.render(
             style: style, wrappedText: wrappedText, bounds: bounds ?? self.bounds, font: font,
             nodeTextSize: nodeTextSize, darkMode: false
         ).render()
         SVGSnapshot.verify(
             rendered, named: SVGSnapshot.caseName("NodeLayout", name, variant), sourceLocation: sourceLocation)
+        return rendered
     }
 
     // MARK: - Presets shared with NodeRendererTests
@@ -97,7 +99,7 @@ struct VSVGNodeLayoutTests {
         try expectSnapshot(.icon(iconInfo), wrappedText: [])
     }
 
-    @Test func iconWithUnknownNameDrawsTheMissingGlyph() throws {
+    @Test func anUnknownIconIsReferencedByTheNameAskedFor() throws {
         let iconInfo = IconInfo(iconPosition: .center, iconName: "nonexistent.icon", iconColor: .red, iconSize: 24)
         let svg = try VSVGNodeLayout.render(
             style: .icon(iconInfo), wrappedText: [], bounds: bounds, font: font, darkMode: false
@@ -132,11 +134,13 @@ struct VSVGNodeLayoutTests {
     }
 
     @Test func backgroundAppearanceCylinder() throws {
-        try expectSnapshot(.background(.appearance(shape: .cylinder, color: .literal(.blue)), .empty))
+        let svg = try expectSnapshot(.background(.appearance(shape: .cylinder, color: .literal(.blue)), .empty))
+        #expect(svg.contains("<ellipse"))
     }
 
     @Test func backgroundAppearancePerson() throws {
-        try expectSnapshot(.background(.appearance(shape: .person, color: .literal(.blue)), .empty))
+        let svg = try expectSnapshot(.background(.appearance(shape: .person, color: .literal(.blue)), .empty))
+        #expect(svg.contains("<circle"))
     }
 
     @Test func backgroundPill() throws {

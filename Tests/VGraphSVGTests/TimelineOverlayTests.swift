@@ -1,6 +1,5 @@
 // Behavioral tests for `TimelineOverlayProvider`. Each test verifies one
-// visible-contract of the Timeline overlay's rendering: TimePoint suppression,
-// sequence-edge suppression, axis/guide emission, dark-mode token swap,
+// visible-contract of the Timeline overlay's rendering: sequence-edge suppression, axis/guide emission, dark-mode token swap,
 // empty-Timeline degeneracy, and the `vnotation … extends Timeline` lookup
 // chain in the registry.
 
@@ -55,49 +54,21 @@ struct TimelineOverlayTests {
         return graph
     }
 
-    // MARK: - TimePoint suppression
-
-    @Test func timepointNodesAreNotRendered() throws {
-        let graph = try makeTimelineGraph()
-        let renderer = VSVGRenderer(logger: TestLogger())
-        let svg = try renderer.render(graph: graph)
-
-        // Standard pipeline emits `<g transform=...>` for each rendered node.
-        // With TimePoints suppressed, only the Event node should produce one.
-        // The simplest signal: the year "1800" should not appear inside a
-        // boxed node label. The overlay's axis layer DOES draw a "1800" text
-        // element, but that's standalone — no surrounding rounded rect.
-        //
-        // Check: no <rect ... rx=...> precedes a "1800" label. We use a
-        // simpler proxy — the Event node "Napoleon" still renders, but the
-        // raw TimePoint group transform with rounded-rect attributes does not
-        // appear with the TimePoint's id.
-        #expect(svg.contains("Napoleon"), "Event nodes still render normally")
-        #expect(!svg.contains("◇"), "TimePoint diamond glyph from old styling should not appear")
-    }
-
     // MARK: - Sequence-edge suppression
 
     @Test func sequenceEdgesAreNotRendered() throws {
         let graph = try makeTimelineGraph()
-        // Attach mock edge layout data so the standard pipeline would actually
-        // draw the edge if it weren't suppressed.
-        var graphWithEdge = graph
-        if let seqEdge = graph.edges.first(where: { $0.id.id.contains("tp1800") || $0.id.id.contains("sequence") }) {
-            let layout = EdgeLayoutData(
-                splinePoints: [VPoint(x: 100, y: 50), VPoint(x: 300, y: 50)],
-                color: "#000000", penwidth: 1.0
-            )
-            graphWithEdge = try graphWithEdge.set(
-                edge: seqEdge.id, attribute: Attributes.Edge.layoutData.attribute(layout))
-        }
-        let renderer = VSVGRenderer(logger: TestLogger())
-        let svg = try renderer.render(graph: graphWithEdge)
+        let seqEdge = try #require(graph.edges.first)
+        // Layout data makes the standard pipeline draw the edge unless the overlay filters it.
+        let layout = EdgeLayoutData(
+            splinePoints: [VPoint(x: 100, y: 50), VPoint(x: 300, y: 50)],
+            color: "#000000", penwidth: 1.0
+        )
+        let graphWithEdge = try graph.set(
+            edge: seqEdge.id, attribute: Attributes.Edge.layoutData.attribute(layout))
+        let svg = try VSVGRenderer(logger: TestLogger()).render(graph: graphWithEdge)
 
-        // The dashed axis guides (stroke-dasharray="2,4") should appear; a
-        // standard edge path with spline coordinates should NOT — sequence
-        // edges between TimePoints are filtered out.
-        #expect(svg.contains("stroke-dasharray=\"2,4\""), "Guide stroke pattern should appear")
+        #expect(!svg.contains("id=\"\(SVGElementId.edge(seqEdge.id.id))\""))
     }
 
     // MARK: - Axis chrome

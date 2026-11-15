@@ -253,7 +253,7 @@ struct VSVGGraphTests {
     /// Vacuity guard: the test above would pass if the overlay stopped resolving.
     @Test func cldOverlayActuallyContributesItsSlotAndBounds() throws {
         let ported = try VSVGGraph.render(graph: try makeCLDWithCycle(), logger: TestLogger()).render()
-        #expect(ported.contains("loop-indicator"))
+        #expect(ported.contains(##"class="loop-indicator""##))
     }
 
     func makeTimelineGraph() throws -> VGraph {

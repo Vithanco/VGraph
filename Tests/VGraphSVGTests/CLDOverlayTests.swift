@@ -77,7 +77,7 @@ struct CLDOverlayTests {
         let renderer = VSVGRenderer(logger: TestLogger())
         let svg = try renderer.render(graph: graph)
 
-        #expect(svg.contains("loop-indicator"), "Should emit loop-indicator <g> group")
+        #expect(svg.contains(##"class="loop-indicator""##), "Should emit loop-indicator <g> group")
         #expect(svg.contains(">R<"), "Reinforcing cycle should produce an 'R' letter")
         #expect(svg.contains(" A "), "Loop indicator arc path command should appear")
     }

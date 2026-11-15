@@ -32,6 +32,7 @@ struct MissingIconTests {
         #expect(svg.contains("Schedule overrun"), "the diagram survives its missing icon")
         #expect(svg.contains("Budget overrun"))
         #expect(svg.contains("icon-no.such.mark"))
+        #expect(svg.contains(IconArtwork.missing.path), "the placeholder is what stands in for it")
     }
 
     /// The guide's own worked example declares every icon it draws. This is the
@@ -75,24 +76,6 @@ struct MissingIconTests {
         for name in BuiltinIcons.names {
             #expect(BuiltinIcons.artwork(for: name) != IconArtwork.missing)
         }
-    }
-
-    @Test("Given a vnotation node type naming lightbulb.fill, when the document is rendered, then the node draws the missing-icon placeholder")
-    func aMarkVGraphNoLongerShipsDrawsThePlaceholder() throws {
-        let vgl = """
-            vnotation Ideas {
-                node type: Idea [nodeStyle: iconWithText, backgroundColor: "#f0c040", icon: "lightbulb.fill"]
-                edge type: rel from: Idea to: Idea
-            }
-
-            vgraph i: Ideas "Ideas" {
-                node i1: Idea "Ship it";
-            }
-            """
-
-        let app = VGraphTestApp()
-        let svg = try app.renderGraph(graph: try app.parseGraph(vgl), sourceVGL: vgl).svg
-        #expect(svg.contains(IconArtwork.missing.path))
     }
 }
 
