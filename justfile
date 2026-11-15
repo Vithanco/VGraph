@@ -131,7 +131,7 @@ mcp-node-run: mcp-node
 
 # Publish the Node MCP host to npm, then list it in the MCP Registry.
 [group('publish')]
-publish-mcp-node otp='': _require-maintainer mcp-node
+publish-mcp-node otp='': _require-maintainer _require-vgraph-main mcp-node
     #!/usr/bin/env bash
     set -euo pipefail
     cd vgraph-mcp-node
@@ -710,7 +710,7 @@ stage-website:
 
 # Stage, generate and deploy the website, then commit the staged engine.
 [group('publish')]
-publish-website: _require-maintainer stage-website
+publish-website: _require-maintainer _require-vgraph-main stage-website
     #!/usr/bin/env bash
     set -euo pipefail
     if ! command -v publish >/dev/null 2>&1; then
@@ -813,7 +813,22 @@ _require-gcloud:
 # What must already hold before a release is built or published, checked in
 # seconds: `just release` runs this first, so a version bump that is not yet
 # merged stops it here, not after its tests and builds.
-_release-preflight: (_require-plugin "obsidian-vithanco") (_require-plugin "vscode-vithanco")
+_release-preflight: _require-vgraph-main (_require-plugin "obsidian-vithanco") (_require-plugin "vscode-vithanco")
+    #!/usr/bin/env bash
+    set -uo pipefail
+    FAIL=0
+    for DIR in obsidian-vithanco vscode-vithanco; do
+        BRANCH=$(git -C "$DIR" branch --show-current)
+        if [ "$BRANCH" != main ]; then
+            echo "Preflight: $DIR is on '$BRANCH', not main — the release would tag and push that branch." >&2
+            FAIL=1
+        fi
+    done
+    exit "$FAIL"
+
+# Everything that ships the engine ships it from this checkout, so it must hold
+# only what origin/main holds.
+_require-vgraph-main:
     #!/usr/bin/env bash
     set -uo pipefail
     FAIL=0
@@ -833,13 +848,6 @@ _release-preflight: (_require-plugin "obsidian-vithanco") (_require-plugin "vsco
         echo "Preflight: VGraph $(git rev-parse --short HEAD) is not on origin/main — push and merge it first." >&2
         FAIL=1
     fi
-    for DIR in obsidian-vithanco vscode-vithanco; do
-        BRANCH=$(git -C "$DIR" branch --show-current)
-        if [ "$BRANCH" != main ]; then
-            echo "Preflight: $DIR is on '$BRANCH', not main — the release would tag and push that branch." >&2
-            FAIL=1
-        fi
-    done
     exit "$FAIL"
 
 _require-maintainer:
@@ -852,7 +860,7 @@ _require-maintainer:
 
 # Build + push the image + roll out a new Cloud Run revision + health check.
 [group('publish')]
-publish-cloud-run: _require-maintainer _require-gcloud build-cloud-image
+publish-cloud-run: _require-maintainer _require-vgraph-main _require-gcloud build-cloud-image
     #!/usr/bin/env bash
     set -euo pipefail
     # No push step: `gcloud builds submit --tag` already pushed to Artifact
@@ -889,7 +897,7 @@ publish-cloud-run: _require-maintainer _require-gcloud build-cloud-image
 publish-all: _require-maintainer release
     #!/usr/bin/env bash
     set -euo pipefail
-    # Parity across every consumer in plugins.json, not a hardcoded pair. The
+    # Parity across every engine consumer in plugins.json, not a hardcoded pair. The
     # npm host joined the lockstep and this guard did not notice it, so all
     # three could be bumped together and only two published — the exact drift
     # the shared version exists to prevent.
@@ -898,7 +906,7 @@ publish-all: _require-maintainer release
     ")
     DISTINCT=$(echo "$VERSIONS" | awk '{print $2}' | sort -u | wc -l | tr -d ' ')
     if [ "$DISTINCT" -ne 1 ]; then
-        echo "Parity guard: consumer versions differ — aborting." >&2
+        echo "Parity guard: engine-consumer versions differ — aborting." >&2
         echo "$VERSIONS" | sed 's/^/  /' >&2
         echo "Run 'just plugins-release <bump>' to move them together." >&2
         exit 1
