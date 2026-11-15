@@ -184,11 +184,16 @@ not what a large diagram waits for.
 **Still owed:**
 
 - **Transitions, beyond the first step.** What moves now (2026-11-15): a node
-  glides and, in engines that treat `d` as a CSS property, a line bends into
-  its new shape. Both are two rules in the editor stylesheet — a transition on
-  the node group's `transform` and on the edge path's `d` — which is all it
-  takes once the elements persist, and both are off under
-  `prefers-reduced-motion`. An edge persists because the renderer keys it by
+  glides, and so do arrowheads and edge, edge-end and group labels; a line
+  bends into its new shape and a group box resizes in engines that treat `d`
+  and a rect's geometry as CSS properties. Each is a rule in the editor
+  stylesheet — a transition on `transform`, `d`, or the rect's `x`, `y`,
+  `width` and `height` — which is all it takes once the elements persist; all
+  are off under `prefers-reduced-motion`. `x`/`y` on text and `points` are not
+  CSS properties, so labels and arrowheads are placed by `transform` instead.
+  An arrowhead is drawn around the end of its line, so the two meet throughout
+  the glide; a label at a box's corner keeps to it the same way, the two
+  being one interpolation of the same numbers. An edge persists because the renderer keys it by
   its ends (`SVGElementId.keyAttribute`, interactive drawings only): the parser
   mints every edge id afresh, so an id cannot say that an edge is the one
   already drawn. The style guide has no motion section; 0.25 s and the curve
@@ -214,11 +219,16 @@ not what a large diagram waits for.
   editor is placed through `measuringAtRest`, which puts the drawing in the
   frame it is easing to for the length of the measurement.
 
-  What still jumps: arrowheads (`points` is not a CSS property), edge and group
-  labels (`x`/`y` on text), group boxes, and a line whose new path has a
-  different number of segments. WebKit does not animate `d`. Entering and leaving elements appear and vanish:
-  that needs `.transition` on `SVGView`, and animating a path in every engine
-  needs an animatable vector longer than eight floats — both upstream.
+  What still jumps: an arrowhead's direction — only its place glides, so a
+  head that turns takes its new angle at once; a line whose new path has a
+  different number of segments (its head still glides, off a line already
+  redrawn); the diagram title, the watermark, the link badges on edges and
+  groups, and the edge-end handles, all still placed by absolute coordinates.
+  WebKit animates none of it but a group box: it does not transition `d`, nor
+  `transform` written as an attribute, which is how nodes, labels and heads
+  are placed. Entering and leaving elements appear and vanish: that needs
+  `.transition` on `SVGView`, and animating a path in every engine needs an
+  animatable vector longer than eight floats — both upstream.
 - **Anything painted beside a node is left behind when it glides.** The details
   marker goes inside the group that carries the box's transform for that
   reason; the next thing painted into the drawing has to do the same.

@@ -53,11 +53,19 @@ struct GroupLabelRectsTests {
         return tag.matches(in: svg, range: range).compactMap { match in
             let attributes = String(svg[Range(match.range(at: 1), in: svg)!])
             let text = String(svg[Range(match.range(at: 2), in: svg)!])
-            guard let x = number(named: "x", in: attributes), let y = number(named: "y", in: attributes) else {
-                return nil
-            }
+            guard let (x, y) = translation(in: attributes) else { return nil }
             return (x, y, text)
         }
+    }
+
+    func translation(in attributes: String) -> (Double, Double)? {
+        let transform = try! NSRegularExpression(pattern: "\\stransform=\"translate\\(([-0-9.]+),([-0-9.]+)\\)\"")
+        let range = NSRange(attributes.startIndex..., in: attributes)
+        guard let match = transform.firstMatch(in: attributes, range: range),
+            let x = Double(attributes[Range(match.range(at: 1), in: attributes)!]),
+            let y = Double(attributes[Range(match.range(at: 2), in: attributes)!])
+        else { return nil }
+        return (x, y)
     }
 
     func number(named name: String, in attributes: String) -> Double? {

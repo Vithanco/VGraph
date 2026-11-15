@@ -136,10 +136,15 @@ let editorStyleCSS = """
     #vg-editor-preview .vgraph-node,
     #vg-editor-preview .vgraph-group-label { touch-action:none; }
     /* A redraw patches the elements it finds (ADR-0015 F1), so what moved can
-       be shown moving. `d` only where the engine treats it as a property. */
+       be shown moving. Arrowheads and labels are placed by `transform` for
+       this; `d` and a box's geometry only where the engine treats them as
+       properties. */
     @media (prefers-reduced-motion: no-preference) {
       #vg-editor-preview .vgraph-node > g { transition:transform \(glideCSS); }
-      #vg-editor-preview .vgraph-edge > path { transition:d \(glideCSS); }
+      #vg-editor-preview .vgraph-edge > * { transition:d \(glideCSS), transform \(glideCSS); }
+      #vg-editor-preview .vgraph-group > rect { transition:x \(glideCSS), y \(glideCSS),
+        width \(glideCSS), height \(glideCSS); }
+      #vg-editor-preview .vgraph-group-label { transition:transform \(glideCSS); }
     }
     /* Red because an unknown edge type already renders red, so the ghost line
        and the edge a ⌥ drop makes agree. */

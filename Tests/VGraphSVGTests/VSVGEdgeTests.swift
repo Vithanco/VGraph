@@ -88,11 +88,11 @@ struct VSVGEdgeTests {
     @Test func arrowHeadEllipseShapeFormatsNumbersLikeEveryOtherShape() throws {
         let layout = EdgeLayoutData(
             splinePoints: [VPoint(x: 0, y: 0), VPoint(x: 10, y: 0), VPoint(x: 20, y: 10), VPoint(x: 30, y: 10)],
-            arrowHead: ArrowHeadData(shape: .ellipse(center: VPoint(x: 30, y: 10), radiusX: 5, radiusY: 5), color: "#0000ff"))
+            arrowHead: ArrowHeadData(shape: .ellipse(center: VPoint(x: 35, y: 10), radiusX: 5, radiusY: 5), color: "#0000ff"))
         let graph = try withLayoutData(try makeGraph(), layout)
         let rendered = VSVGEdge.render(graph: graph, darkMode: false, logger: TestLogger()).render()
-        #expect(rendered.contains("cx=\"30\""))
-        #expect(!rendered.contains("cx=\"30.0\""))
+        #expect(rendered.contains("cx=\"5\""))
+        #expect(!rendered.contains("cx=\"5.0\""))
         expectSnapshot(graph)
     }
 

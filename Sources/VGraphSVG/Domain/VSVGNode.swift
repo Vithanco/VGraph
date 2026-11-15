@@ -275,13 +275,13 @@ public enum VSVGBuilder {
     /// `SVGBuilder` emits it *before* `fill-opacity`; appending both in order at
     /// the call site would swap them for a classed, translucent label.
     static func textAttributes(
-        x: Double, y: Double, font: VFont, color: VColor, anchor: String, cssClass: String? = nil
+        placement: [VSVGAttribute], font: VFont, color: VColor, anchor: String, cssClass: String? = nil
     ) -> [VSVGAttribute] {
-        var attributes = [
-            VSVGAttribute("x", number(x)), VSVGAttribute("y", number(y)),
-            VSVGAttribute("text-anchor", anchor), VSVGAttribute("fill", color.hexString),
-            VSVGAttribute("font-size", number(font.size)), VSVGAttribute("font-family", font.svgName),
-        ]
+        var attributes =
+            placement + [
+                VSVGAttribute("text-anchor", anchor), VSVGAttribute("fill", color.hexString),
+                VSVGAttribute("font-size", number(font.size)), VSVGAttribute("font-family", font.svgName),
+            ]
         if let cssClass { attributes.append(VSVGAttribute("class", cssClass)) }
         if color.alphaComponent < 1.0 {
             attributes.append(VSVGAttribute("fill-opacity", number(color.alphaComponent)))
@@ -294,8 +294,31 @@ public enum VSVGBuilder {
         fontWeight: Int = 400, fontStyle: String = "normal", opacity: Double = 1.0,
         letterSpacing: String? = nil, cssClass: String? = nil
     ) -> VSVGNode {
+        text(
+            placement: [VSVGAttribute("x", number(x)), VSVGAttribute("y", number(y))], content: content,
+            font: font, color: color, anchor: anchor, fontWeight: fontWeight, fontStyle: fontStyle,
+            opacity: opacity, letterSpacing: letterSpacing, cssClass: cssClass)
+    }
+
+    /// Placed by `transform` rather than `x`/`y`, which are not CSS properties on
+    /// text: a re-layout can then glide it like a node.
+    public static func text(
+        at origin: VPoint, content: String, font: VFont, color: VColor, anchor: String = "middle",
+        fontWeight: Int = 400, fontStyle: String = "normal", letterSpacing: String? = nil,
+        cssClass: String? = nil
+    ) -> VSVGNode {
+        text(
+            placement: [VSVGAttribute("transform", translate(x: origin.x, y: origin.y))], content: content,
+            font: font, color: color, anchor: anchor, fontWeight: fontWeight, fontStyle: fontStyle,
+            opacity: 1.0, letterSpacing: letterSpacing, cssClass: cssClass)
+    }
+
+    private static func text(
+        placement: [VSVGAttribute], content: String, font: VFont, color: VColor, anchor: String,
+        fontWeight: Int, fontStyle: String, opacity: Double, letterSpacing: String?, cssClass: String?
+    ) -> VSVGNode {
         var attributes = textAttributes(
-            x: x, y: y, font: font, color: color, anchor: anchor, cssClass: cssClass)
+            placement: placement, font: font, color: color, anchor: anchor, cssClass: cssClass)
         if fontWeight != 400 { attributes.append(VSVGAttribute("font-weight", "\(fontWeight)")) }
         if fontStyle != "normal" { attributes.append(VSVGAttribute("font-style", fontStyle)) }
         if opacity < 1.0 { attributes.append(VSVGAttribute("opacity", number(opacity))) }
@@ -313,7 +336,11 @@ public enum VSVGBuilder {
                 [VSVGAttribute("x", number(x)), VSVGAttribute("dy", number(index == 0 ? 0 : lineHeight))],
                 [.text(line)])
         }
-        return .element(.text, textAttributes(x: x, y: y, font: font, color: color, anchor: anchor), spans)
+        return .element(
+            .text,
+            textAttributes(
+                placement: [VSVGAttribute("x", number(x)), VSVGAttribute("y", number(y))], font: font,
+                color: color, anchor: anchor), spans)
     }
 
     public static func style(css: String) -> VSVGNode {

@@ -87,6 +87,67 @@ test('nothing glides for someone who asked for reduced motion', async ({ page })
   expect(await transitionsAfterRender(page, '[data-key="idea>detail"] path')).toEqual([]);
 });
 
+// Everything else drawn for an edge or a group moves too. `z` above `a` pushes
+// the group, the line, its head and both of its labels down a rank.
+const labelled = `vnotation Flow {
+  node type: Step [nodeStyle: roundedBox, color: "#3366cc"]
+  edge type: next from: Step to: Step [headLabel: "+"]
+}
+
+vgraph f: Flow "Demo" {
+  group g1 "Team" {
+    node a: Step "A";
+  };
+  node b: Step "B";
+  edge a -> b: next "leads to";
+}`;
+const pushedDown = labelled.replace('edge a -> b', 'node z: Step "Z";\n  edge z -> a: next;\n  edge a -> b');
+
+const parts = {
+  arrowhead: '[data-key="a>b"] > polygon',
+  'edge label': '[data-key="a>b"] > text:nth-of-type(1)',
+  'edge-end label': '[data-key="a>b"] > text:nth-of-type(2)',
+  'group label': `${sel.group('g1')} > .vgraph-group-label`,
+  'group box': `${sel.group('g1')} > rect`,
+};
+
+async function partsInFlightAfterRender(page) {
+  await openEditor(page, labelled);
+  await page.locator(s.textarea).fill(pushedDown);
+  return page.evaluate(async (named) => {
+    window.__vgraphRenderNow();
+    await new Promise((done) => requestAnimationFrame(done));
+    return Object.fromEntries(
+      Object.entries(named).map(([name, q]) => [
+        name,
+        document.querySelector(q).getAnimations().map((a) => a.transitionProperty),
+      ]),
+    );
+  }, parts);
+}
+
+test('what is drawn with an edge or a group moves with it', async ({ page }) => {
+  const inFlight = await partsInFlightAfterRender(page);
+
+  expect(inFlight.arrowhead).toContain('transform');
+  expect(inFlight['edge label']).toContain('transform');
+  expect(inFlight['edge-end label']).toContain('transform');
+  expect(inFlight['group label']).toContain('transform');
+  expect(inFlight['group box']).toContain('y');
+});
+
+test('none of it moves for someone who asked for reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+
+  expect(await partsInFlightAfterRender(page)).toEqual({
+    arrowhead: [],
+    'edge label': [],
+    'edge-end label': [],
+    'group label': [],
+    'group box': [],
+  });
+});
+
 // A redraw that changes the diagram's bounds changes the `viewBox`. Left to
 // jump, that rescales and shifts everything at once, and the glide starts from
 // the wrong place.

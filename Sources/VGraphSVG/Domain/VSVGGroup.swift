@@ -69,7 +69,7 @@ public enum VSVGGroup {
 
             content.append(
                 VSVGBuilder.text(
-                    x: bounds.minX + labelInset.x, y: bounds.minY + labelInset.y, content: labelText,
+                    at: VPoint(x: bounds.minX + labelInset.x, y: bounds.minY + labelInset.y), content: labelText,
                     font: labelFont, color: fontColor, anchor: "start", fontWeight: 600,
                     letterSpacing: "\(labelLetterSpacingEm)em", cssClass: SVGElementId.groupLabelClass))
         }

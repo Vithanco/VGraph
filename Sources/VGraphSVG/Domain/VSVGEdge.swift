@@ -41,11 +41,22 @@ public enum VSVGEdge {
         }
     }
 
+    /// Drawn around `anchor`, the end of the line it sits on, and moved there by
+    /// `transform`, so a re-layout carries it along with the line. Only its
+    /// place glides: a head that turns takes its new direction at once.
+    static func renderShape(_ shape: Shape, color: VColor, anchoredAt anchor: VPoint) -> VSVGNode {
+        guard case .element(let tag, let attributes, let children) = renderShape(shape.relative(to: anchor), color: color)
+        else { return .empty }
+        return .element(
+            tag, attributes + [VSVGAttribute("transform", VSVGBuilder.translate(x: anchor.x, y: anchor.y))],
+            children)
+    }
+
     static func renderEdgeLabel(_ label: LabelData?, darkMode: Bool) -> VSVGNode {
         guard let label else { return .empty }
         let font = VFont(family: .dmSans, size: 11)
         return VSVGBuilder.text(
-            x: label.position.x, y: label.position.y, content: label.text, font: font,
+            at: label.position, content: label.text, font: font,
             color: SemanticColor.ink2.resolve(darkMode: darkMode), anchor: "middle", fontStyle: "italic")
     }
 
@@ -53,7 +64,7 @@ public enum VSVGEdge {
         guard let label else { return .empty }
         let font = VFont(family: .dmSans, size: 15)
         return VSVGBuilder.text(
-            x: label.position.x, y: label.position.y, content: label.text, font: font,
+            at: label.position, content: label.text, font: font,
             color: SemanticColor.edgeBold.resolve(darkMode: darkMode), anchor: "middle",
             fontWeight: 700)
     }
@@ -145,13 +156,17 @@ public enum VSVGEdge {
                 let drawHead = (dir == "forward" || dir == "both")
                 let drawTail = (dir == "back" || dir == "both")
 
-                if drawHead, let arrowHead = layout.arrowHead {
+                if drawHead, let arrowHead = layout.arrowHead, let end = layout.splinePoints.last {
                     children.append(
-                        renderShape(arrowHead.shape, color: SVGThemeColor.edge(arrowHead.color, darkMode: darkMode)))
+                        renderShape(
+                            arrowHead.shape, color: SVGThemeColor.edge(arrowHead.color, darkMode: darkMode),
+                            anchoredAt: end))
                 }
-                if drawTail, let arrowTail = layout.arrowTail {
+                if drawTail, let arrowTail = layout.arrowTail, let start = layout.splinePoints.first {
                     children.append(
-                        renderShape(arrowTail.shape, color: SVGThemeColor.edge(arrowTail.color, darkMode: darkMode)))
+                        renderShape(
+                            arrowTail.shape, color: SVGThemeColor.edge(arrowTail.color, darkMode: darkMode),
+                            anchoredAt: start))
                 }
 
                 children.append(renderEdgeLabel(layout.label, darkMode: darkMode))
@@ -223,5 +238,20 @@ public enum VSVGEdge {
                 VSVGAttribute(SVGElementId.unfoldsAttribute, unfolds.joined(separator: " ")),
             ],
             [.element(.title, [], [.text(members)])] + children)
+    }
+}
+
+extension Shape {
+    fileprivate func relative(to origin: VPoint) -> Shape {
+        switch self {
+        case .circle(let center, let radius):
+            return .circle(center: center - origin, radius: radius)
+        case .ellipse(let center, let radiusX, let radiusY):
+            return .ellipse(center: center - origin, radiusX: radiusX, radiusY: radiusY)
+        case .polygon(let points):
+            return .polygon(points: points.map { $0 - origin })
+        case .spline(let controlPoints):
+            return .spline(controlPoints: controlPoints.map { $0 - origin })
+        }
     }
 }
