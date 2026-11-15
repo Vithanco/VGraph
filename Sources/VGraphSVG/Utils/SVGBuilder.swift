@@ -125,30 +125,6 @@ public struct SVGBuilder {
         return nil
     }
 
-    /// ADR-0015 accepts two backends, so this calls the IR one's rule rather than
-    /// restating it: a value safe through one and not the other is an accident of
-    /// which ran. Numbers and colours skip it — `format` and `hexString` cannot
-    /// produce a character that means anything in markup.
-    static func attr(_ value: String) -> String {
-        VSVGNode.escapeAttribute(value)
-    }
-
-    // MARK: - Group
-
-    public static func group(id: String? = nil, cssClass: String? = nil, transform: String? = nil, content: String) -> String {
-        var attrs = ""
-        if let id = id {
-            attrs += " id=\"\(attr(id))\""
-        }
-        if let cssClass = cssClass {
-            attrs += " class=\"\(attr(cssClass))\""
-        }
-        if let transform = transform {
-            attrs += " transform=\"\(attr(transform))\""
-        }
-        return "<g\(attrs)>\(content)</g>"
-    }
-
     /// Interactive hover styles baked into every SVG. Pure CSS `:hover` so it works
     /// inline everywhere (website, VS Code, Obsidian) with no host JS, and is inert
     /// for PNG export. Neighbour re-brightening (`renderNeighborHoverStyles`) relies
@@ -170,186 +146,12 @@ public struct SVGBuilder {
             """
     }
 
-    // MARK: - Basic Shapes
-
-    public static func rect(
-        x: Double, y: Double, width: Double, height: Double, rx: Double = 0, fill: VColor? = nil, stroke: VColor? = nil,
-        strokeWidth: Double = 0, strokeDashArray: String? = nil
-    ) -> String {
-        var attrs = "x=\"\(format(x))\" y=\"\(format(y))\" width=\"\(format(width))\" height=\"\(format(height))\""
-        if rx > 0 {
-            attrs += " rx=\"\(format(rx))\""
-        }
-        if let fill = fill {
-            attrs += " fill=\"\(fill.hexString)\""
-            if fill.alphaComponent < 1.0 {
-                attrs += " fill-opacity=\"\(format(fill.alphaComponent))\""
-            }
-        } else {
-            attrs += " fill=\"none\""
-        }
-        if let stroke = stroke, strokeWidth > 0 {
-            attrs += " stroke=\"\(stroke.hexString)\" stroke-width=\"\(format(strokeWidth))\""
-            if stroke.alphaComponent < 1.0 {
-                attrs += " stroke-opacity=\"\(format(stroke.alphaComponent))\""
-            }
-        }
-        if let dash = strokeDashArray {
-            attrs += " stroke-dasharray=\"\(attr(dash))\""
-        }
-        return "<rect \(attrs)/>"
-    }
-
-    public static func circle(
-        cx: Double, cy: Double, r: Double, fill: VColor? = nil, stroke: VColor? = nil, strokeWidth: Double = 0
-    ) -> String {
-        var attrs = "cx=\"\(format(cx))\" cy=\"\(format(cy))\" r=\"\(format(r))\""
-        if let fill = fill {
-            attrs += " fill=\"\(fill.hexString)\""
-            if fill.alphaComponent < 1.0 {
-                attrs += " fill-opacity=\"\(format(fill.alphaComponent))\""
-            }
-        } else {
-            attrs += " fill=\"none\""
-        }
-        if let stroke = stroke, strokeWidth > 0 {
-            attrs += " stroke=\"\(stroke.hexString)\" stroke-width=\"\(format(strokeWidth))\""
-            if stroke.alphaComponent < 1.0 {
-                attrs += " stroke-opacity=\"\(format(stroke.alphaComponent))\""
-            }
-        }
-        return "<circle \(attrs)/>"
-    }
-
-    public static func ellipse(
-        cx: Double, cy: Double, rx: Double, ry: Double, fill: VColor? = nil, stroke: VColor? = nil,
-        strokeWidth: Double = 0
-    ) -> String {
-        var attrs = "cx=\"\(format(cx))\" cy=\"\(format(cy))\" rx=\"\(format(rx))\" ry=\"\(format(ry))\""
-        if let fill = fill {
-            attrs += " fill=\"\(fill.hexString)\""
-            if fill.alphaComponent < 1.0 {
-                attrs += " fill-opacity=\"\(format(fill.alphaComponent))\""
-            }
-        } else {
-            attrs += " fill=\"none\""
-        }
-        if let stroke = stroke, strokeWidth > 0 {
-            attrs += " stroke=\"\(stroke.hexString)\" stroke-width=\"\(format(strokeWidth))\""
-            if stroke.alphaComponent < 1.0 {
-                attrs += " stroke-opacity=\"\(format(stroke.alphaComponent))\""
-            }
-        }
-        return "<ellipse \(attrs)/>"
-    }
-
-    public static func path(
-        d: String, fill: VColor? = nil, stroke: VColor? = nil, strokeWidth: Double = 0, strokeDashArray: String? = nil
-    ) -> String {
-        var attrs = "d=\"\(attr(d))\""
-        if let fill = fill {
-            attrs += " fill=\"\(fill.hexString)\""
-            if fill.alphaComponent < 1.0 {
-                attrs += " fill-opacity=\"\(format(fill.alphaComponent))\""
-            }
-        } else {
-            attrs += " fill=\"none\""
-        }
-        if let stroke = stroke, strokeWidth > 0 {
-            attrs += " stroke=\"\(stroke.hexString)\" stroke-width=\"\(format(strokeWidth))\""
-            if stroke.alphaComponent < 1.0 {
-                attrs += " stroke-opacity=\"\(format(stroke.alphaComponent))\""
-            }
-        }
-        if let dashArray = strokeDashArray {
-            attrs += " stroke-dasharray=\"\(attr(dashArray))\""
-        }
-        return "<path \(attrs)/>"
-    }
-
-    public static func polygon(points: String, fill: VColor? = nil, stroke: VColor? = nil, strokeWidth: Double = 0)
-        -> String
-    {
-        var attrs = "points=\"\(attr(points))\""
-        if let fill = fill {
-            attrs += " fill=\"\(fill.hexString)\""
-            if fill.alphaComponent < 1.0 {
-                attrs += " fill-opacity=\"\(format(fill.alphaComponent))\""
-            }
-        } else {
-            attrs += " fill=\"none\""
-        }
-        if let stroke = stroke, strokeWidth > 0 {
-            attrs += " stroke=\"\(stroke.hexString)\" stroke-width=\"\(format(strokeWidth))\""
-            if stroke.alphaComponent < 1.0 {
-                attrs += " stroke-opacity=\"\(format(stroke.alphaComponent))\""
-            }
-        }
-        return "<polygon \(attrs)/>"
-    }
-
-    // MARK: - Text
-
-    public static func text(
-        x: Double, y: Double, content: String, font: VFont, color: VColor, anchor: String = "middle",
-        fontWeight: Int = 400, fontStyle: String = "normal", opacity: Double = 1.0,
-        letterSpacing: String? = nil, cssClass: String? = nil
-    ) -> String {
-        var attrs =
-            "x=\"\(format(x))\" y=\"\(format(y))\" text-anchor=\"\(attr(anchor))\" fill=\"\(color.hexString)\" font-size=\"\(format(font.size))\" font-family=\"\(attr(font.svgName))\""
-        if let cssClass {
-            attrs += " class=\"\(attr(cssClass))\""
-        }
-        if color.alphaComponent < 1.0 {
-            attrs += " fill-opacity=\"\(format(color.alphaComponent))\""
-        }
-        if fontWeight != 400 {
-            attrs += " font-weight=\"\(fontWeight)\""
-        }
-        if fontStyle != "normal" {
-            attrs += " font-style=\"\(attr(fontStyle))\""
-        }
-        if opacity < 1.0 {
-            attrs += " opacity=\"\(format(opacity))\""
-        }
-        if let ls = letterSpacing {
-            attrs += " letter-spacing=\"\(attr(ls))\""
-        }
-        let escapedContent = escapeXML(content)
-        return "<text \(attrs)>\(escapedContent)</text>"
-    }
-
     /// The query separator is a literal `&` and must stay one: escaping it here
     /// would double-escape on the way out and reach a mounted `<style>` intact.
     /// See VSVGDefsTests.theFontImportURLIsEscapedForXMLButNotOverEscaped.
     public static func dmSansFontImportCSS() -> String {
         return
             "@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');"
-    }
-
-    public static func multilineText(
-        x: Double, y: Double, lines: [String], font: VFont, color: VColor, lineHeight: Double, anchor: String = "middle"
-    ) -> String {
-        var attrs =
-            "x=\"\(format(x))\" y=\"\(format(y))\" text-anchor=\"\(attr(anchor))\" fill=\"\(color.hexString)\" font-size=\"\(format(font.size))\" font-family=\"\(attr(font.svgName))\""
-        if color.alphaComponent < 1.0 {
-            attrs += " fill-opacity=\"\(format(color.alphaComponent))\""
-        }
-
-        var tspans = ""
-        for (index, line) in lines.enumerated() {
-            let dy = index == 0 ? 0 : lineHeight
-            let escapedLine = escapeXML(line)
-            tspans += "<tspan x=\"\(format(x))\" dy=\"\(format(dy))\">\(escapedLine)</tspan>"
-        }
-
-        return "<text \(attrs)>\(tspans)</text>"
-    }
-
-    // MARK: - Helpers
-
-    public static func translate(x: Double, y: Double) -> String {
-        return "translate(\(format(x)),\(format(y)))"
     }
 
     /// Builds one hover rule for `scope`. `edgeIds` get the `edge-` selector prefix;
@@ -411,11 +213,5 @@ public struct SVGBuilder {
             }
         }
         return result
-    }
-
-    /// Text content, not an attribute: the wider rule, and the IR backend's own
-    /// so the two cannot drift.
-    private static func escapeXML(_ string: String) -> String {
-        VSVGNode.escape(string)
     }
 }

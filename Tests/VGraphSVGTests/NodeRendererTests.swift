@@ -69,16 +69,6 @@ struct NodeRendererTests {
         #expect(svg.contains("<text"))
     }
 
-    @Test func iconWithUnknownNameDrawsTheMissingGlyph() throws {
-        let iconInfo = IconInfo(
-            iconPosition: .center, iconName: "nonexistent.icon", iconColor: VColor.red, iconSize: 24)
-
-        let svg = try render(.icon(iconInfo), size: VSize(width: 60, height: 60))
-
-        #expect(svg.contains("<use"))
-        #expect(svg.contains("icon-nonexistent.icon"))
-    }
-
     /// The viewport is `iconSize` square whatever the artwork's proportions: the
     /// `<symbol>` carries the viewBox, so SVG's own `xMidYMid meet` does the
     /// fitting and the node path never has to resolve the artwork. ADR-0022.
@@ -105,43 +95,5 @@ struct NodeRendererTests {
             icons: ["and": BuiltinIcons.artwork(for: "and")!], includeWatermark: false, darkMode: false
         ).render()
         #expect(defs.contains("id=\"icon-and\""))
-    }
-
-    // MARK: - SVGBuilder
-    //
-    // Still the primitives the IR builds on, so they keep their own tests.
-
-    @Test func builderRectCarriesEveryGeometryAndPaintAttribute() {
-        let rect = SVGBuilder.rect(
-            x: 10, y: 20, width: 100, height: 50, rx: 5, fill: VColor.blue, stroke: VColor.black, strokeWidth: 2)
-
-        #expect(rect.contains("<rect"))
-        #expect(rect.contains("x=\"10\""))
-        #expect(rect.contains("y=\"20\""))
-        #expect(rect.contains("width=\"100\""))
-        #expect(rect.contains("height=\"50\""))
-        #expect(rect.contains("rx=\"5\""))
-        #expect(rect.contains("fill="))
-        #expect(rect.contains("stroke="))
-    }
-
-    @Test func builderText() {
-        let text = SVGBuilder.text(x: 50, y: 25, content: "Hello World", font: VFont(size: 14), color: VColor.black)
-
-        #expect(text.contains("<text"))
-        #expect(text.contains("Hello World"))
-        #expect(text.contains("x=\"50\""))
-        #expect(text.contains("y=\"25\""))
-        #expect(text.contains("font-size=\"14"))
-    }
-
-    @Test func builderEscapesTextContent() {
-        let text = SVGBuilder.text(
-            x: 0, y: 0, content: "Test & <text> with \"quotes\"", font: VFont(size: 12), color: VColor.black)
-
-        #expect(text.contains("&amp;"))
-        #expect(text.contains("&lt;"))
-        #expect(text.contains("&gt;"))
-        #expect(text.contains("&quot;"))
     }
 }

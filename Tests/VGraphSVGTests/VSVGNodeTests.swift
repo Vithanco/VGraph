@@ -1,6 +1,3 @@
-// The IR is what both backends render from, so it has to reproduce
-// SVGBuilder's output byte for byte.
-
 import Testing
 
 @testable import VGraph
@@ -11,70 +8,69 @@ struct VSVGNodeTests {
     let orange = VColor(hexString: "#EA580C")!
     let blue = VColor(hexString: "#0B5FFF")!
 
-    @Test func shapesRenderByteIdenticalToTheStringBuilder() {
+    @Test func shapesCarryFillStrokeAndWidth() {
         let style = VShapeStyle(fill: orange, stroke: blue, strokeWidth: 2)
         #expect(
             VSVGBuilder.rect(x: 10, y: 20, width: 80, height: 30, rx: 6, style: style).render()
-                == SVGBuilder.rect(
-                    x: 10, y: 20, width: 80, height: 30, rx: 6, fill: orange, stroke: blue, strokeWidth: 2))
+                == ##"<rect x="10" y="20" width="80" height="30" rx="6" fill="#ea580c" stroke="#0b5fff" stroke-width="2"/>"##)
         #expect(
             VSVGBuilder.circle(cx: 5, cy: 6, r: 7, style: style).render()
-                == SVGBuilder.circle(cx: 5, cy: 6, r: 7, fill: orange, stroke: blue, strokeWidth: 2))
+                == ##"<circle cx="5" cy="6" r="7" fill="#ea580c" stroke="#0b5fff" stroke-width="2"/>"##)
         #expect(
             VSVGBuilder.ellipse(cx: 1, cy: 2, rx: 3, ry: 4, style: style).render()
-                == SVGBuilder.ellipse(cx: 1, cy: 2, rx: 3, ry: 4, fill: orange, stroke: blue, strokeWidth: 2))
+                == ##"<ellipse cx="1" cy="2" rx="3" ry="4" fill="#ea580c" stroke="#0b5fff" stroke-width="2"/>"##)
         #expect(
             VSVGBuilder.path(d: "M0 0 L10 10", style: style).render()
-                == SVGBuilder.path(d: "M0 0 L10 10", fill: orange, stroke: blue, strokeWidth: 2))
+                == ##"<path d="M0 0 L10 10" fill="#ea580c" stroke="#0b5fff" stroke-width="2"/>"##)
         #expect(
             VSVGBuilder.polygon(points: "0,0 5,5 10,0", style: style).render()
-                == SVGBuilder.polygon(points: "0,0 5,5 10,0", fill: orange, stroke: blue, strokeWidth: 2))
+                == ##"<polygon points="0,0 5,5 10,0" fill="#ea580c" stroke="#0b5fff" stroke-width="2"/>"##)
     }
 
     @Test func aMissingFillIsNoneAndAWidthlessStrokeIsNoStroke() {
         #expect(
             VSVGBuilder.rect(x: 0, y: 0, width: 5, height: 5).render()
-                == SVGBuilder.rect(x: 0, y: 0, width: 5, height: 5))
+                == ##"<rect x="0" y="0" width="5" height="5" fill="none"/>"##)
         let widthless = VShapeStyle(fill: orange, stroke: blue, strokeWidth: 0)
         #expect(
             VSVGBuilder.rect(x: 0, y: 0, width: 4, height: 4, style: widthless).render()
-                == SVGBuilder.rect(x: 0, y: 0, width: 4, height: 4, fill: orange))
+                == ##"<rect x="0" y="0" width="4" height="4" fill="#ea580c"/>"##)
     }
 
-    @Test func translucencyAndDashesMatch() {
+    @Test func translucencyAndDashesAreEmittedAsAttributes() {
         let ghost = VColor(red: 1, green: 0, blue: 0, alpha: 0.5)
         #expect(
             VSVGBuilder.rect(
                 x: 0, y: 0, width: 4, height: 4,
                 style: VShapeStyle(fill: ghost, stroke: ghost, strokeWidth: 1)
             ).render()
-                == SVGBuilder.rect(
-                    x: 0, y: 0, width: 4, height: 4, fill: ghost, stroke: ghost, strokeWidth: 1))
+                == ##"<rect x="0" y="0" width="4" height="4" fill="#ff0000" fill-opacity="0.5" stroke="#ff0000" stroke-width="1" stroke-opacity="0.5"/>"##
+        )
         #expect(
             VSVGBuilder.path(
                 d: "M0 0 L1 1", style: VShapeStyle(stroke: blue, strokeWidth: 1, strokeDashArray: "4 2")
             ).render()
-                == SVGBuilder.path(d: "M0 0 L1 1", stroke: blue, strokeWidth: 1, strokeDashArray: "4 2"))
+                == ##"<path d="M0 0 L1 1" fill="none" stroke="#0b5fff" stroke-width="1" stroke-dasharray="4 2"/>"##)
     }
 
-    @Test func textAndMultilineTextMatch() {
+    @Test func textAndMultilineTextCarryFontAndColour() {
         let font = VFont(size: 13)
         #expect(
             VSVGBuilder.text(x: 4, y: 8, content: "Idea", font: font, color: blue).render()
-                == SVGBuilder.text(x: 4, y: 8, content: "Idea", font: font, color: blue))
+                == ##"<text x="4" y="8" text-anchor="middle" fill="#0b5fff" font-size="13" font-family="'DM Sans', Helvetica, sans-serif">Idea</text>"##
+        )
         #expect(
             VSVGBuilder.multilineText(
                 x: 2, y: 3, lines: ["one", "two"], font: font, color: blue, lineHeight: 14
             ).render()
-                == SVGBuilder.multilineText(
-                    x: 2, y: 3, lines: ["one", "two"], font: font, color: blue, lineHeight: 14))
+                == ##"<text x="2" y="3" text-anchor="middle" fill="#0b5fff" font-size="13" font-family="'DM Sans', Helvetica, sans-serif"><tspan x="2" dy="0">one</tspan><tspan x="2" dy="14">two</tspan></text>"##
+        )
     }
 
-    /// Every optional `<text>` attribute at once, in one call: the emitter builds
-    /// them up in a different place than `SVGBuilder` does (`class` and
-    /// `fill-opacity` come from separate steps), so only a case that sets both can
-    /// catch them landing in the wrong order. Reachable via classed group labels
-    /// whose `fontcolor` carries alpha.
+    /// Every optional `<text>` attribute at once: `class` and `fill-opacity` are
+    /// added in separate steps, so only a case that sets both can catch them
+    /// landing in the wrong order. Reachable via classed group labels whose
+    /// `fontcolor` carries alpha.
     @Test func aClassedTranslucentTextKeepsItsAttributeOrder() {
         let font = VFont(size: 11)
         let translucent = VColor(red: 0.3, green: 0.3, blue: 0.3, alpha: 0.5)
@@ -84,22 +80,17 @@ struct VSVGNodeTests {
                 fontWeight: 600, fontStyle: "italic", opacity: 0.85, letterSpacing: "0.07em",
                 cssClass: SVGElementId.groupLabelClass
             ).render()
-                == SVGBuilder.text(
-                    x: 4, y: 8, content: "SUBSYSTEM", font: font, color: translucent, anchor: "start",
-                    fontWeight: 600, fontStyle: "italic", opacity: 0.85, letterSpacing: "0.07em",
-                    cssClass: SVGElementId.groupLabelClass))
+                == ##"<text x="4" y="8" text-anchor="start" fill="#4c4c4c" font-size="11" font-family="'DM Sans', Helvetica, sans-serif" class="vgraph-group-label" fill-opacity="0.5" font-weight="600" font-style="italic" opacity="0.85" letter-spacing="0.07em">SUBSYSTEM</text>"##
+        )
     }
 
-    @Test func groupsMatchAndNestWithoutManualClosing() {
+    @Test func groupsNestWithoutManualClosing() {
         let inner = VSVGBuilder.group(id: "node-a", cssClass: "vgraph-node", children: [VSVGBuilder.rect(x: 0, y: 0, width: 1, height: 1)])
         let outer = VSVGBuilder.group(id: "group-g1", transform: "translate(5,5)", children: [inner])
         #expect(
             outer.render()
-                == SVGBuilder.group(
-                    id: "group-g1", transform: "translate(5,5)",
-                    content: SVGBuilder.group(
-                        id: "node-a", cssClass: "vgraph-node",
-                        content: SVGBuilder.rect(x: 0, y: 0, width: 1, height: 1))))
+                == ##"<g id="group-g1" transform="translate(5,5)"><g id="node-a" class="vgraph-node"><rect x="0" y="0" width="1" height="1" fill="none"/></g></g>"##
+        )
     }
 
     /// Guards a copy-paste slip in the 23-case tag switch.

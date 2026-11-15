@@ -1,13 +1,9 @@
 ////
-////  RenderPipeline.swift
+////  RenderContext.swift
 ////  VGraphSVG
 ////
-////  Function-composition utilities for the SVG render pipeline.
-////  Analogous to `TransformPipeline.compose` for the layout pipeline.
-////
-////  The render pipeline runs after the layout pipeline has stamped positions,
-////  sizes, wrapped text, and edge layout data onto the graph. Pipeline passes
-////  read those attributes via `ctx.graph` and emit SVG fragments.
+////  The per-render parameters the SVG renderer reads on top of the laid-out
+////  graph.
 ////
 
 import VGraph
@@ -45,34 +41,5 @@ public struct RenderContext {
         self.darkMode = darkMode
         self.overlay = overlay
         self.interactive = interactive
-    }
-}
-
-/// Composition utilities for the SVG render pipeline.
-///
-/// Mirrors `TransformPipeline.compose` from the layout pipeline. A render pass
-/// is `(RenderContext) throws(VError) -> String`; `compose` runs an ordered
-/// array of passes and concatenates their outputs.
-public enum RenderPipeline {
-
-    /// A render pass: receives per-render context, returns an SVG fragment.
-    /// Throws `VError` because some underlying helpers (defs/node/group rendering)
-    /// throw when required graph attributes are unreadable.
-    public typealias Pass = (RenderContext) throws(VError) -> String
-
-    /// Compose passes left-to-right; concatenate their string outputs.
-    public static func compose(_ passes: [Pass]) -> Pass {
-        return { ctx throws(VError) in
-            var result = ""
-            for pass in passes {
-                result += try pass(ctx)
-            }
-            return result
-        }
-    }
-
-    /// A no-op pass that emits the empty string. Useful as a placeholder.
-    public static var empty: Pass {
-        return { _ in "" }
     }
 }
