@@ -5,8 +5,11 @@ Visual reference for the **default theme** of the VGraph renderer (light + dark)
 This is the guide's only home: edit it here like any other file. The renderer
 doesn't read it, so every hex lives twice — here and in `SemanticColor` / the
 notation's tokens. Change both in the same PR; a hex changed in one place only is
-how `edgeBold` drifted. For a new visual direction, iterating on these files in a
-Claude design is quicker than in code; bring the result back as a PR.
+how `edgeBold` drifted. New visual directions are explored here too, in
+`exploration/`, not in a separate design tool.
+
+It is also an agent skill (`SKILL.md`), linked from
+`.agents/skills/vithanco-diagram-design`.
 
 ## Status of each file
 
@@ -37,7 +40,7 @@ Open the HTML files directly in a browser (they load React/Babel + Google Fonts 
 
 ## Key rules (most common regression sources)
 
-1. **Dark mode is keyed on the light hex.** Two tokens sharing a light value must share the dark value. `--edge-bold` is an alias of `--ink-2` (`#5a564e` → `#a8a49a`). If a token needs its own dark value, give it a distinct light value first. Exception: `#ffffff` and `#000000` are both theme-fixed (icons on a coloured fill) and flipping (`--card`, label text), so a token in either must say explicitly which it is. `--badge-icon`, the icon in a node type badge, is the flipping kind: white on the light circle, `#14120f` on the dark mode's brightened one, because white falls below 3:1 on most of them. `--badge-icon`, the icon in a node type badge, is the flipping kind: white on the light circle, `#14120f` on the dark mode's brightened one, because white falls below 3:1 on most of them.
+1. **Dark mode is keyed on the light hex.** Two tokens sharing a light value must share the dark value. `--edge-bold` is an alias of `--ink-2` (`#5a564e` → `#a8a49a`). If a token needs its own dark value, give it a distinct light value first. Exception: `#ffffff` and `#000000` are both theme-fixed (icons on a coloured fill) and flipping (`--card`, label text), so a token in either must say explicitly which it is. `--badge-icon`, the icon in a node type badge, is the flipping kind: white on the light circle, `#14120f` on the dark mode's brightened one, because white falls below 3:1 on most of them.
 2. **Edge labels use ink-2, not ink-3.** DM Sans 11px italic, `#5a564e` light / `#a8a49a` dark. Ink-3 fails contrast in dark mode.
 3. **Group containers recede.** Fill `#f4f3f0` light / `#1c1a16` dark, dashed border. Never brighter than the page in dark mode.
 4. **Page background dark is `#0e0d0a`**, not `#000`.

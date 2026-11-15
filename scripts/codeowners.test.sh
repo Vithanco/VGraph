@@ -12,7 +12,7 @@ fail() { echo "FAIL: $*" >&2; FAILED=1; }
 [ -f "$FILE" ] || { echo "FAIL: $FILE is missing" >&2; exit 1; }
 
 # Patterns for things that hold nothing today: listed so that adding them needs approval.
-RESERVED="/.claude/ /.agents/"
+RESERVED="/.claude/"
 
 # Every file in a group below has to be covered. Groups that name a path that is not
 # tracked today (a hypothetical addition) are checked as strings.
@@ -46,6 +46,7 @@ scripts/anything-new.txt
 .github/workflows/ci.yml
 .claude/skills/x/SKILL.md
 .agents/skills/x/SKILL.md
+docs/design/SKILL.md
 "
 
 patterns=$(grep -vE '^\s*(#|$)' "$FILE" | awk '{print $1}')

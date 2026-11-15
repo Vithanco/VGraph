@@ -17,7 +17,7 @@ already says. Anything worth keeping goes in `/docs` and stays updated.
 - `docs/design/` — the normative visual reference for the default theme (light
   and dark). Read its `README.md` before adding or changing a notation, colour,
   token or dark-mode behaviour; renderer output that disagrees with the guide
-  is a bug.
+  is a bug. Also an agent skill: `.agents/skills/vithanco-diagram-design`.
 
 ## What VGraph is
 

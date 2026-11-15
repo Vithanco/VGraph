@@ -3,13 +3,15 @@
 # another person's machine, so the maintainer approves every change to them.
 # scripts/codeowners.test.sh holds this list to the files that exist.
 
-# Instructions for coding agents. .claude/ and .agents/ hold nothing today and are
-# listed so that adding them needs approval too.
+# Instructions for coding agents. .claude/ holds nothing today and is listed so that
+# adding it needs approval too. .agents/skills/ links to skills whose SKILL.md lives
+# elsewhere, so each such SKILL.md is listed as well.
 /AGENTS.md          @Vithanco
 /CLAUDE.md          @Vithanco
 /.coderabbit.yaml   @Vithanco
 /.claude/           @Vithanco
 /.agents/           @Vithanco
+/docs/design/SKILL.md @Vithanco
 
 # Automation, hooks and the repository's own settings.
 /.github/           @Vithanco
