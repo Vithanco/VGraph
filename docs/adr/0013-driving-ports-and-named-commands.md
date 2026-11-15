@@ -1,6 +1,6 @@
 # 13. Driving ports and named commands
 
-Date: 2026-08-03 (amended 2026-08-06 and 2026-08-09; commands named 2026-08-08)
+Date: 2026-08-03 (amended 2026-08-06, 2026-08-09 and 2026-11-15; commands named 2026-08-08)
 
 ## Status
 
@@ -77,10 +77,16 @@ what stops history being declared twice.
   its conformers either way, and the exemption cost the per-hexagon port
   declaration that the typealias is.)*
 
-- **`GraphSession` conforms to all three, and no port has an associated type.**
-  Every type they name is concrete, so a pane is
+- **`GraphSession` conforms to all three, and a port names no type that would
+  drag the wiring in.** A pane is
   `struct DiagramPane<Session: ForEditAGraphVisually>` and never names
   `AppPorts` or a version store. Always a generic parameter, never `any`.
+  *(Amended 2026-11-15; originally "no port has an associated type". The visual
+  port now has one, `Drawing`, because the alternative was naming the SVG tree
+  in the core ([0015](./0015-svg-ir-and-elementary-upstreaming.md)). A pane
+  that mounts drawings constrains it — `where Session.Drawing == VSVGNode` —
+  which names what the pane shows and nothing about how the session was
+  built.)*
 
 - **`origin` is not on the visual port.** The editor reads it once, to seed an
   inline edit, so the port carries `label(of:)` and nothing else. `origin`

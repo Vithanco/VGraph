@@ -79,6 +79,19 @@ struct ArchitectureTest {
         #expect(violations.isEmpty, "adapter imports in App/Domain: \(violations)")
     }
 
+    /// The core says a renderer produces *some* drawing; which one is the
+    /// rendering hexagon's to say (ADR-0015). Naming the SVG tree here would put
+    /// a tag list in the domain every notation is written against.
+    @Test func theCoreNamesNoSVGTreeType() throws {
+        var violations: [String] = []
+        for file in try requiredSwiftFiles(under: "Sources/VGraph") {
+            let source = try String(contentsOf: file, encoding: .utf8)
+            if source.contains("VSVG") { violations.append(file.lastPathComponent) }
+        }
+
+        #expect(violations.isEmpty, "SVG tree types named in the core: \(violations)")
+    }
+
     /// A driver reaches its adapters through `App`'s composition and never names
     /// one, so that swapping a wiring is a change in one place.
     ///

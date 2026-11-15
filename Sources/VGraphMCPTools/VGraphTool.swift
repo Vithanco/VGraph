@@ -92,7 +92,7 @@ extension VGraphTool {
         let renderStart = Date()
         let app = VGraphMCPApp(logger: logger)
         let graph: VGraph
-        let renderings: [(caption: String?, result: RenderResult)]
+        let renderings: [(caption: String?, result: RenderResult<VGraphMCPApp.Drawing>)]
         do {
             graph = try app.parseGraph(vgl)
             if let refusal = limits.refusal(nodes: graph.nodes.count, edges: graph.edges.count, views: graph.views.count) {

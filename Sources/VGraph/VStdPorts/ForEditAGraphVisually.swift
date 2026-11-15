@@ -26,8 +26,13 @@ public protocol VForEditAGraphVisually {
     /// nothing. The only thing the pane reads out of the graph.
     func label(of elementId: String) -> String?
 
+    /// What a render hands the pane to show. The one associated type on a
+    /// driving port (ADR-0013 as amended): a pane names the drawing it can
+    /// mount, and still neither `AppPorts` nor a version store.
+    associatedtype Drawing
+
     /// Render the current OriginGraph to SVG, embedding its VGL for round-trip.
-    func render(darkMode: Bool) throws(VError) -> RenderResult
+    func render(darkMode: Bool) throws(VError) -> RenderResult<Drawing>
 
     // MARK: - Queries for building a menu
     //

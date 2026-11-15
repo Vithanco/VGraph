@@ -5,6 +5,7 @@
 import Testing
 
 @testable import App
+@testable import TestSupport
 @testable import VGLanguage
 @testable import VGraph
 @testable import VGraphSVG
@@ -94,6 +95,53 @@ struct VSVGRendererPortTests {
         #expect(
             try ports.renderer.render(graph: graph, sourceVGL: nil, darkMode: false)
                 == VSVGGraph.render(graph: graph, logger: TestLogger()).render())
+    }
+
+    func ids(in drawing: VSVGNode) -> [String] {
+        switch drawing {
+        case .element(_, let attributes, let children):
+            return attributes.filter { $0.name == "id" }.map { $0.value } + children.flatMap { ids(in: $0) }
+        case .fragment(let children):
+            return children.flatMap { ids(in: $0) }
+        case .text, .raw, .empty:
+            return []
+        }
+    }
+
+    /// The mounted preview and Save SVG must be one drawing, not two renders
+    /// that happen to agree (ADR-0015 F1).
+    @Test func renderIsTheDrawingSerialised() throws {
+        let graph = try laidOut(fixture)
+        let renderer = VSVGRenderer(logger: TestLogger())
+
+        let drawing = try renderer.draw(graph: graph, darkMode: false, interactive: true)
+
+        guard case .element(.svg, _, _) = drawing else {
+            Issue.record("the drawing's root is not an <svg>")
+            return
+        }
+        #expect(ids(in: drawing).contains("node-q1"))
+        #expect(ids(in: drawing).contains("group-g1"))
+        #expect(
+            renderer.serialise(drawing, sourceVGL: fixture)
+                == (try renderer.render(graph: graph, sourceVGL: fixture, darkMode: false, interactive: true)))
+    }
+
+    /// The envelope is the string's alone: a mounted tree cannot hold CDATA.
+    @Test func theDrawingCarriesNoSourceEnvelope() throws {
+        let renderer = VSVGRenderer(logger: TestLogger())
+        let drawing = try renderer.draw(graph: try laidOut(fixture), darkMode: false, interactive: false)
+
+        #expect(!drawing.render().contains("CDATA"))
+        #expect(renderer.serialise(drawing, sourceVGL: fixture).contains("<![CDATA[\(fixture)]]>"))
+    }
+
+    /// Through the application, because that is where the editor gets it.
+    @Test func aRenderResultCarriesTheDrawingBehindItsSVG() throws {
+        let result = try VGraphTestApp().renderGraph(fixture)
+
+        #expect(ids(in: result.drawing).contains("node-a1"))
+        #expect(result.svg == VSVGRenderer(logger: TestLogger()).serialise(result.drawing, sourceVGL: fixture))
     }
 
     /// A struct that stops being stateless stops compiling here.

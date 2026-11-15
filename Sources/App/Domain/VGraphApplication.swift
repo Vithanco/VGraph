@@ -3,6 +3,10 @@ import VGraph
 /// The application layer: the use cases, expressed against ports only.
 /// Assembling the app means choosing a `Ports` conformer — see `AppPorts`.
 public struct VGraphApplication<Ports: AppPorts> {
+    /// What this wiring's renderer draws — so a driver can name a render's
+    /// result without importing the adapter that decides it.
+    public typealias Drawing = Ports.Renderer.Drawing
+
     /// Internal, not private: `GraphSession` drives the same ports.
     let ports: Ports
 
@@ -55,7 +59,7 @@ public struct VGraphApplication<Ports: AppPorts> {
     /// Quality analysis runs on the pre-transform parsed graph. Without a
     /// `view` the model is shown, even in a document that declares views.
     public func renderGraph(_ input: String, view: String? = nil, darkMode: Bool = false) throws(VError)
-        -> RenderResult
+        -> RenderResult<Drawing>
     {
         let graph = try parseGraph(input)
         return try renderGraph(graph: graph, sourceVGL: input, view: view, darkMode: darkMode)
@@ -72,14 +76,15 @@ public struct VGraphApplication<Ports: AppPorts> {
     /// after a VCommand mutated it — with no round-trip through text.
     public func renderGraph(
         graph: VGraph, sourceVGL: String, view: String? = nil, darkMode: Bool = false, interactive: Bool = false
-    ) throws(VError) -> RenderResult {
+    ) throws(VError) -> RenderResult<Drawing> {
         let qualityReport = Notations.analyzeQuality(graph: graph)
 
         let layoutedGraph = try displayPipeline(try graph.displaying(view: view))
-        let svg = try ports.renderer.render(
-            graph: layoutedGraph, sourceVGL: sourceVGL, darkMode: darkMode,
-            interactive: interactive)
-        return RenderResult(svg: svg, qualityReport: qualityReport)
+        let drawing = try ports.renderer.draw(
+            graph: layoutedGraph, darkMode: darkMode, interactive: interactive)
+        return RenderResult(
+            svg: ports.renderer.serialise(drawing, sourceVGL: sourceVGL), drawing: drawing,
+            qualityReport: qualityReport)
     }
 
     public func analyzeQuality(_ input: String) throws(VError) -> QualityReport {

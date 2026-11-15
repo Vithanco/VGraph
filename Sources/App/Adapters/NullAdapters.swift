@@ -10,11 +10,11 @@ public struct NullRenderer: ForRenderAGraph {
 
     public init() {}
 
-    public func render(
-        graph: VGraph, sourceVGL: String? = nil, darkMode: Bool = false, interactive: Bool = false
-    ) throws(VError) -> String {
+    public func draw(graph: VGraph, darkMode: Bool, interactive: Bool) throws(VError) -> Never {
         throw VError.notImplemented("No renderer available")
     }
+
+    public func serialise(_ drawing: Never, sourceVGL: String?) -> String {}
 }
 
 public struct NullLayoutEngine: ForLayoutAGraph {

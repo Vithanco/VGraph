@@ -16,22 +16,23 @@ public struct VSVGRenderer<Logger: ForLogMessages>: ForRenderAGraph, Sendable {
         self.overlayProviders = overlayProviders
     }
 
+    public func draw(graph: VGraph, darkMode: Bool, interactive: Bool) throws(VError) -> VSVGNode {
+        try VSVGGraph.render(
+            graph: graph, darkMode: darkMode, logger: logger,
+            overlayProviders: overlayProviders, interactive: interactive)
+    }
+
     /// The VGL envelope is spliced into the string rather than built into the
     /// tree: it is CDATA, which the IR does not model, and keeping it on this
     /// side is what lets the tree stay entirely mountable (ADR-0015 F1). Only
     /// Save SVG and document re-opening need it; the mounted preview does not.
-    public func render(
-        graph: VGraph, sourceVGL: String? = nil, darkMode: Bool = false, interactive: Bool = false
-    ) throws(VError) -> String {
-        let svg = try VSVGGraph.render(
-            graph: graph, darkMode: darkMode, logger: logger,
-            overlayProviders: overlayProviders, interactive: interactive
-        ).render()
+    public func serialise(_ drawing: VSVGNode, sourceVGL: String?) -> String {
+        let svg = drawing.render()
         guard let sourceVGL else { return svg }
         return SVGBuilder.embedVGL(sourceVGL, in: svg)
     }
 
-    /// `render` embeds it as CDATA in `<metadata>`; `SVGBuilder` owns both ends
+    /// `serialise` embeds it as CDATA in `<metadata>`; `SVGBuilder` owns both ends
     /// so the mint and the parse cannot drift.
     public func sourceVGL(from rendered: String) -> String? {
         SVGBuilder.extractVGL(from: rendered)

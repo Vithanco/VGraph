@@ -145,9 +145,11 @@ written. A driving port declared in `Inbound/` compiles fine, so
 `ArchitectureTest.everyDrivingPortIsDeclaredInTheCore` and
 `inboundDeclaresNoProtocolOfItsOwn` are what notice.
 
-No driving port has an associated type — every type they name is concrete — so a
-pane is `struct DiagramPane<Session: ForEditAGraphVisually>` and never names
-`AppPorts` or a version store. A pane wanting two holds `A & B`, still static
+A driving port names no type that would drag the wiring in, so a pane is
+`struct DiagramPane<Session: ForEditAGraphVisually>` and never names `AppPorts`
+or a version store. The one associated type is the visual port's `Drawing`: the
+core does not know what a renderer draws, and a pane that mounts drawings says
+which kind it takes (`where Session.Drawing == VSVGNode`). A pane wanting two holds `A & B`, still static
 dispatch (confirmed by `VGraphWasm/VGraphEditor/DrivingPortWitness.swift`).
 
 Changes flow back through `ForObserveDocumentChanges`, an **Observer**: once the

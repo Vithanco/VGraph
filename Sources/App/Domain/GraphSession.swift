@@ -184,7 +184,7 @@ public final class GraphSession<
     /// `interactive: true` because this is the diagram *pane*'s render — every
     /// other caller reaches the renderer through the string form
     /// `renderGraph(_:darkMode:)` and keeps today's output (ADR-0021).
-    public func render(darkMode: Bool = false) throws(VError) -> RenderResult {
+    public func render(darkMode: Bool = false) throws(VError) -> RenderResult<Ports.Renderer.Drawing> {
         let vgl = try exportVGL()
         return try app.renderGraph(
             graph: origin, sourceVGL: vgl, view: shownView, darkMode: darkMode, interactive: true)
