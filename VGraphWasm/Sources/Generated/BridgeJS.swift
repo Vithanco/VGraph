@@ -12,7 +12,8 @@
 @_cdecl("bjs_mountEditor")
 public func _bjs_mountEditor(_ elementIdBytes: Int32, _ elementIdLength: Int32) -> Void {
     #if arch(wasm32)
-    mountEditor(elementId: String.bridgeJSLiftParameter(elementIdBytes, elementIdLength))
+    let elementId = String.bridgeJSLiftParameter(elementIdBytes, elementIdLength)
+    mountEditor(elementId: elementId)
     #else
     fatalError("Only available on WebAssembly")
     #endif
@@ -42,7 +43,8 @@ public func _bjs_editorLongPressFired() -> Void {
 @_cdecl("bjs_setEditorVGL")
 public func _bjs_setEditorVGL(_ textBytes: Int32, _ textLength: Int32) -> Void {
     #if arch(wasm32)
-    setEditorVGL(text: String.bridgeJSLiftParameter(textBytes, textLength))
+    let text = String.bridgeJSLiftParameter(textBytes, textLength)
+    setEditorVGL(text: text)
     #else
     fatalError("Only available on WebAssembly")
     #endif
@@ -52,7 +54,9 @@ public func _bjs_setEditorVGL(_ textBytes: Int32, _ textLength: Int32) -> Void {
 @_cdecl("bjs_openEditorDocument")
 public func _bjs_openEditorDocument(_ textBytes: Int32, _ textLength: Int32, _ nameBytes: Int32, _ nameLength: Int32) -> Int32 {
     #if arch(wasm32)
-    let ret = openEditorDocument(text: String.bridgeJSLiftParameter(textBytes, textLength), name: String.bridgeJSLiftParameter(nameBytes, nameLength))
+    let name = String.bridgeJSLiftParameter(nameBytes, nameLength)
+    let text = String.bridgeJSLiftParameter(textBytes, textLength)
+    let ret = openEditorDocument(text: text, name: name)
     return ret.bridgeJSLowerReturn()
     #else
     fatalError("Only available on WebAssembly")
@@ -63,7 +67,8 @@ public func _bjs_openEditorDocument(_ textBytes: Int32, _ textLength: Int32, _ n
 @_cdecl("bjs_setEditorStatus")
 public func _bjs_setEditorStatus(_ textBytes: Int32, _ textLength: Int32) -> Void {
     #if arch(wasm32)
-    setEditorStatus(text: String.bridgeJSLiftParameter(textBytes, textLength))
+    let text = String.bridgeJSLiftParameter(textBytes, textLength)
+    setEditorStatus(text: text)
     #else
     fatalError("Only available on WebAssembly")
     #endif
@@ -73,7 +78,8 @@ public func _bjs_setEditorStatus(_ textBytes: Int32, _ textLength: Int32) -> Voi
 @_cdecl("bjs_convertToDot")
 public func _bjs_convertToDot(_ graphBytes: Int32, _ graphLength: Int32) -> Void {
     #if arch(wasm32)
-    let ret = convertToDot(graph: String.bridgeJSLiftParameter(graphBytes, graphLength))
+    let graph = String.bridgeJSLiftParameter(graphBytes, graphLength)
+    let ret = convertToDot(graph: graph)
     return ret.bridgeJSLowerReturn()
     #else
     fatalError("Only available on WebAssembly")
@@ -84,7 +90,8 @@ public func _bjs_convertToDot(_ graphBytes: Int32, _ graphLength: Int32) -> Void
 @_cdecl("bjs_dotForLayout")
 public func _bjs_dotForLayout(_ graphBytes: Int32, _ graphLength: Int32) -> Void {
     #if arch(wasm32)
-    let ret = dotForLayout(graph: String.bridgeJSLiftParameter(graphBytes, graphLength))
+    let graph = String.bridgeJSLiftParameter(graphBytes, graphLength)
+    let ret = dotForLayout(graph: graph)
     return ret.bridgeJSLowerReturn()
     #else
     fatalError("Only available on WebAssembly")
@@ -95,7 +102,8 @@ public func _bjs_dotForLayout(_ graphBytes: Int32, _ graphLength: Int32) -> Void
 @_cdecl("bjs_renderGraph")
 public func _bjs_renderGraph(_ graphBytes: Int32, _ graphLength: Int32) -> Void {
     #if arch(wasm32)
-    let ret = renderGraph(graph: String.bridgeJSLiftParameter(graphBytes, graphLength))
+    let graph = String.bridgeJSLiftParameter(graphBytes, graphLength)
+    let ret = renderGraph(graph: graph)
     return ret.bridgeJSLowerReturn()
     #else
     fatalError("Only available on WebAssembly")
@@ -106,7 +114,8 @@ public func _bjs_renderGraph(_ graphBytes: Int32, _ graphLength: Int32) -> Void 
 @_cdecl("bjs_renderGraphDark")
 public func _bjs_renderGraphDark(_ graphBytes: Int32, _ graphLength: Int32) -> Void {
     #if arch(wasm32)
-    let ret = renderGraphDark(graph: String.bridgeJSLiftParameter(graphBytes, graphLength))
+    let graph = String.bridgeJSLiftParameter(graphBytes, graphLength)
+    let ret = renderGraphDark(graph: graph)
     return ret.bridgeJSLowerReturn()
     #else
     fatalError("Only available on WebAssembly")
@@ -117,7 +126,9 @@ public func _bjs_renderGraphDark(_ graphBytes: Int32, _ graphLength: Int32) -> V
 @_cdecl("bjs_renderGraphWithQuality")
 public func _bjs_renderGraphWithQuality(_ graphBytes: Int32, _ graphLength: Int32, _ viewBytes: Int32, _ viewLength: Int32) -> Void {
     #if arch(wasm32)
-    let ret = renderGraphWithQuality(graph: String.bridgeJSLiftParameter(graphBytes, graphLength), view: String.bridgeJSLiftParameter(viewBytes, viewLength))
+    let view = String.bridgeJSLiftParameter(viewBytes, viewLength)
+    let graph = String.bridgeJSLiftParameter(graphBytes, graphLength)
+    let ret = renderGraphWithQuality(graph: graph, view: view)
     return ret.bridgeJSLowerReturn()
     #else
     fatalError("Only available on WebAssembly")
@@ -128,7 +139,8 @@ public func _bjs_renderGraphWithQuality(_ graphBytes: Int32, _ graphLength: Int3
 @_cdecl("bjs_listViews")
 public func _bjs_listViews(_ graphBytes: Int32, _ graphLength: Int32) -> Void {
     #if arch(wasm32)
-    let ret = listViews(graph: String.bridgeJSLiftParameter(graphBytes, graphLength))
+    let graph = String.bridgeJSLiftParameter(graphBytes, graphLength)
+    let ret = listViews(graph: graph)
     return ret.bridgeJSLowerReturn()
     #else
     fatalError("Only available on WebAssembly")
@@ -139,7 +151,8 @@ public func _bjs_listViews(_ graphBytes: Int32, _ graphLength: Int32) -> Void {
 @_cdecl("bjs_describeNotation")
 public func _bjs_describeNotation(_ notationBytes: Int32, _ notationLength: Int32) -> Void {
     #if arch(wasm32)
-    let ret = describeNotation(notation: String.bridgeJSLiftParameter(notationBytes, notationLength))
+    let notation = String.bridgeJSLiftParameter(notationBytes, notationLength)
+    let ret = describeNotation(notation: notation)
     return ret.bridgeJSLowerReturn()
     #else
     fatalError("Only available on WebAssembly")
@@ -150,7 +163,8 @@ public func _bjs_describeNotation(_ notationBytes: Int32, _ notationLength: Int3
 @_cdecl("bjs_debugGraph")
 public func _bjs_debugGraph(_ graphBytes: Int32, _ graphLength: Int32) -> Void {
     #if arch(wasm32)
-    let ret = debugGraph(graph: String.bridgeJSLiftParameter(graphBytes, graphLength))
+    let graph = String.bridgeJSLiftParameter(graphBytes, graphLength)
+    let ret = debugGraph(graph: graph)
     return ret.bridgeJSLowerReturn()
     #else
     fatalError("Only available on WebAssembly")
@@ -161,7 +175,8 @@ public func _bjs_debugGraph(_ graphBytes: Int32, _ graphLength: Int32) -> Void {
 @_cdecl("bjs_layoutGraph")
 public func _bjs_layoutGraph(_ graphBytes: Int32, _ graphLength: Int32) -> Void {
     #if arch(wasm32)
-    let ret = layoutGraph(graph: String.bridgeJSLiftParameter(graphBytes, graphLength))
+    let graph = String.bridgeJSLiftParameter(graphBytes, graphLength)
+    let ret = layoutGraph(graph: graph)
     return ret.bridgeJSLowerReturn()
     #else
     fatalError("Only available on WebAssembly")
@@ -172,7 +187,8 @@ public func _bjs_layoutGraph(_ graphBytes: Int32, _ graphLength: Int32) -> Void 
 @_cdecl("bjs_exportToVGL")
 public func _bjs_exportToVGL(_ graphBytes: Int32, _ graphLength: Int32) -> Void {
     #if arch(wasm32)
-    let ret = exportToVGL(graph: String.bridgeJSLiftParameter(graphBytes, graphLength))
+    let graph = String.bridgeJSLiftParameter(graphBytes, graphLength)
+    let ret = exportToVGL(graph: graph)
     return ret.bridgeJSLowerReturn()
     #else
     fatalError("Only available on WebAssembly")

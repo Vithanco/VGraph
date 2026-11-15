@@ -116,7 +116,7 @@ struct ViewMenu {
         DismissLayer(onPress: { editorModel.viewMenuAt = nil })
 
         div {
-            ForEach(viewPickerOptions, key: { $0.key }) { choice in
+            ForEach(viewPickerOptions, id: { $0.key }) { choice in
                 MenuRow(title: (choice.isSelected ? "✓ " : "") + choice.title, enabled: true) { _ in
                     editorModel.viewMenuAt = nil
                     viewPicked(choice.name ?? "")
@@ -124,7 +124,7 @@ struct ViewMenu {
             }
             div {}
                 .attributes(.custom(name: "class", value: "vg-ctx-sep"))
-            ForEach(viewMenuRows(), key: { $0.id.raw }) { row in
+            ForEach(viewMenuRows(), id: { $0.id.raw }) { row in
                 MenuRow(title: row.title, enabled: row.enabled) { _ in
                     if row.enabled {
                         performViewCommand(row.id)
@@ -153,7 +153,7 @@ struct ContextMenuPanel {
             case .choice(let title):
                 div { title }
                     .attributes(.custom(name: "class", value: "vg-ctx-head"))
-                ForEach(promptOptions, key: { $0.id }) { option in
+                ForEach(promptOptions, id: { $0.id }) { option in
                     MenuRow(title: option.title, enabled: true) { _ in optionPicked(option) }
                 }
             case .text(let title):
@@ -187,7 +187,7 @@ struct ContextMenuPanel {
                 // `ForEach`, not a bare `for`: the latter's buildArray only
                 // accepts plain HTML, and these rows carry ElementaryUI
                 // modifiers.
-                ForEach(menuItems, key: { $0.id.raw + ($0.target ?? "") }) { item in
+                ForEach(menuItems, id: { $0.id.raw + ($0.target ?? "") }) { item in
                     MenuRow(title: item.title, enabled: item.enabled) { event in
                         performCommand(item.id, on: item.target, forcingChoice: event.altKey)
                     }

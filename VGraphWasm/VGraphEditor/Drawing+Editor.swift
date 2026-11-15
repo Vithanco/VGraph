@@ -117,9 +117,9 @@ struct Drawn: SVGView {
 }
 
 private func drawn(_ children: [VSVGNode]) -> some SVGView {
-    ForEach(mountedChildren(of: children), key: { $0.key }, content: { Drawn(node: $0.node) })
+    ForEach(mountedChildren(of: children), id: { $0.key }, content: { Drawn(node: $0.node) })
 }
 
-private func mounted<Tag: SVGTagDefinition>(_ attributes: [VSVGAttribute]) -> [SVGAttribute<Tag>] {
+private func mounted<Tag: SVGTagDefinition & MarkupTrait.AllowsAttributes>(_ attributes: [VSVGAttribute]) -> [SVGAttribute<Tag>] {
     attributes.map { .custom(name: $0.name, value: $0.value) }
 }

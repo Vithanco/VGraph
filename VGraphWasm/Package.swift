@@ -95,8 +95,8 @@ let package = Package(
     dependencies: [
         .package(name: "VGraph", path: ".."),
         .package(url: "https://github.com/swiftwasm/carton", from: "1.0.0"),
-        .package(url: "https://github.com/swiftwasm/JavaScriptKit.git", .upToNextMinor(from: "0.59.0")),
-        .package(url: "https://github.com/elementary-swift/elementary-ui.git", from: "0.8.0"),
+        .package(url: "https://github.com/swiftwasm/JavaScriptKit.git", .upToNextMinor(from: "0.63.0")),
+        .package(url: "https://github.com/elementary-swift/elementary-ui.git", from: "0.9.1"),
     ],
     targets: [
         .executableTarget(
