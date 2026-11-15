@@ -44,6 +44,23 @@ public func zoomScale(_ zoom: Zoom, content: VSize, available: VSize) -> Double 
     }
 }
 
+/// The size the drawing takes, as the `style` of its `<svg>`.
+///
+/// Fit is left to CSS rather than computed: capped by the pane and by natural
+/// size, a drawing already fits and keeps fitting as the window, the splitter
+/// or focus mode change the pane. Only a fixed zoom needs a pixel size.
+public func zoomStyle(_ zoom: Zoom, natural: VSize) -> String {
+    switch zoom {
+    case .fit:
+        return "width:auto;height:auto;max-width:min(100%, \(natural.width)px);"
+            + "max-height:min(100%, \(natural.height)px);"
+    case .fixed:
+        let scale = zoomScale(zoom, content: natural, available: .zero)
+        return "width:\(natural.width * scale)px;height:\(natural.height * scale)px;"
+            + "max-width:none;max-height:none;"
+    }
+}
+
 public func zoomStepped(
     _ zoom: Zoom, _ direction: ZoomDirection, content: VSize, available: VSize
 ) -> Zoom {

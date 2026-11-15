@@ -11,7 +11,7 @@ private let chipInset = 6.0
 /// the DOM would cost a layout per marker for a pixel of slack.
 private let charWidth = 6.0
 
-/// Into the live SVG after each render, like the selection halo, and never into
+/// Into the live SVG after each patch, like the selection halo, and never into
 /// `lastRenderedSVG`: a saved SVG stays a plain picture of the model.
 func paintDetailsMarkers() {
     guard let session = graphSession,
@@ -19,11 +19,23 @@ func paintDetailsMarkers() {
         let list = preview.querySelectorAll?(".\(SVGElementId.foldedGroupClass)").object,
         let count = list.length.number
     else { return }
+    // The boxes outlive a render now, so last render's markers are still in them.
+    if let stale = preview.querySelectorAll?(".vg-details-marker").object,
+        let staleCount = stale.length.number
+    {
+        for index in 0..<Int(staleCount) {
+            _ = stale[index].object?.remove?()
+        }
+    }
     for index in 0..<Int(count) {
-        guard let box = list[index].object,
-            let domId = box.id.string,
+        guard let drawn = list[index].object,
+            let domId = drawn.id.string,
             let id = SVGElementId.originId(fromDomId: domId),
             let text = EditorCore.detailsMarker(id, in: session),
+            // Into the group that carries the box's position, and measured in
+            // its coordinates: the box may be gliding to a new place, and a
+            // marker beside it instead would be left where the glide began.
+            let box = drawn.querySelector?(":scope > g").object,
             let bounds = box.getBBox?().object,
             let x = bounds.x.number, let y = bounds.y.number,
             let width = bounds.width.number, let height = bounds.height.number

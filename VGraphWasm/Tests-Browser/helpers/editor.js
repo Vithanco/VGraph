@@ -332,23 +332,6 @@ export async function typeInline(page, text) {
   await page.locator(s.inlineEdit).fill(text);
 }
 
-// How many times the preview was re-rendered while `during` ran. Each
-// `performRender` swaps the preview's innerHTML, which is one mutation record.
-export async function countRenders(page, during) {
-  await page.evaluate((q) => {
-    window.__renders = 0;
-    window.__renderWatch = new MutationObserver((records) => {
-      for (const r of records) if (r.target.id === q) window.__renders++;
-    });
-    window.__renderWatch.observe(document.body, { childList: true, subtree: true });
-  }, 'vg-editor-preview');
-  await during();
-  return page.evaluate(() => {
-    window.__renderWatch.disconnect();
-    return window.__renders;
-  });
-}
-
 // Waits for the debounced render to land, proven by the diagram; asserting on the
 // textarea alone races the 400 ms debounce and every history assertion needs the
 // render to have recorded a version.

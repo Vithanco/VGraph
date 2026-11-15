@@ -215,7 +215,7 @@ func commandApplied(
     // After the render, never before: a render closes any open editor, so
     // opening first would have the command cancel its own request.
     if let edit {
-        beginInlineEdit(elementId: edit.elementId, kind: edit.kind)
+        whenPreviewPatched { beginInlineEdit(elementId: edit.elementId, kind: edit.kind) }
     } else {
         focusEditor()
     }

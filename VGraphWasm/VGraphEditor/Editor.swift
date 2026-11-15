@@ -6,9 +6,10 @@
 // sibling file per feature.
 //
 // Design notes:
-//   * ElementaryUI manages the whole tree, but the SVG preview, the highlight
-//     layer, the textarea and the diagnostics box are all kept childless in
-//     ElementaryUI terms and filled with `innerHTML` via JavaScriptKit. That
+//   * ElementaryUI manages the whole tree, the SVG preview included: the
+//     drawing is mounted from its `VSVGNode` (`Drawing+Editor.swift`). The
+//     highlight layer, the textarea and the diagnostics box are kept childless
+//     in ElementaryUI terms and filled with `innerHTML` via JavaScriptKit. That
 //     sidesteps ElementaryUI's lack of a raw-HTML view and keeps the reconciler
 //     off the caret and the injected markup.
 //   * Shared state lives in a module-global `@Reactive` model so `setEditorVGL`

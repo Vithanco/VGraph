@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
   sel, oneConcept, openEditor, vglText, canUndo, renderNow, typeInline, emptyCanvas,
-  countRenders,
 } from '../helpers/editor.js';
 
 test.beforeEach(async ({ page }) => {
@@ -31,18 +30,13 @@ test('Return commits', async ({ page }) => {
 
 // Committing removes the field and refocuses the textarea mid-keydown, so without
 // `preventDefault` the Enter's own default action ran against the textarea: it
-// typed a newline into the document and armed the 400 ms debounce, whose render
-// then closed any editor reopened in the meantime.
+// typed a newline into the document and armed the 400 ms debounce. What that
+// render then did is 'reopening right after a commit survives the render debounce'.
 test('the Enter that commits does not reach the textarea', async ({ page }) => {
   await typeInline(page, 'First');
+  await page.keyboard.press('Enter');
+  await expect(page.locator(sel.svg)).toContainText('First');
 
-  const renders = await countRenders(page, async () => {
-    await page.keyboard.press('Enter');
-    await expect(page.locator(sel.svg)).toContainText('First');
-    await page.waitForTimeout(700);  // longer than the 400 ms debounce
-  });
-
-  expect(renders, 'a commit renders once').toBe(1);
   expect(await vglText(page), 'Enter must not type into the textarea').not.toMatch(/\n\n$/);
 });
 

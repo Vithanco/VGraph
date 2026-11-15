@@ -99,9 +99,16 @@ public enum VSVGEdge {
         interactive: Bool = false
     ) -> VSVGNode {
         var edges: [VSVGNode] = []
+        var drawnBetween: [String: Int] = [:]
 
         for edge in graph.edges {
             if let keep = keepSet, !keep.contains(edge) { continue }
+            // Counted before anything can skip the edge, so that a parallel
+            // edge keeps its key whether or not its twin is drawn.
+            let ends = "\(edge.from.id)>\(edge.to.id)"
+            let nth = (drawnBetween[ends] ?? 0) + 1
+            drawnBetween[ends] = nth
+            let key = interactive ? (nth == 1 ? ends : "\(ends)#\(nth)") : nil
 
             let edgeLayout = try? graph.get(edge: edge.id, attribute: Attributes.Edge.layoutData)
             var children: [VSVGNode] = []
@@ -185,16 +192,22 @@ public enum VSVGEdge {
             }
 
             if !children.isEmpty {
-                edges.append(
+                let drawn =
                     graph.bundledEdgeIds(of: edge.id).isEmpty
-                        ? VSVGBuilder.group(
-                            id: SVGElementId.edge(edge.id.id), cssClass: SVGElementId.edgeClass, children: children)
-                        : renderBundle(edge, in: graph, children: children))
+                    ? VSVGBuilder.group(
+                        id: SVGElementId.edge(edge.id.id), cssClass: SVGElementId.edgeClass, children: children)
+                    : renderBundle(edge, in: graph, children: children)
+                edges.append(keyed(drawn, by: key))
             }
         }
 
         logger.log("[EdgeRenderer] Rendered \(graph.edges.count) edges")
         return .fragment(edges)
+    }
+
+    private static func keyed(_ node: VSVGNode, by key: String?) -> VSVGNode {
+        guard let key, case .element(let tag, let attributes, let children) = node else { return node }
+        return .element(tag, attributes + [VSVGAttribute(SVGElementId.keyAttribute, key)], children)
     }
 
     /// Its members on hover, and what it unfolds on right-click, because a bundle

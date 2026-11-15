@@ -3,7 +3,7 @@
 // saves carries none.
 
 import { test, expect } from '@playwright/test';
-import { s, sel, openEditor, savedSVG, useTheme } from '../helpers/editor.js';
+import { s, sel, openEditor, editVGL, renderNow, savedSVG, useTheme } from '../helpers/editor.js';
 
 const banking = `vgraph banking: C4 "Internet Banking" {
   node customer: Person "Customer";
@@ -42,6 +42,50 @@ test('the marker sits inside the box it marks', async ({ page }) => {
   // Bottom-right, so it never meets the URL badge in the top-right corner.
   expect(mark.x).toBeGreaterThan(box.x + box.width / 2);
   expect(mark.y).toBeGreaterThan(box.y + box.height / 2);
+});
+
+// The box outlives a render (ADR-0015 F1), so last render's marker is still in it.
+test('a second render leaves one marker, not two', async ({ page }) => {
+  await openEditor(page, banking);
+  await expect(page.locator(marker)).toHaveCount(1);
+
+  await renderNow(page);
+  await renderNow(page);
+
+  await expect(page.locator(folded('ibs'))).toBeVisible();
+  await expect(page.locator(marker)).toHaveCount(1);
+});
+
+// A folded box glides to its new place like any node (ADR-0015 F1), and the
+// marker is painted when the glide has only just begun. Undo moves the box
+// here because typing would: its debounced second render repaints the marker
+// and hides one left behind.
+test('the marker travels with a box that a render moves', async ({ page }) => {
+  await openEditor(page, banking);
+  const acrossBox = () =>
+    page.evaluate(
+      ({ boxSel, markSel }) => {
+        const box = document.querySelector(boxSel).getBoundingClientRect();
+        const mark = document.querySelector(markSel).getBoundingClientRect();
+        return { at: (mark.x - box.x) / box.width, boxX: box.x };
+      },
+      { boxSel: `${sel.group('ibs')} > g`, markSel: marker },
+    );
+  await editVGL(
+    page,
+    banking.replace('edge customer -> web;', 'edge customer -> web;\n  edge customer -> mainframe;'),
+    'Mainframe',
+  );
+  await page.waitForTimeout(800);  // the debounced render and its glide
+  const moved = await acrossBox();
+
+  await page.locator(s.undo).click();
+  await page.waitForTimeout(500);  // past the glide
+  const back = await acrossBox();
+
+  expect(back.boxX, 'undo moves the box').not.toBeCloseTo(moved.boxX, 0);
+  expect(back.at).toBeCloseTo(moved.at, 2);
+  expect(back.at).toBeGreaterThan(0.5);
 });
 
 // Style guide §13: --pill-bg chip, --ink-2 count, in either theme.

@@ -8,6 +8,7 @@ import EditorCore
 import JavaScriptKit
 import Reactivity
 import VGraph
+import VGraphSVG
 
 // A ConceptMap joins two Concepts *through* a Relation — `idea -> detail` is a
 // pair the notation does not carry, so the old default opened with a red edge
@@ -80,6 +81,11 @@ final class EditorModel {
     var canUndo: Bool
     var canRedo: Bool
 
+    // What the preview shows. `drawnCount` moves on every render, also one that
+    // drew the same picture, so the work waiting on the patch is always released.
+    var drawing: VSVGNode?
+    var drawnCount: Int
+
     // Derived from `selection`, which is not reactive, so the toolbar has
     // something to grey itself with. The greying is most of why that button
     // exists — it is the only thing telling a user selection is a thing at
@@ -107,6 +113,8 @@ final class EditorModel {
         self.shownViewTitle = ""
         self.canUndo = false
         self.canRedo = false
+        self.drawing = nil
+        self.drawnCount = 0
         self.groupable = false
     }
 }
@@ -142,6 +150,10 @@ nonisolated(unsafe) var pendingText: String = ""
 // The most recent successfully-rendered SVG, held so "Save SVG" has something
 // to download without re-rendering.
 nonisolated(unsafe) var lastRenderedSVG: String = ""
+// Work that measures the preview, held until ElementaryUI has patched it: a
+// render only hands over the new drawing, and the DOM follows in a microtask.
+nonisolated(unsafe) var previewPatchPending = false
+nonisolated(unsafe) var afterPreviewPatch: [() -> Void] = []
 // The name the saves reuse, and the only trace an opened file leaves: there
 // is no file *handle* behind it, so a save is always a fresh download.
 nonisolated(unsafe) var documentBaseName: String = EditorCore.defaultDocumentName

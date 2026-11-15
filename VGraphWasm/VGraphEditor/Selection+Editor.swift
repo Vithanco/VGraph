@@ -141,7 +141,7 @@ func performSelectionCommand(_ commandId: VCommandID) {
     // edit opens *after* the render, which is ADR-0009's ordering rule.
     selection = Selection([group])
     selectionChanged()
-    beginInlineEdit(elementId: group, kind: .group)
+    whenPreviewPatched { beginInlineEdit(elementId: group, kind: .group) }
 }
 
 // MARK: - Drawing it

@@ -58,26 +58,33 @@ func beginInlineEdit(elementId: String, kind: VElementKind) {
         ).object
     else { return }
 
-    // Before measuring: a node the user did not place can be outside the
-    // visible pane, and an overlay positioned there is an invisible field
-    // holding the focus (ADR-0016).
-    _ = element.scrollIntoView?(scrollIntoViewOptions)
-
-    let anchor: (x: Double, y: Double, width: Double)
-    if kind == .edge {
-        guard let midpoint = edgeMidpoint(in: element) else { return }
-        anchor = (midpoint.x - 70, midpoint.y - 12, 140)
-    } else {
-        let box = kind == .group ? groupLabelElement(in: element) ?? element : element
-        guard let rect = box.getBoundingClientRect?().object,
-            let x = rect.left.number, let y = rect.top.number, let w = rect.width.number
-        else { return }
-        anchor = (x, y, max(w, 90))
+    var measured: (x: Double, y: Double, width: Double)?
+    // After a command the frame is still easing, and the field has to sit where
+    // the element will be.
+    measuringAtRest {
+        // Before measuring: a node the user did not place can be outside the
+        // visible pane, and an overlay positioned there is an invisible field
+        // holding the focus (ADR-0016).
+        _ = element.scrollIntoView?(scrollIntoViewOptions)
+        measured = inlineEditAnchor(of: element, kind: kind)
     }
+    guard let anchor = measured else { return }
 
     pendingText = session.label(of: elementId) ?? ""
     editorModel.inlineEdit = InlineEditPlacement(
         targetId: elementId, x: anchor.x, y: anchor.y, width: anchor.width)
+}
+
+private func inlineEditAnchor(of element: JSObject, kind: VElementKind) -> (x: Double, y: Double, width: Double)? {
+    if kind == .edge {
+        guard let midpoint = edgeMidpoint(in: element) else { return nil }
+        return (midpoint.x - 70, midpoint.y - 12, 140)
+    }
+    let box = kind == .group ? groupLabelElement(in: element) ?? element : element
+    guard let rect = box.getBoundingClientRect?().object,
+        let x = rect.left.number, let y = rect.top.number, let w = rect.width.number
+    else { return nil }
+    return (x, y, max(w, 90))
 }
 
 private func edgeMidpoint(in element: JSObject) -> (x: Double, y: Double)? {

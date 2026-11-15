@@ -5,6 +5,7 @@
 
 import App
 import EditorCore
+import ElementaryUI
 import JavaScriptKit
 import VGraph
 import VGraphSVG
@@ -24,13 +25,13 @@ func renderDiagnostics(messages: [MessageWithSeverity], hardError: String?) {
 /// or the loaded text). On a thrown (layout/render) error the last successful
 /// SVG is left untouched — the box shows the failure (non-destructive).
 func performRender() {
-    // A render replaces the whole SVG, so any open inline editor is about to
-    // lose the element it is anchored to. Close it and discard (ADR-0009) —
-    // this is what removes the entire stale-overlay class of bug. A drag goes
-    // the same way and for the same reason (ADR-0012).
+    // A render can move or remove the element an open inline editor is anchored
+    // to. Close it and discard (ADR-0009) — this is what removes the entire
+    // stale-overlay class of bug. A drag goes the same way and for the same
+    // reason (ADR-0012).
     endInlineEdit()
     gestureRedrawn()
-    // Tint the (non-ElementaryUI) preview background to match the theme so
+    // Tint the preview background to match the theme so
     // the dark-palette SVG is legible.
     if let style = element(DOMId.preview)?.style.object {
         style.background = SemanticColor.page.resolve(darkMode: editorModel.darkMode).hexString.jsValue
@@ -40,15 +41,16 @@ func performRender() {
     refreshViews()
     do {
         let result = try session.render(darkMode: editorModel.darkMode)
-        element(DOMId.preview)?.innerHTML = result.svg.jsValue
+        // The first drawing has no frame to ease from.
+        if editorModel.drawing != nil && !prefersReducedMotion() {
+            withAnimation(frameEasing) { show(result.drawing) }
+        } else {
+            show(result.drawing)
+        }
+        previewPatchPending = true
         lastRenderedSVG = result.svg
-        // Before the halo: that measures the drawn boxes, so they must already
-        // be at their final size.
-        applyZoom()
-        paintDetailsMarkers()
-        // The SVG was just replaced, taking the halo with it. Re-derived
-        // rather than preserved — having nothing to preserve is what lets it
-        // live inside the SVG at all (ADR-0009 as amended, ADR-0018).
+        // For `groupable`. What it paints lands on the elements that stay; the
+        // ones this render adds are painted in `previewPatched`.
         selectionChanged()
         let report = result.qualityReport
         renderDiagnostics(messages: report.messages, hardError: nil)
@@ -67,6 +69,47 @@ func performRender() {
         renderDiagnostics(messages: [], hardError: "\(error)")
         editorModel.status = "Render failed"
         repaintHighlight(semantic: true)  // marks the offending token
+    }
+}
+
+/// The curve the stylesheet moves nodes along — see `glideCurve`.
+private var frameEasing: Animation {
+    .bezier(
+        x1: 1.0 / 3, y1: Float(glideCurve.y1), x2: 2.0 / 3, y2: Float(glideCurve.y2),
+        duration: glideSeconds)
+}
+
+private func show(_ drawing: VSVGNode) {
+    editorModel.drawing = drawing
+    // Plain assignment: see `EditorModel` on the `_modify` accessor.
+    editorModel.drawnCount = editorModel.drawnCount + 1
+}
+
+private func prefersReducedMotion() -> Bool {
+    JSObject.global.matchMedia?("(prefers-reduced-motion: reduce)").matches.boolean ?? false
+}
+
+/// The preview now shows the last render. Everything that measures or stamps
+/// what is drawn belongs here rather than after `performRender`, which returns
+/// before ElementaryUI has touched the DOM.
+func previewPatched() {
+    previewPatchPending = false
+    paintDetailsMarkers()
+    // Re-derived rather than preserved, so that a render which rewrites an
+    // element's class list cannot lose the halo (ADR-0009 as amended, ADR-0018).
+    paintSelection()
+    let work = afterPreviewPatch
+    afterPreviewPatch = []
+    for item in work { item() }
+}
+
+/// Run `work` against the drawing the user is about to see: now, or once the
+/// pending render has been patched in.
+func whenPreviewPatched(_ work: @escaping () -> Void) {
+    if previewPatchPending {
+        afterPreviewPatch.append(work)
+    } else {
+        work()
     }
 }
 

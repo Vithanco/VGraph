@@ -270,6 +270,43 @@ struct VSVGEdgeTests {
         expectSnapshot(graph, interactive: true)
     }
 
+    /// A parse mints every edge id afresh, so the id cannot tell a mounted pane
+    /// that an edge is the one it already drew. Its ends can.
+    @Test func anInteractiveEdgeCarriesAKeyMadeOfItsEnds() throws {
+        let rendered = VSVGEdge.render(
+            graph: try withSimpleLayout(try makeGraph()), darkMode: false, logger: TestLogger(), interactive: true
+        ).render()
+
+        #expect(rendered.contains("\(SVGElementId.keyAttribute)=\"q1>a1\""))
+    }
+
+    @Test func parallelEdgesGetKeysOfTheirOwn() throws {
+        let parser = VGraphParser(logger: TestLogger())
+        let graph = try parser.parse(
+            source: """
+                vgraph twice: IBIS "Twice" {
+                    node q1: Question "Q";
+                    node a1: Answer "A";
+                    edge q1 -> a1;
+                    edge q1 -> a1;
+                }
+                """)
+        let rendered = VSVGEdge.render(graph: graph, darkMode: false, logger: TestLogger(), interactive: true)
+            .render()
+
+        #expect(rendered.contains("\(SVGElementId.keyAttribute)=\"q1>a1\""))
+        #expect(rendered.contains("\(SVGElementId.keyAttribute)=\"q1>a1#2\""))
+    }
+
+    /// The key is editor chrome, like the handles: an export stays as it was.
+    @Test func aNonInteractiveEdgeCarriesNoKey() throws {
+        let rendered = VSVGEdge.render(
+            graph: try withSimpleLayout(try makeGraph()), darkMode: false, logger: TestLogger()
+        ).render()
+
+        #expect(!rendered.contains(SVGElementId.keyAttribute))
+    }
+
     @Test func nonInteractiveEmitsNoEndHandles() throws {
         // The default — every non-editor caller (CLI, MCP, the Wasm engine export)
         // reaches the renderer this way, and none of them must gain the handles.

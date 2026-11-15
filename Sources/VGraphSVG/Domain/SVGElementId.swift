@@ -21,6 +21,11 @@ public enum SVGElementId {
     /// right-click offers to unfold.
     public static let unfoldsAttribute = "data-unfolds"
 
+    /// What a mounted pane tells an element from its siblings by, where the
+    /// `id` will not do: a parse mints every edge id afresh, so an edge is keyed
+    /// by its ends instead (ADR-0015 F1). Editor chrome, like the handles.
+    public static let keyAttribute = "data-key"
+
     /// The handle a [[Reattach]] drag is grabbed by. **No prefix and no id**: an
     /// [[Edge end]] is a position on an edge rather than an element, so it names
     /// the pair (edge, end) through these two data attributes and never enters

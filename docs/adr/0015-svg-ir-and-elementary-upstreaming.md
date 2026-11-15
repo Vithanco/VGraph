@@ -5,8 +5,9 @@ Date: 2026-07-29
 ## Status
 
 Accepted. The IR is the only rendering backend as of 2026-08-12; the string
-`SVGRenderer` is deleted and the `.raw` islands are retired (2026-08-15).
-Mounting the editor preview through ElementaryUI remains deferred — see F1.
+`SVGRenderer` is deleted and the `.raw` islands are retired (2026-08-15). The
+editor preview is mounted through ElementaryUI as of 2026-11-15 (F1); what F1
+still owes — transitions among it — is listed there.
 
 ## Context
 
@@ -66,6 +67,20 @@ watermark avoidance and neighbour-hover CSS live once (`SVGThemeColor`,
 `SVGRenderQueries`, `SVGHoverStyles`). Anything that is not markup construction
 belongs there.
 
+**The tree stays in `VGraphSVG`, and the ports say only that a renderer draws
+*something*.** `VForRenderAGraph` has an associated `Drawing`, which
+`VSVGRenderer` makes `VSVGNode`; `RenderResult` is generic over it, and
+`VForEditAGraphVisually` carries it to the pane, which constrains it to the
+kind it can mount. Moving the tree into the core instead was tried first
+(2026-11-15) and reversed the same day: it kept every port concrete, but put a
+list of SVG tags in the domain every notation is written against.
+`ArchitectureTest.theCoreNamesNoSVGTreeType` holds the line. The associated
+type is [0013](./0013-driving-ports-and-named-commands.md)'s one amendment.
+
+The renderer port speaks in two steps so that a drawing which is both mounted
+and saved is drawn once: `draw` returns the drawing and `serialise` turns one
+into the artefact. `render` is their composition.
+
 **`VGraphSVG` must not gain an Elementary dependency.** `VSVGNode`, `VSVGTag`
 and `VShapeStyle` are ours, so nothing in the module needs Elementary's types.
 Elementary stays declared only by the wasm editor target. Wanting it inside
@@ -83,7 +98,10 @@ deliberate rendering change a change that had to be made twice.
 Suggested sequence **4 → 1 → 3 → 2**: trivial goodwill first, the long-pole
 design discussion started early but landed last.
 
-1. **elementary-ui: generalise the modifier system beyond `View`.** Spiked
+1. **elementary-ui: generalise the modifier system beyond `View`.** *Landed as
+   elementary-ui#119, released in 0.8.0 — events and the style modifiers
+   (`opacity`, `offset`, `blur`, …). `.transition`, `.animation(value:)` and the
+   lifecycle modifiers are still `View`-only.* Spiked
    2026-08-12 and it works: relax `DOMEffectView` to
    `Wrapped: MarkupContent & _Mountable`, conform `MarkupContent`
    unconditionally, then conditionally conform `HTML, View where Wrapped: View`
@@ -107,6 +125,12 @@ design discussion started early but landed last.
    Components, not runtime-known tags.
 4. **elementary: attribute factories.** Typed `dx`/`dy` and any other gaps.
    Trivial; good first contribution.
+5. **elementary-ui: a bezier timing curve that honours x1 and x2.**
+   `UnitCurve.bezier` evaluates y at the parameter instead of solving for the
+   parameter at which x is the elapsed time, so `.easeInOut` and every custom
+   curve differ from their CSS namesakes. Found 2026-11-15; small and
+   self-contained. *Unlocks:* any curve for the frame, not only the one both
+   sides happen to agree on.
 
 Build against `main` and expect churn: the pull request elementary-ui#115 is an
 active draft touching the same internals.
@@ -115,41 +139,91 @@ active draft touching the same internals.
 
 | When this lands upstream | Do this here |
 | --- | --- |
-| Modifier generalisation (PR 1) | Execute F1 |
+| Modifier generalisation (PR 1) | Execute F1 — *landed; F1 begun 2026-11-15* |
 | Embedded string rendering (PR 2) | Consider retiring the IR emitter (part of F2) |
 | Dynamic-tag element (PR 3) | Replace F1's bounded-switch adapter with one `DynamicElement` mapping |
 | Attribute factories (PR 4) | Drop the `.custom(name: "dy", …)` fallbacks |
 
 ## Interim strategy
 
-*Not carried out.* The editor mount stays deferred until PR 1 lands (F1). The
-planned stopgap — transitions by patching each group's `transform` after a
-re-layout — was never built: every render still replaces the preview's SVG.
+*Not carried out, and overtaken.* The planned stopgap — transitions by patching
+each group's `transform` after a re-layout — was never built; PR 1 landed first
+and the preview is mounted instead (F1).
 
 ## Follow-ups (deferred, not currently planned)
 
-### F1 — Mount the editor preview (gated on PR 1)
+### F1 — Mount the editor preview
 
-The spike (since deleted) proved the view shape: a dynamic tree cannot be
-type-erased, so a *nominal view recursing into itself* is the only option, and
-it compiles because every child is the same type. `ForEach(_, key:)` gives DOM
-persistence. `GraphView` switches over `VSVGTag` — a closed set for exactly this
-reason.
+**Done (2026-11-15).** `Drawing+Editor.swift` mounts the session's `VSVGNode`:
+a dynamic tree cannot be type-erased, so a *nominal view recursing into itself*
+is the only option, and it compiles because every child is the same type. It
+switches over `VSVGTag` — a closed set for exactly this reason. Siblings are
+keyed by `mountedChildren` (`VSVGMounting.swift`): by `id` where there is one, otherwise by
+place among siblings of the same tag, so an insertion does not re-key what
+follows it. The tree is `Equatable`, which lets the reconciler skip a subtree a
+redraw left alone. `renderGraph`, Save SVG and the plugins stay on the string.
 
-Delegation needs a raw-event seam, since ElementaryUI's `MouseEvent` hides
-`target`; the editor's existing `_DOMEventHandlerConfig` pattern works unchanged
-for SVG, with `ContextMenuEvent` as the event type for its `.target`.
+What mounting changed for the rest of the editor:
 
-Steps: build `GraphView` keyed by `SVGElementId` and driven by the `@Reactive`
-model; replace `previewElement?.innerHTML` for the *preview only*, leaving
-`renderGraph` on the string path; keep the delegation handlers and
-`getScreenCTM` anchoring; adopt FLIP; re-examine
-ADR-0009's "a render closes the inline editor" rule once elements persist;
-then selection as reactive state.
+- **The DOM follows a render by a microtask.** `performRender` only hands over
+  the drawing; ElementaryUI patches afterwards. Everything that measures or
+  stamps what is drawn — the details markers, the selection halo, opening
+  an inline editor on a new element — runs from `previewPatched`, and
+  `whenPreviewPatched` is how a command queues work behind the patch.
+- **What the editor paints into the SVG now outlives a render**, because the
+  element it was painted into does. Painting has to be idempotent: the details
+  markers remove last render's before adding this one's.
+- The delegation handlers and `getScreenCTM` anchoring are unchanged.
 
-Verify: right-click menu, dblclick rename, undo, dark toggle and Save SVG all
-still work, plugins unaffected, no reconciler errors, and mount time for a large
-graph measured against innerHTML.
+Measured on a 200-node concept map (2,800 elements, optimized build, Chromium):
+a first mount takes 17–19 ms where `innerHTML` took 3 ms; a redraw after adding
+one node, which moves most of the layout, 9 ms; a redraw that changes nothing,
+0.5 ms. Parsing, layout and drawing are 135–155 ms either way, so the mount is
+not what a large diagram waits for.
+
+**Still owed:**
+
+- **Transitions, beyond the first step.** What moves now (2026-11-15): a node
+  glides and, in engines that treat `d` as a CSS property, a line bends into
+  its new shape. Both are two rules in the editor stylesheet — a transition on
+  the node group's `transform` and on the edge path's `d` — which is all it
+  takes once the elements persist, and both are off under
+  `prefers-reduced-motion`. An edge persists because the renderer keys it by
+  its ends (`SVGElementId.keyAttribute`, interactive drawings only): the parser
+  mints every edge id afresh, so an id cannot say that an edge is the one
+  already drawn. The style guide has no motion section; 0.25 s and the curve
+  (`glideSeconds`, `glideCurve`) are placeholders until it does.
+
+  **The frame eases too.** A redraw that changes the diagram's bounds changes
+  the `viewBox`; left to jump, that rescales and shifts the whole picture at
+  once and the nodes then glide from the wrong place. The root view
+  (`Drawing`) is `Animatable` over the frame, so ElementaryUI interpolates the
+  `viewBox` — and the width, height and zoom style that follow from it — per
+  frame. That made the zoom view state: the `<svg>`'s size is part of the mount,
+  so a first mount is fitted in the frame it appears in.
+
+  Two things follow from two clocks moving one picture. The curve has to be
+  one both evaluate alike, and ElementaryUI's bezier ignores its x control
+  points (it evaluates by parameter, not by time), so the shared curve fixes
+  them at 1/3 and 2/3, where that is the same curve the browser draws. And
+  nothing synchronises the two clocks: measured on the optimized build, frame
+  and nodes stay within 2 % of each other's progress on diagrams of 8 and 40
+  nodes, and drift up to 9 % apart on one of 120, whose render takes 46 ms.
+
+  What is measured during the easing is on its way somewhere else. The inline
+  editor is placed through `measuringAtRest`, which puts the drawing in the
+  frame it is easing to for the length of the measurement.
+
+  What still jumps: arrowheads (`points` is not a CSS property), edge and group
+  labels (`x`/`y` on text), group boxes, and a line whose new path has a
+  different number of segments. WebKit does not animate `d`. Entering and leaving elements appear and vanish:
+  that needs `.transition` on `SVGView`, and animating a path in every engine
+  needs an animatable vector longer than eight floats — both upstream.
+- **Anything painted beside a node is left behind when it glides.** The details
+  marker goes inside the group that carries the box's transform for that
+  reason; the next thing painted into the drawing has to do the same.
+- Re-examine ADR-0009's "a render closes the inline editor" rule now that
+  elements persist; then selection as reactive state.
 
 ### F2 — String-path convergence (separate decision, after F1)
 

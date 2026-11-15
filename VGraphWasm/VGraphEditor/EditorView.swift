@@ -8,6 +8,7 @@ import EditorCore
 import ElementaryUI
 import JavaScriptKit
 import VGraph
+import VGraphSVG
 
 @View
 struct EditorView {
@@ -477,19 +478,22 @@ struct SourcePane {
     }
 }
 
-/// ElementaryUI-managed but kept childless, like the textarea: the engine's SVG
-/// is injected via innerHTML in `performRender`. Being in the managed tree is
-/// what lets its events fire (a Swift-authored addEventListener never would;
-/// see the header of `Editor.swift`).
+/// The drawing is mounted, not injected (ADR-0015 F1). The handlers stay on the
+/// pane and delegate by `target`, as they did over injected markup.
 @View
 struct Preview {
     var body: some View {
-        div {}
-            .attributes(.id(DOMId.preview))
-            .onContextMenu { event in handleContextMenu(event) }
-            .onDoubleClick { event in handleDoubleClick(event) }
-            .onPointerDownRaw { event in handlePress(event) }
-            .onWheelRaw { event in handleWheel(event) }
+        div {
+            if let drawing = editorModel.drawing {
+                Drawing(root: drawing, frame: mountedFrame(of: drawing) ?? .zero, zoom: editorModel.zoom)
+            }
+        }
+        .onChange(of: editorModel.drawnCount, initial: true) { previewPatched() }
+        .attributes(.id(DOMId.preview))
+        .onContextMenu { event in handleContextMenu(event) }
+        .onDoubleClick { event in handleDoubleClick(event) }
+        .onPointerDownRaw { event in handlePress(event) }
+        .onWheelRaw { event in handleWheel(event) }
     }
 }
 

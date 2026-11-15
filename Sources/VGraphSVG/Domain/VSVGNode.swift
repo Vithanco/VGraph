@@ -59,7 +59,8 @@ public enum VSVGTag: Sendable, Equatable, CaseIterable {
     }
 }
 
-public indirect enum VSVGNode: Sendable {
+/// `Equatable` so that a mounted pane can skip a subtree a redraw left alone.
+public indirect enum VSVGNode: Sendable, Equatable {
     case element(VSVGTag, [VSVGAttribute], [VSVGNode])
     case text(String)
     /// Unescaped, and — unlike every other case — **not mountable**: the

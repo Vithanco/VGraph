@@ -10,6 +10,20 @@ import VGraph
 struct ZoomTest {
     private let content = VSize(width: 2000, height: 1000)
 
+    /// Fit is left to CSS — capped by the pane and by natural size — so it
+    /// keeps fitting as the window, the splitter or focus mode change the pane.
+    @Test func fitIsStyledAsCapsRatherThanASize() {
+        #expect(
+            zoomStyle(.fit, natural: VSize(width: 200, height: 100))
+                == "width:auto;height:auto;max-width:min(100%, 200.0px);max-height:min(100%, 100.0px);")
+    }
+
+    @Test func aFixedZoomIsStyledAsASize() {
+        #expect(
+            zoomStyle(.fixed(1.5), natural: VSize(width: 200, height: 100))
+                == "width:300.0px;height:150.0px;max-width:none;max-height:none;")
+    }
+
     @Test func fitShrinksTheDiagramToTheTighterAxis() {
         let scale = zoomScale(.fit, content: content, available: VSize(width: 1000, height: 800))
         #expect(scale == 0.5)
