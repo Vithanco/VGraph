@@ -1,6 +1,6 @@
 # 36. Releases stay on the maintainer's machine
 
-Date: 2026-11-08 (revised 2026-11-13)
+Date: 2026-11-08 (revised 2026-11-13 and 2026-11-15)
 
 ## Status
 
@@ -23,7 +23,7 @@ maintainer's own credentials: `just plugins-release`, `just release`, then
 `just publish-all` or the `publish-*` recipes it runs. No repository holds a
 publish or cross-repository credential.
 
-`just plugins-release` only bumps: each consumer's `release.sh --bump-only`
+`just plugins-release` only bumps: each engine consumer's `release.sh --bump-only`
 writes its version and builds nothing, because `just release` builds and tests
 what ships, from the merged bump, and an earlier build would be thrown away.
 Every engine build records the commit it built from and the wasm's hash in
@@ -66,6 +66,13 @@ hand: the Marketplace may have no automated credential.
 
 `publish-plugins` refuses a plugin checkout that is not on `main`: it tags and
 pushes whatever is checked out.
+
+The npm host, the website and Cloud Run ship the engine from this checkout too,
+so their recipes refuse the same VGraph checkout `publish-plugins` does, even when
+run alone to finish a release. They do not check the plugin branches: a deploy of
+the website alone ships no plugin.
+
+The steps are in [releasing.md](../releasing.md).
 
 The Obsidian plugin commits its copy of the engine, the wasm and its `vendor/Package`
 glue, because Obsidian's directory builds that repository on its own.
