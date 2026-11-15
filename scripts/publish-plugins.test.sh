@@ -252,5 +252,25 @@ just --justfile "$REPO_ROOT/justfile" --working-directory "$WORK" _release-prefl
     && fail "the release preflight accepted a VGraph whose status could not be read"
 grep -q 'status' "$WORK/out" || fail "does not say the status could not be read: $(cat "$WORK/out")"
 
+# Given VGraph with uncommitted changes, when the npm host, the website or Cloud
+# Run is published on its own (finishing a half-done release), then it refuses:
+# each ships the engine from this checkout.
+given_plugins_at 1.2.3
+echo 'change' > "$WORK/engine.swift"
+just --justfile "$REPO_ROOT/justfile" --working-directory "$WORK" _require-vgraph-main >"$WORK/out" 2>&1 \
+    && fail "_require-vgraph-main accepted an uncommitted VGraph"
+grep -q 'uncommitted' "$WORK/out" || fail "_require-vgraph-main does not say VGraph is uncommitted: $(cat "$WORK/out")"
+for r in publish-mcp-node publish-website publish-cloud-run; do
+    just --justfile "$REPO_ROOT/justfile" --show "$r" | grep -q "^$r[^:]*: _require-maintainer _require-vgraph-main" \
+        || fail "$r does not check VGraph before it builds: $(just --justfile "$REPO_ROOT/justfile" --show "$r" | grep "^$r")"
+done
+
+# Given a plugin on another branch, when only the website or Cloud Run is
+# deployed, then VGraph's check passes: neither ships a plugin.
+given_plugins_at 1.2.3
+git -C "$WORK/vscode-vithanco" switch -qc some-pr
+just --justfile "$REPO_ROOT/justfile" --working-directory "$WORK" _require-vgraph-main >"$WORK/out" 2>&1 \
+    || fail "_require-vgraph-main refused over a plugin branch: $(cat "$WORK/out")"
+
 [ "$FAILED" -eq 0 ] && echo "✓ publish-plugins"
 exit "$FAILED"
