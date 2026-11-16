@@ -300,7 +300,7 @@ struct VSVGGraphTests {
     /// Vacuity guard. Matches on `id="node-…"`, not the bare id: a filtered-out
     /// node still appears as `#node-…` in the hover CSS, because
     /// `renderNeighborHoverStyles` knows nothing about the overlay's filters.
-    @Test func timelineOverlayActuallyFiltersNodesAndEdges() throws {
+    @Test func timelineOverlayActuallyFiltersNodes() throws {
         let graph = try makeTimelineGraph()
         let ported = try VSVGGraph.render(graph: graph, logger: TestLogger()).render()
         #expect(!ported.contains("id=\"\(SVGElementId.node("tp1800"))\""), "TimePoint nodes should be filtered out")
