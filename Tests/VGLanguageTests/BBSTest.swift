@@ -4,7 +4,7 @@ import Testing
 @testable import VGraph
 
 /// Untyped edges: each BBS node-type pair has exactly one edge type, so the
-/// parser infers it. `BBSNotationFillTests` owns the explicitly typed spelling.
+/// parser infers it. One row per pair; a second edge on a pair resolves the same way. `BBSNotationFillTests` owns the explicitly typed spelling.
 @Suite
 struct BBSTest {
 
@@ -31,12 +31,8 @@ struct BBSTest {
 
     @Test(arguments: [
         ("ben1", "obj1", "requires_benefit"),
-        ("ben2", "obj1", "requires_benefit"),
         ("bc1", "ben1", "requires_business_change"),
-        ("bc2", "ben2", "requires_business_change"),
         ("en1", "bc1", "requires_enabler"),
-        ("en2", "bc2", "requires_enabler"),
-        ("en3", "bc2", "requires_enabler"),
     ])
     func anUntypedEdgeTakesTheOnlyTypeItsEndsAllow(from: String, to: String, id: String) throws {
         let graph = try VGraphParser(logger: NoOpLogger()).parse(source: Self.source)

@@ -617,10 +617,6 @@ extension VGraph {
         return try groupStructure.getDirectContent(group: Group(rawValue: rootGroup))
     }
 
-    public func getDirectNodes(group: Group) throws(VError) -> [Node] {
-        return try groupStructure.getDirectContent(group: group).1
-    }
-
     public func getAllContent(group: Group) throws(VError) -> ([Group], [Node]) {
         return try groupStructure.getAllContent(group: group)
     }

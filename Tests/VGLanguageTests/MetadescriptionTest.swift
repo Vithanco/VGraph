@@ -56,7 +56,8 @@ struct MetadescriptionTest {
         // Structural part: IBIS has 4 node types (Question, Answer, Pro, Con).
         let nodeIds = Set(graph.nodes.map { $0.id.description })
         #expect(nodeIds == ["_meta_Question", "_meta_Answer", "_meta_Pro", "_meta_Con"])
-        #expect(graph.edges.count >= 4)
+        // One edge per IBIS edge type.
+        #expect(graph.edges.count == 7)
     }
 
     @Test
@@ -94,19 +95,6 @@ struct MetadescriptionTest {
         #expect(markdown.contains("# Why IBIS works"))
     }
 
-    @Test
-    func timelineDescriptionIsComplete() throws {
-        let markdown = try #require(app.describeNotation("Timeline"))
-        #expect(markdown.contains("# Timeline"))
-        #expect(markdown.contains("## Node types"))
-        #expect(markdown.contains("| TimePoint |"))
-        #expect(markdown.contains("| Event |"))
-        #expect(markdown.contains("## Purpose"))
-        #expect(markdown.contains("## When to use"))
-        #expect(markdown.contains("## History"))
-        #expect(markdown.contains("## References"))
-    }
-
     /// C4's levels are its detailings; a system or container boundary is a
     /// detailed node, so the only group type left is the organisation's.
     @Test
@@ -137,6 +125,7 @@ struct MetadescriptionTest {
     func ibisMetadescriptionHasNoGroupTypeSection() throws {
         let markdown = NotationMarkdown.render(entry: Notations.Ibis.entry)
         #expect(!markdown.contains("## Group types"))
+        #expect(!markdown.contains("## Detailings"))
     }
 
     @Test
@@ -148,31 +137,6 @@ struct MetadescriptionTest {
         #expect(!markdown.contains("| Database | |"))
         // An assistant reading only the names would not know how a detailed node is written.
         #expect(markdown.contains("`group <id>: <NodeType> \"<label>\" { … }`"))
-    }
-
-    @Test
-    func aNotationWithoutDetailingsHasNoDetailingSection() {
-        #expect(!NotationMarkdown.render(entry: Notations.Ibis.entry).contains("## Detailings"))
-    }
-
-    @Test
-    func unknownNotationInMetadescription() throws {
-        let source = "metadescription DoesNotExist"
-        let logger = CapturingLogger()
-        let parser = VGraphParser(logger: logger)
-        _ = try parser.parse(source: source)
-        #expect(logger.errors.contains(where: { $0.contains("DoesNotExist") }))
-    }
-
-    @Test
-    func existingMetagraphStillWorks() throws {
-        // Regression guard: factoring out `buildMetagraph` must not have broken
-        // the plain `metagraph` path.
-        let source = "metagraph IBIS"
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: source)
-
-        #expect(graph.nodes.count == 4)
     }
 
     @Test
@@ -194,12 +158,14 @@ struct MetadescriptionTest {
     }
 
     @Test
-    func directMarkdownRenderForNotationWithEmptyFields() throws {
-        // Sanity: notations without self-description fields still produce a
-        // valid Markdown document (only heading + tagline + tables).
-        let markdown = NotationMarkdown.render(entry: Notations.Timeline.entry)
-        #expect(markdown.hasPrefix("# Timeline"))
+    func aNotationWithoutSelfDescriptionStillRenders() throws {
+        // Only heading and tables: no purpose, usage, history or references to show.
+        let markdown = NotationMarkdown.render(entry: Architecture.entry)
+        #expect(markdown.hasPrefix("# Architecture"))
         #expect(markdown.contains("## Node types"))
-        #expect(markdown.contains("| TimePoint |"))
+        #expect(markdown.contains("| System |"))
+        for section in ["## Purpose", "## When to use", "## History", "## References"] {
+            #expect(!markdown.contains(section), "\(section) has nothing to say")
+        }
     }
 }

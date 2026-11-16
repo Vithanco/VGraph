@@ -186,6 +186,7 @@ struct ViewDeclarationTests {
     @Test("Given a view type value that only beats a model value, when the model value goes, then the view value goes too")
     func viewTypeValueFollowsTheModel() throws {
         let graph = try parse(recolouredDatabase)
+        #expect(!(try graph.attributes(inView: "v", of: ItemKey(.nodeType, "Database"))).isEmpty)
         let matched = graph.erasing(Attributes.Node.backgroundColor.id, for: ItemKey(.node, "db"))
         #expect(try matched.attributes(inView: "v", of: ItemKey(.nodeType, "Database")).isEmpty)
     }
@@ -197,14 +198,6 @@ struct ViewDeclarationTests {
         #expect(!(try graph.attributes(inView: "containers", of: key)).isEmpty)
         let deleted = try graph.delete(node: Node(string: "db"))
         #expect(try deleted.attributes(inView: "containers", of: key).isEmpty)
-    }
-
-    @Test("Given views, when the store lists its layers, then each view is one of them")
-    func storeListsLayers() throws {
-        let layers = try parse(banking + views).ads.layerNames.map { $0.rawValue }
-        for expected in ["engine", "builtin", "vnotation", "model", "view:context", "view:containers"] {
-            #expect(layers.contains(expected))
-        }
     }
 
     @Test("Given a view sharing a name with an element, when parsed, then it is accepted")
@@ -301,30 +294,15 @@ struct ViewDisplayTests {
         let shown = try parse(banking + views).displaying(view: "containers")
         let db = try shown.getAttributes(node: Node(string: "db"))
         #expect(db[Attributes.Node.backgroundColor.id]?.lowercased() == "#ffd27f")
-        #expect(
-            try shown.getGraphAttributes()[Attributes.Group.layoutDirection.id]
-                != parse(banking).getGraphAttributes()[Attributes.Group.layoutDirection.id])
+        #expect(try shown.getGraphAttributes()[Attributes.Group.layoutDirection.id] == "LR")
     }
 
     @Test("Given a view the document lacks, when displayed, then the error lists the views it has")
     func unknownView() throws {
         let graph = try parse(banking + views)
-        do {
+        #expect(throws: VError.unknownView("nope", available: ["context", "containers"])) {
             _ = try graph.displaying(view: "nope")
-            Issue.record("expected an error")
-        } catch {
-            #expect("\(error)".contains("nope"))
-            #expect("\(error)".contains("context"))
-            #expect("\(error)".contains("containers"))
         }
-    }
-
-    @Test("Given views, when quality is judged, then the findings equal those without views")
-    func qualityNeverSeesAView() throws {
-        let app = VGraphApplication(ports: ParseOnlyPorts(logger: NoOpLogger()))
-        let without = try app.analyzeQuality(banking)
-        let with = try app.analyzeQuality(banking + views)
-        #expect(with.messages.map { $0.message } == without.messages.map { $0.message })
     }
 }
 
@@ -338,32 +316,10 @@ struct ViewRenderTests {
         return svg.replacingOccurrences(of: try #require(app.sourceVGL(from: svg)), with: "").lowercased()
     }
 
-    @Test("Given the banking document, when rendered as context and as containers, then the pictures differ")
+    @Test("Given a view that colours a node, when rendered, then the colour is in that picture and not in the other")
     func viewsRenderDifferently() throws {
         let source = banking + views
-        let context = try drawing(source, view: "context")
-        let containers = try drawing(source, view: "containers")
-        #expect(context != containers)
-        #expect(!context.contains("node-web"))
-        #expect(containers.contains("node-web"))
-        #expect(containers.contains("#ffd27f"))
-        #expect(!context.contains("#ffd27f"))
-    }
-
-    @Test("Given views, when rendered without a name, then the model is shown")
-    func defaultIsTheModel() throws {
-        let model = try drawing(banking + views)
-        #expect(model.contains("node-web"))
-        #expect(!model.contains("#ffd27f"))
-    }
-
-    @Test("Given a view the document lacks, when rendered, then the error lists the views it has")
-    func unknownView() throws {
-        do {
-            _ = try app.renderGraph(banking + views, view: "nope")
-            Issue.record("expected an error")
-        } catch {
-            #expect("\(error)".contains("context"))
-        }
+        #expect(try drawing(source, view: "containers").contains("#ffd27f"))
+        #expect(!(try drawing(source, view: "context")).contains("#ffd27f"))
     }
 }

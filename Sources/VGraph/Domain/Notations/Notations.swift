@@ -255,10 +255,6 @@ extension Notations {
         return []
     }
 
-    public static func resolveTransform(for graph: VGraph) throws(VError) -> GraphTransform {
-        TransformStep.pipeline(try resolveSteps(for: graph))
-    }
-
     /// Only the *phase* is named here; a notation's own step records itself in addition.
     /// The ledger is therefore a tree, so no step may declare `requires:` on a
     /// notation-internal id — it would hold for ConceptMap and throw for the rest.

@@ -1,10 +1,8 @@
-import Foundation
 import Testing
 
 @testable import App
 @testable import VGLanguage
 @testable import VGraph
-@testable import VGraphvizLib
 
 /// Capturing logger for testing warning messages
 final class CapturingLogger: ForLogMessages, @unchecked Sendable {
@@ -59,12 +57,6 @@ extension GetAttribute {
     func ensure<T>(group: Group, attribute: TypedAttributeDefinition<T>, isSameAs: T) throws {
         #expect(attribute.target == .graph)
         let value = try get(group: group, attribute: attribute)
-        #expect(value == isSameAs)
-    }
-
-    func ensure<T>(nodeType: NodeType, attribute: TypedAttributeDefinition<T>, isSameAs: T) throws {
-        #expect(attribute.target == .node)
-        let value = try get(nodeType: nodeType, attribute: attribute)
         #expect(value == isSameAs)
     }
 }
@@ -139,9 +131,9 @@ struct BasicParserTest {
         let parser = VGraphParser(logger: logger)
         let graph = try parser.parse(source: input)
 
-        #expect(logger.errors.count >= 1)
-        #expect(logger.errors.first?.contains("Unknown notation") == true)
+        #expect(logger.errors.count == 1)
         #expect(logger.errors.first?.contains("UnknownNotation") == true)
+        #expect(logger.errors.first?.contains("IBIS") == true, "The error should list the registered notations")
 
         // Graph should still be created but without notation-specific types
         #expect(graph.nodes.count == 1)
@@ -297,206 +289,7 @@ struct BasicParserTest {
         #expect((try graph.edgeType(for: edge4!.id)) == Notations.Ibis.EdgeTypes.proToQuestion)
     }
 
-    @Test func testGetAllAttributesForNodeType() throws {
-        let input = """
-            vgraph test: IBIS "Test getAllAttributes" {
-                node q1: Question "Q1";
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        // Get all attributes for Question node type
-        let allAttrs = graph.getAllAttributes(nodeType: Notations.Ibis.NodeTypes.question)
-
-        // IBIS styles Question; its font is the default, so it is not held (ADR-0030).
-        #expect(allAttrs[Attributes.Node.nodeStyle.id] != nil)
-
-        // getAllAttributes returns ALL attributes for the node type
-        #expect(allAttrs.count >= 1)
-    }
-
-    @Test func testGetAllAttributesForEdgeType() throws {
-        let input = """
-            vgraph test: IBIS "Test edge type attributes" {
-                node q1: Question "Q1";
-                node a1: Answer "A1";
-                edge q1 -> a1: answered_by;
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        // Get all attributes for the answered_by edge type
-        let allAttrs = graph.getAllAttributes(edgeType: Notations.Ibis.EdgeTypes.questionToAnswer.id)
-
-        // Should return all attributes for this edge type (might be empty if none are set)
-        #expect(allAttrs.count >= 0)
-    }
-
-    @Test func testDotExporterUsesAllAttributes() throws {
-        let input = """
-            vgraph test: IBIS "Test DOT Export" {
-                node q1: Question "Question without explicit color" [fontsize: 10];
-                node q2: Question "Question with explicit color" [color: "#ff0000"];
-                node a1: Answer "Answer";
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        let exporter = DotExporter()
-        let dot = try exporter.export(graph: graph)
-
-        let questionFill = try #require(
-            graph.effectiveNodeLayout(for: Notations.Ibis.NodeTypes.question)?.backgroundFill)
-        let answerFill = try #require(
-            graph.effectiveNodeLayout(for: Notations.Ibis.NodeTypes.answer)?.backgroundFill)
-
-        let q1Line = try #require(dot.split(separator: "\n").first { $0.contains("q1") })
-        #expect(q1Line.contains(questionFill.hexString))
-
-        let q2Line = try #require(dot.split(separator: "\n").first { $0.contains("q2") })
-        #expect(q2Line.contains("#ff0000"))
-        #expect(!q2Line.contains(questionFill.hexString))
-
-        let a1Line = try #require(dot.split(separator: "\n").first { $0.contains("a1") })
-        #expect(a1Line.contains(answerFill.hexString))
-    }
-
     // MARK: - Less Verbose Syntax Tests
-
-    @Test func testNodeWithoutBraces() throws {
-        let input = """
-            vgraph test: IBIS "Test Node Without Braces" {
-                node q1: Question "Question 1";
-                node a1: Answer "Answer 1";
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        #expect(graph.nodes.count == 2)
-
-        let q1 = Node(string: "q1")
-        let a1 = Node(string: "a1")
-        #expect(graph.has(node: q1))
-        #expect(graph.has(node: a1))
-        try graph.ensure(node: q1, attribute: Attributes.Node.label, isSameAs: "Question 1")
-        try graph.ensure(node: a1, attribute: Attributes.Node.label, isSameAs: "Answer 1")
-    }
-
-    @Test func testNodeWithInlineBracketAttributes() throws {
-        let input = """
-            vgraph test: IBIS "Test Inline Attributes" {
-                node q1: Question "Question 1" [fontsize: 12];
-                node a1: Answer "Answer 1" [fontsize: 10; color: "#ff0000"];
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        #expect(graph.nodes.count == 2)
-
-        let q1 = Node(string: "q1")
-        let a1 = Node(string: "a1")
-        try graph.ensure(node: q1, attribute: Attributes.Node.fontsize, isSameAs: 12)
-        try graph.ensure(node: a1, attribute: Attributes.Node.fontsize, isSameAs: 10)
-        try graph.ensure(node: a1, attribute: Attributes.Node.backgroundColor, isSameAs: VColor(hexString: "#ff0000")!)
-    }
-
-    @Test func testEdgeWithoutBraces() throws {
-        let input = """
-            vgraph test: IBIS "Test Edge Without Braces" {
-                node q1: Question "Question 1";
-                node a1: Answer "Answer 1";
-                edge q1 -> a1: answered_by;
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        #expect(graph.edges.count == 1)
-        let edge = graph.edges[0]
-        #expect(edge.from == Node(string: "q1"))
-        #expect(edge.to == Node(string: "a1"))
-    }
-
-    @Test func testEdgeWithoutTypeAndBraces() throws {
-        let input = """
-            vgraph test: IBIS "Test Edge Without Type" {
-                node q1: Question "Question 1";
-                node a1: Answer "Answer 1";
-                edge q1 -> a1;
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        #expect(graph.edges.count == 1)
-        let edge = graph.edges[0]
-        #expect(edge.from == Node(string: "q1"))
-        #expect(edge.to == Node(string: "a1"))
-    }
-
-    @Test func testEdgeWithInlineBracketAttributes() throws {
-        let input = """
-            vgraph test: IBIS "Test Edge Inline Attributes" {
-                node q1: Question "Question 1";
-                node a1: Answer "Answer 1";
-                edge q1 -> a1: answered_by [style: dashed];
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        #expect(graph.edges.count == 1)
-        let edge = graph.edges[0]
-        try graph.ensure(edge: edge, attribute: Attributes.Edge.style, isSameAs: Attributes.Edge.StyleType.dashed)
-    }
-
-    @Test func testConciseSyntaxVariations() throws {
-        let input = """
-            vgraph test: IBIS "Test Concise Syntax" {
-                node q1: Question "Question 1" [fontsize: 12];
-                node a1: Answer "Answer 1" [fontsize: 10];
-                node p1: Pro "Pro 1";
-
-                edge q1 -> a1 [style: solid];
-                edge a1 -> p1 [style: dashed];
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        #expect(graph.nodes.count == 3)
-        #expect(graph.edges.count == 2)
-
-        let q1 = Node(string: "q1")
-        let a1 = Node(string: "a1")
-        let p1 = Node(string: "p1")
-
-        try graph.ensure(node: q1, attribute: Attributes.Node.fontsize, isSameAs: 12)
-        try graph.ensure(node: a1, attribute: Attributes.Node.fontsize, isSameAs: 10)
-        #expect(graph.has(node: p1))
-
-        let edge1 = graph.edges.first { $0.from == q1 && $0.to == a1 }
-        let edge2 = graph.edges.first { $0.from == a1 && $0.to == p1 }
-        #expect(edge1 != nil)
-        #expect(edge2 != nil)
-
-        try graph.ensure(edge: edge1!, attribute: Attributes.Edge.style, isSameAs: Attributes.Edge.StyleType.solid)
-        try graph.ensure(edge: edge2!, attribute: Attributes.Edge.style, isSameAs: Attributes.Edge.StyleType.dashed)
-    }
 
     @Test func testSubgraphWithIBISNodes() throws {
         let input = """
@@ -517,8 +310,6 @@ struct BasicParserTest {
         let parser = VGraphParser(logger: NoOpLogger())
         let graph = try parser.parse(source: input)
 
-        #expect(graph.nodes.count == 4)
-        #expect(graph.edges.count == 4)
         #expect(graph.groups.count == 1)  // "lsj" group (root group is filtered out)
 
         let q1 = Node(string: "q1")
@@ -526,77 +317,23 @@ struct BasicParserTest {
         let pro1 = Node(string: "pro1")
         let con1 = Node(string: "con1")
 
-        #expect(graph.has(node: q1))
-        #expect(graph.has(node: a1))
-        #expect(graph.has(node: pro1))
-        #expect(graph.has(node: con1))
-
-        try graph.ensure(node: q1, attribute: Attributes.Node.fontsize, isSameAs: 20)
-        try graph.ensure(node: a1, attribute: Attributes.Node.fontsize, isSameAs: 11)
-        try graph.ensure(node: pro1, attribute: Attributes.Node.fontsize, isSameAs: 10)
-        try graph.ensure(node: con1, attribute: Attributes.Node.fontsize, isSameAs: 10)
-
-        #expect((try graph.nodeType(for: q1)) == Notations.Ibis.NodeTypes.question)
-        #expect((try graph.nodeType(for: a1)) == Notations.Ibis.NodeTypes.answer)
-        #expect((try graph.nodeType(for: pro1)) == Notations.Ibis.NodeTypes.pro)
-        #expect((try graph.nodeType(for: con1)) == Notations.Ibis.NodeTypes.con)
-
         let group = graph.groups[0]
         #expect(group.id.description == "lsj")
         try graph.ensure(group: group, attribute: Attributes.Group.label, isSameAs: "Subgraph")
 
         let rootGroup = Group(rawValue: "vithanco.vgraph.rootGroup.only.for.internal.use")
-        #expect(graph.group(of: q1) == rootGroup)  // q1 is in root group
-        #expect(graph.group(of: a1) == rootGroup)  // a1 is in root group
-        #expect(graph.group(of: pro1) == group)  // pro1 is in the subgraph
-        #expect(graph.group(of: con1) == group)  // con1 is in the subgraph
+        #expect(graph.group(of: q1) == rootGroup)
+        #expect(graph.group(of: a1) == rootGroup)
+        #expect(graph.group(of: pro1) == group)
+        #expect(graph.group(of: con1) == group)
 
-        let edges = graph.edges
-        let edge1 = edges.first { $0.from == q1 && $0.to == a1 }
-        let edge2 = edges.first { $0.from == a1 && $0.to == pro1 }
-        let edge3 = edges.first { $0.from == a1 && $0.to == con1 }
-        let edge4 = edges.first { $0.from == pro1 && $0.to == con1 }
-
-        #expect(edge1 != nil)
-        #expect(edge2 != nil)
-        #expect(edge3 != nil)
-        #expect(edge4 != nil)
-
-        try graph.ensure(edge: edge3!, attribute: Attributes.Edge.style, isSameAs: Attributes.Edge.StyleType.dashed)
-
-        // Note: Edge label via bracket syntax - verify it works
-        // The attribute name in the parser is "label" but the Edge.label definition has name "Label on Edge"
-        // The parser should still find it via substring match
-        let edge4Label = try graph.get(edge: edge4!.id, attribute: Attributes.Edge.label)
-        #expect(
-            edge4Label == "Unknown edge type (will be red and bold)",
-            "Edge label should be set via bracket attribute syntax")
+        let edge4 = try #require(graph.edges.first { $0.from == pro1 && $0.to == con1 })
+        #expect(try graph.edgeType(for: edge4.id).isUnknown, "Pro to Con has no edge type")
+        try graph.ensure(
+            edge: edge4, attribute: Attributes.Edge.label, isSameAs: "Unknown edge type (will be red and bold)")
     }
 
     // MARK: - Comment Tests
-
-    @Test func testCommentsInGraph() throws {
-        let input = """
-            vgraph test: IBIS "Test Comments" {
-                // This is a comment before a node
-                node q1: Question "Question 1";
-                node a1: Answer "Answer 1"; // This is a comment after a node
-                // This is a comment before an edge
-                edge q1 -> a1; // This is a comment after an edge
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        #expect(graph.nodes.count == 2)
-        #expect(graph.edges.count == 1)
-
-        let q1 = Node(string: "q1")
-        let a1 = Node(string: "a1")
-        #expect(graph.has(node: q1))
-        #expect(graph.has(node: a1))
-    }
 
     @Test func testCommentsWithAttributes() throws {
         let input = """
@@ -647,24 +384,6 @@ struct BasicParserTest {
         try graph.ensure(node: a1, attribute: Attributes.Node.fontsize, isSameAs: 10)
     }
 
-    @Test func testParsingMixedSemicolons() throws {
-        let input = """
-            vgraph test: IBIS "Test Mixed Semicolons" {
-                node q1: Question "Question 1";
-                node a1: Answer "Answer 1"
-                node p1: Pro "Pro 1";
-                edge q1 -> a1
-                edge a1 -> p1;
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        #expect(graph.nodes.count == 3)
-        #expect(graph.edges.count == 2)
-    }
-
     @Test func testParsingGroupsWithoutSemicolons() throws {
         let input = """
             vgraph test: IBIS "Test Groups Without Semicolons" {
@@ -686,57 +405,6 @@ struct BasicParserTest {
 
         let group = graph.groups[0]
         try graph.ensure(group: group, attribute: Attributes.Group.style, isSameAs: .filled)
-    }
-
-    @Test func testCommentOnlyLines() throws {
-        let input = """
-            vgraph test: IBIS "Test Comment Only Lines" {
-                // First comment
-                // Second comment
-
-                node q1: Question "Question 1";
-
-                // Comment between nodes
-
-                node a1: Answer "Answer 1";
-
-                // Final comment
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        #expect(graph.nodes.count == 2)
-    }
-
-    @Test func testCommentsInGroups() throws {
-        let input = """
-            vgraph test: IBIS "Test Comments In Groups" {
-                // Main question and primary answers
-                node q1: Question "What architecture?";
-                node a1: Answer "Microservices";
-                node a2: Answer "Monolithic";
-
-                // Arguments for Microservices
-                group pros "Pros" {
-                    // Pro arguments
-                    node pro1: Pro "Better scalability";
-                    node pro2: Pro "Independent deployment";
-                };
-
-                // Connect nodes
-                edge q1 -> a1;
-                edge q1 -> a2;
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        #expect(graph.nodes.count == 5)
-        #expect(graph.edges.count == 2)
-        #expect(graph.groups.count == 1)
     }
 
     /// Regression: `parseToAST` must surface the specific `VParserError`

@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import App
@@ -156,6 +157,12 @@ struct VNotationBoundaryVGLTest {
     @Test("Given boundary keys in a vnotation, when highlighted semantically, then nothing is flagged as an error")
     func highlightedWithoutErrors() {
         let html = VGraphParser(logger: NoOpLogger()).semanticHighlightHTML(source: Self.ownTypes)
+        // Nothing is flagged only if the document got far enough to be checked: a typo
+        // in the same document is.
+        let typo = Self.ownTypes.replacingOccurrences(of: "group core: Team", with: "group core: Teem")
+        let flagged = VGraphParser(logger: NoOpLogger()).semanticHighlightHTML(source: typo)
+        #expect(flagged.contains("<span class=\"vg-error\">Teem</span>"))
+
         #expect(!html.contains("vg-error"))
     }
 }

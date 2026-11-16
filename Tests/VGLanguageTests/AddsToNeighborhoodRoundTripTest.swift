@@ -40,6 +40,8 @@ struct AddsToNeighborhoodRoundTripTest {
     }
 
     @Test func aValueThatIsNotOneOfTheThreeIsRefused() {
-        #expect(throws: VError.self) { try parse(source(adds: "sideways")) }
+        #expect(throws: VError.conversionError(from: "sideways", to: AddsToNeighborhood.typeName)) {
+            try parse(source(adds: "sideways"))
+        }
     }
 }

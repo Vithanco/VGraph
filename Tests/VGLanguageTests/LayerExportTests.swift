@@ -41,7 +41,7 @@ struct LayerExportTests {
         #expect(!vgraph.contains("layoutdirection"))
     }
 
-    private func teamsWithFoldedTeam(_ group: String) throws -> VGraph {
+    private func teamsWithFoldedTeam() throws -> VGraph {
         let parsed = try parse(
             """
             vnotation Teams {
@@ -50,7 +50,7 @@ struct LayerExportTests {
             }
 
             vgraph g: Teams "G" {
-                \(group) b: Team "B" {
+                group b: Team "B" {
                     node p: Member "P";
                 };
             }
@@ -62,14 +62,14 @@ struct LayerExportTests {
 
     @Test("Given a group type that starts folded, when its group is exported, then it is not written as folded")
     func aTypesFoldingIsNotTheGroups() throws {
-        let exported = try VGLExporter().export(graph: teamsWithFoldedTeam("group"))
+        let exported = try VGLExporter().export(graph: teamsWithFoldedTeam())
         #expect(!exported.contains("folded group"))
         #expect(!exported.contains("isfolded"))
     }
 
     @Test("Given a group unfolded against its folded type, when exported, then the unfolding is written")
     func anUnfoldingIsWritten() throws {
-        let unfolded = try teamsWithFoldedTeam("group")
+        let unfolded = try teamsWithFoldedTeam()
             .set(group: Group(rawValue: "b"), attribute: Attributes.Group.isFolded.attribute(false))
         #expect(try VGLExporter().export(graph: unfolded).contains("isfolded: false"))
     }

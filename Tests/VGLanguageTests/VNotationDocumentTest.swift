@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import App
@@ -76,8 +77,10 @@ struct VNotationDocumentTest {
     func eachValueIsInItsLayer() throws {
         let graph = try parse(Self.source)
         let question = ItemKey(.nodeType, "Question")
-        #expect(try graph.attributes(in: .vnotation, of: question)[Attributes.Node.backgroundColor.id] != nil)
-        #expect(try graph.attributes(in: .builtin, of: question)[Attributes.Node.backgroundColor.id] != "#ffeeaaff")
+        let overridden = try graph.attributes(in: .vnotation, of: question)[Attributes.Node.backgroundColor.id]
+        let original = try graph.attributes(in: .builtin, of: question)[Attributes.Node.backgroundColor.id]
+        #expect(overridden != nil)
+        #expect(original != overridden, "The override must not leak into the built-in layer")
         #expect(try !graph.attributes(in: .vnotation, of: ItemKey(.nodeType, "Extra")).isEmpty)
         #expect(try graph.attributes(in: .vnotation, of: .root)[Attributes.Group.layoutDirection.id] != nil)
         #expect(try graph.attributes(in: .model, of: .root)[Attributes.Group.splines.id] == "ortho")
@@ -86,9 +89,13 @@ struct VNotationDocumentTest {
     @Test("Given a vnotation document, when rendered, then every element is drawn")
     func itRenders() throws {
         let app = VGraphApplication(ports: NativePorts(logger: NoOpLogger()))
-        let svg = try app.renderGraph(Self.source).svg
+        let rendered = try app.renderGraph(Self.source).svg
+        // The picture carries the document's text; what is drawn is the rest.
+        let svg = rendered.replacingOccurrences(of: try #require(app.sourceVGL(from: rendered)), with: "")
         #expect(svg.contains("node-q"))
         #expect(svg.contains("node-x"))
+        #expect(svg.contains("edge-"))
+        #expect(svg.contains("#ff0000"), "The vnotation's edge type colour reaches the picture")
     }
 
     /// The store keeps them in a dictionary, whose order changes from process

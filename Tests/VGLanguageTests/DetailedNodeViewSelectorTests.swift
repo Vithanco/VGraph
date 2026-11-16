@@ -69,10 +69,12 @@ struct DetailedNodeViewHighlightTests {
     }
 
     @Test("Given folded node type: SoftwareSystem, when highlighted, then folded is a keyword and SoftwareSystem a type")
-    func foldedNodeType() {
+    func foldedNodeType() throws {
         let html = highlighted("folded node type: SoftwareSystem;")
         #expect(html.contains("<span class=\"vg-kw\">folded</span>"))
-        #expect(html.contains("<span class=\"vg-type\">SoftwareSystem</span>"))
+        // The model above the view already uses the type, so look only at the view.
+        let view = try #require(html.components(separatedBy: "<span class=\"vg-kw\">vview</span>").last)
+        #expect(view.contains("<span class=\"vg-type\">SoftwareSystem</span>"))
         #expect(!html.contains("vg-error"))
     }
 

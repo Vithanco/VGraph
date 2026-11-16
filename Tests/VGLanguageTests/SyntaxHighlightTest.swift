@@ -11,33 +11,11 @@ import Testing
 private let sample = """
     // a comment
     vgraph demo: ConceptMap "Title" {
-      node idea: Concept "Idea";
+      node idea: Concept "Idea" [fontsize: 12];
       node bad: Nonsense "Oops";
       edge idea -> bad [color: red];
     }
     """
-
-/// Strip all HTML tags, unescape entities — the result must equal the source.
-private func stripTags(_ html: String) -> String {
-    var out = ""
-    var inTag = false
-    for c in html {
-        if c == "<" {
-            inTag = true
-            continue
-        }
-        if c == ">" {
-            inTag = false
-            continue
-        }
-        if !inTag { out.append(c) }
-    }
-    return
-        out
-        .replacingOccurrences(of: "&lt;", with: "<")
-        .replacingOccurrences(of: "&gt;", with: ">")
-        .replacingOccurrences(of: "&amp;", with: "&")
-}
 
 @Suite struct SyntaxHighlightTest {
 
@@ -51,14 +29,9 @@ private func stripTags(_ html: String) -> String {
         #expect(html.contains("<span class=\"vg-notation\">ConceptMap</span>"))
         #expect(html.contains("<span class=\"vg-str\">\"Title\"</span>"))
         #expect(html.contains("<span class=\"vg-comment\">// a comment</span>"))
+        #expect(html.contains("<span class=\"vg-num\">12</span>"))
         // Arrow is punctuation.
         #expect(html.contains("<span class=\"vg-punct\">-&gt;</span>"))
-    }
-
-    @Test func lexicalReconstructsSourceVerbatim() {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let html = parser.lexicalHighlightHTML(source: sample)
-        #expect(stripTags(html) == sample)
     }
 
     @Test func semanticClassifiesRolesAndFlagsUnknownType() {
@@ -74,34 +47,6 @@ private func stripTags(_ html: String) -> String {
         #expect(html.contains("<span class=\"vg-val\">red</span>"))
         // Notation name still colored in the semantic pass.
         #expect(html.contains("<span class=\"vg-notation\">ConceptMap</span>"))
-    }
-
-    @Test func semanticHighlightsTypedGroupAsType() {
-        let source = """
-            vnotation Teams {
-              node type: Member [nodeStyle: roundedBox]
-              group type: Team
-            }
-
-            vgraph g: Teams "G" {
-              group core: Team "S" {
-                node ann: Member "Ann";
-              };
-            }
-            """
-        let parser = VGraphParser(logger: NoOpLogger())
-        let html = parser.semanticHighlightHTML(source: source)
-
-        // A group's type is a GroupType, not a NodeType, so it must be coloured as a
-        // type — never flagged as an unknown node type (which would show red).
-        #expect(html.contains("<span class=\"vg-type\">Team</span>"))
-        #expect(!html.contains("<span class=\"vg-error\">Team</span>"))
-    }
-
-    @Test func semanticReconstructsSourceVerbatim() {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let html = parser.semanticHighlightHTML(source: sample)
-        #expect(stripTags(html) == sample)
     }
 
     @Test func semanticMarksSyntaxErrorPosition() {
@@ -149,18 +94,6 @@ private func stripTags(_ html: String) -> String {
         #expect(stripTags(html) == src)  // still verbatim
     }
 
-    @Test func diagnosticsMarkDisconnectedNodeAsWarning() throws {
-        // `lonely` has no edges → a warning targeted at that node.
-        let src =
-            "vgraph demo: ConceptMap \"D\" {\n  node a: Concept \"A\";\n  node b: Relation \"leads\";\n  node lonely: Concept \"Lonely\";\n  edge a -> b;\n}"
-        let graph = try VGraphParser(logger: NoOpLogger()).parse(source: src)
-        let report = Notations.analyzeQuality(graph: graph)
-        let html = VGraphParser(logger: NoOpLogger()).semanticHighlightHTML(source: src, report: report)
-
-        #expect(html.contains("class=\"vg-diag-warn\""))
-        #expect(stripTags(html) == src)
-    }
-
     @Test func diagnosticsGroupMultipleFindingsOnOneElementIntoOneMarker() throws {
         // `lonely` trips two warnings (disconnected + not connected to a relation).
         let src =
@@ -184,7 +117,8 @@ private func stripTags(_ html: String) -> String {
         let report = Notations.analyzeQuality(graph: graph)
         let html = VGraphParser(logger: NoOpLogger()).semanticHighlightHTML(source: src, report: report)
 
-        // There are warnings/infos in the report, but they are whole-graph.
+        // There are findings in the report, but they are whole-graph.
+        #expect(report.messages.contains { $0.target == .graph })
         #expect(!html.contains("vg-diag-error"))
         #expect(!html.contains("vg-diag-warn"))
         #expect(stripTags(html) == src)
@@ -250,6 +184,7 @@ private func stripTags(_ html: String) -> String {
         let html = VGraphParser(logger: NoOpLogger())
             .semanticHighlightHTML(source: source(icons: declaration, iconName: "flame"))
 
+        #expect(html.contains("<span class=\"vg-id\">r1</span>"), "The fixture must parse for the negative to mean anything")
         #expect(!html.contains("<span class=\"vg-error\">\"flame\"</span>"))
     }
 

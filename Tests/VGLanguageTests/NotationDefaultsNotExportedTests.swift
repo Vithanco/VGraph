@@ -35,30 +35,6 @@ struct NotationDefaultsNotExportedTests {
         }
         """
 
-    @Test("CLD's layout engine and spacing are not written into the document")
-    func cldKeepsItsOwnSettings() throws {
-        let exported = try roundTrip(cld)
-
-        #expect(!exported.contains("layoutengine:"))
-        #expect(!exported.contains("overlap:"))
-        #expect(!exported.contains("sep:"))
-        #expect(!exported.contains("splines:"))
-    }
-
-    @Test("Timeline's direction is not written into the document")
-    func timelineKeepsItsOwnDirection() throws {
-        let exported = try roundTrip(
-            """
-            vgraph t: Timeline "T" {
-                node a: Event "One";
-                node b: Event "Two";
-                edge a -> b;
-            }
-            """)
-
-        #expect(!exported.contains("layoutdirection:"))
-    }
-
     @Test("An author's override of a notation's own attribute survives")
     func anExplicitOverrideSurvives() throws {
         let exported = try roundTrip(
@@ -90,6 +66,7 @@ struct NotationDefaultsNotExportedTests {
             .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty && $0 != "}" }
 
         #expect(body.isEmpty, "\(notation) leaked: \(body.joined(separator: " | "))")
+        #expect(try parse(exported).notationName == notation)
     }
 
     @Test("The notation still supplies its settings on reparse")

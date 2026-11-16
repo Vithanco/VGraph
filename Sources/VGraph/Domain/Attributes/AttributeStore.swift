@@ -23,11 +23,6 @@ public struct AttributeStore: VProtocol {
         self.layerValues = [:]
     }
 
-    /// Every layer, by name: the order of a dictionary changes between runs.
-    public var layerNames: [AttributeLayer] {
-        layers.keys.sorted { $0.rawValue < $1.rawValue }
-    }
-
     func getAttributeDefinition(_ id: Attribute.Id) throws(VError) -> AttributeDefinition {
         guard let definition = definitions[id] else {
             throw VError.attributeNotFound(id)

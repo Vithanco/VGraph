@@ -27,16 +27,15 @@ struct ViewManagementTests {
 
     @Test("Given two views, when context is removed, then only containers is listed")
     func removeLeavesTheOther() throws {
-        let removed = try graph().removing(view: "context")
-        #expect(removed.views.map { $0.name } == ["containers"])
-    }
+        let doc = try graph()
+        let web = ItemKey(.node, "web")
+        #expect(!(try doc.attributes(inView: "context", of: web)).isEmpty)
 
-    @Test("Given two views, when context is removed, then displaying it fails as an unknown view")
-    func removedViewCannotBeShown() throws {
-        let removed = try graph().removing(view: "context")
-        #expect(throws: VError.unknownView("context", available: ["containers"])) {
-            try removed.displaying(view: "context")
-        }
+        let removed = try doc.removing(view: "context")
+        #expect(removed.views.map { $0.name } == ["containers"])
+
+        let redeclared = try removed.declaring(view: ViewDeclaration(name: "context"))
+        #expect(try redeclared.attributes(inView: "context", of: web).isEmpty, "The layer went with the view")
     }
 
     @Test("Given two views, when an unknown view is removed, then it is refused and the views are named")

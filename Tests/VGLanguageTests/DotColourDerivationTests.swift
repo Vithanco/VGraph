@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 import VGraph
 import VGraphvizLib
@@ -68,8 +69,9 @@ struct DotColourDerivationTests {
     }
 
     /// What licenses deriving the colour at all.
+    /// Everything but the colour itself must be identical: sizes, shapes and order.
     @Test func colourDoesNotAffectLayout() throws {
-        func positions(_ colour: String) throws -> [String] {
+        func dotWithoutColour(_ colour: String) throws -> String {
             let vgl = """
                 vgraph t: IBIS "T" {
                     node q: Question "Q" [color: "\(colour)"]
@@ -77,16 +79,11 @@ struct DotColourDerivationTests {
                     edge q -> a
                 }
                 """
-            let d = try dot(vgl)
-            return d.split(separator: "\n")
-                .filter { $0.contains("width=") || $0.contains("height=") }
-                .map { line in
-                    line.split(separator: ",")
-                        .filter { $0.contains("width=") || $0.contains("height=") || $0.contains("shape=") }
-                        .joined(separator: ",")
-                }
+            return try dot(vgl).replacingOccurrences(of: colour, with: "<colour>")
         }
-        #expect(try positions("#ff0000") == positions("#00ff00"))
+        let red = try dotWithoutColour("#ff0000")
+        #expect(red.contains("<colour>"), "The colour must reach the DOT for its removal to prove anything")
+        #expect(red == (try dotWithoutColour("#00ff00")))
     }
 
     @Test func nodeColourOverridesItsType() throws {

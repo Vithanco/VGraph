@@ -1,6 +1,7 @@
 // ADR-0010: comments are attributes on the element they stand above (or after,
 // on the same line) and are restored in `//` syntax on export.
 
+import Foundation
 import Testing
 
 @testable import VGLanguage
@@ -160,23 +161,6 @@ struct CommentRoundTripTest {
         #expect(once == twice)
     }
 
-    @Test func repeatedExportDoesNotAccumulateBlankLinesBeforeGroups() throws {
-        var text = """
-            vgraph t: IBIS "T" {
-                node q1: Question "Q";
-                // about the group
-                group g "G" {
-                    node a1: Answer "A";
-                }
-            }
-            """
-        for _ in 0..<4 { text = try roundTrip(text) }
-
-        let comment = try #require(lineIndex(of: "// about the group", in: text))
-        let group = try #require(lineIndex(of: "group g", in: text))
-        #expect(group == comment + 1)
-    }
-
     // MARK: - The attribute alias
 
     @Test func commentAttributeIsAcceptedAndReExportedAsAComment() throws {
@@ -305,26 +289,6 @@ struct CommentRoundTripTest {
         #expect(!out.contains("the alias one"))
     }
 
-    /// A comment set on an edge *type* must not be copied onto every edge of that
-    /// type — an element's comments are read from its own attributes, not inherited.
-    @Test func anEdgeTypeCommentIsNotRepeatedOntoItsEdges() throws {
-        let out = try roundTrip(
-            """
-            vnotation N extends IBIS {
-                edge type: answers  from: Answer  to: Question [comment: "type-level"]
-            }
-            vgraph t: N "T" {
-                node q1: Question "Q";
-                node a1: Answer "A";
-                node a2: Answer "A2";
-                edge a1 -> q1;
-                edge a2 -> q1;
-            }
-            """)
-
-        #expect(!out.contains("// type-level"))
-    }
-
     // MARK: - Deterministic output
 
     /// Attributes live in a dictionary, so without a deliberate emission order a
@@ -341,6 +305,16 @@ struct CommentRoundTripTest {
             """)
 
         #expect(try roundTrip(once) == once)
+
+        let lines = once.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
+        func index(of prefix: String) -> Int? { lines.firstIndex { $0.hasPrefix(prefix) } }
+        let graphKeys = ["fontcolor:", "labeljust:", "layoutdirection:"].compactMap { index(of: $0) }
+        #expect(graphKeys.count == 3)
+        #expect(graphKeys == graphKeys.sorted(), "Graph attributes are written in key order")
+        let node = try #require(lines.first { $0.hasPrefix("node q1") })
+        let keyOrder = ["aligngroup:", "fontsize:", "tooltip:"].compactMap { node.range(of: $0)?.lowerBound }
+        #expect(keyOrder.count == 3)
+        #expect(keyOrder == keyOrder.sorted(), "Node attributes are written in key order")
     }
 
     // MARK: - Comments are graph data

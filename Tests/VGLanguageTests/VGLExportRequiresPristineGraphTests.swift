@@ -41,7 +41,7 @@ struct VGLExportRequiresPristineGraphTests {
     /// parse into a graph that can never be saved again. `completedSteps` is a display
     /// attribute, and the parser refuses every one of those.
     @Test func theLedgerCannotBeAuthoredInVGL() {
-        #expect(throws: VError.self) {
+        let error = #expect(throws: VError.self) {
             try VGraphParser(logger: NoOpLogger()).parse(
                 source: """
                     vgraph demo: ConceptMap "Demo" {
@@ -50,6 +50,11 @@ struct VGLExportRequiresPristineGraphTests {
                     }
                     """)
         }
+        guard case .parsingError(let message) = error else {
+            Issue.record("Expected a parsingError, got \(String(describing: error))")
+            return
+        }
+        #expect(message.contains("cannot be written in VGL"))
     }
 
     /// The error names every step that ran, so the message points at the pipeline

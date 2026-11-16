@@ -57,6 +57,7 @@ struct PruningByValueVGLTest {
             """
         let exported = try VGLExporter().export(graph: parse(source))
 
-        #expect(!exported.contains("node customer [fontsize: 20]"), "\(exported)")
+        let view = try #require(exported.range(of: "vview v").map { exported[$0.lowerBound...] }, "\(exported)")
+        #expect(!view.contains("node customer"), "\(exported)")
     }
 }

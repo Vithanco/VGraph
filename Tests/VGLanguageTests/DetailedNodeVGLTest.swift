@@ -37,12 +37,6 @@ struct DetailedNodeVGLTest {
         #expect(graph.groupType(of: ibs) == nil)
     }
 
-    @Test func aDetailedNodeExportsWithItsNodeType() throws {
-        let exported = try VGLExporter().export(graph: parse(Self.source))
-
-        #expect(exported.contains("\tgroup ibs: SoftwareSystem \"Internet Banking System\" {"))
-    }
-
     /// A detailed node starts folded (ADR-0032), so `folded` repeats its type and
     /// is dropped, while an unfolded one says so.
     @Test func aDetailedNodeWritesOnlyAnUnfolding() throws {

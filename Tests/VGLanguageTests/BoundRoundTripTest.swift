@@ -50,22 +50,8 @@ struct BoundRoundTripTest {
 
         #expect(outDegreeMin == 1)
         #expect(samePairMax == 1)
-    }
-
-    @Test("An undeclared bound stays unbounded")
-    func undeclaredBoundIsUnbounded() throws {
-        let graph = try parse(bounded)
-        let inDegreeMax = try graph.get(edgeType: EdgeType.Id(rawValue: "answeredBy"), attribute: Attributes.Edge.inDegreeMax)
-
-        #expect(inDegreeMax == Bound.unbounded)
-    }
-
-    @Test("A declared bound is re-emitted")
-    func boundIsExported() throws {
-        let out = try roundTrip(bounded)
-
-        #expect(out.contains("outDegreeMin: 1"))
-        #expect(out.contains("samePairMax: 1"))
+        // Declaring some bounds leaves the others unbounded.
+        #expect(try graph.get(edgeType: EdgeType.Id(rawValue: "answeredBy"), attribute: Attributes.Edge.inDegreeMax) == Bound.unbounded)
     }
 
     /// The property that matters: export then reparse must not lose the bound.
@@ -76,6 +62,7 @@ struct BoundRoundTripTest {
 
         let outDegreeMin = try graph.get(edgeType: EdgeType.Id(rawValue: "answeredBy"), attribute: Attributes.Edge.outDegreeMin)
         #expect(outDegreeMin == 1)
+        #expect(try graph.get(edgeType: EdgeType.Id(rawValue: "answeredBy"), attribute: Attributes.Edge.samePairMax) == 1)
         // And the text is a fixed point, as every other round trip here is.
         #expect(try roundTrip(once) == once)
     }

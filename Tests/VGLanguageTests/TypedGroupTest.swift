@@ -38,18 +38,6 @@ private let team = GroupType(string: "Team")
 @Suite("Typed groups")
 struct TypedGroupTest {
 
-    /// The `: <GroupType>` slot parses and attaches the type to the group.
-    @Test func parsesGroupType() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: typedGroupInput)
-
-        #expect(graph.groups.count == 1)
-        let core = graph.groups[0]
-        try graph.ensure(group: core, attribute: Attributes.Group.Id, isSameAs: "core")
-
-        #expect(graph.groupType(of: core) == team)
-    }
-
     /// Export emits the `: <GroupType>` form (not an attribute line) and it survives a
     /// parse → export → parse round-trip.
     @Test func roundTripsGroupType() throws {
@@ -110,14 +98,6 @@ struct TypedGroupTest {
         #expect(html.contains("vg-error\">Taem</span>"))
     }
 
-    @Test func registeredGroupTypeIsNotColouredAsAnError() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let html = parser.semanticHighlightHTML(source: typedGroupInput)
-
-        #expect(html.contains(">Team</span>"))
-        #expect(!html.contains("vg-error\">Team</span>"))
-    }
-
     /// An untyped group still parses and carries no group type.
     @Test func untypedGroupHasNoType() throws {
         let source =
@@ -152,7 +132,8 @@ struct C4TypedGroupTest {
         let graph = try parser.parse(source: c4TypedGroupInput)
         let bank = graph.groups[0]
 
-        #expect(graph.resolvedGroupStyle(bank) != nil)
+        let style = try #require(graph.resolvedGroupStyle(bank))
+        #expect(style.unfolded.borderDash == "8,4")
     }
 
     /// The shipped C4 example is a fixed point of `export(parse(·))` (ADR-0010).

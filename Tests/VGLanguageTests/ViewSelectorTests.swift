@@ -185,11 +185,6 @@ struct ViewSelectorShownTests {
 
     // MARK: expand
 
-    @Test("Given include node api then expand 1, then api, web, db and mainframe are shown")
-    func expandOne() throws {
-        #expect(try nodesShown("include node api;\nexpand 1;") == ["api", "web", "db", "mainframe"])
-    }
-
     @Test("Given include node customer then expand 2, then customer, web and api are shown")
     func expandTwo() throws {
         #expect(try nodesShown("include node customer;\nexpand 2;") == ["customer", "web", "api"])

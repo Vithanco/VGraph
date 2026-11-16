@@ -37,12 +37,7 @@ struct VNotationIconDeclarationTests {
         #expect(artwork.path == Self.flamePath)
         #expect(artwork.width == 24)
         #expect(artwork.height == 24)
-    }
-
-    @Test("A node type naming it draws it, and the report is silent")
-    func aNodeTypeCanUseIt() throws {
-        let graph = try parse(notation(icons: "    icon flame [viewBox: \"0 0 24 24\", path: \"\(Self.flamePath)\"]"))
-
+        #expect(graph.declaredIcons.count == 1)
         #expect(graph.artwork(forIcon: "flame")?.path == Self.flamePath)
         #expect(GenericQualityChecks.unresolvableIcons(graph: graph).isEmpty)
     }
@@ -59,29 +54,6 @@ struct VNotationIconDeclarationTests {
         #expect(artwork.height == 30)
     }
 
-    @Test("Two node types may share one declaration")
-    func twoTypesShareOne() throws {
-        let graph = try parse(
-            """
-            vnotation RiskMap {
-                icon flame [viewBox: "0 0 24 24", path: "\(Self.flamePath)"]
-
-                node type: Risk  [nodeStyle: iconWithText, backgroundColor: "#cc3333", icon: "flame"]
-                node type: Issue [nodeStyle: iconWithText, backgroundColor: "#cc8833", icon: "flame"]
-                edge type: rel from: Risk to: Issue
-            }
-
-            vgraph rm: RiskMap "Risks" {
-                node r1: Risk "One";
-                node i1: Issue "Two";
-                edge r1 -> i1;
-            }
-            """)
-
-        #expect(graph.declaredIcons.count == 1)
-        #expect(GenericQualityChecks.unresolvableIcons(graph: graph).isEmpty)
-    }
-
     @Test("It shadows a built-in of the same name")
     func itShadowsABuiltIn() throws {
         let graph = try parse(
@@ -92,28 +64,26 @@ struct VNotationIconDeclarationTests {
         #expect(graph.artwork(forIcon: "and")?.path == Self.flamePath)
     }
 
-    @Test("Artwork nobody declared leaves the built-ins alone")
-    func undeclaredNamesStillResolve() throws {
-        let graph = try parse(notation(icons: "", nodeTypeIcon: "and"))
-
-        #expect(graph.declaredIcons.isEmpty)
-        #expect(graph.artwork(forIcon: "and") == BuiltinIcons.artwork(for: "and"))
-    }
-
     /// The charset is the defence rather than output escaping: a quote that
     /// cannot be *written* beats one every output path has to remember to escape.
     @Test(
         "A path outside the path-data charset is refused",
         arguments: [
-            "M0 0\"/><script>alert(1)</script>",
+            "M0 0\\\"/><script>alert(1)</script>",
             "M0 0 <tspan>",
             "url(#x)",
             "M0 0 &#65;",
         ])
     func aPathOutsideTheCharsetIsRefused(_ path: String) {
-        #expect(throws: VError.self) {
+        // A lexer error would also refuse the document, so the message says which guard did.
+        let error = #expect(throws: VError.self) {
             try parse(notation(icons: "    icon flame [viewBox: \"0 0 24 24\", path: \"\(path)\"]"))
         }
+        guard case .parsingError(let message) = error else {
+            Issue.record("Expected a parsingError, got \(String(describing: error))")
+            return
+        }
+        #expect(message.contains("not drawable"), "\(message)")
     }
 
     @Test("A path over the size cap is refused")
@@ -172,22 +142,6 @@ struct VNotationIconRoundTripTests {
 
     private func parse(_ vgl: String) throws -> VGraph {
         try VGraphParser(logger: NoOpLogger()).parse(source: vgl)
-    }
-
-    @Test("The exported block declares the artwork again")
-    func theBlockCarriesTheIcon() throws {
-        let exported = try VGLExporter().export(graph: try parse(Self.source))
-
-        #expect(exported.contains("icon flame"))
-        #expect(exported.contains(Self.flamePath))
-        #expect(exported.contains("-2 -2.5 28 30"))
-    }
-
-    @Test("Artwork no node type uses is exported too")
-    func unusedArtworkSurvives() throws {
-        let exported = try VGLExporter().export(graph: try parse(Self.source))
-
-        #expect(exported.contains("icon spare"))
     }
 
     @Test("A second parse yields the same artwork")

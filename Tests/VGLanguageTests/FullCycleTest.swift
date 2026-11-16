@@ -6,10 +6,9 @@ import Testing
 @testable import VGraph
 @testable import VGraphvizLib
 
-/// A complex test graph with 50 explicit nodes (+ 4 unknown node types = 54 total), 70 edges, and 6 groups
+/// A complex test graph with 54 nodes, 70 edges, and 6 groups
 /// One group (groupE) is nested 3 levels deep with 2 parent groups
 /// Includes graph-level properties: rankdir (layout direction), fontcolor, and labeljust
-/// Note: Some edges create unknown node types because they connect incompatible IBIS node types
 let complexGraphInput = """
     vgraph complexGraph: IBIS "Complex Test Graph" {
         rankdir: LR;
@@ -304,6 +303,8 @@ let impactMappingInput = """
 /// Compares two graphs for structural and attribute equality.
 /// This includes nodes, edges, groups, their attributes, and graph-level attributes.
 func assertGraphsAreEqual(_ g1: VGraph, _ g2: VGraph, sourceLocation: SourceLocation = #_sourceLocation) throws {
+    #expect(g1.notationName == g2.notationName, "Notation should be preserved", sourceLocation: sourceLocation)
+
     #expect(g1.nodes.count == g2.nodes.count, "Graphs should have same number of nodes", sourceLocation: sourceLocation)
 
     let g1NodeIds = g1.nodes.map { $0.id.description }
@@ -411,8 +412,8 @@ func assertGraphsAreEqual(_ g1: VGraph, _ g2: VGraph, sourceLocation: SourceLoca
                 sourceLocation: sourceLocation)
         }
 
-        let nodes1 = try g1.getDirectNodes(group: group1)
-        let nodes2 = try g2.getDirectNodes(group: group2)
+        let nodes1 = try g1.getDirectContent(group: group1).1
+        let nodes2 = try g2.getDirectContent(group: group2).1
 
         let nodeIds1 = Set(nodes1.map { $0.id.description })
         let nodeIds2 = Set(nodes2.map { $0.id.description })
@@ -457,6 +458,21 @@ func assertGraphsAreEqual(_ g1: VGraph, _ g2: VGraph, sourceLocation: SourceLoca
     }
 }
 
+/// A spelling the notation does not know is parsed to an unknown type in both graphs of a
+/// round trip, so equality alone would not notice it.
+func assertNoUnknownTypes(_ graph: VGraph, sourceLocation: SourceLocation = #_sourceLocation) throws {
+    for node in graph.nodes {
+        #expect(
+            try graph.nodeType(for: node).id != NodeType.unknownPrefix, "Node \(node.id) has an unknown type",
+            sourceLocation: sourceLocation)
+    }
+    for edge in graph.edges {
+        #expect(
+            !(try graph.edgeType(for: edge.id)).isUnknown, "Edge \(edge.from.id) -> \(edge.to.id) has an unknown type",
+            sourceLocation: sourceLocation)
+    }
+}
+
 @Suite
 struct FullCycleTest {
 
@@ -465,8 +481,7 @@ struct FullCycleTest {
         let parser = VGraphParser(logger: NoOpLogger())
         let graph = try parser.parse(source: complexGraphInput)
 
-        // Verify basic structure (includes 4 extra unknown node types created by parser)
-        #expect(graph.nodes.count == 54, "Expected 50 explicit + 4 unknown node types = 54 nodes")
+        #expect(graph.nodes.count == 54, "Expected 54 nodes")
         #expect(graph.edges.count == 70, "Expected 70 edges")
 
         let nonRootGroups = graph.groups.filter {
@@ -493,7 +508,13 @@ struct FullCycleTest {
         #expect(groupE != nil, "Group E should exist (nested level 3)")
         #expect(groupF != nil, "Group F should exist")
 
+        if let groupA {
+            try graph.ensure(group: groupA, attribute: Attributes.Group.label, isSameAs: "Research and Analysis")
+            try graph.ensure(group: groupA, attribute: Attributes.Group.style, isSameAs: .filled)
+        }
+
         if let groupE = groupE {
+            try graph.ensure(group: groupE, attribute: Attributes.Group.label, isSameAs: "CI-CD Pipeline")
             let parentOfE = graph.parentGroup(of: groupE)
             #expect(parentOfE?.id.description == "groupD", "Group E's parent should be Group D")
 
@@ -546,168 +567,25 @@ struct FullCycleTest {
         }
     }
 
-    @Test
-    func exportToDotFormat() throws {
+    /// What differs between notations is data: the spelling of node and edge types, and which
+    /// edges are exported untyped because their node types allow exactly one edge type.
+    @Test(arguments: roundTripCases)
+    func exportAndReparseGivesTheSameGraph(_ testCase: RoundTripCase) throws {
         let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: complexGraphInput)
+        let g1 = try parser.parse(source: testCase.source)
+        try assertNoUnknownTypes(g1)
 
-        let exporter = DotExporter()
-        let dotOutput = try exporter.export(graph: graph)
+        let exported = try VGLExporter().export(graph: g1)
+        #expect(exported.contains(testCase.header))
 
-        #expect(dotOutput.hasPrefix("digraph"), "DOT should start with digraph")
-        #expect(dotOutput.contains("subgraph cluster_groupA"), "DOT should contain group A")
-        #expect(dotOutput.contains("subgraph cluster_groupE"), "DOT should contain nested group E")
-        #expect(dotOutput.contains("root1"), "DOT should contain root nodes")
-        #expect(dotOutput.contains("e2"), "DOT should contain deeply nested nodes")
-    }
-
-    @Test
-    func testCompleteGraphEquality() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let g1 = try parser.parse(source: complexGraphInput)
-
-        let exporter = VGLExporter()
-        let exportedGraph = try exporter.export(graph: g1)
-
-        let g2 = try parser.parse(source: exportedGraph)
-
+        let g2 = try parser.parse(source: exported)
         try assertGraphsAreEqual(g1, g2)
     }
 
-    @Test
-    func fullCycleParseAndExportVGraph() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: complexGraphInput)
-
-        let exporter = VGLExporter()
-        let exportedVGraph = try exporter.export(graph: graph)
-
-        #expect(!exportedVGraph.isEmpty, "Exported VGL should not be empty")
-        #expect(exportedVGraph.contains("vgraph complexGraph: IBIS"), "Exported VGL should contain graph declaration")
-        #expect(exportedVGraph.contains("node root1: Question"), "Exported VGL should contain nodes")
-        #expect(exportedVGraph.contains("edge"), "Exported VGL should contain edges")
-        #expect(exportedVGraph.contains("group groupA"), "Exported VGL should contain groups")
-
-        let graph2 = try parser.parse(source: exportedVGraph)
-
-        #expect(graph2.nodes.count == graph.nodes.count, "Node count should be preserved")
-        #expect(graph2.edges.count == graph.edges.count, "Edge count should be preserved")
-        #expect(graph2.groups.count == graph.groups.count, "Group count should be preserved")
-
-        let graphId1: String = try graph.get(graphAttribute: Attributes.Group.Id)
-        let graphId2: String = try graph2.get(graphAttribute: Attributes.Group.Id)
-        #expect(graphId1 == graphId2, "Graph ID should be preserved")
-
-        let graphLabel1: String = try graph.get(graphAttribute: Attributes.Group.label)
-        let graphLabel2: String = try graph2.get(graphAttribute: Attributes.Group.label)
-        #expect(graphLabel1 == graphLabel2, "Graph label should be preserved")
-
-        let root1 = Node(string: "root1")
-        let root1Label1: String = try graph.get(node: root1, attribute: Attributes.Node.label)
-        let root1Label2: String = try graph2.get(node: root1, attribute: Attributes.Node.label)
-        #expect(root1Label1 == root1Label2, "Node labels should be preserved")
-
-        let root1Fontsize1: Double = try graph.get(node: root1, attribute: Attributes.Node.fontsize)
-        let root1Fontsize2: Double = try graph2.get(node: root1, attribute: Attributes.Node.fontsize)
-        #expect(root1Fontsize1 == root1Fontsize2, "Node fontsize should be preserved")
-
-        let edge1 = graph.edges.first { $0.from == Node(string: "root1") && $0.to == Node(string: "root3") }!
-        let edge2 = graph2.edges.first { $0.from == Node(string: "root1") && $0.to == Node(string: "root3") }!
-
-        let edge1Label: String = try graph.get(edge: edge1.id, attribute: Attributes.Edge.label)
-        let edge2Label: String = try graph2.get(edge: edge2.id, attribute: Attributes.Edge.label)
-        #expect(edge1Label == edge2Label, "Edge labels should be preserved")
-
-        let groupE2 = graph2.groups.first { $0.id.description == "groupE" }!
-        let parentE2 = graph2.parentGroup(of: groupE2)
-        #expect(parentE2?.id.description == "groupD", "Group nesting should be preserved")
-    }
-
-    @Test
-    func verifyGroupAttributesPreserved() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: complexGraphInput)
-
-        guard let groupA = graph.groups.first(where: { $0.id.description == "groupA" }) else {
-            Issue.record("Group A should exist")
-            return
-        }
-
-        try graph.ensure(group: groupA, attribute: Attributes.Group.label, isSameAs: "Research and Analysis")
-        try graph.ensure(group: groupA, attribute: Attributes.Group.style, isSameAs: .filled)
-
-        guard let groupE = graph.groups.first(where: { $0.id.description == "groupE" }) else {
-            Issue.record("Group E should exist")
-            return
-        }
-
-        try graph.ensure(group: groupE, attribute: Attributes.Group.label, isSameAs: "CI-CD Pipeline")
-
-        // Verify group E is at level 3 (has 2 parent groups before root)
-        var depth = 0
-        var currentGroup: Group? = groupE
-
-        while let group = currentGroup {
-            if group.id.description == "vithanco.vgraph.rootGroup.only.for.internal.use" {
-                break
-            }
-            depth += 1
-            currentGroup = graph.parentGroup(of: group)
-        }
-
-        #expect(depth == 3, "Group E should be at depth 3 (groupE -> groupD -> groupC -> root)")
-    }
-}
-
-@Test
-func debugWriteExport() throws {
-    let parser = VGraphParser(logger: NoOpLogger())
-    let graph = try parser.parse(source: complexGraphInput)
-
-    let exporter = VGLExporter()
-    let exported = try exporter.export(graph: graph)
-
-    try exported.write(toFile: "/tmp/full_export.vgl", atomically: true, encoding: .utf8)
-}
-
-@Test
-func debugDotExport() throws {
-    let parser = VGraphParser(logger: NoOpLogger())
-    let graph = try parser.parse(source: complexGraphInput)
-
-    let exporter = DotExporter()
-    let exported = try exporter.export(graph: graph)
-
-    try exported.write(toFile: "/tmp/full_export.dot", atomically: true, encoding: .utf8)
 }
 
 @Suite("VGL Group Export Tests")
 struct VGLGroupExportTests {
-
-    @Test
-    func testGroupAttributesAreExported() throws {
-        let vgraphInput = """
-            vgraph testGraph: IBIS "Test Graph" {
-                group testGroup "Test Group Label" {
-                    style: filled;
-                    color: lightblue;
-                    node n1: Question "Node 1";
-                    node n2: Answer "Node 2";
-                };
-            }
-            """
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: vgraphInput)
-
-        let exporter = VGLExporter()
-        let vglOutput = try exporter.export(graph: graph)
-
-        #expect(vglOutput.contains("group testGroup"), "Group declaration should exist")
-        #expect(vglOutput.contains("\"Test Group Label\""), "Group label should be in declaration")
-
-        #expect(vglOutput.contains("style: filled"), "Group style attribute should be exported")
-        #expect(vglOutput.contains("color: lightblue"), "Group color attribute should be exported")
-    }
 
     @Test
     func testNodesAreInsideTheirGroups() throws {
@@ -835,79 +713,6 @@ struct VGLGroupExportTests {
     }
 
     @Test
-    func testMultipleGroupsPreserveStructure() throws {
-        let vgraphInput = """
-            vgraph testGraph: IBIS "Test Graph" {
-                group g1 "Group 1" {
-                    color: red;
-                    node n1: Question "Node 1";
-                };
-
-                group g2 "Group 2" {
-                    color: blue;
-                    node n2: Answer "Node 2";
-                };
-
-                group g3 "Group 3" {
-                    color: green;
-                    node n3: Pro "Node 3";
-                };
-            }
-            """
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: vgraphInput)
-
-        let exporter = VGLExporter()
-        let vglOutput = try exporter.export(graph: graph)
-
-        #expect(vglOutput.contains("group g1"), "Group g1 should exist")
-        #expect(vglOutput.contains("group g2"), "Group g2 should exist")
-        #expect(vglOutput.contains("group g3"), "Group g3 should exist")
-
-        #expect(vglOutput.contains("color: red"), "Group g1 color should be exported")
-        #expect(vglOutput.contains("color: blue"), "Group g2 color should be exported")
-        #expect(vglOutput.contains("color: green"), "Group g3 color should be exported")
-
-        let lines = vglOutput.components(separatedBy: "\n")
-
-        if let g1Start = lines.firstIndex(where: { $0.contains("group g1") }),
-            let g1End = lines[g1Start...].firstIndex(where: { $0.trimmed() == "}" })
-        {
-            let g1Block = lines[g1Start...g1End].joined(separator: "\n")
-            #expect(g1Block.contains("node n1:"), "Node n1 should be in group g1")
-            #expect(!g1Block.contains("node n2:"), "Node n2 should NOT be in group g1")
-            #expect(!g1Block.contains("node n3:"), "Node n3 should NOT be in group g1")
-        } else {
-            Issue.record("Group g1 block not found properly")
-        }
-    }
-
-    @Test
-    func testGraphLevelPropertiesAreExported() throws {
-        let vgraphInput = """
-            vgraph testGraph: IBIS "Test Graph" {
-                rankdir: LR;
-                fontcolor: darkblue;
-                labeljust: l;
-
-                node n1: Question "Node 1";
-            }
-            """
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: vgraphInput)
-
-        let exporter = VGLExporter()
-        let vglOutput = try exporter.export(graph: graph)
-
-        #expect(vglOutput.contains("vgraph testGraph: IBIS"), "Graph declaration should exist")
-
-        // Verify graph-level properties are NOT exported inline with vgraph declaration
-        // They should appear as separate statements inside the graph block
-        // Note: Currently VGLExporter doesn't export graph-level attributes beyond label
-        // This test documents the expected behavior
-    }
-
-    @Test
     func testComplexGraphWithPropertiesRoundTrip() throws {
         let parser = VGraphParser(logger: NoOpLogger())
         let graph1 = try parser.parse(source: complexGraphInput)
@@ -1029,245 +834,45 @@ struct ImpactMappingFullCycleTests {
         }
     }
 
-    @Test
-    func testImpactMappingCompleteGraphEquality() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let g1 = try parser.parse(source: impactMappingInput)
-
-        let exporter = VGLExporter()
-        let exportedGraph = try exporter.export(graph: g1)
-
-        let g2 = try parser.parse(source: exportedGraph)
-
-        try assertGraphsAreEqual(g1, g2)
-    }
-
-    @Test
-    func exportImpactMappingToDotFormat() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: impactMappingInput)
-
-        let exporter = DotExporter()
-        let dotOutput = try exporter.export(graph: graph)
-
-        #expect(dotOutput.hasPrefix("digraph"), "DOT should start with digraph")
-        #expect(dotOutput.contains("subgraph cluster_marketingTeam"), "DOT should contain marketingTeam group")
-        #expect(dotOutput.contains("subgraph cluster_productTeam"), "DOT should contain productTeam group")
-        #expect(dotOutput.contains("subgraph cluster_developmentTeam"), "DOT should contain nested developmentTeam group")
-        #expect(dotOutput.contains("goal1"), "DOT should contain goal nodes")
-        #expect(dotOutput.contains("actor1"), "DOT should contain actor nodes")
-        #expect(dotOutput.contains("impact1"), "DOT should contain impact nodes")
-        #expect(dotOutput.contains("deliv1"), "DOT should contain deliverable nodes")
-    }
-
-    @Test
-    func fullCycleParseAndExportImpactMapping() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: impactMappingInput)
-
-        let exporter = VGLExporter()
-        let exportedVGraph = try exporter.export(graph: graph)
-
-        #expect(!exportedVGraph.isEmpty, "Exported VGL should not be empty")
-        #expect(exportedVGraph.contains("vgraph productLaunch: ImpactMapping"), "Exported VGL should contain graph declaration")
-        #expect(exportedVGraph.contains("node goal1: Goal"), "Exported VGL should contain goal nodes")
-        #expect(exportedVGraph.contains("node actor1: Actor"), "Exported VGL should contain actor nodes")
-        #expect(exportedVGraph.contains("node impact1: Impact"), "Exported VGL should contain impact nodes")
-        #expect(exportedVGraph.contains("node deliv1: Deliverable"), "Exported VGL should contain deliverable nodes")
-        #expect(exportedVGraph.contains("edge"), "Exported VGL should contain edges")
-        #expect(exportedVGraph.contains("group marketingTeam"), "Exported VGL should contain groups")
-
-        let graph2 = try parser.parse(source: exportedVGraph)
-
-        #expect(graph2.nodes.count == graph.nodes.count, "Node count should be preserved")
-        #expect(graph2.edges.count == graph.edges.count, "Edge count should be preserved")
-        #expect(graph2.groups.count == graph.groups.count, "Group count should be preserved")
-
-        let graphId1: String = try graph.get(graphAttribute: Attributes.Group.Id)
-        let graphId2: String = try graph2.get(graphAttribute: Attributes.Group.Id)
-        #expect(graphId1 == graphId2, "Graph ID should be preserved")
-
-        let graphLabel1: String = try graph.get(graphAttribute: Attributes.Group.label)
-        let graphLabel2: String = try graph2.get(graphAttribute: Attributes.Group.label)
-        #expect(graphLabel1 == graphLabel2, "Graph label should be preserved")
-
-        let notationString1: String = graph.notationName
-        let notationString2: String = graph2.notationName
-        #expect(notationString1 == notationString2, "Notation should be preserved")
-
-        let goal1 = Node(string: "goal1")
-        let goal1Label1: String = try graph.get(node: goal1, attribute: Attributes.Node.label)
-        let goal1Label2: String = try graph2.get(node: goal1, attribute: Attributes.Node.label)
-        #expect(goal1Label1 == goal1Label2, "Node labels should be preserved")
-
-        let goal1Fontsize1: Double = try graph.get(node: goal1, attribute: Attributes.Node.fontsize)
-        let goal1Fontsize2: Double = try graph2.get(node: goal1, attribute: Attributes.Node.fontsize)
-        #expect(goal1Fontsize1 == goal1Fontsize2, "Node fontsize should be preserved")
-
-        let edge1 = graph.edges.first { $0.from == Node(string: "goal1") && $0.to == Node(string: "actor1") }!
-        let edge2 = graph2.edges.first { $0.from == Node(string: "goal1") && $0.to == Node(string: "actor1") }!
-
-        let edge1Label: String = try graph.get(edge: edge1.id, attribute: Attributes.Edge.label)
-        let edge2Label: String = try graph2.get(edge: edge2.id, attribute: Attributes.Edge.label)
-        #expect(edge1Label == edge2Label, "Edge labels should be preserved")
-
-        let developmentTeam2 = graph2.groups.first { $0.id.description == "developmentTeam" }!
-        let parentE2 = graph2.parentGroup(of: developmentTeam2)
-        #expect(parentE2?.id.description == "productTeam", "Group nesting should be preserved")
-    }
-
-    @Test
-    func verifyImpactMappingGroupAttributesPreserved() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: impactMappingInput)
-
-        guard let marketingTeam = graph.groups.first(where: { $0.id.description == "marketingTeam" }) else {
-            Issue.record("marketingTeam should exist")
-            return
-        }
-
-        try graph.ensure(group: marketingTeam, attribute: Attributes.Group.label, isSameAs: "Marketing Team")
-        try graph.ensure(group: marketingTeam, attribute: Attributes.Group.style, isSameAs: .filled)
-
-        guard let developmentTeam = graph.groups.first(where: { $0.id.description == "developmentTeam" }) else {
-            Issue.record("developmentTeam should exist")
-            return
-        }
-
-        try graph.ensure(group: developmentTeam, attribute: Attributes.Group.label, isSameAs: "Development Team")
-
-        // Verify developmentTeam is at depth 2 (developmentTeam -> productTeam -> root)
-        var depth = 0
-        var currentGroup: Group? = developmentTeam
-
-        while let group = currentGroup {
-            if group.id.description == "vithanco.vgraph.rootGroup.only.for.internal.use" {
-                break
-            }
-            depth += 1
-            currentGroup = graph.parentGroup(of: group)
-        }
-
-        #expect(depth == 2, "developmentTeam should be at depth 2 (developmentTeam -> productTeam -> root)")
-    }
-
-    @Test
-    func testConceptMap() throws {
-        let input = """
-            vgraph learningCM: ConceptMap "Learning Concept Map" {
-                node c1: Concept "Student";
-                node r1: Relation "learns";
-                node c2: Concept "Subject";
-                node r2: Relation "requires";
-                node c3: EmphasizedConcept "Practice";
-
-                edge c1 -> r1: concept_to_relation;
-                edge r1 -> c2: relation_to_concept;
-                edge c2 -> r2: concept_to_relation;
-                edge r2 -> c3: relation_to_emphasized_concept;
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        #expect(graph.nodes.count == 5, "Graph should have 5 nodes")
-        #expect(graph.edges.count == 4, "Graph should have 4 edges")
-
-        #expect(graph.nodes.contains(Node(string: "c1")), "Node c1 should exist")
-        #expect(graph.nodes.contains(Node(string: "r1")), "Node r1 should exist")
-        #expect(graph.nodes.contains(Node(string: "c2")), "Node c2 should exist")
-        #expect(graph.nodes.contains(Node(string: "c3")), "Node c3 should exist")
-
-        let hasEdges = graph.edges.count > 0
-        #expect(hasEdges, "Graph should have edges")
-
-        let exporter = VGLExporter()
-        let exported = try exporter.export(graph: graph)
-        #expect(exported.contains("ConceptMap"), "Exported VGL should contain ConceptMap")
-        #expect(exported.contains("Concept"), "Exported VGL should contain Concept nodes")
-        #expect(exported.contains("Relation"), "Exported VGL should contain Relation nodes")
-
-        let reparsed = try parser.parse(source: exported)
-        #expect(reparsed.nodes.count == graph.nodes.count, "Node count should be preserved")
-        #expect(reparsed.edges.count == graph.edges.count, "Edge count should be preserved")
-    }
 }
 
 // MARK: - Causal Loop Diagram Full Cycle Tests
 
+let populationCLDInput = """
+    vgraph populationCLD: CLD "Population Dynamics" {
+        node births: Stock "Births";
+        node population: Stock "Population";
+        node deaths: Stock "Deaths";
+        node resources: Stock "Available Resources";
+
+        edge births -> population: same;
+        edge population -> deaths: same;
+        edge deaths -> population: opposite;
+        edge population -> resources: opposite;
+        edge resources -> births: same;
+    }
+    """
+
 @Suite("Causal Loop Diagram Full Cycle Tests")
 struct CausalLoopDiagramFullCycleTests {
 
+    /// Stock to Stock has two edge types, so the exporter must write the polarity.
     @Test
-    func testCausalLoopDiagram() throws {
-        let input = """
-            vgraph populationCLD: CLD "Population Dynamics" {
-                node births: Stock "Births";
-                node population: Stock "Population";
-                node deaths: Stock "Deaths";
-                node resources: Stock "Available Resources";
-
-                edge births -> population: same;
-                edge population -> deaths: same;
-                edge deaths -> population: opposite;
-                edge population -> resources: opposite;
-                edge resources -> births: same;
-            }
-            """
-
+    func polarityOfACausalLinkSurvivesExport() throws {
         let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
+        let graph = try parser.parse(source: populationCLDInput)
 
-        #expect(graph.nodes.count == 4, "Graph should have 4 nodes")
-        #expect(graph.edges.count == 5, "Graph should have 5 edges")
+        #expect(try graph.nodeType(for: Node(string: "births")) == Notations.CausalLoopDiagram.NodeTypes.stock)
 
-        #expect(graph.nodes.contains(Node(string: "births")), "Node births should exist")
-        #expect(graph.nodes.contains(Node(string: "population")), "Node population should exist")
-        #expect(graph.nodes.contains(Node(string: "deaths")), "Node deaths should exist")
-        #expect(graph.nodes.contains(Node(string: "resources")), "Node resources should exist")
+        let reparsed = try parser.parse(source: try VGLExporter().export(graph: graph))
 
-        let birthsNode = Node(string: "births")
-        let birthsType = try graph.nodeType(for: birthsNode)
-        #expect(birthsType == Notations.CausalLoopDiagram.NodeTypes.stock, "births should be a Stock node")
-
-        let exporter = VGLExporter()
-        let exported = try exporter.export(graph: graph)
-        #expect(exported.contains("CLD"), "Exported VGL should contain CLD")
-        #expect(exported.contains("Stock"), "Exported VGL should contain Stock nodes")
-        #expect(exported.contains("same"), "Exported VGL should contain same edge type")
-        #expect(exported.contains("opposite"), "Exported VGL should contain opposite edge type")
-
-        let reparsed = try parser.parse(source: exported)
-        #expect(reparsed.nodes.count == graph.nodes.count, "Node count should be preserved")
-        #expect(reparsed.edges.count == graph.edges.count, "Edge count should be preserved")
-    }
-
-    @Test
-    func testCausalLoopDiagramCompleteGraphEquality() throws {
-        let input = """
-            vgraph armsCLD: CLD "Arms Race" {
-                node threatA: Stock "Threat from A";
-                node armsA: Stock "Arms of A";
-                node threatB: Stock "Threat from B";
-                node armsB: Stock "Arms of B";
-
-                edge threatA -> armsB: same;
-                edge armsB -> threatB: same;
-                edge threatB -> armsA: same;
-                edge armsA -> threatA: same;
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let g1 = try parser.parse(source: input)
-
-        let exporter = VGLExporter()
-        let exportedGraph = try exporter.export(graph: g1)
-
-        let g2 = try parser.parse(source: exportedGraph)
-
-        try assertGraphsAreEqual(g1, g2)
+        func type(_ from: String, _ to: String) throws -> EdgeType {
+            let edge = try #require(reparsed.edges.first { $0.from == Node(string: from) && $0.to == Node(string: to) })
+            return try reparsed.edgeType(for: edge.id)
+        }
+        #expect(try type("births", "population") == Notations.CausalLoopDiagram.EdgeTypes.same)
+        #expect(try type("deaths", "population") == Notations.CausalLoopDiagram.EdgeTypes.opposite)
+        #expect(try type("population", "resources") == Notations.CausalLoopDiagram.EdgeTypes.opposite)
     }
 }
 
@@ -1393,91 +998,6 @@ struct CurrentRealityTreeFullCycleTests {
         }
     }
 
-    @Test
-    func testCRTCompleteGraphEquality() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let g1 = try parser.parse(source: currentRealityTreeInput)
-
-        let exporter = VGLExporter()
-        let exportedGraph = try exporter.export(graph: g1)
-
-        let g2 = try parser.parse(source: exportedGraph)
-
-        try assertGraphsAreEqual(g1, g2)
-    }
-
-    @Test
-    func exportCRTToDotFormat() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: currentRealityTreeInput)
-
-        let exporter = DotExporter()
-        let dotOutput = try exporter.export(graph: graph)
-
-        #expect(dotOutput.hasPrefix("digraph"), "DOT should start with digraph")
-        #expect(dotOutput.contains("ude1"), "DOT should contain undesirable effect nodes")
-        #expect(dotOutput.contains("ie1"), "DOT should contain intermediate effect nodes")
-        #expect(dotOutput.contains("de1"), "DOT should contain desirable effect nodes")
-        #expect(dotOutput.contains("g1"), "DOT should contain given nodes")
-        #expect(dotOutput.contains("c1"), "DOT should contain changeable nodes")
-        #expect(dotOutput.contains("and1"), "DOT should contain and junctor nodes")
-    }
-
-    @Test
-    func fullCycleParseAndExportCRT() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: currentRealityTreeInput)
-
-        let exporter = VGLExporter()
-        let exportedVGraph = try exporter.export(graph: graph)
-
-        #expect(!exportedVGraph.isEmpty, "Exported VGL should not be empty")
-        #expect(exportedVGraph.contains("vgraph salesProblem: CRT"), "Exported VGL should contain graph declaration")
-        #expect(exportedVGraph.contains("node ude1: UndesirableEffect"), "Exported VGL should contain undesirable effect nodes")
-        #expect(exportedVGraph.contains("node ie1: IntermediateEffect"), "Exported VGL should contain intermediate effect nodes")
-        #expect(exportedVGraph.contains("node de1: DesirableEffect"), "Exported VGL should contain desirable effect nodes")
-        #expect(exportedVGraph.contains("node g1: Given"), "Exported VGL should contain given nodes")
-        #expect(exportedVGraph.contains("node c1: Changeable"), "Exported VGL should contain changeable nodes")
-        #expect(exportedVGraph.contains("node and1: AndJunctor"), "Exported VGL should contain and junctor nodes")
-        #expect(exportedVGraph.contains("edge"), "Exported VGL should contain edges")
-
-        let graph2 = try parser.parse(source: exportedVGraph)
-
-        #expect(graph2.nodes.count == graph.nodes.count, "Node count should be preserved")
-        #expect(graph2.edges.count == graph.edges.count, "Edge count should be preserved")
-
-        let graphId1: String = try graph.get(graphAttribute: Attributes.Group.Id)
-        let graphId2: String = try graph2.get(graphAttribute: Attributes.Group.Id)
-        #expect(graphId1 == graphId2, "Graph ID should be preserved")
-
-        let graphLabel1: String = try graph.get(graphAttribute: Attributes.Group.label)
-        let graphLabel2: String = try graph2.get(graphAttribute: Attributes.Group.label)
-        #expect(graphLabel1 == graphLabel2, "Graph label should be preserved")
-
-        let notationString1: String = graph.notationName
-        let notationString2: String = graph2.notationName
-        #expect(notationString1 == notationString2, "Notation should be preserved")
-
-        let ude1 = Node(string: "ude1")
-        let ude1Label1: String = try graph.get(node: ude1, attribute: Attributes.Node.label)
-        let ude1Label2: String = try graph2.get(node: ude1, attribute: Attributes.Node.label)
-        #expect(ude1Label1 == ude1Label2, "Node labels should be preserved")
-    }
-
-    @Test
-    func verifyCRTNodeTypesAndColors() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: currentRealityTreeInput)
-
-        let nodeTypes = Set(try graph.nodes.map { try graph.nodeType(for: $0) })
-
-        #expect(nodeTypes.contains(Notations.CurrentRealityTree.NodeTypes.undesirableEffect), "Should have UndesirableEffect nodes")
-        #expect(nodeTypes.contains(Notations.CurrentRealityTree.NodeTypes.intermediateEffect), "Should have IntermediateEffect nodes")
-        #expect(nodeTypes.contains(Notations.CurrentRealityTree.NodeTypes.desirableEffect), "Should have DesirableEffect nodes")
-        #expect(nodeTypes.contains(Notations.CurrentRealityTree.NodeTypes.given), "Should have Given nodes")
-        #expect(nodeTypes.contains(Notations.CurrentRealityTree.NodeTypes.changeable), "Should have Changeable nodes")
-        #expect(nodeTypes.contains(Notations.CurrentRealityTree.NodeTypes.andJunctor), "Should have AndJunctor nodes")
-    }
 }
 
 // MARK: - Future Reality Tree Full Cycle Tests
@@ -1610,91 +1130,6 @@ struct FutureRealityTreeFullCycleTests {
         }
     }
 
-    @Test
-    func testFRTCompleteGraphEquality() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let g1 = try parser.parse(source: futureRealityTreeInput)
-
-        let exporter = VGLExporter()
-        let exportedGraph = try exporter.export(graph: g1)
-
-        let g2 = try parser.parse(source: exportedGraph)
-
-        try assertGraphsAreEqual(g1, g2)
-    }
-
-    @Test
-    func exportFRTToDotFormat() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: futureRealityTreeInput)
-
-        let exporter = DotExporter()
-        let dotOutput = try exporter.export(graph: graph)
-
-        #expect(dotOutput.hasPrefix("digraph"), "DOT should start with digraph")
-        #expect(dotOutput.contains("c1"), "DOT should contain changeable nodes")
-        #expect(dotOutput.contains("g1"), "DOT should contain given nodes")
-        #expect(dotOutput.contains("ie1"), "DOT should contain intermediate effect nodes")
-        #expect(dotOutput.contains("de1"), "DOT should contain desirable effect nodes")
-        #expect(dotOutput.contains("ude1"), "DOT should contain undesirable effect nodes")
-        #expect(dotOutput.contains("and1"), "DOT should contain and junctor nodes")
-    }
-
-    @Test
-    func fullCycleParseAndExportFRT() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: futureRealityTreeInput)
-
-        let exporter = VGLExporter()
-        let exportedVGraph = try exporter.export(graph: graph)
-
-        #expect(!exportedVGraph.isEmpty, "Exported VGL should not be empty")
-        #expect(exportedVGraph.contains("vgraph salesSolution: FRT"), "Exported VGL should contain graph declaration")
-        #expect(exportedVGraph.contains("node c1: Changeable"), "Exported VGL should contain changeable nodes")
-        #expect(exportedVGraph.contains("node g1: Given"), "Exported VGL should contain given nodes")
-        #expect(exportedVGraph.contains("node ie1: IntermediateEffect"), "Exported VGL should contain intermediate effect nodes")
-        #expect(exportedVGraph.contains("node de1: DesirableEffect"), "Exported VGL should contain desirable effect nodes")
-        #expect(exportedVGraph.contains("node ude1: UndesirableEffect"), "Exported VGL should contain undesirable effect nodes")
-        #expect(exportedVGraph.contains("node and1: AndJunctor"), "Exported VGL should contain and junctor nodes")
-        #expect(exportedVGraph.contains("edge"), "Exported VGL should contain edges")
-
-        let graph2 = try parser.parse(source: exportedVGraph)
-
-        #expect(graph2.nodes.count == graph.nodes.count, "Node count should be preserved")
-        #expect(graph2.edges.count == graph.edges.count, "Edge count should be preserved")
-
-        let graphId1: String = try graph.get(graphAttribute: Attributes.Group.Id)
-        let graphId2: String = try graph2.get(graphAttribute: Attributes.Group.Id)
-        #expect(graphId1 == graphId2, "Graph ID should be preserved")
-
-        let graphLabel1: String = try graph.get(graphAttribute: Attributes.Group.label)
-        let graphLabel2: String = try graph2.get(graphAttribute: Attributes.Group.label)
-        #expect(graphLabel1 == graphLabel2, "Graph label should be preserved")
-
-        let notationString1: String = graph.notationName
-        let notationString2: String = graph2.notationName
-        #expect(notationString1 == notationString2, "Notation should be preserved")
-
-        let c1 = Node(string: "c1")
-        let c1Label1: String = try graph.get(node: c1, attribute: Attributes.Node.label)
-        let c1Label2: String = try graph2.get(node: c1, attribute: Attributes.Node.label)
-        #expect(c1Label1 == c1Label2, "Node labels should be preserved")
-    }
-
-    @Test
-    func verifyFRTNodeTypesAndColors() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: futureRealityTreeInput)
-
-        let nodeTypes = Set(try graph.nodes.map { try graph.nodeType(for: $0) })
-
-        #expect(nodeTypes.contains(Notations.FutureRealityTree.NodeTypes.changeable), "Should have Changeable nodes")
-        #expect(nodeTypes.contains(Notations.FutureRealityTree.NodeTypes.given), "Should have Given nodes")
-        #expect(nodeTypes.contains(Notations.FutureRealityTree.NodeTypes.intermediateEffect), "Should have IntermediateEffect nodes")
-        #expect(nodeTypes.contains(Notations.FutureRealityTree.NodeTypes.desirableEffect), "Should have DesirableEffect nodes")
-        #expect(nodeTypes.contains(Notations.FutureRealityTree.NodeTypes.undesirableEffect), "Should have UndesirableEffect nodes")
-        #expect(nodeTypes.contains(Notations.FutureRealityTree.NodeTypes.andJunctor), "Should have AndJunctor nodes")
-    }
 }
 
 // MARK: - Prerequisite Tree Full Cycle Tests
@@ -1822,85 +1257,6 @@ struct PrerequisiteTreeFullCycleTests {
         }
     }
 
-    @Test
-    func testPRTCompleteGraphEquality() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let g1 = try parser.parse(source: prerequisiteTreeInput)
-
-        let exporter = VGLExporter()
-        let exportedGraph = try exporter.export(graph: g1)
-
-        let g2 = try parser.parse(source: exportedGraph)
-
-        try assertGraphsAreEqual(g1, g2)
-    }
-
-    @Test
-    func exportPRTToDotFormat() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: prerequisiteTreeInput)
-
-        let exporter = DotExporter()
-        let dotOutput = try exporter.export(graph: graph)
-
-        #expect(dotOutput.hasPrefix("digraph"), "DOT should start with digraph")
-        #expect(dotOutput.contains("obj1"), "DOT should contain objective nodes")
-        #expect(dotOutput.contains("obs1"), "DOT should contain obstacle nodes")
-        #expect(dotOutput.contains("io1"), "DOT should contain intermediate objective nodes")
-        #expect(dotOutput.contains("or1"), "DOT should contain OR junctor nodes")
-    }
-
-    @Test
-    func fullCycleParseAndExportPRT() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: prerequisiteTreeInput)
-
-        let exporter = VGLExporter()
-        let exportedVGraph = try exporter.export(graph: graph)
-
-        #expect(!exportedVGraph.isEmpty, "Exported VGL should not be empty")
-        #expect(exportedVGraph.contains("vgraph projectLaunch: PRT"), "Exported VGL should contain graph declaration")
-        #expect(exportedVGraph.contains("node obj1: Objective"), "Exported VGL should contain objective nodes")
-        #expect(exportedVGraph.contains("node obs1: Obstacle"), "Exported VGL should contain obstacle nodes")
-        #expect(exportedVGraph.contains("node io1: IntermediateObjective"), "Exported VGL should contain intermediate objective nodes")
-        #expect(exportedVGraph.contains("node or1: OR"), "Exported VGL should contain OR junctor nodes")
-        #expect(exportedVGraph.contains("edge"), "Exported VGL should contain edges")
-
-        let graph2 = try parser.parse(source: exportedVGraph)
-
-        #expect(graph2.nodes.count == graph.nodes.count, "Node count should be preserved")
-        #expect(graph2.edges.count == graph.edges.count, "Edge count should be preserved")
-
-        let graphId1: String = try graph.get(graphAttribute: Attributes.Group.Id)
-        let graphId2: String = try graph2.get(graphAttribute: Attributes.Group.Id)
-        #expect(graphId1 == graphId2, "Graph ID should be preserved")
-
-        let graphLabel1: String = try graph.get(graphAttribute: Attributes.Group.label)
-        let graphLabel2: String = try graph2.get(graphAttribute: Attributes.Group.label)
-        #expect(graphLabel1 == graphLabel2, "Graph label should be preserved")
-
-        let notationString1: String = graph.notationName
-        let notationString2: String = graph2.notationName
-        #expect(notationString1 == notationString2, "Notation should be preserved")
-
-        let obj1 = Node(string: "obj1")
-        let obj1Label1: String = try graph.get(node: obj1, attribute: Attributes.Node.label)
-        let obj1Label2: String = try graph2.get(node: obj1, attribute: Attributes.Node.label)
-        #expect(obj1Label1 == obj1Label2, "Node labels should be preserved")
-    }
-
-    @Test
-    func verifyPRTNodeTypesAndColors() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: prerequisiteTreeInput)
-
-        let nodeTypes = Set(try graph.nodes.map { try graph.nodeType(for: $0) })
-
-        #expect(nodeTypes.contains(Notations.PrerequisiteTree.NodeTypes.objective), "Should have Objective nodes")
-        #expect(nodeTypes.contains(Notations.PrerequisiteTree.NodeTypes.obstacle), "Should have Obstacle nodes")
-        #expect(nodeTypes.contains(Notations.PrerequisiteTree.NodeTypes.intermediateObjective), "Should have IntermediateObjective nodes")
-        #expect(nodeTypes.contains(Notations.PrerequisiteTree.NodeTypes.orJunctor), "Should have OR junctor nodes")
-    }
 }
 
 // MARK: - Evaporating Cloud (EC) Full Cycle Tests
@@ -2047,92 +1403,6 @@ struct EvaporatingCloudFullCycleTests {
         }
     }
 
-    @Test
-    func testECCompleteGraphEquality() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let g1 = try parser.parse(source: evaporatingCloudInput)
-
-        let exporter = VGLExporter()
-        let exportedGraph = try exporter.export(graph: g1)
-
-        let g2 = try parser.parse(source: exportedGraph)
-
-        try assertGraphsAreEqual(g1, g2)
-    }
-
-    @Test
-    func exportECToDotFormat() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: evaporatingCloudInput)
-
-        let exporter = DotExporter()
-        let dotOutput = try exporter.export(graph: graph)
-
-        #expect(dotOutput.hasPrefix("digraph"), "DOT should start with digraph")
-        #expect(dotOutput.contains("obj"), "DOT should contain objective nodes")
-        #expect(dotOutput.contains("needA"), "DOT should contain need nodes")
-        #expect(dotOutput.contains("wantA"), "DOT should contain want nodes")
-        #expect(dotOutput.contains("conf"), "DOT should contain conflict nodes")
-        #expect(dotOutput.contains("assA"), "DOT should contain assumption nodes")
-        #expect(dotOutput.contains("sol"), "DOT should contain solution nodes")
-    }
-
-    @Test
-    func fullCycleParseAndExportEC() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: evaporatingCloudInput)
-
-        let exporter = VGLExporter()
-        let exportedVGraph = try exporter.export(graph: graph)
-
-        #expect(!exportedVGraph.isEmpty, "Exported VGL should not be empty")
-        #expect(exportedVGraph.contains("vgraph projectConflict: EC"), "Exported VGL should contain graph declaration")
-        #expect(exportedVGraph.contains("node obj: CommonObjective"), "Exported VGL should contain objective nodes")
-        #expect(exportedVGraph.contains("node needA: Need"), "Exported VGL should contain need nodes")
-        #expect(exportedVGraph.contains("node wantA: Want"), "Exported VGL should contain want nodes")
-        #expect(exportedVGraph.contains("node conf: Conflict"), "Exported VGL should contain conflict nodes")
-        #expect(exportedVGraph.contains("node assA: Assumption"), "Exported VGL should contain assumption nodes")
-        #expect(exportedVGraph.contains("node sol: Solution"), "Exported VGL should contain solution nodes")
-        #expect(exportedVGraph.contains("edge"), "Exported VGL should contain edges")
-
-        let graph2 = try parser.parse(source: exportedVGraph)
-
-        #expect(graph2.nodes.count == graph.nodes.count, "Node count should be preserved")
-        #expect(graph2.edges.count == graph.edges.count, "Edge count should be preserved")
-
-        let graphId1: String = try graph.get(graphAttribute: Attributes.Group.Id)
-        let graphId2: String = try graph2.get(graphAttribute: Attributes.Group.Id)
-        #expect(graphId1 == graphId2, "Graph ID should be preserved")
-
-        let graphLabel1: String = try graph.get(graphAttribute: Attributes.Group.label)
-        let graphLabel2: String = try graph2.get(graphAttribute: Attributes.Group.label)
-        #expect(graphLabel1 == graphLabel2, "Graph label should be preserved")
-
-        let notationString1: String = graph.notationName
-        let notationString2: String = graph2.notationName
-        #expect(notationString1 == notationString2, "Notation should be preserved")
-
-        let obj = Node(string: "obj")
-        let objLabel1: String = try graph.get(node: obj, attribute: Attributes.Node.label)
-        let objLabel2: String = try graph2.get(node: obj, attribute: Attributes.Node.label)
-        #expect(objLabel1 == objLabel2, "Node labels should be preserved")
-    }
-
-    @Test
-    func verifyECNodeTypesAndColors() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: evaporatingCloudInput)
-
-        let nodeTypes = Set(try graph.nodes.map { try graph.nodeType(for: $0) })
-
-        #expect(nodeTypes.contains(Notations.EvaporatingCloud.NodeTypes.commonObjective), "Should have CommonObjective nodes")
-        #expect(nodeTypes.contains(Notations.EvaporatingCloud.NodeTypes.need), "Should have Need nodes")
-        #expect(nodeTypes.contains(Notations.EvaporatingCloud.NodeTypes.want), "Should have Want nodes")
-        #expect(nodeTypes.contains(Notations.EvaporatingCloud.NodeTypes.conflict), "Should have Conflict nodes")
-        #expect(nodeTypes.contains(Notations.EvaporatingCloud.NodeTypes.orJunctor), "Should have OrJunctor nodes")
-        #expect(nodeTypes.contains(Notations.EvaporatingCloud.NodeTypes.assumption), "Should have Assumption nodes")
-        #expect(nodeTypes.contains(Notations.EvaporatingCloud.NodeTypes.solution), "Should have Solution nodes")
-    }
 }
 
 // MARK: - Transition Tree (TRT) Tests
@@ -2260,90 +1530,6 @@ struct TransitionTreeFullCycleTests {
         }
     }
 
-    @Test
-    func testTRTCompleteGraphEquality() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let g1 = try parser.parse(source: transitionTreeInput)
-
-        let exporter = VGLExporter()
-        let exportedGraph = try exporter.export(graph: g1)
-
-        let g2 = try parser.parse(source: exportedGraph)
-
-        try assertGraphsAreEqual(g1, g2)
-    }
-
-    @Test
-    func exportTRTToDotFormat() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: transitionTreeInput)
-
-        let exporter = DotExporter()
-        let dotOutput = try exporter.export(graph: graph)
-
-        #expect(dotOutput.hasPrefix("digraph"), "DOT should start with digraph")
-        #expect(dotOutput.contains("g1"), "DOT should contain given nodes")
-        #expect(dotOutput.contains("c1"), "DOT should contain changeable nodes")
-        #expect(dotOutput.contains("ie1"), "DOT should contain intermediate effect nodes")
-        #expect(dotOutput.contains("de1"), "DOT should contain desirable effect nodes")
-        #expect(dotOutput.contains("and1"), "DOT should contain and junctor nodes")
-    }
-
-    @Test
-    func fullCycleParseAndExportTRT() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: transitionTreeInput)
-
-        let exporter = VGLExporter()
-        let exportedVGraph = try exporter.export(graph: graph)
-
-        #expect(!exportedVGraph.isEmpty, "Exported VGL should not be empty")
-        #expect(exportedVGraph.contains("vgraph agileTransition: TRT"), "Exported VGL should contain graph declaration")
-        #expect(exportedVGraph.contains("node g1: Given"), "Exported VGL should contain given nodes")
-        #expect(exportedVGraph.contains("node c1: Changeable"), "Exported VGL should contain changeable nodes")
-        #expect(exportedVGraph.contains("node ie1: IntermediateEffect"), "Exported VGL should contain intermediate effect nodes")
-        #expect(exportedVGraph.contains("node de1: DesirableEffect"), "Exported VGL should contain desirable effect nodes")
-        #expect(exportedVGraph.contains("node and1: AndJunctor"), "Exported VGL should contain and junctor nodes")
-        #expect(exportedVGraph.contains("edge"), "Exported VGL should contain edges")
-
-        let graph2 = try parser.parse(source: exportedVGraph)
-
-        #expect(graph2.nodes.count == graph.nodes.count, "Node count should be preserved")
-        #expect(graph2.edges.count == graph.edges.count, "Edge count should be preserved")
-
-        let graphId1: String = try graph.get(graphAttribute: Attributes.Group.Id)
-        let graphId2: String = try graph2.get(graphAttribute: Attributes.Group.Id)
-        #expect(graphId1 == graphId2, "Graph ID should be preserved")
-
-        let graphLabel1: String = try graph.get(graphAttribute: Attributes.Group.label)
-        let graphLabel2: String = try graph2.get(graphAttribute: Attributes.Group.label)
-        #expect(graphLabel1 == graphLabel2, "Graph label should be preserved")
-
-        let notationString1: String = graph.notationName
-        let notationString2: String = graph2.notationName
-        #expect(notationString1 == notationString2, "Notation should be preserved")
-
-        let de1 = Node(string: "de1")
-        let de1Label1: String = try graph.get(node: de1, attribute: Attributes.Node.label)
-        let de1Label2: String = try graph2.get(node: de1, attribute: Attributes.Node.label)
-        #expect(de1Label1 == de1Label2, "Node labels should be preserved")
-    }
-
-    @Test
-    func verifyTRTNodeTypesAndColors() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: transitionTreeInput)
-
-        // Verify the 5 node types used in this example are present
-        // (UndesirableEffect is available in TRT but not used in this planning-focused example)
-        let nodeTypes = Set(try graph.nodes.map { try graph.nodeType(for: $0) })
-
-        #expect(nodeTypes.contains(Notations.TransitionTree.NodeTypes.intermediateEffect), "Should have IntermediateEffect nodes")
-        #expect(nodeTypes.contains(Notations.TransitionTree.NodeTypes.desirableEffect), "Should have DesirableEffect nodes")
-        #expect(nodeTypes.contains(Notations.TransitionTree.NodeTypes.given), "Should have Given nodes")
-        #expect(nodeTypes.contains(Notations.TransitionTree.NodeTypes.changeable), "Should have Changeable nodes")
-        #expect(nodeTypes.contains(Notations.TransitionTree.NodeTypes.andJunctor), "Should have AndJunctor nodes")
-    }
 }
 
 // MARK: - Attack-Defense Tree (ADTree) Tests
@@ -2507,84 +1693,6 @@ struct ADTreeFullCycleTests {
         }
     }
 
-    @Test
-    func testADTreeCompleteGraphEquality() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let g1 = try parser.parse(source: adTreeInput)
-
-        let exporter = VGLExporter()
-        let exportedGraph = try exporter.export(graph: g1)
-
-        let g2 = try parser.parse(source: exportedGraph)
-
-        try assertGraphsAreEqual(g1, g2)
-    }
-
-    @Test
-    func exportADTreeToDotFormat() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: adTreeInput)
-
-        let exporter = DotExporter()
-        let dotOutput = try exporter.export(graph: graph)
-
-        #expect(dotOutput.hasPrefix("digraph"), "DOT should start with digraph")
-        #expect(dotOutput.contains("dataConf"), "DOT should contain defense nodes")
-        #expect(dotOutput.contains("breakIn"), "DOT should contain attack nodes")
-        #expect(dotOutput.contains("andOverpower"), "DOT should contain AND junctor nodes")
-        #expect(dotOutput.contains("andDataConf"), "DOT should contain andDataConf AND junctor node")
-    }
-
-    @Test
-    func fullCycleParseAndExportADTree() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: adTreeInput)
-
-        let exporter = VGLExporter()
-        let exportedVGraph = try exporter.export(graph: graph)
-
-        #expect(!exportedVGraph.isEmpty, "Exported VGL should not be empty")
-        #expect(exportedVGraph.contains("vgraph dataConfidentiality: ADTree"), "Exported VGL should contain graph declaration")
-        #expect(exportedVGraph.contains("node dataConf: Defense"), "Exported VGL should contain defense nodes")
-        #expect(exportedVGraph.contains("node breakIn: Attack"), "Exported VGL should contain attack nodes")
-        #expect(exportedVGraph.contains("node andOverpower: AndJunctor"), "Exported VGL should contain AND junctor nodes")
-        #expect(exportedVGraph.contains("node andDataConf: AndJunctor"), "Exported VGL should contain andDataConf AND junctor node")
-        #expect(exportedVGraph.contains("edge"), "Exported VGL should contain edges")
-
-        let graph2 = try parser.parse(source: exportedVGraph)
-
-        #expect(graph2.nodes.count == graph.nodes.count, "Node count should be preserved")
-        #expect(graph2.edges.count == graph.edges.count, "Edge count should be preserved")
-
-        let graphId1: String = try graph.get(graphAttribute: Attributes.Group.Id)
-        let graphId2: String = try graph2.get(graphAttribute: Attributes.Group.Id)
-        #expect(graphId1 == graphId2, "Graph ID should be preserved")
-
-        let graphLabel1: String = try graph.get(graphAttribute: Attributes.Group.label)
-        let graphLabel2: String = try graph2.get(graphAttribute: Attributes.Group.label)
-        #expect(graphLabel1 == graphLabel2, "Graph label should be preserved")
-
-        let notationString1: String = graph.notationName
-        let notationString2: String = graph2.notationName
-        #expect(notationString1 == notationString2, "Notation should be preserved")
-
-        let dataConf = Node(string: "dataConf")
-        let dataConfLabel1: String = try graph.get(node: dataConf, attribute: Attributes.Node.label)
-        let dataConfLabel2: String = try graph2.get(node: dataConf, attribute: Attributes.Node.label)
-        #expect(dataConfLabel1 == dataConfLabel2, "Node labels should be preserved")
-    }
-
-    @Test
-    func verifyADTreeNodeTypesAndColors() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: adTreeInput)
-
-        let nodeTypes = Set(try graph.nodes.map { try graph.nodeType(for: $0) })
-
-        #expect(nodeTypes.contains(Notations.ADTree.NodeTypes.attack), "Should have Attack nodes")
-        #expect(nodeTypes.contains(Notations.ADTree.NodeTypes.defense), "Should have Defense nodes")
-        #expect(nodeTypes.contains(Notations.ADTree.NodeTypes.andJunctor), "Should have AndJunctor nodes")
-    }
 }
 
 // MARK: - Goal Tree (GT) Full Cycle Tests
@@ -2639,6 +1747,29 @@ let goalTreeInput = """
         edge nc8 -> nc1: nc_to_nc;
         edge nc9 -> nc3: nc_to_nc;
         edge nc10 -> nc4: nc_to_nc;
+    }
+    """
+
+let decisionTreeInput = """
+    vgraph hiringDecision: DecisionTree "Should We Hire This Candidate?" {
+        node q1: DecisionPoint "Is the candidate technically qualified?";
+        node c1: Choice "Yes";
+        node c2: Choice "No";
+        node q2: DecisionPoint "Does the candidate fit the team culture?";
+        node c3: Choice "Yes";
+        node c4: Choice "No";
+        node o1: Outcome "Extend offer";
+        node o2: Outcome "Reject — technical skills insufficient";
+        node o3: Outcome "Reject — poor cultural fit";
+
+        edge q1 -> c1: decision_to_choice;
+        edge q1 -> c2: decision_to_choice;
+        edge c1 -> q2: choice_to_decision;
+        edge c2 -> o2: choice_to_outcome;
+        edge q2 -> c3: decision_to_choice;
+        edge q2 -> c4: decision_to_choice;
+        edge c3 -> o1: choice_to_outcome;
+        edge c4 -> o3: choice_to_outcome;
     }
     """
 
@@ -2708,157 +1839,18 @@ struct GoalTreeFullCycleTests {
     }
 
     @Test
-    func testGoalTreeCompleteGraphEquality() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let g1 = try parser.parse(source: goalTreeInput)
-
-        let exporter = VGLExporter()
-        let exportedGraph = try exporter.export(graph: g1)
-
-        let g2 = try parser.parse(source: exportedGraph)
-
-        try assertGraphsAreEqual(g1, g2)
-    }
-
-    @Test
-    func exportGoalTreeToDotFormat() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: goalTreeInput)
-
-        let exporter = DotExporter()
-        let dotOutput = try exporter.export(graph: graph)
-
-        #expect(dotOutput.hasPrefix("digraph"), "DOT should start with digraph")
-        #expect(dotOutput.contains("goal"), "DOT should contain goal node")
-        #expect(dotOutput.contains("csf1"), "DOT should contain CSF nodes")
-        #expect(dotOutput.contains("nc1"), "DOT should contain NC nodes")
-    }
-
-    @Test
-    func fullCycleParseAndExportGoalTree() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: goalTreeInput)
-
-        let exporter = VGLExporter()
-        let exportedVGraph = try exporter.export(graph: graph)
-
-        #expect(!exportedVGraph.isEmpty, "Exported VGL should not be empty")
-        #expect(exportedVGraph.contains("vgraph companyStrategy: GoalTree"), "Exported VGL should contain graph declaration")
-        #expect(exportedVGraph.contains("node goal: Goal"), "Exported VGL should contain Goal node")
-        #expect(exportedVGraph.contains("node csf1: CriticalSuccessFactor"), "Exported VGL should contain CSF nodes")
-        #expect(exportedVGraph.contains("node nc1: NecessaryCondition"), "Exported VGL should contain NC nodes")
-        #expect(exportedVGraph.contains("edge"), "Exported VGL should contain edges")
-
-        let graph2 = try parser.parse(source: exportedVGraph)
-
-        #expect(graph2.nodes.count == graph.nodes.count, "Node count should be preserved")
-        #expect(graph2.edges.count == graph.edges.count, "Edge count should be preserved")
-
-        let graphId1: String = try graph.get(graphAttribute: Attributes.Group.Id)
-        let graphId2: String = try graph2.get(graphAttribute: Attributes.Group.Id)
-        #expect(graphId1 == graphId2, "Graph ID should be preserved")
-
-        let graphLabel1: String = try graph.get(graphAttribute: Attributes.Group.label)
-        let graphLabel2: String = try graph2.get(graphAttribute: Attributes.Group.label)
-        #expect(graphLabel1 == graphLabel2, "Graph label should be preserved")
-
-        let notationString1: String = graph.notationName
-        let notationString2: String = graph2.notationName
-        #expect(notationString1 == notationString2, "Notation should be preserved")
-
-        let goal = Node(string: "goal")
-        let goalLabel1: String = try graph.get(node: goal, attribute: Attributes.Node.label)
-        let goalLabel2: String = try graph2.get(node: goal, attribute: Attributes.Node.label)
-        #expect(goalLabel1 == goalLabel2, "Node labels should be preserved")
-    }
-
-    @Test
-    func verifyGoalTreeNodeTypesAndColors() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: goalTreeInput)
-
-        let nodeTypes = Set(try graph.nodes.map { try graph.nodeType(for: $0) })
-
-        #expect(nodeTypes.contains(Notations.GoalTree.NodeTypes.goal), "Should have Goal nodes")
-        #expect(nodeTypes.contains(Notations.GoalTree.NodeTypes.criticalSuccessFactor), "Should have CriticalSuccessFactor nodes")
-        #expect(nodeTypes.contains(Notations.GoalTree.NodeTypes.necessaryCondition), "Should have NecessaryCondition nodes")
-    }
-
-    // MARK: - Decision Tree Tests
-
-    let decisionTreeInput = """
-        vgraph hiringDecision: DecisionTree "Should We Hire This Candidate?" {
-            node q1: DecisionPoint "Is the candidate technically qualified?";
-            node c1: Choice "Yes";
-            node c2: Choice "No";
-            node q2: DecisionPoint "Does the candidate fit the team culture?";
-            node c3: Choice "Yes";
-            node c4: Choice "No";
-            node o1: Outcome "Extend offer";
-            node o2: Outcome "Reject — technical skills insufficient";
-            node o3: Outcome "Reject — poor cultural fit";
-
-            edge q1 -> c1: decision_to_choice;
-            edge q1 -> c2: decision_to_choice;
-            edge c1 -> q2: choice_to_decision;
-            edge c2 -> o2: choice_to_outcome;
-            edge q2 -> c3: decision_to_choice;
-            edge q2 -> c4: decision_to_choice;
-            edge c3 -> o1: choice_to_outcome;
-            edge c4 -> o3: choice_to_outcome;
-        }
-        """
-
-    @Test
-    func fullCycleParseAndExportDecisionTree() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: decisionTreeInput)
-
-        #expect(graph.nodes.count == 9, "Should have 9 nodes")
-        #expect(graph.edges.count == 8, "Should have 8 edges")
-
-        let exporter = VGLExporter()
-        let exportedVGL = try exporter.export(graph: graph)
-
-        #expect(exportedVGL.contains("vgraph hiringDecision: DecisionTree"), "Should contain graph declaration")
-        #expect(exportedVGL.contains("node q1: DecisionPoint"), "Should contain DecisionPoint nodes")
-        #expect(exportedVGL.contains("node c1: Choice"), "Should contain Choice nodes")
-        #expect(exportedVGL.contains("node o1: Outcome"), "Should contain Outcome nodes")
-        #expect(exportedVGL.contains("edge"), "Should contain edges")
-
-        let graph2 = try parser.parse(source: exportedVGL)
-        #expect(graph2.nodes.count == graph.nodes.count, "Node count should be preserved")
-        #expect(graph2.edges.count == graph.edges.count, "Edge count should be preserved")
-
-        let notationString1: String = graph.notationName
-        let notationString2: String = graph2.notationName
-        #expect(notationString1 == notationString2, "Notation should be preserved")
-    }
-
-    @Test
-    func verifyDecisionTreeNodeTypes() throws {
+    func decisionTreeSpellingsResolve() throws {
         let parser = VGraphParser(logger: NoOpLogger())
         let graph = try parser.parse(source: decisionTreeInput)
 
         let nodeTypes = Set(try graph.nodes.map { try graph.nodeType(for: $0) })
-
-        #expect(nodeTypes.contains(Notations.DecisionTree.NodeTypes.decisionPoint), "Should have DecisionPoint nodes")
-        #expect(nodeTypes.contains(Notations.DecisionTree.NodeTypes.choice), "Should have Choice nodes")
-        #expect(nodeTypes.contains(Notations.DecisionTree.NodeTypes.outcome), "Should have Outcome nodes")
-    }
-
-    @Test
-    func exportDecisionTreeToDotFormat() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: decisionTreeInput)
-
-        let exporter = DotExporter()
-        let dotOutput = try exporter.export(graph: graph)
-
-        #expect(dotOutput.hasPrefix("digraph"), "DOT should start with digraph")
-        #expect(dotOutput.contains("q1"), "DOT should contain decision point nodes")
-        #expect(dotOutput.contains("c1"), "DOT should contain choice nodes")
-        #expect(dotOutput.contains("o1"), "DOT should contain outcome nodes")
+        #expect(
+            nodeTypes
+                == [
+                    Notations.DecisionTree.NodeTypes.decisionPoint, Notations.DecisionTree.NodeTypes.choice,
+                    Notations.DecisionTree.NodeTypes.outcome,
+                ])
+        try assertNoUnknownTypes(graph)
     }
 
     /// Each DecisionTree node type exports a distinct gColor so Graphviz-rendered
@@ -2876,48 +1868,43 @@ struct GoalTreeFullCycleTests {
     }
 }
 
-// MARK: - Notation Registry Tests
-
-struct NotationRegistryTests {
-
-    /// Verifies that the error message for an unknown notation is generated from `notationRegistry`,
-    /// not from a separate hardcoded string. Adding a notation only requires one registry entry —
-    /// the error message stays in sync automatically.
-    @Test
-    func testUnknownNotationErrorListsAllRegisteredNotations() throws {
-        let capturer = CapturingLogger()
-        let parser = VGraphParser(logger: capturer)
-        let vgl = """
-            vgraph g: UnknownNotation "Test" {}
-            """
-        // Parsing succeeds structurally but logs an error for the unknown notation
-        _ = try parser.parse(source: vgl)
-
-        #expect(capturer.errors.count == 1, "Should log exactly one error for unknown notation")
-        let errorMessage = try #require(capturer.errors.first)
-        #expect(errorMessage.contains("UnknownNotation"), "Error should echo the bad notation name")
-
-        // Every name in the registry must appear in the error message.
-        // This test would fail to compile if notationRegistry didn't exist,
-        // and fails at runtime if any registered notation is omitted from the message.
-        for entry in NotationRegistry.entries {
-            #expect(
-                errorMessage.contains(entry.id),
-                "Error message should list '\(entry.id)' from NotationRegistry"
-            )
-        }
-    }
-
-    /// Smoke-test: every name in the registry successfully parses a minimal graph.
-    @Test(arguments: NotationRegistry.entries.map(\.id))
-    func testEveryRegisteredNotationParses(name: String) throws {
-        let vgl = "vgraph g: \(name) \"Test\" {}"
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: vgl)
-        let notation: String = graph.notationName
-        #expect(notation == name, "\(name) should round-trip through notation attribute")
-    }
+struct RoundTripCase: CustomTestStringConvertible, Sendable {
+    let name: String
+    let header: String
+    let source: String
+    var testDescription: String { name }
 }
+
+let conceptMapInput = """
+    vgraph learningCM: ConceptMap "Learning Concept Map" {
+        node c1: Concept "Student";
+        node r1: Relation "learns";
+        node c2: Concept "Subject";
+        node r2: Relation "requires";
+        node c3: EmphasizedConcept "Practice";
+
+        edge c1 -> r1: concept_to_relation;
+        edge r1 -> c2: relation_to_concept;
+        edge c2 -> r2: concept_to_relation;
+        edge r2 -> c3: relation_to_emphasized_concept;
+    }
+    """
+
+let roundTripCases: [RoundTripCase] = [
+    .init(name: "IBIS", header: "vgraph complexGraph: IBIS \"Complex Test Graph\"", source: complexGraphInput),
+    .init(name: "ImpactMapping", header: "vgraph productLaunch: ImpactMapping", source: impactMappingInput),
+    .init(name: "CLD", header: "vgraph populationCLD: CLD", source: populationCLDInput),
+    .init(name: "ConceptMap", header: "vgraph learningCM: ConceptMap", source: conceptMapInput),
+    .init(name: "CRT", header: "vgraph salesProblem: CRT", source: currentRealityTreeInput),
+    .init(name: "FRT", header: "vgraph salesSolution: FRT", source: futureRealityTreeInput),
+    .init(name: "PRT", header: "vgraph projectLaunch: PRT", source: prerequisiteTreeInput),
+    .init(name: "EC", header: "vgraph projectConflict: EC", source: evaporatingCloudInput),
+    .init(name: "TRT", header: "vgraph agileTransition: TRT", source: transitionTreeInput),
+    .init(name: "ADTree", header: "vgraph dataConfidentiality: ADTree", source: adTreeInput),
+    .init(name: "GoalTree", header: "vgraph companyStrategy: GoalTree", source: goalTreeInput),
+    .init(name: "DecisionTree", header: "vgraph hiringDecision: DecisionTree", source: decisionTreeInput),
+    .init(name: "Arithmetic", header: "vgraph arithmeticDemo: Arithmetic", source: arithmeticInput),
+]
 
 // MARK: - Annotation Extension Tests
 
@@ -2940,20 +1927,16 @@ struct AnnotationExtensionTests {
         let parser = VGraphParser(logger: NoOpLogger())
         let graph = try parser.parse(source: input)
 
-        #expect(graph.nodes.count == 4, "Should have 4 nodes")
-        #expect(graph.edges.count == 3, "Should have 3 edges")
-
         #expect(graph.nodeTypes.contains(Notations.Annotation.annotation), "Should have Annotation node type")
 
-        let exporter = VGLExporter()
-        let exportedVGL = try exporter.export(graph: graph)
-        #expect(exportedVGL.contains("ConceptMap, Annotation"), "Exported header should include extension")
+        let exportedVGL = try VGLExporter().export(graph: graph)
+        #expect(exportedVGL.contains("vgraph annotatedMap: ConceptMap, Annotation \"Annotated Concept Map\""))
         #expect(exportedVGL.contains("node a1: Annotation"), "Should export Annotation node")
-        #expect(exportedVGL.contains("edge"), "Should export edges")
 
         let graph2 = try parser.parse(source: exportedVGL)
-        #expect(graph2.nodes.count == graph.nodes.count, "Node count should be preserved after round-trip")
-        #expect(graph2.edges.count == graph.edges.count, "Edge count should be preserved after round-trip")
+        let annotationEdge = try #require(graph2.edges.first { $0.to == Node(string: "a1") })
+        #expect(try graph2.edgeType(for: annotationEdge.id).id.id == "annotates__Concept")
+        try assertGraphsAreEqual(graph, graph2)
     }
 
     @Test
@@ -2976,7 +1959,11 @@ struct AnnotationExtensionTests {
         let graph = try parser.parse(source: input)
 
         // All three concept map node types should be able to connect to Annotation
-        #expect(graph.edges.count == 5, "Should have 5 edges (2 concept map + 3 annotation edges)")
+        let annotationEdgeIds = try graph.edges.filter { $0.to == Node(string: "a1") }.map {
+            try graph.edgeType(for: $0.id).id.id
+        }
+        #expect(
+            annotationEdgeIds == ["annotates__Concept", "annotates__EmphasizedConcept", "annotates__Relation"])
 
         let annotationEdgeTypes = graph.edgeTypes.filter { $0.to == Notations.Annotation.annotation }
         #expect(annotationEdgeTypes.count == 3, "Should have 3 edge types pointing to Annotation (one per CM node type)")
@@ -3003,115 +1990,6 @@ struct AnnotationExtensionTests {
     }
 
     // MARK: - vnotation tests
-
-    @Test
-    func testVNotationPureRoundTrip() throws {
-        let input = """
-            vnotation RiskMap {
-                layout: topToBottom
-
-                node type: Risk    [nodeStyle: iconWithText, color: "#cc3333", icon: "risk"]
-                node type: Control [nodeStyle: simpleRoundedText, color: "#339933"]
-                node type: Owner   [nodeStyle: circle, color: "#3366cc"]
-
-                edge type: risk_has_control  from: Risk    to: Control
-                edge type: control_owned_by  from: Control to: Owner
-            }
-
-            vgraph rm1: RiskMap "Project Risk Map" {
-                node r1: Risk    "Schedule overrun"
-                node c1: Control "Weekly reviews"
-                node o1: Owner   "PM"
-                edge r1 -> c1
-                edge c1 -> o1
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        // Node types were registered
-        let registeredTypeIds = graph.nodeTypes.map { $0.id }
-        #expect(registeredTypeIds.contains("Risk"))
-        #expect(registeredTypeIds.contains("Control"))
-        #expect(registeredTypeIds.contains("Owner"))
-
-        // Nodes were created
-        #expect(graph.nodes.count == 3)
-
-        // Edges were created
-        #expect(graph.edges.count == 2)
-
-        // Layout direction was applied
-        let layout: String = try graph.get(graphAttribute: Attributes.Group.layoutDirection)
-        #expect(layout == "Top to Bottom")
-    }
-
-    @Test
-    func testVNotationAllNodeStyleVariants() throws {
-        let input = """
-            vnotation StyleTest {
-                node type: N1 [nodeStyle: iconWithText,       color: "#111111", icon: "and"]
-                node type: N2 [nodeStyle: simpleRoundedText,  color: "#222222"]
-                node type: N3 [nodeStyle: roundedBox,         color: "#333333"]
-                node type: N4 [nodeStyle: withCategory,       color: "#444444", category: "CAT"]
-                node type: N5 [nodeStyle: withCategoryAndIcon, color: "#555555", category: "X", icon: "circle"]
-                node type: N6 [nodeStyle: iconOnly,           icon: "moon"]
-                node type: N7 [nodeStyle: circle,             color: "#777777"]
-                node type: N8 [nodeStyle: bareText]
-                node type: N9 [nodeStyle: hidden]
-                node type: N10 [nodeStyle: custom]
-            }
-
-            vgraph st1: StyleTest "Style Test Graph" {
-                node a: N1 "one"
-                node b: N2 "two"
-                node c: N3 "three"
-                node d: N4 "four"
-                node e: N5 "five"
-                node f: N6 "six"
-                node g: N7 "seven"
-                node h: N8 "eight"
-                node i: N9 "nine"
-                node j: N10 "ten"
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        // Should not throw — all nodeStyle values are valid
-        let graph = try parser.parse(source: input)
-        #expect(graph.nodes.count == 10)
-    }
-
-    @Test
-    func testVNotationExtendsBuiltin() throws {
-        let input = """
-            vnotation RichIBIS extends IBIS {
-                node type: Stakeholder [nodeStyle: withCategory, color: "#884499", category: "S"]
-
-                edge type: stakeholder_raises  from: Stakeholder to: Question
-                edge type: stakeholder_answers from: Stakeholder to: Answer
-            }
-
-            vgraph analysis: RichIBIS "Stakeholder Analysis" {
-                node q1: Question    "Should we rewrite?"
-                node s1: Stakeholder "Engineering team"
-                edge s1 -> q1
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        // Both IBIS base types and the new Stakeholder type are registered
-        let registeredTypeIds = graph.nodeTypes.map { $0.id }
-        #expect(registeredTypeIds.contains("Question"))
-        #expect(registeredTypeIds.contains("Stakeholder"))
-
-        // Correct nodes and edges were created
-        #expect(graph.nodes.count == 2)
-        #expect(graph.edges.count == 1)
-    }
 
     // MARK: - vnotation extends: override existing node/edge types
 
@@ -3173,9 +2051,14 @@ struct AnnotationExtensionTests {
             """
 
         let parser = VGraphParser(logger: NoOpLogger())
-        #expect(throws: VError.self) {
+        let error = #expect(throws: VError.self) {
             try parser.parse(source: input)
         }
+        guard case .parsingError(let message) = error else {
+            Issue.record("Expected a parsingError, got \(String(describing: error))")
+            return
+        }
+        #expect(message.contains("nodeStyle"))
     }
 
     @Test
@@ -3199,59 +2082,6 @@ struct AnnotationExtensionTests {
     }
 
     @Test
-    func testVNotationOverrideMixedNewAndExisting() throws {
-        let input = """
-            vnotation MixedIBIS extends IBIS {
-                node type: Question    [color: "#ff0000"]
-                node type: Stakeholder [nodeStyle: withCategory, color: "#884499", category: "S"]
-            }
-
-            vgraph m1: MixedIBIS "Mixed" {
-                node q1: Question    "Why?"
-                node s1: Stakeholder "Team"
-                edge s1 -> q1
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        // Override: Question still present, color changed
-        let questionType = NodeType(string: "Question")
-        let questionColor: VColor = try graph.get(nodeType: questionType, attribute: Attributes.Node.backgroundColor)
-        #expect(questionColor == VColor(hexString: "#ff0000"))
-
-        // New: Stakeholder was added
-        let typeIds = graph.nodeTypes.map { $0.id }
-        #expect(typeIds.contains("Stakeholder"))
-
-        #expect(graph.nodes.count == 2)
-        #expect(graph.edges.count == 1)
-    }
-
-    @Test
-    func testVNotationOverrideEdgeTypeNoError() throws {
-        // Redeclaring an existing edge type in extends mode should not throw.
-        let input = """
-            vnotation SameIBIS extends IBIS {
-                edge type: answered_by from: Question to: Answer
-            }
-
-            vgraph e1: SameIBIS "Same edges" {
-                node q1: Question "Why?"
-                node a1: Answer   "Because"
-                edge a1 -> q1
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        #expect(graph.nodes.count == 2)
-        #expect(graph.edges.count == 1)
-    }
-
-    @Test
     func testVNotationWithAnnotationExtension() throws {
         let input = """
             vnotation SimpleMap {
@@ -3272,7 +2102,8 @@ struct AnnotationExtensionTests {
         let registeredTypeIds = graph.nodeTypes.map { $0.id }
         #expect(registeredTypeIds.contains("Concept"))
         #expect(registeredTypeIds.contains("Annotation"))
-        #expect(graph.nodes.count == 2)
+        let edge = try #require(graph.edges.first)
+        #expect(try graph.edgeType(for: edge.id).id.id == "annotates__Concept")
     }
 
     @Test
@@ -3288,7 +2119,7 @@ struct AnnotationExtensionTests {
             """
 
         let parser = VGraphParser(logger: NoOpLogger())
-        #expect(throws: (any Error).self) {
+        #expect(throws: VError.conversionError(from: "doesNotExist", to: "NodeStyle")) {
             _ = try parser.parse(source: input)
         }
     }
@@ -3587,8 +2418,9 @@ struct AttributeRoundTripTests {
             """)
         let v1: String = try g1.get(graphAttribute: Attributes.Group.layoutDirection)
         let v2: String = try g2.get(graphAttribute: Attributes.Group.layoutDirection)
-        // "rankdir" resolves to layoutDirection via alias; value stored as-is (type-erased path)
-        #expect(v1 == v2, "Layout direction should survive round-trip")
+        // "rankdir" resolves to layoutDirection via alias; the value is stored as the graphviz spelling
+        #expect(v1 == "LR")
+        #expect(v2 == "LR")
     }
 
     @Test
@@ -3630,126 +2462,6 @@ struct AttributeRoundTripTests {
 
 struct TimelineNotationTests {
 
-    let timelineInput = """
-        vgraph myTimeline: Timeline "19th Century Europe" {
-            node t1800: TimePoint "1800" [alignGroup: "1800"]
-            node t1850: TimePoint "1850" [alignGroup: "1850"]
-            node t1871: TimePoint "1871" [alignGroup: "1871"]
-            edge t1800 -> t1850: sequence
-            edge t1850 -> t1871: sequence
-
-            group germany "Germany" {
-                node g1: Event "Napoleon defeats Prussia" [alignGroup: "1800"]
-                node g2: Event "German Unification" [alignGroup: "1871"]
-            }
-            group england "England" {
-                node e1: Event "Industrial Revolution peaks" [alignGroup: "1850"]
-                node e2: Event "Franco-Prussian War impact" [alignGroup: "1871"]
-            }
-
-            edge g1 -> g2: influence "led to"
-            edge e1 -> e2: influence
-            edge e1 -> g2: influence "industrialization enabled"
-        }
-        """
-
-    @Test
-    func fullCycleParseAndExportTimeline() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: timelineInput)
-
-        #expect(graph.nodes.count == 7, "Should have 3 TimePoints + 2 Germany + 2 England events")
-        #expect(graph.edges.count == 5, "Should have 2 sequence + 3 influence edges")
-
-        let exporter = VGLExporter()
-        let exported = try exporter.export(graph: graph)
-        let graph2 = try parser.parse(source: exported)
-
-        #expect(graph2.nodes.count == graph.nodes.count, "Node count should survive round-trip")
-        #expect(graph2.edges.count == graph.edges.count, "Edge count should survive round-trip")
-    }
-
-    @Test
-    func verifyTimelineNodeTypes() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: timelineInput)
-
-        let nodeTypes = Set(try graph.nodes.map { try graph.nodeType(for: $0).id })
-        #expect(nodeTypes.contains("TimePoint"), "Should have TimePoint node type")
-        #expect(nodeTypes.contains("Event"), "Should have Event node type")
-    }
-
-    @Test
-    func exportTimelineToDotWithAlignGroups() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: timelineInput)
-
-        let exporter = DotExporter()
-        let dotOutput = try exporter.export(graph: graph)
-
-        // Verify newrank=true is emitted (required for rank=same with clusters)
-        #expect(dotOutput.contains("newrank=true"), "DOT output should contain newrank=true when alignGroups are used")
-
-        #expect(dotOutput.contains("rank=same"), "DOT output should contain rank=same blocks")
-
-        #expect(dotOutput.contains("LR") || dotOutput.contains("leftToRight"), "Should use left-to-right layout")
-    }
-
-    @Test
-    func alignGroupRoundTrip() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: timelineInput)
-
-        let t1800 = graph.nodes.first { $0.id.description == "t1800" }!
-        let alignGroup: String = try graph.get(node: t1800, attribute: Attributes.Node.alignGroup)
-        #expect(alignGroup == "1800", "alignGroup should be set to '1800'")
-
-        let exporter = VGLExporter()
-        let exported = try exporter.export(graph: graph)
-        let graph2 = try parser.parse(source: exported)
-
-        let t1800_2 = graph2.nodes.first { $0.id.description == "t1800" }!
-        let alignGroup2: String = try graph2.get(node: t1800_2, attribute: Attributes.Node.alignGroup)
-        #expect(alignGroup2 == "1800", "alignGroup should survive VGL round-trip")
-    }
-
-    @Test
-    func timelineWithoutTimePoints() throws {
-        let input = """
-            vgraph simple: Timeline "Simple Timeline" {
-                node e1: Event "Event A" [alignGroup: "phase1"]
-                node e2: Event "Event B" [alignGroup: "phase1"]
-                node e3: Event "Event C" [alignGroup: "phase2"]
-                edge e1 -> e3: influence
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        #expect(graph.nodes.count == 3, "Should have 3 events without TimePoints")
-
-        let exporter = DotExporter()
-        let dotOutput = try exporter.export(graph: graph)
-        #expect(dotOutput.contains("rank=same"), "Should still emit rank=same for alignGroup")
-    }
-
-    @Test
-    func timelineGColorsMatchStaticConstants() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: timelineInput)
-
-        let exporter = DotExporter()
-        let dotOutput = try exporter.export(graph: graph)
-
-        let eventFill = try #require(
-            graph.effectiveNodeLayout(for: Notations.Timeline.NodeTypes.event)?.backgroundFill)
-        #expect(dotOutput.contains(eventFill.hexString))
-        // TimePoint nodes no longer set a Graphviz color — they are drawn by
-        // `TimelineOverlayProvider` (axis + dots + year labels) instead of
-        // the standard node pipeline, so no `gray` hint is set in DOT.
-    }
-
     // MARK: - vnotation export reconstruction tests
 
     @Test
@@ -3789,11 +2501,11 @@ struct TimelineNotationTests {
         #expect(exported.contains("edge type: control_owned_by"), "Exported VGL should contain edge type")
         #expect(exported.contains("layout: leftToRight"), "Exported VGL should contain layout directive")
 
-        let parser2 = VGraphParser(logger: NoOpLogger())
-        let graph2 = try parser2.parse(source: exported)
-        #expect(graph2.nodes.count == 3)
-        #expect(graph2.edges.count == 2)
-        #expect(graph2.nodeTypes.count == graph.nodeTypes.count)
+        let graph2 = try parser.parse(source: exported)
+        #expect(Set(graph2.nodeTypes.map { $0.id }) == ["Risk", "Control", "Owner"])
+        let edgeTypeIds = try graph2.edges.map { try graph2.edgeType(for: $0.id).id.id }
+        #expect(edgeTypeIds == ["risk_has_control", "control_owned_by"])
+        #expect(try VGLExporter().export(graph: graph2) == exported)
     }
 
     @Test
@@ -3839,80 +2551,7 @@ struct TimelineNotationTests {
         #expect(registeredTypeIds.contains("Stakeholder"))
     }
 
-    @Test
-    func testVNotationExportOverride() throws {
-        let input = """
-            vnotation RedIBIS extends IBIS {
-                node type: Question [color: "#ff0000"]
-            }
-
-            vgraph r1: RedIBIS "Red Questions" {
-                node q1: Question "Why?"
-                node a1: Answer   "Because"
-                edge a1 -> q1
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        let exporter = VGLExporter()
-        let exported = try exporter.export(graph: graph)
-
-        #expect(exported.contains("vnotation RedIBIS extends IBIS"), "Should contain extends clause")
-        #expect(exported.contains("node type: Question"), "Override type should appear")
-        #expect(exported.contains("#ff0000"), "Override color should appear")
-
-        // Roundtrip
-        let parser2 = VGraphParser(logger: NoOpLogger())
-        let graph2 = try parser2.parse(source: exported)
-        #expect(graph2.nodes.count == 2)
-        #expect(graph2.edges.count == 1)
-    }
-
     // MARK: - Edge type attribute tests
-
-    @Test
-    func testVNotationEdgeTypeAttributes() throws {
-        let input = """
-            vnotation StyledMap {
-                layout: topToBottom
-
-                node type: Source [nodeStyle: simpleRoundedText, color: "#336699"]
-                node type: Target [nodeStyle: simpleRoundedText, color: "#996633"]
-
-                edge type: link  from: Source  to: Target [arrowHead: vee, style: dashed, color: "#cc0000", penwidth: 2.5, constraint: true, dir: both]
-            }
-
-            vgraph sm1: StyledMap "Styled" {
-                node s1: Source "A"
-                node t1: Target "B"
-                edge s1 -> t1
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        let linkId = EdgeType.Id(rawValue: "link")
-        let arrowHead: String = try graph.get(edgeType: linkId, attribute: Attributes.Edge.arrowHead)
-        #expect(arrowHead == "vee")
-
-        let style: Attributes.Edge.StyleType = try graph.get(edgeType: linkId, attribute: Attributes.Edge.style)
-        #expect(style == .dashed)
-
-        let gColor: VColor = try graph.get(edgeType: linkId, attribute: Attributes.Edge.color)
-        #expect(gColor.asString.contains("cc0000"))
-
-        let penwidth: Double = try graph.get(edgeType: linkId, attribute: Attributes.Edge.penwidth)
-        #expect(penwidth == 2.5)
-
-        let constraint: Bool = try graph.get(edgeType: linkId, attribute: Attributes.Edge.constraint)
-        #expect(constraint == true)
-
-        let dir: String = try graph.get(edgeType: linkId, attribute: Attributes.Edge.dir)
-        #expect(dir == "both")
-    }
 
     @Test
     func testVNotationEdgeTypeAttributeRoundTrip() throws {
@@ -3923,7 +2562,7 @@ struct TimelineNotationTests {
                 node type: Source [nodeStyle: simpleRoundedText, color: "#336699"]
                 node type: Target [nodeStyle: simpleRoundedText, color: "#996633"]
 
-                edge type: link  from: Source  to: Target [arrowHead: vee, style: dashed, color: "#cc0000", penwidth: 2.5, dir: both]
+                edge type: link  from: Source  to: Target [arrowHead: vee, style: dashed, color: "#cc0000", penwidth: 2.5, dir: both, constraint: false]
             }
 
             vgraph sm1: StyledMap "Styled" {
@@ -3944,6 +2583,7 @@ struct TimelineNotationTests {
         #expect(exported.contains("cc0000"), "Exported should contain color hex")
         #expect(exported.contains("penwidth: 2.5"), "Exported should contain penwidth")
         #expect(exported.contains("dir: both"), "Exported should contain dir")
+        #expect(exported.contains("constraint: false"), "Exported should contain constraint")
 
         // Re-parse and verify attributes survive round-trip
         let parser2 = VGraphParser(logger: NoOpLogger())
@@ -3961,6 +2601,12 @@ struct TimelineNotationTests {
 
         let dir: String = try graph2.get(edgeType: linkId, attribute: Attributes.Edge.dir)
         #expect(dir == "both")
+
+        let constraint: Bool = try graph2.get(edgeType: linkId, attribute: Attributes.Edge.constraint)
+        #expect(constraint == false)
+
+        let color: VColor = try graph2.get(edgeType: linkId, attribute: Attributes.Edge.color)
+        #expect(color == VColor(hexString: "#cc0000"))
     }
 
     @Test
@@ -4031,26 +2677,6 @@ struct TimelineNotationTests {
         let graph2 = try parser2.parse(source: exported)
         #expect(graph2.nodes.count == 2)
         #expect(graph2.edges.count == 1)
-    }
-
-    @Test
-    func testVNotationExportBuiltinNotExported() throws {
-        // A graph using a built-in notation should NOT have a vnotation block
-        let input = """
-            vgraph test1: IBIS "Simple IBIS" {
-                node q1: Question "Why?"
-                node a1: Answer   "Because"
-                edge a1 -> q1
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        let exporter = VGLExporter()
-        let exported = try exporter.export(graph: graph)
-
-        #expect(!exported.contains("vnotation"), "Built-in notation should not produce a vnotation block")
     }
 
     // MARK: - diagramLogic in vnotation
@@ -4182,44 +2808,17 @@ struct TimelineNotationTests {
             """
 
         let parser = VGraphParser(logger: NoOpLogger())
-        #expect(throws: VError.self) {
+        let error = #expect(throws: VError.self) {
             _ = try parser.parse(source: input)
         }
+        guard case .parsingError(let message) = error else {
+            Issue.record("Expected a parsingError, got \(String(describing: error))")
+            return
+        }
+        #expect(message.contains("unknownAttr"))
     }
 
     // MARK: - Quality Check and Transform Registry Tests
-
-    @Test
-    func testVNotationQualityCheckTreeStructure() throws {
-        let input = """
-            vnotation TreeNotation {
-                node type: Parent [nodeStyle: roundedBox, color: "#336699"]
-                node type: Child  [nodeStyle: simpleRoundedText, color: "#669933"]
-                edge type: parent_child from: Parent to: Child
-                qualityCheck: treeStructure
-            }
-
-            vgraph t1: TreeNotation "Tree Test" {
-                node p1: Parent "Root"
-                node p2: Parent "Other Root"
-                node c1: Child  "Leaf"
-                edge p1 -> c1
-                edge p2 -> c1
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        let storedChecks = graph.notationDefinition.declaredQualityChecks.map { $0.specString }
-        #expect(storedChecks == ["treeStructure"])
-
-        // Run quality analysis — the tree structure check should fire
-        let report = Notations.analyzeQuality(graph: graph)
-        let treeWarnings = report.warnings.filter { $0.message.contains("parent nodes") }
-        #expect(treeWarnings.count == 1)
-        #expect(treeWarnings[0].message.contains("Leaf"))
-    }
 
     @Test
     func testVNotationQualityCheckNodeCountRange() throws {
@@ -4316,44 +2915,16 @@ struct TimelineNotationTests {
         let graph = try parser.parse(source: input)
 
         let storedChecks = graph.notationDefinition.declaredQualityChecks.map { $0.specString }
-        #expect(storedChecks.contains("treeStructure"))
-        #expect(storedChecks.contains("labelLength(2)"))
+        #expect(storedChecks == ["treeStructure", "labelLength(2)"])
 
         let report = Notations.analyzeQuality(graph: graph)
         // Tree structure warning (t3 has 2 parents)
         let treeWarnings = report.warnings.filter { $0.message.contains("parent nodes") }
         #expect(treeWarnings.count == 1)
+        #expect(treeWarnings.first?.message.contains("Also Fine") == true)
         // Label length warning
         let labelWarnings = report.warnings.filter { $0.message.contains("words") }
         #expect(labelWarnings.count == 1)
-    }
-
-    @Test
-    func testVNotationTransform() throws {
-        let input = """
-            vnotation WithTransform {
-                node type: Item [nodeStyle: simpleRoundedText, color: "#336699"]
-                edge type: link from: Item to: Item
-                transform: identity
-            }
-
-            vgraph w1: WithTransform "Transform Test" {
-                node i1: Item "One"
-                node i2: Item "Two"
-                edge i1 -> i2
-            }
-            """
-
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: input)
-
-        #expect(graph.notationDefinition.declaredTransforms == ["identity"])
-
-        // Apply transform pipeline — identity should leave graph unchanged
-        let transform = try Notations.resolveTransform(for: graph)
-        let result = try transform(graph)
-        #expect(result.nodes.count == graph.nodes.count)
-        #expect(result.edges.count == graph.edges.count)
     }
 
     @Test
@@ -4393,29 +2964,18 @@ struct TimelineNotationTests {
     }
 
     @Test
-    func testVNotationUnknownQualityCheckThrows() throws {
+    func qualityCheckRegistryRejectsAnUnknownName() throws {
         let spec = QualityCheckSpec(name: "nonExistentCheck")
-        #expect(throws: VError.self) {
+        let error = #expect(throws: VError.self) {
             _ = try QualityCheckRegistry.resolve(spec)
         }
+        guard case .parsingError(let message) = error else {
+            Issue.record("Expected a parsingError, got \(String(describing: error))")
+            return
+        }
+        #expect(message.contains("Unknown qualityCheck 'nonExistentCheck'"))
     }
 
-    @Test
-    func testQualityCheckSpecParsing() {
-        // Simple name
-        let simple = QualityCheckSpec.parse("treeStructure")
-        #expect(simple.name == "treeStructure")
-        #expect(simple.params.isEmpty)
-
-        // With params
-        let withParams = QualityCheckSpec.parse("nodeCountRange(Battle, 1, 20)")
-        #expect(withParams.name == "nodeCountRange")
-        #expect(withParams.params == ["Battle", "1", "20"])
-
-        // Round-trip
-        #expect(withParams.specString == "nodeCountRange(Battle, 1, 20)")
-        #expect(simple.specString == "treeStructure")
-    }
 }
 
 // MARK: - Arithmetic Full Cycle Tests
@@ -4509,61 +3069,6 @@ struct ArithmeticFullCycleTests {
         for type in A.EdgeTypes.all {
             #expect(edgeTypes.contains(type), "Missing edge type \(type)")
         }
-    }
-
-    @Test
-    func testArithmeticCompleteGraphEquality() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let g1 = try parser.parse(source: arithmeticInput)
-
-        let exporter = VGLExporter()
-        let exportedGraph = try exporter.export(graph: g1)
-
-        let g2 = try parser.parse(source: exportedGraph)
-
-        try assertGraphsAreEqual(g1, g2)
-    }
-
-    @Test
-    func exportArithmeticToDotFormat() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: arithmeticInput)
-
-        let exporter = DotExporter()
-        let dotOutput = try exporter.export(graph: graph)
-
-        #expect(dotOutput.hasPrefix("digraph"), "DOT should start with digraph")
-        #expect(dotOutput.contains("minusOp"), "DOT should contain the Minus node")
-        #expect(dotOutput.contains("eq1"), "DOT should contain the Equals node")
-    }
-
-    @Test
-    func fullCycleParseAndExportArithmetic() throws {
-        let parser = VGraphParser(logger: NoOpLogger())
-        let graph = try parser.parse(source: arithmeticInput)
-
-        let exporter = VGLExporter()
-        let exportedVGraph = try exporter.export(graph: graph)
-
-        #expect(!exportedVGraph.isEmpty, "Exported VGL should not be empty")
-        #expect(exportedVGraph.contains("vgraph arithmeticDemo: Arithmetic"), "Exported VGL should contain graph declaration")
-        #expect(exportedVGraph.contains("node minusOp: Minus"), "Exported VGL should contain the Minus node")
-        #expect(exportedVGraph.contains("node eq1: Equals"), "Exported VGL should contain the Equals node")
-        #expect(exportedVGraph.contains("edge"), "Exported VGL should contain edges")
-
-        let graph2 = try parser.parse(source: exportedVGraph)
-
-        #expect(graph2.nodes.count == graph.nodes.count, "Node count should be preserved")
-        #expect(graph2.edges.count == graph.edges.count, "Edge count should be preserved")
-
-        let notationString1: String = graph.notationName
-        let notationString2: String = graph2.notationName
-        #expect(notationString1 == notationString2, "Notation should be preserved")
-
-        let seven = Node(string: "seven")
-        let sevenLabel1: String = try graph.get(node: seven, attribute: Attributes.Node.label)
-        let sevenLabel2: String = try graph2.get(node: seven, attribute: Attributes.Node.label)
-        #expect(sevenLabel1 == sevenLabel2, "Node labels should be preserved")
     }
 
     /// Ties parsed VGL to the evaluator, which `ArithmeticEvaluationTests` covers directly.

@@ -26,22 +26,6 @@ private func banking(_ rules: String) -> String {
     """
 }
 
-private func stripTags(_ html: String) -> String {
-    var out = ""
-    var inTag = false
-    for c in html {
-        if c == "<" {
-            inTag = true
-        } else if c == ">" {
-            inTag = false
-        } else if !inTag {
-            out.append(c)
-        }
-    }
-    return out.replacingOccurrences(of: "&lt;", with: "<").replacingOccurrences(of: "&gt;", with: ">")
-        .replacingOccurrences(of: "&amp;", with: "&")
-}
-
 private func semantic(_ source: String) -> String {
     VGraphParser(logger: NoOpLogger()).semanticHighlightHTML(source: source)
 }
@@ -59,10 +43,12 @@ struct ViewRuleHighlightTests {
     }
 
     @Test("Given exclude group type: Zone, when highlighted semantically, then exclude and type are keywords")
-    func excludeAndType() {
+    func excludeAndType() throws {
+        // The vnotation above the view has a `group type:` line of its own.
         let html = semantic(banking("exclude group type: Zone;"))
-        #expect(html.contains(keyword("exclude")))
-        #expect(html.contains(keyword("type")))
+        let view = try #require(html.components(separatedBy: keyword("vview")).last)
+        #expect(view.contains(keyword("exclude")))
+        #expect(view.contains(keyword("type")))
     }
 
     @Test("Given expand 2, when highlighted semantically, then expand is a keyword and 2 a number")
@@ -73,14 +59,21 @@ struct ViewRuleHighlightTests {
     }
 
     @Test("Given a node named include, when highlighted semantically, then it is not a keyword")
-    func aNodeMayBeCalledInclude() {
+    func aNodeMayBeCalledInclude() throws {
         let html = semantic(
             """
             vgraph demo: ConceptMap "D" {
               node include: Concept "Include";
             }
+
+            vview v {
+              include node include;
+            }
             """)
-        #expect(!html.contains(keyword("include")))
+        let view = try #require(html.components(separatedBy: keyword("vview")).last)
+        #expect(view.contains(keyword("include")), "The rule's own word is still a keyword")
+        #expect(view.contains("<span class=\"vg-id\">include</span>"), "The node's name is an id, not a keyword")
+        #expect(html.components(separatedBy: keyword("include")).count == 2, "Only the rule's word, not the node's name")
     }
 
     @Test("Given any view rule, when highlighted, then the source comes back verbatim")
