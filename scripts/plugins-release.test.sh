@@ -21,7 +21,7 @@ export PATH="$ROOT/bin:$PATH"
 export VITHANCO_MAINTAINER=1
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.invalid
 
-# A consumer's release.sh that only accepts being asked to bump: anything else
+# A engine consumer's release.sh that only accepts being asked to bump: anything else
 # would build, and the log says what it was asked.
 stub_release_sh() { # dir
     cat > "$1/release.sh" <<'EOF'
@@ -68,17 +68,17 @@ given_everything_at() { # version, in a fresh WORK standing in for a merged VGra
 }
 bump() { just --justfile "$REPO_ROOT/justfile" --working-directory "$WORK" plugins-release "$@" >"$WORK/out" 2>&1; }
 nothing_bumped() { # why
-    [ -s "$RELEASE_LOG" ] && fail "$1: a consumer was bumped: $(cat "$RELEASE_LOG")"
+    [ -s "$RELEASE_LOG" ] && fail "$1: a engine consumer was bumped: $(cat "$RELEASE_LOG")"
     git -C "$WORK/vgraph.git" rev-parse -q --verify refs/heads/release/1.2.4 >/dev/null && fail "$1: a release branch was pushed"
     grep -q '^pr create' "$GH_LOG" && fail "$1: a PR was opened"
 }
 
-# Given every consumer at 1.2.3 and VGraph merged, when bumping a patch, then
-# every consumer is bumped without building anything, VGraph's half is committed
+# Given every engine consumer at 1.2.3 and VGraph merged, when bumping a patch, then
+# every engine consumer is bumped without building anything, VGraph's half is committed
 # on release/1.2.4, pushed and offered as a PR, and the checkout is back on main, clean.
 given_everything_at 1.2.3
 bump patch || fail "plugins-release patch failed: $(cat "$WORK/out")"
-[ "$(wc -l < "$RELEASE_LOG" | tr -d ' ')" = 3 ] || fail "wanted all three consumers bumped: $(cat "$RELEASE_LOG")"
+[ "$(wc -l < "$RELEASE_LOG" | tr -d ' ')" = 3 ] || fail "wanted all three engine consumers bumped: $(cat "$RELEASE_LOG")"
 [ -f "$WORK/built.log" ] && fail "plugins-release built the engine"
 git -C "$WORK/vgraph.git" show release/1.2.4:plugins.json 2>/dev/null | grep -q '1.2.4' \
     || fail "release/1.2.4 on origin does not carry the bumped plugins.json"
@@ -92,7 +92,7 @@ grep -q 'just release' "$WORK/out" || fail "does not say 'just release' comes ne
 # Given an explicit version, when bumping, then the branch is named after it.
 given_everything_at 1.2.3
 bump 2.0.0 || fail "plugins-release 2.0.0 failed: $(cat "$WORK/out")"
-grep -q -- '--bump-only 2.0.0' "$RELEASE_LOG" || fail "consumers were not asked for 2.0.0: $(cat "$RELEASE_LOG")"
+grep -q -- '--bump-only 2.0.0' "$RELEASE_LOG" || fail "engine consumers were not asked for 2.0.0: $(cat "$RELEASE_LOG")"
 
 # Given VGraph with uncommitted changes, when bumping, then nothing is bumped:
 # the commit would sweep them into the release PR.
@@ -110,7 +110,7 @@ bump patch && fail "bumped on top of a commit that is not on origin/main"
 grep -q 'origin/main' "$WORK/out" || fail "does not name origin/main: $(cat "$WORK/out")"
 nothing_bumped "unpushed VGraph"
 
-# The real consumers' release.sh, asked only to bump: the version moves and
+# The real engine consumers' release.sh, asked only to bump: the version moves and
 # nothing is built, installed or copied in. Skips a plugin that is not cloned.
 REAL=$(mktemp -d "$ROOT/real.XXXXXX") || exit 1
 cat > "$ROOT/bin/npm" <<'EOF'

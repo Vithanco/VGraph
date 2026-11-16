@@ -29,6 +29,9 @@ To update: change the Swift sources, run `just release`, bump the library
 version with `just bump-js <version>` **only if its JS API changed**, then
 `just stage-website`.
 
+A release of the plugins, npm host, website and Cloud Run together is in
+[releasing.md](./releasing.md).
+
 ## Embedding the editor
 
 `index.html` loads `./Package/index.js` relative to itself, so the two just need
