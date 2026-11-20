@@ -130,7 +130,7 @@ The skills themselves are not part of this repo; these are the pointers they rea
 
 ### Issue tracker
 
-Issues and specs live in GitHub Issues on `Vithanco/VGraph`, worked with `gh`. See `docs/agents/issue-tracker.md`.
+Issues and specs live in GitHub Issues on `Vithanco/VGraph`, worked with `gh`. Issue and pull request descriptions are about two lines; ask before writing more. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
