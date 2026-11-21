@@ -1,4 +1,4 @@
-// Who answers ⌘C and ⌘V, and where a paste lands (#112). Focus decides the
+// Who answers ⌘C and ⌘V, and where a paste lands (Vithanco/VGraph-archive#112). Focus decides the
 // first, so the source pane's own copy and paste are never taken over.
 
 import EditorCore

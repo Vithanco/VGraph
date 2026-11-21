@@ -3,7 +3,7 @@
 //  VGraph
 //
 //  VGL fragments, the clipboard's format: the body of a document without its
-//  header, and such text parsed into a document's context (#112).
+//  header, and such text parsed into a document's context (Vithanco/VGraph-archive#112).
 //
 
 import Testing
