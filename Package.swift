@@ -73,7 +73,6 @@ let package = Package(
                 .define("WASM", .when(platforms: [.wasi])),
                 .enableExperimentalFeature("Extern"),
                 .enableExperimentalFeature("Embedded", .when(platforms: [.wasi])),
-                .unsafeFlags(["-wmo"], .when(platforms: [.wasi])),
             ]
         ),
 
@@ -88,7 +87,6 @@ let package = Package(
                 .define("WASM", .when(platforms: [.wasi])),
                 .enableExperimentalFeature("Extern"),
                 .enableExperimentalFeature("Embedded", .when(platforms: [.wasi])),
-                .unsafeFlags(["-wmo"], .when(platforms: [.wasi])),
             ]
         ),
 
@@ -103,7 +101,6 @@ let package = Package(
                 .define("WASM", .when(platforms: [.wasi])),
                 .enableExperimentalFeature("Extern"),
                 .enableExperimentalFeature("Embedded", .when(platforms: [.wasi])),
-                .unsafeFlags(["-wmo"], .when(platforms: [.wasi])),
             ]
         ),
 
@@ -142,7 +139,6 @@ let package = Package(
                 .define("WASM", .when(platforms: [.wasi])),
                 .enableExperimentalFeature("Extern"),
                 .enableExperimentalFeature("Embedded", .when(platforms: [.wasi])),
-                .unsafeFlags(["-wmo"], .when(platforms: [.wasi])),
             ]
         ),
 
@@ -157,7 +153,6 @@ let package = Package(
                 .define("WASM", .when(platforms: [.wasi])),
                 .enableExperimentalFeature("Extern"),
                 .enableExperimentalFeature("Embedded", .when(platforms: [.wasi])),
-                .unsafeFlags(["-wmo"], .when(platforms: [.wasi])),
             ]
         ),
 
@@ -335,7 +330,6 @@ let package = Package(
                 .define("WASM", .when(platforms: [.wasi])),
                 .enableExperimentalFeature("Extern"),
                 .enableExperimentalFeature("Embedded", .when(platforms: [.wasi])),
-                .unsafeFlags(["-wmo"], .when(platforms: [.wasi])),
             ]
         ),
     ]
