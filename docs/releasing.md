@@ -40,11 +40,14 @@ git switch main && git pull
 just publish-all
 ```
 
-`publish-all` runs `just release` (the full test gate in release configuration,
-the optimized engine, both plugins, the `.vsix`), asks you to type `publish`, then
+`publish-all` runs `just release` (the optimized engine, both plugins, the
+`.vsix`), asks you to type `publish`, then
 tags VGraph and ships the plugins (tag, push and GitHub release each), npm and
 the MCP Registry, the website, Cloud Run, and the Marketplace when a token is
 found.
+
+`just release` runs the tests itself only when CI has not passed on the commit
+(`just release full` runs them anyway); why: ADR 0036.
 
 VGraph's tag goes on the commit that built the engine, not on `main`'s tip, so
 a Swift package that depends on a version gets the engine the plugins ship.
@@ -55,11 +58,17 @@ hold only version fields and the engine just tested, and each plugin's CI checks
 
 ## When a release stops halfway
 
-Run `just publish-all` again: it skips the plugins and npm when they already
-carry the version, and redeploys the website and Cloud Run, which is harmless.
+Run `just publish-all` again. It skips `just release` while nothing that ships
+has changed since it passed, the plugins when they carry the version, and npm and
+the MCP Registry when both do. It redeploys the website and Cloud Run, which is
+harmless. The registry publish retries on its own, because the registry stalls
+now and then.
 To finish one place by hand, run its recipe: `publish-plugins`,
 `publish-mcp-node`, `publish-website`, `publish-cloud-run`,
 `publish-vscode-marketplace`.
 
 Every recipe that ships the engine refuses a VGraph checkout with uncommitted
 changes or a commit not on `origin/main`, so what ships is always on `main`.
+Generated files such as `vgraph-mcp-node/tools.json` cannot be what makes it
+uncommitted: CI fails a pull request that leaves one stale, and `just regen`
+refreshes them.

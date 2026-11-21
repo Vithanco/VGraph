@@ -124,6 +124,11 @@ mcp-node: mcp
     ./scripts/dump-mcp-tools.sh
     echo "✓ vgraph-mcp-node vendored ($(du -sh vgraph-mcp-node/vendor | cut -f1))"
 
+# Regenerate every tracked file the build generates (today vgraph-mcp-node/tools.json). CI fails while one is stale.
+[group('build')]
+regen: mcp
+    ./scripts/check-generated.sh --write
+
 # Run the Node MCP host against the current engine build (stdio; Ctrl-C to stop).
 [group('run')]
 mcp-node-run: mcp-node
@@ -214,32 +219,8 @@ publish-mcp-node otp='': _require-maintainer _require-vgraph-main mcp-node
     fi
 
     echo ""
-    if ! command -v mcp-publisher >/dev/null 2>&1; then
-        echo "✓ Published to npm. mcp-publisher not installed, so the registry entry"
-        echo "  was skipped — 'brew install mcp-publisher', then:"
-        echo "    cd vgraph-mcp-node && mcp-publisher login dns --domain vithanco.com && mcp-publisher publish"
-        exit 0
-    fi
-    # The registry JWT is short-lived — the first real run logged in, spent
-    # several minutes building and publishing to npm, and then failed with
-    # "token is expired". So re-authenticate here, immediately before use,
-    # rather than relying on a session from earlier.
-    #
-    # DNS auth, not GitHub: it is what earns the com.vithanco namespace rather
-    # than io.github.vithanco.
-    KEY="${MCP_SIGNING_KEY:-$HOME/.config/mcp-publisher/vithanco-ed25519.pem}"
-    if [ -f "$KEY" ]; then
-        echo "Refreshing the registry token..."
-        mcp-publisher login dns --domain vithanco.com \
-            --private-key "$(openssl pkey -in "$KEY" -outform DER | tail -c 32 | xxd -p -c 64)"
-    else
-        echo "· no signing key at $KEY — using whatever session mcp-publisher holds."
-        echo "  (set MCP_SIGNING_KEY if it lives elsewhere)"
-    fi
-
-    echo "Publishing to the MCP Registry as $SRV_NAME..."
-    mcp-publisher publish
-    echo "✓ $PKG@$VER on npm and listed as $SRV_NAME"
+    cd ..
+    ./scripts/mcp-registry.sh
 
 # build + run the full test suite (format + swift + wasm smoke + editor browser + plugin lint). FILTER scopes swift test.
 [group('test')]
@@ -260,6 +241,11 @@ test filter='': build
     ./scripts/audit-public.test.sh
     ./scripts/publish-plugins.test.sh
     ./scripts/plugins-release.test.sh
+    ./scripts/mcp-registry.test.sh
+    ./scripts/release-stamp.test.sh
+    ./scripts/ci-status.test.sh
+    ./scripts/check-generated.test.sh
+    ./scripts/check-generated.sh
     just _if-cloned obsidian-vithanco obsidian-lint
     just _if-cloned vscode-vithanco vscode-preview
 
@@ -329,16 +315,31 @@ lint:
 format:
     swift-format -r -i --configuration .swift-format .
 
-# test + produce all shippable artifacts (optimized WASM, release binaries, .vsix). Nothing is pushed.
+# test + produce all shippable artifacts (optimized WASM, release binaries, .vsix). Nothing is pushed. FULL=full reruns the tests CI already passed.
 [group('build')]
-release: _release-preflight
+release full='': _release-preflight
     #!/usr/bin/env bash
     set -euo pipefail
-    # Run the full build+test gate in RELEASE config (optimized WASM flows into the
-    # plugins via the binary embed), then package the .vsix. Single build — no debug detour.
-    just config=release test
+    case "{{full}}" in ""|full) ;; *) echo "unknown argument: {{full}} (only 'full')" >&2; exit 2 ;; esac
+    # Everything in RELEASE config: the optimized WASM flows into the plugins via
+    # the binary embed. Single build — no debug detour.
+    # The tests CI ran on this very commit are not run again: they take the
+    # longest and prove nothing new. What CI cannot see still runs here: the
+    # optimized engine that ships, and the plugin checkouts.
+    if [ -z "{{full}}" ] && ./scripts/ci-status.sh; then
+        just config=release build
+        just test-wasm
+        ./scripts/check-generated.sh
+        just plugin-api
+        just _if-cloned obsidian-vithanco obsidian-lint
+        just _if-cloned vscode-vithanco vscode-preview
+    else
+        [ -n "{{full}}" ] || echo "· CI has not passed on this commit, so the full test gate runs here."
+        just config=release test
+    fi
     just config=release plugins-build
     ( cd vscode-vithanco && npm run package --silent )
+    ./scripts/release-stamp.sh record
     echo ""
     echo "✓ release artifacts ready (nothing pushed)."
     echo ""
@@ -908,9 +909,15 @@ publish-cloud-run: _require-maintainer _require-vgraph-main _require-gcloud buil
 
 # Coordinated release across all surfaces. Builds, then confirms before anything ships.
 [group('publish')]
-publish-all: _require-maintainer release
+publish-all: _require-maintainer
     #!/usr/bin/env bash
     set -euo pipefail
+    # A resume after a network failure must not cost another release run.
+    if ./scripts/release-stamp.sh check; then
+        echo "· 'just release' already passed on exactly this content — not running it again"
+    else
+        just release
+    fi
     # Parity across every engine consumer in plugins.json, not a hardcoded pair. The
     # npm host joined the lockstep and this guard did not notice it, so all
     # three could be bumped together and only two published — the exact drift
@@ -971,8 +978,11 @@ publish-all: _require-maintainer release
         just publish-plugins defer
     fi
 
-    if [ "$(npm view "@vithanco/vgraph-mcp" version 2>/dev/null)" = "$VER" ]; then
-        echo "· npm already at $VER — skipping"
+    # Both, not npm alone: npm and the registry are two publishes, and skipping
+    # on npm kept a failed registry publish from ever being retried.
+    if [ "$(npm view "@vithanco/vgraph-mcp" version 2>/dev/null)" = "$VER" ] \
+       && ./scripts/mcp-registry.sh --has; then
+        echo "· npm and the MCP Registry already at $VER — skipping"
     else
         just publish-mcp-node
     fi

@@ -1,6 +1,6 @@
 # 36. Releases stay on the maintainer's machine
 
-Date: 2026-11-08 (revised 2026-11-13 and 2026-11-15)
+Date: 2026-11-08 (revised 2026-11-13, 2026-11-15 and 2026-11-21)
 
 ## Status
 
@@ -43,6 +43,13 @@ each plugin's CI builds against VGraph's `main` from the ref it checks out
 (`scripts/ci-engine.sh`, inside the container named by that ref's
 `.swift-version`), so an engine change that breaks a plugin shows before a release
 rather than during one, and a Swift bump in VGraph needs no change in the plugins.
+
+`just release` trusts those checks (revised 2026-11-21). When every check the
+`main` ruleset requires passed on the commit it builds, it does not run those
+tests again; it builds what ships and checks only what CI cannot see, the
+optimized engine and the plugin checkouts. Running the whole suite again made
+every release, and every retry after a network failure, cost the longest step
+for no new evidence. `just release full` still runs everything.
 
 GitHub also attests, which Obsidian's directory review looks for. When an Obsidian
 plugin release is published, a workflow in that repository rebuilds the tag,

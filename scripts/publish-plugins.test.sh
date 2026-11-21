@@ -272,8 +272,8 @@ echo '{"bumped":true}' > "$WORK/plugins.json"
 just --justfile "$REPO_ROOT/justfile" --working-directory "$WORK" _release-preflight >"$WORK/out" 2>&1 \
     && fail "the release preflight accepted an uncommitted VGraph"
 grep -q 'uncommitted' "$WORK/out" || fail "release preflight does not say VGraph is uncommitted: $(cat "$WORK/out")"
-just --justfile "$REPO_ROOT/justfile" --show release | grep -q '^release: _release-preflight' \
-    || fail "just release does not run _release-preflight first: $(just --justfile "$REPO_ROOT/justfile" --show release | grep '^release:')"
+just --justfile "$REPO_ROOT/justfile" --show release | grep -q '^release[^:]*: _release-preflight' \
+    || fail "just release does not run _release-preflight first: $(just --justfile "$REPO_ROOT/justfile" --show release | grep '^release')"
 
 # Given a VGraph whose status git cannot read (a corrupt index), when the release
 # preflight runs, then it refuses: empty output from a failed `git status` is
