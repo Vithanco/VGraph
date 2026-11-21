@@ -72,6 +72,31 @@
         }
       },
       {
+        "abiName" : "bjs_editorClipboardRead",
+        "effects" : {
+          "isAsync" : false,
+          "isStatic" : false,
+          "isThrows" : false
+        },
+        "name" : "editorClipboardRead",
+        "parameters" : [
+          {
+            "label" : "text",
+            "name" : "text",
+            "type" : {
+              "string" : {
+
+              }
+            }
+          }
+        ],
+        "returnType" : {
+          "void" : {
+
+          }
+        }
+      },
+      {
         "abiName" : "bjs_setEditorVGL",
         "effects" : {
           "isAsync" : false,

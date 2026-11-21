@@ -64,6 +64,12 @@
       // right-click on a touch device. A host that omits this binding just has no
       // long press; the editor checks before arming the timer.
       window.__vgraphLongPress = exports.editorLongPressFired;
+      // The menu's Paste: `readText` answers with a promise this build cannot
+      // await, so the host reads and hands the text back. A refusal pastes
+      // nothing. A host that omits this binding has no Paste row; ⌘V still works.
+      window.__vgraphReadClipboard = () => {
+        navigator.clipboard.readText().then((text) => exports.editorClipboardRead(text), () => {});
+      };
 
       // The editor's draft storage. It lives here, not in Swift, because
       // `localStorage` *throws* rather than fails quietly when a browser has

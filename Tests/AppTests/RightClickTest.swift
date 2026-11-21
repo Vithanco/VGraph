@@ -149,4 +149,47 @@ struct RightClickTest {
         #expect(decided.items.allSatisfy { $0.enabled })
         #expect(!decided.fromSelection)
     }
+
+    // MARK: - Paste, where the host can read the clipboard
+
+    private func paste(onto target: String) -> MenuItem {
+        MenuItem(id: .paste, title: "Paste", availability: .available, enabled: true, target: target)
+    }
+
+    @Test(
+        "Given a host that can read the clipboard, when blank canvas is right-clicked, then the menu ends with Paste onto the top level"
+    )
+    func theCanvasOffersPaste() throws {
+        let session = try conceptMap()
+
+        let decided = EditorCore.rightClick(on: nil, holding: Selection(), in: session, clipboardReadable: true)
+
+        #expect(decided?.items.last == paste(onto: session.rootGroupId()))
+    }
+
+    @Test("Given a host that can read the clipboard, when a group is right-clicked, then Paste lands in that group")
+    func aGroupOffersPasteIntoItself() throws {
+        let session = try conceptMap()
+
+        let decided = EditorCore.rightClick(on: "g1", holding: Selection(), in: session, clipboardReadable: true)
+
+        #expect(decided?.items.last == paste(onto: "g1"))
+    }
+
+    @Test("Given a host that can read the clipboard, when an edge is right-clicked, then the menu offers no Paste")
+    func anEdgeOffersNoPaste() throws {
+        let session = try conceptMap()
+        let edgeId = session.origin.edges.first!.id.id
+
+        let decided = EditorCore.rightClick(on: edgeId, holding: Selection(), in: session, clipboardReadable: true)
+
+        #expect(decided?.items.contains { $0.id == .paste } == false)
+    }
+
+    @Test("Given a host that cannot read the clipboard, when blank canvas is right-clicked, then the menu offers no Paste")
+    func withoutTheHostThereIsNoPaste() throws {
+        let decided = EditorCore.rightClick(on: nil, holding: Selection(), in: try conceptMap())
+
+        #expect(decided?.items.contains { $0.id == .paste } == false)
+    }
 }

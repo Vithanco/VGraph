@@ -20,8 +20,9 @@ test('right-clicking a node offers the commands that apply to it', async ({ page
     'Add successor', 'Add predecessor', 'Change type', 'Rename',
     'Open URL', 'Add URL…', 'Remove URL', 'Delete',
     // Appended to every menu built from a [[Selection]], which a right-click on
-    // a selectable element always is now (ADR-0018), and Copy with them (#112).
-    'Group', 'Copy',
+    // a selectable element always is now (ADR-0018), with Copy and, where the
+    // host can read the clipboard, Paste (ADR-0039).
+    'Group', 'Copy', 'Paste',
   ]);
   await expect(item(page, 'Fold group'), 'folding is a group command').toHaveCount(0);
 });

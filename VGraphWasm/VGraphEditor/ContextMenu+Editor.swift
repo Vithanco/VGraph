@@ -49,7 +49,9 @@ func openMenu(target: JSValue, x: Double, y: Double, allowingBreak allowed: VNot
         if let unfolds {
             EditorCore.rightClickOnBundle(unfolding: unfolds, holding: selection, in: session)
         } else {
-            EditorCore.rightClick(on: hit, holding: selection, in: session, notationBreak: allowed)
+            EditorCore.rightClick(
+                on: hit, holding: selection, in: session, notationBreak: allowed,
+                clipboardReadable: JSObject.global.__vgraphReadClipboard.function != nil)
         }
     guard let decided = decision else { return false }  // no commands → leave the browser's own menu
 

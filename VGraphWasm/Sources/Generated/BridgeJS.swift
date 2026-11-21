@@ -39,6 +39,17 @@ public func _bjs_editorLongPressFired() -> Void {
     #endif
 }
 
+@_expose(wasm, "bjs_editorClipboardRead")
+@_cdecl("bjs_editorClipboardRead")
+public func _bjs_editorClipboardRead(_ textBytes: Int32, _ textLength: Int32) -> Void {
+    #if arch(wasm32)
+    let text = String.bridgeJSLiftParameter(textBytes, textLength)
+    editorClipboardRead(text: text)
+    #else
+    fatalError("Only available on WebAssembly")
+    #endif
+}
+
 @_expose(wasm, "bjs_setEditorVGL")
 @_cdecl("bjs_setEditorVGL")
 public func _bjs_setEditorVGL(_ textBytes: Int32, _ textLength: Int32) -> Void {

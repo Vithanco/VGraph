@@ -38,7 +38,8 @@ public struct RightClick: Sendable, Equatable {
 /// browser's own menu alone rather than opening an empty one.
 public func rightClick(
     on hit: String?, holding selection: Selection,
-    in session: some ForEditAGraphVisually, notationBreak: VNotationBreak = .forbidden
+    in session: some ForEditAGraphVisually, notationBreak: VNotationBreak = .forbidden,
+    clipboardReadable: Bool = false
 ) -> RightClick? {
     let target = hit ?? session.rootGroupId()
 
@@ -46,7 +47,8 @@ public func rightClick(
     // path and clear what was gathered, leaving no doubt about what the menu
     // acts on. Neither can be part of a [[Selection]].
     guard let hit, isSelectable(hit, in: session) else {
-        let items = menu(for: target, in: session, notationBreak: notationBreak)
+        let canvasPaste = hit == nil && clipboardReadable ? [pasteItem(onto: target)] : []
+        let items = menu(for: target, in: session, notationBreak: notationBreak) + canvasPaste
         guard !items.isEmpty else { return nil }
         return RightClick(
             target: target, selection: selection.cleared(), items: items, fromSelection: false)
@@ -58,10 +60,19 @@ public func rightClick(
     // the selection with the bare node would undo the promotion (ADR-0018).
     let gathered =
         selection.covers(hit, in: session) ? selection : selection.replacing(with: hit)
-    let items = menu(forSelection: gathered, in: session, notationBreak: notationBreak)
+    let paste =
+        clipboardReadable
+        ? [pasteItem(onto: gathered.pasteDestination(in: session) ?? session.rootGroupId())] : []
+    let items = menu(forSelection: gathered, in: session, notationBreak: notationBreak) + paste
     guard !items.isEmpty else { return nil }
     return RightClick(
         target: target, selection: gathered, items: items, fromSelection: true)
+}
+
+/// Lands where ⌘V would. Offered only where the host can read the clipboard for
+/// this build, which cannot await `navigator.clipboard.readText` itself.
+func pasteItem(onto destination: String) -> MenuItem {
+    MenuItem(id: .paste, title: "Paste", availability: .available, enabled: true, target: destination)
 }
 
 /// An [[Edge bundle]] is not an element of the OriginGraph — it draws several —

@@ -23,9 +23,31 @@ func handleCopy(_ event: RawClipboardEvent) {
 func handlePaste(_ event: RawClipboardEvent) {
     guard EditorCore.graphAnswers(.paste, focus: focus(), hasSelection: !selection.isEmpty) else { return }
     event.preventDefault()
-    let text = event.text
+    paste(event.text) { selection.pasteDestination(in: $0) }
+}
+
+/// Where the menu's Paste lands while the host reads the clipboard.
+nonisolated(unsafe) private var pendingPaste: String? = nil
+
+/// The host reads, because this build cannot await `readText`'s promise; its
+/// answer comes back through `editorClipboardRead`.
+func pasteFromMenu(into destination: String) {
+    dismissMenu()
+    pendingPaste = destination
+    _ = JSObject.global.__vgraphReadClipboard.function?()
+}
+
+/// The host's answer to `__vgraphReadClipboard`, via the executable's
+/// `editorClipboardRead` @JS wrapper.
+public func editorClipboardRead(text: String) {
+    guard let destination = pendingPaste else { return }
+    pendingPaste = nil
+    paste(text) { _ in destination }
+}
+
+private func paste(_ text: String, into destination: (VGraphWasmSession) -> String?) {
     var pasted: [String] = []
-    runNamed { s throws(VError) in pasted = try s.paste(fragment: text, into: selection.pasteDestination(in: s)) }
+    runNamed { s throws(VError) in pasted = try s.paste(fragment: text, into: destination(s)) }
     guard !pasted.isEmpty else { return }
     selection = Selection(pasted)
     selectionChanged()

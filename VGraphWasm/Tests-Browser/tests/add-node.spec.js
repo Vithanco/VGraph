@@ -35,14 +35,14 @@ test('the canvas menu offers Add node and greys everything else', async ({ page 
   await expect(page.locator(s.menu)).toBeVisible();
   await expect(page.locator(s.menuItem)).toHaveText([
     'Add node…', 'Fold group', 'Change type', 'Rename', 'Open URL', 'Add URL…', 'Remove URL',
-    'Ungroup', 'Delete', 'Layout direction…',
+    'Ungroup', 'Delete', 'Layout direction…', 'Paste',
   ]);
 
-  // Two live rows: adding, and the layout direction, a setting of the whole
-  // diagram. The rest are things a diagram as a whole cannot be, and they are
-  // disabled rather than absent because the group menu is shared.
+  // Three live rows: adding, the layout direction (a setting of the whole
+  // diagram) and pasting. The rest are things a diagram as a whole cannot be,
+  // and they are disabled rather than absent because the group menu is shared.
   const enabled = page.locator(`${s.menuItem}:not(.vg-ctx-disabled)`);
-  await expect(enabled).toHaveText(['Add node…', 'Layout direction…']);
+  await expect(enabled).toHaveText(['Add node…', 'Layout direction…', 'Paste']);
 });
 
 test('adding from the canvas creates a node at the top level and opens its editor', async ({

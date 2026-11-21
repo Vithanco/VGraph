@@ -76,6 +76,10 @@ public func _vgraph_bjs_release_swift_closure(_ pointer: UnsafeMutableRawPointer
     VGraphEditor.editorLongPressFired()
 }
 
+@JS public func editorClipboardRead(text: String) {
+    VGraphEditor.editorClipboardRead(text: text)
+}
+
 @JS public func setEditorVGL(text: String) {
     VGraphEditor.setEditorVGL(text: text)
 }

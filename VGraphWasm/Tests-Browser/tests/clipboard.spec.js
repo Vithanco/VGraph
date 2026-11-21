@@ -3,7 +3,7 @@
 // browser can show; what a copy holds and where a paste lands are unit tested.
 
 import { test, expect } from '@playwright/test';
-import { s, sel, openEditor, vglText } from '../helpers/editor.js';
+import { s, sel, openEditor, vglText, emptyCanvas } from '../helpers/editor.js';
 
 const pair = `vgraph demo: ConceptMap "Demo" {
   node a: Concept "A";
@@ -101,4 +101,16 @@ test('Given text selected in the source pane, when ⌘C then ⌘V there, then th
   await chord(page, 'v');
 
   expect(await vglText(page)).toBe(pair + 'vgraph');
+});
+
+test('Given a fragment on the clipboard, when Paste is chosen from the canvas menu, then it appears in the diagram', async ({
+  page,
+}) => {
+  await openEditor(page, pair);
+  await page.evaluate(() => navigator.clipboard.writeText('node c: Concept "C";'));
+
+  await page.locator(s.preview).click({ button: 'right', position: await emptyCanvas(page) });
+  await item(page, 'Paste').click();
+
+  await expect(page.locator(sel.node('c'))).toBeVisible();
 });

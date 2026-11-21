@@ -48,6 +48,10 @@ a fragment.
 - Paste reads `clipboardData` in the `paste` event: `navigator.clipboard.readText`
   returns a promise this build cannot await. The menu's Copy row writes through
   the async API, whose refusal it cannot see.
+- The menu's Paste row (on blank canvas, and on a selection, landing where ⌘V
+  would) exists only where the host binds `__vgraphReadClipboard`: the host
+  reads the clipboard and hands the text back to `editorClipboardRead`. The
+  browser asks first — a permission prompt in Chrome, a Paste bubble in Safari.
 - A refused paste is silent in the editor, like every named command.
 - Copying a selected group and pasting at once puts the duplicate inside it.
   Considered and kept: the rule for where a paste lands stays one rule.

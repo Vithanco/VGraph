@@ -26,6 +26,11 @@ func performCommand(_ commandId: VCommandID, on itemTarget: String? = nil, forci
         return
     }
 
+    if commandId == .paste {
+        pasteFromMenu(into: targetId)
+        return
+    }
+
     // Commands about a *set* rather than an element, reached only from a
     // selection menu. Grouping and deleting are one [[Snapshot]] however many
     // elements they name (ADR-0018); copying changes nothing.

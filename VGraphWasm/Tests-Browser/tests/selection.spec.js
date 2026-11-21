@@ -157,6 +157,7 @@ test('grouping across a boundary says how much it would move', async ({ page }) 
     'Group (moves 1 out of their boundaries)',
     'Delete',
     'Copy',
+    'Paste',
   ]);
 });
 
