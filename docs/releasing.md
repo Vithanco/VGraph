@@ -42,8 +42,12 @@ just publish-all
 
 `publish-all` runs `just release` (the full test gate in release configuration,
 the optimized engine, both plugins, the `.vsix`), asks you to type `publish`, then
-ships the plugins (tag, push and GitHub release each), npm and the MCP Registry,
-the website, Cloud Run, and the Marketplace when a token is found.
+tags VGraph and ships the plugins (tag, push and GitHub release each), npm and
+the MCP Registry, the website, Cloud Run, and the Marketplace when a token is
+found.
+
+VGraph's tag goes on the commit that built the engine, not on `main`'s tip, so
+a Swift package that depends on a version gets the engine the plugins ship.
 
 The plugins' bump commits go straight to their `main`, not through a PR: they
 hold only version fields and the engine just tested, and each plugin's CI checks

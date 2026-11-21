@@ -562,7 +562,7 @@ parity: (_require-plugin "obsidian-vithanco") (_require-plugin "vscode-vithanco"
 # Publish (outward-facing — the only irreversible recipes)
 # ═══════════════════════════════════════════════════════════════════════════
 
-# Commit + push + tag + GitHub release for BOTH plugins (parity-guarded), then the VS Code Marketplace when a credential is found. MARKETPLACE: now|defer.
+# Tag + GitHub release for VGraph at the engine's commit, then commit + push + tag + GitHub release for BOTH plugins (parity-guarded), then the VS Code Marketplace when a credential is found. MARKETPLACE: now|defer.
 [group('publish')]
 publish-plugins marketplace='now': _require-maintainer _release-preflight
     #!/usr/bin/env bash
@@ -631,6 +631,15 @@ publish-plugins marketplace='now': _require-maintainer _release-preflight
             FAIL=1
         fi
     done
+    if git rev-parse -q --verify "refs/tags/$OBS_V" >/dev/null \
+       || [ -n "$(git ls-remote --tags origin "refs/tags/$OBS_V")" ]; then
+        echo "Preflight: VGraph already has tag $OBS_V — bump before publishing." >&2
+        FAIL=1
+    fi
+    if gh release view "$OBS_V" --repo Vithanco/VGraph >/dev/null 2>&1; then
+        echo "Preflight: VGraph already has a GitHub release $OBS_V." >&2
+        FAIL=1
+    fi
     # A debug engine is ~20x oversized. Check the copy each plugin embeds, not
     # just website/Package: that is what shipped as a 115 MB main.js in 1.0.9.
     ./scripts/check-wasm-optimized.sh website/Package/VGraphWasm.wasm \
@@ -648,8 +657,13 @@ publish-plugins marketplace='now': _require-maintainer _release-preflight
         exit 1
     fi
 
-    echo "Publishing both plugins at v$OBS_V."
+    echo "Publishing VGraph and both plugins at v$OBS_V."
     echo ""
+    # VGraph, at the commit that built the engine the plugins ship, so a Swift
+    # package can depend on the same version.
+    git tag -a "$OBS_V" "$BUILT" -m "Release $OBS_V"
+    git push origin "refs/tags/$OBS_V"
+    gh release create "$OBS_V" --repo Vithanco/VGraph --verify-tag --title "$OBS_V" --generate-notes
     # Obsidian
     ( cd obsidian-vithanco
       # main.js is gitignored in this repo — it ships as a GitHub release asset (below), not a commit.
@@ -674,7 +688,7 @@ publish-plugins marketplace='now': _require-maintainer _release-preflight
       git push origin HEAD "$VSC_V"
       gh release create "$VSC_V" --title "$VSC_V" --notes "Release $VSC_V, engine $ENGINE" "$VSIX" )
     echo ""
-    echo "✓ Plugins pushed + tagged + GitHub releases created at v$OBS_V."
+    echo "✓ VGraph and plugins tagged + GitHub releases created at v$OBS_V."
     # Obsidian reads the GitHub release, so it is finished here. VS Code does
     # not: its release only attaches the .vsix. The Marketplace comes last, after
     # both releases, so an expired token cannot leave one plugin released and
@@ -933,7 +947,7 @@ publish-all: _require-maintainer release
 
     echo ""
     echo "About to PUBLISH, all at v$VER:"
-    echo "  • Plugins        → push + tag + GitHub release"
+    echo "  • VGraph+plugins → push + tag + GitHub release"
     echo "  • npm + registry → @vithanco/vgraph-mcp and com.vithanco/vgraph-mcp"
     echo "  • Website        → generate + deploy to vithanco.github.io, commit + push"
     echo "  • Cloud Run      → new revision of '{{cloud_service}}' in {{cloud_region}}"

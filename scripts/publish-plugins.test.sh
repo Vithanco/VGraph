@@ -14,7 +14,11 @@ mkdir "$ROOT/bin"
 cat > "$ROOT/bin/gh" <<'EOF'
 #!/usr/bin/env bash
 echo "$*" >> "$GH_LOG"
-[ "$1 $2" != "release view" ] # no release exists yet; everything else succeeds
+# A release exists only in the repos GH_RELEASED names; everything else succeeds.
+if [ "$1 $2" = "release view" ]; then
+    for repo in ${GH_RELEASED:-}; do case " $* " in *" --repo $repo "*) exit 0 ;; esac; done
+    exit 1
+fi
 EOF
 chmod +x "$ROOT/bin/gh"
 # The Marketplace is never reached: npx stands in for vsce, and the keychain
@@ -32,7 +36,7 @@ EOF
 printf '#!/bin/sh\nexit 1\n' > "$ROOT/bin/security"
 chmod +x "$ROOT/bin/npx" "$ROOT/bin/security"
 export PATH="$ROOT/bin:$PATH"
-unset VSCE_PAT MARKETPLACE_VERSION
+unset VSCE_PAT MARKETPLACE_VERSION GH_RELEASED
 export VITHANCO_MAINTAINER=1
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.invalid
 
@@ -87,6 +91,7 @@ nothing_released() { # why
     done
     grep -q '^release create' "$GH_LOG" && fail "$1: created a release"
 }
+vgraph_tagged() { git -C "$WORK/vgraph.git" rev-parse -q --verify 'refs/tags/1.2.3^{commit}'; }
 publish() { just --justfile "$REPO_ROOT/justfile" --working-directory "$WORK" publish-plugins "$@" >"$WORK/out" 2>&1; }
 pushed_to_marketplace() { grep -q '^vsce publish' "$NPX_LOG"; }
 
@@ -96,7 +101,7 @@ publish || fail "publishing with nothing to commit failed: $(cat "$WORK/out")"
 for p in obsidian-vithanco vscode-vithanco; do
     git -C "$WORK/$p.git" rev-parse -q --verify refs/tags/1.2.3 >/dev/null || fail "$p was not tagged"
 done
-[ "$(grep -c '^release create' "$GH_LOG")" = 2 ] || fail "wanted two releases: $(cat "$GH_LOG")"
+[ "$(grep -c '^release create' "$GH_LOG")" = 3 ] || fail "wanted the plugins' and VGraph's releases: $(cat "$GH_LOG")"
 
 # Given a local rebuild that changed the committed engine, when publishing, then it is committed under the tag.
 given_plugins_at 1.2.3
@@ -140,6 +145,33 @@ commit_and_push plugins.json '{"bumped":true}'
 publish || fail "publishing after a version-bump commit failed: $(cat "$WORK/out")"
 [ "$(grep '^release create' "$GH_LOG" | grep -c "$ENGINE")" = 2 ] \
     || fail "the releases do not name the build commit $ENGINE: $(cat "$GH_LOG")"
+
+# Given the version bump committed after the build, when publishing, then VGraph
+# is tagged on origin at the commit that built the engine, and released from that
+# tag: a Swift package can then depend on the version the plugins ship.
+given_plugins_at 1.2.3
+BUILD_COMMIT=$(git -C "$WORK" rev-parse HEAD)
+commit_and_push plugins.json '{"bumped":true}'
+publish || fail "publishing after a version-bump commit failed: $(cat "$WORK/out")"
+[ "$(vgraph_tagged)" = "$BUILD_COMMIT" ] || fail "VGraph is not tagged 1.2.3 at the build commit on origin"
+grep -q '^release create 1.2.3 --repo Vithanco/VGraph --verify-tag' "$GH_LOG" \
+    || fail "VGraph was not released from its tag: $(cat "$GH_LOG")"
+
+# Given VGraph already tagged at this version on origin, when publishing, then
+# nothing is tagged or released.
+given_plugins_at 1.2.3
+git -C "$WORK" push -q origin HEAD:refs/tags/1.2.3
+publish && fail "published a version VGraph is already tagged with"
+grep -q 'VGraph already has tag 1.2.3' "$WORK/out" || fail "does not say VGraph has the tag: $(cat "$WORK/out")"
+nothing_released "VGraph already tagged"
+
+# Given a VGraph GitHub release at this version, when publishing, then nothing is
+# tagged or released.
+given_plugins_at 1.2.3
+GH_RELEASED=Vithanco/VGraph publish && fail "published a version VGraph already has a release for"
+grep -q 'VGraph already has a GitHub release 1.2.3' "$WORK/out" || fail "does not say VGraph has the release: $(cat "$WORK/out")"
+nothing_released "VGraph already released"
+vgraph_tagged >/dev/null && fail "VGraph was tagged although its release exists"
 
 # Given an engine change merged after the build, when publishing, then nothing is
 # released: the plugins carry the older engine, and the notes would name the newer.
@@ -187,7 +219,7 @@ given_plugins_at 1.2.3
 VSCE_PAT=token publish || fail "publishing with a Marketplace credential failed: $(cat "$WORK/out")"
 grep -q '^vsce publish --packagePath vithanco-1.2.3.vsix' "$NPX_LOG" \
     || fail "did not push vithanco-1.2.3.vsix to the Marketplace: $(cat "$NPX_LOG")"
-[ "$(grep -c '^release create' "$GH_LOG")" = 2 ] || fail "wanted two releases before the Marketplace: $(cat "$GH_LOG")"
+[ "$(grep -c '^release create' "$GH_LOG")" = 3 ] || fail "wanted three releases before the Marketplace: $(cat "$GH_LOG")"
 
 # Given no Marketplace credential, when publishing, then the GitHub releases
 # still succeed and it says how to finish the Marketplace by hand.
