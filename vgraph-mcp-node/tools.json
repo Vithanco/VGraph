@@ -34,7 +34,29 @@
     "name": "create_concept_map"
   },
   {
-    "description": "Return the self-describing Markdown document for a built-in VGraph notation. The document includes the notation's purpose, when to use it, node types, edge types, history, and references.",
+    "description": "Decompose a node into a detailed node and return the updated VGL document. Only a node whose type has a detailing can be decomposed; `describe_notation` lists them. The node keeps its id, type, label and attributes and becomes a group holding new details, one per edge, so every edge keeps its id and label and now ends at a detail. Rename and retype the new details afterwards.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "node": {
+          "description": "Id of the node to decompose",
+          "type": "string"
+        },
+        "vgl": {
+          "description": "The VGL document holding the node",
+          "type": "string"
+        }
+      },
+      "required": [
+        "vgl",
+        "node"
+      ],
+      "type": "object"
+    },
+    "name": "decompose"
+  },
+  {
+    "description": "Return the self-describing Markdown document for a built-in VGraph notation. The document includes the notation's purpose, when to use it, node types, edge types, group types, detailings (which node types can be decomposed and what goes inside them), history, and references.",
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
