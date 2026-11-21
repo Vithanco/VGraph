@@ -1,4 +1,4 @@
-// Copy and paste as VGL (#112). Whether ⌘C and ⌘V reach the graph or the text
+// Copy and paste as VGL (Vithanco/VGraph-archive#112). Whether ⌘C and ⌘V reach the graph or the text
 // is a matter of which element holds focus after a gesture, which only a real
 // browser can show; what a copy holds and where a paste lands are unit tested.
 

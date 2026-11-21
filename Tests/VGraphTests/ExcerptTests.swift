@@ -2,7 +2,7 @@
 //  ExcerptTests.swift
 //  VGraph
 //
-//  What a copy contains (#112).
+//  What a copy contains (Vithanco/VGraph-archive#112).
 //
 
 import Testing

@@ -1,5 +1,5 @@
 // Copy and paste as VGL: what the session adds — history, refusal, and where a
-// paste lands (#112).
+// paste lands (Vithanco/VGraph-archive#112).
 
 import Testing
 import VGraph
