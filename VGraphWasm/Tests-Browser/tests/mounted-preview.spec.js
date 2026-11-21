@@ -153,19 +153,18 @@ test('none of it moves for someone who asked for reduced motion', async ({ page 
 // the wrong place.
 const frameWidth = (page) => page.evaluate((q) => document.querySelector(q).viewBox.baseVal.width, s.svg);
 
+// The clock is paused, so `during` is halfway through the ease however slowly
+// frames come: counting real frames sampled after the end on a loaded machine.
 async function frameWidthsAroundRender(page) {
+  await page.clock.install();
   await openEditor(page, groupedGraph);
   const before = await frameWidth(page);
   await page.locator(s.textarea).fill(forked);
-  const during = await page.evaluate(async (q) => {
-    window.__vgraphRenderNow();
-    const frame = () => new Promise((done) => requestAnimationFrame(done));
-    await frame();
-    await frame();
-    await frame();
-    return document.querySelector(q).viewBox.baseVal.width;
-  }, s.svg);
-  await page.waitForTimeout(600);
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000);
+  await renderNow(page);
+  await page.clock.runFor(125);
+  const during = await frameWidth(page);
+  await page.clock.runFor(1000);
   return { before, during, after: await frameWidth(page) };
 }
 
