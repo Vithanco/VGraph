@@ -74,4 +74,8 @@ extension VCommandID {
     /// command whose subject is not an element: its target is an edge *and a
     /// side*, which `VCommandTarget` cannot express (ADR-0021).
     public static let reattach = VCommandID("reattach")
+
+    /// Copy changes nothing: a menu row like `openURL`.
+    public static let copy = VCommandID("copy")
+    public static let paste = VCommandID("paste")
 }

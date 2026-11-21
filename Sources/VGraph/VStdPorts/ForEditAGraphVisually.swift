@@ -186,6 +186,12 @@ public protocol VForEditAGraphVisually {
     /// `delete` repeatedly, which would be one undo step per element.
     func delete(all ids: [String]) throws(VError)
 
+    /// The one member that hands the pane the graph, as text for the clipboard.
+    func vglFragment(of ids: [String]) throws(VError) -> String
+    /// One [[Snapshot]]; `nil` is the top level. Returns what to select.
+    @discardableResult
+    func paste(fragment: String, into groupId: String?) throws(VError) -> [String]
+
     func setLabel(of elementId: String, to label: String) throws(VError)
 
     func setURL(of elementId: String, to url: String) throws(VError)

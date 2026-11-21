@@ -186,8 +186,7 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
             }
 
         case .edge(let fromId, let toId, let type, let label, let attributes, let comments):
-            edgeIds += 1
-            let eId = String(edgeIds)
+            let eId = nextEdgeId(in: result)
             let edge = Edge(string: eId, from: fromId, to: toId)
 
             var edgeType: EdgeType? = nil
@@ -284,6 +283,13 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
         // If the notation name is unknown, buildMetagraph already logged.
         }
         return result
+    }
+
+    /// Skips what the graph already holds: a pasted fragment's edges join a
+    /// document this parse did not build.
+    private func nextEdgeId(in graph: VGraph) -> String {
+        repeat { edgeIds += 1 } while graph.resolveCommandTarget(id: String(edgeIds)) != nil
+        return String(edgeIds)
     }
 
     /// Out of `convert`, as `declaring` is, to keep its recursive frame small.
@@ -441,10 +447,8 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
         }
 
         for et in result.edgeTypes where !et.isUnknown {
-            edgeIds += 1
-            let eId = String(edgeIds)
             let edge = Edge(
-                id: Edge.Id(string: eId),
+                id: Edge.Id(string: nextEdgeId(in: result)),
                 from: Node(string: "_meta_\(et.from.id)"),
                 to: Node(string: "_meta_\(et.to.id)"))
             result = try result.add(edge: edge, edgeType: et)
@@ -456,9 +460,8 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
             for detailType in result.detailTypes(of: nt) {
                 let detailedBy = EdgeType(
                     string: "detailedBy__\(nt.id)__\(detailType.id)", from: nt.id, to: detailType.id)
-                edgeIds += 1
                 let edge = Edge(
-                    id: Edge.Id(string: String(edgeIds)),
+                    id: Edge.Id(string: nextEdgeId(in: result)),
                     from: Node(string: "_meta_\(nt.id)"),
                     to: Node(string: "_meta_\(detailType.id)"))
                 result = try result.add(edgeType: detailedBy).add(edge: edge, edgeType: detailedBy)

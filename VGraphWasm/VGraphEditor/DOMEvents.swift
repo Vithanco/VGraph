@@ -151,6 +151,27 @@ enum KeyDownConfig: _DOMEventHandlerConfig {
     typealias Event = RawKeyEvent
 }
 
+/// `copy` and `paste`, whose `clipboardData` is the only clipboard this build
+/// can read: `navigator.clipboard.readText` hands back a promise nothing here
+/// can await.
+struct RawClipboardEvent: _TypedDOMEvent {
+    let rawEvent: JSObject
+    init?(__jsObject rawEvent: JSObject) { self.rawEvent = rawEvent }
+    var text: String { rawEvent.clipboardData.object?.getData?("text/plain").string ?? "" }
+    func setText(_ text: String) { _ = rawEvent.clipboardData.object?.setData?("text/plain", text) }
+    func preventDefault() { _ = rawEvent.preventDefault?() }
+}
+
+enum CopyConfig: _DOMEventHandlerConfig {
+    static let name = "copy"
+    typealias Event = RawClipboardEvent
+}
+
+enum PasteConfig: _DOMEventHandlerConfig {
+    static let name = "paste"
+    typealias Event = RawClipboardEvent
+}
+
 /// ⌥ released under a stationary pointer — the one case no `mousemove` will
 /// report. Best-effort: a lost keyup self-heals on the next movement.
 enum KeyUpConfig: _DOMEventHandlerConfig {
@@ -186,6 +207,14 @@ extension View {
 
     consuming func onKeyUpRaw(_ handler: @escaping (RawKeyEvent) -> Void) -> some View<Tag> {
         _onEvent(KeyUpConfig.self, handler: handler)
+    }
+
+    consuming func onCopyRaw(_ handler: @escaping (RawClipboardEvent) -> Void) -> some View<Tag> {
+        _onEvent(CopyConfig.self, handler: handler)
+    }
+
+    consuming func onPasteRaw(_ handler: @escaping (RawClipboardEvent) -> Void) -> some View<Tag> {
+        _onEvent(PasteConfig.self, handler: handler)
     }
 
     consuming func onBlur(_ handler: @escaping () -> Void) -> some View<Tag> {

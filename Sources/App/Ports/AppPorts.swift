@@ -13,6 +13,7 @@ public protocol AppPorts {
     associatedtype Renderer: ForRenderAGraph
     associatedtype LayoutEngine: ForLayoutAGraph
     associatedtype DocumentExporter: ForExportAGraph
+    associatedtype Fragments: ForExchangeAFragment
 
     var logger: Logger { get }
     var parser: Parser { get }
@@ -23,4 +24,6 @@ public protocol AppPorts {
     /// The format the document round-trips through, as distinct from the
     /// per-call target formats passed to `exportGraph(_:using:)`.
     var documentExporter: DocumentExporter { get }
+
+    var fragments: Fragments { get }
 }

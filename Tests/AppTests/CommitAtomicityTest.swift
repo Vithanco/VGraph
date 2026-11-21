@@ -26,6 +26,7 @@ private struct RefusesFoldedGroupsPorts: AppPorts {
     let renderer = NullRenderer()
     let layoutEngine = NullLayoutEngine()
     let documentExporter = RefusesFoldedGroupsExporter()
+    let fragments = VGLFragments(logger: NoOpLogger())
 }
 
 struct CommitAtomicityTest {

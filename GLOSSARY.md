@@ -587,6 +587,21 @@ set the user assembled by pointing, however honest an answer it would be. An
 edge cannot be in one either: its group is derived from its endpoints, so a set
 command has nothing to do with it.
 
+### Excerpt
+What a copy takes from the [[OriginGraph]]: the [[Effective selection]], every
+selected group with all it holds, and the edges whose ends are both inside. Read
+from the model, so what a view hides or a fold tucks away comes too; the
+document's own label, comments, root values and views stay behind. See
+[[0039-copy-and-paste-as-vgl-fragments]].
+
+### Fragment
+An [[Excerpt]] as VGL text: the statements that would stand inside a
+`vgraph { … }` block, with no header and no `vnotation`. It is the clipboard's
+format. Pasting parses it in the document's context: its types must be the
+document's notation's, a colliding id gets a suffix (`a` becomes `a_2`), and an
+edge may end at one of the document's nodes.
+*Avoid*: snippet, subgraph (a subgraph is any part of a graph, not this text).
+
 ### Rubber band
 The rectangle dragged out to select what falls inside it. Bare drag from blank
 canvas or a group's interior *replaces* the [[Selection]]; ⇧-drag from anywhere

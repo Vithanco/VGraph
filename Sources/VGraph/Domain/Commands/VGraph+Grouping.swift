@@ -136,7 +136,7 @@ extension VGraph {
     private func canMove(_ id: String, into destination: Group, notationBreak: VNotationBreak) -> Bool {
         guard id != rootGroup else { return false }
         guard let element = resolveCommandTarget(id: id) else { return false }
-        if notationBreak == .forbidden, !placedTypes(of: element).allSatisfy({ allows($0, in: destination) }) {
+        if notationBreak == .forbidden, misplacedType(of: element, in: destination) != nil {
             return false
         }
         switch element {

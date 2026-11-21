@@ -13,6 +13,7 @@ public struct NativePorts<Logger: ForLogMessages>: AppPorts {
     public let renderer: VSVGRenderer<Logger>
     public let layoutEngine: GraphvizLibLayoutEngine<Logger>
     public let documentExporter: VGLExporter
+    public let fragments: VGLFragments<Logger>
 
     public init(logger: Logger) {
         // One instance for both ports: semantic highlighting reuses its parse.
@@ -23,6 +24,7 @@ public struct NativePorts<Logger: ForLogMessages>: AppPorts {
         self.renderer = VSVGRenderer(logger: logger)
         self.layoutEngine = GraphvizLibLayoutEngine(logger: logger)
         self.documentExporter = VGLExporter()
+        self.fragments = VGLFragments(logger: logger)
     }
 }
 
@@ -35,11 +37,13 @@ public struct ParseOnlyPorts<Logger: ForLogMessages>: AppPorts {
     public let renderer = NullRenderer()
     public let layoutEngine = NullLayoutEngine()
     public let documentExporter = VGLExporter()
+    public let fragments: VGLFragments<Logger>
 
     public init(logger: Logger) {
         let parser = VGraphParser(logger: logger)
         self.logger = logger
         self.parser = parser
         self.highlighter = parser
+        self.fragments = VGLFragments(logger: logger)
     }
 }

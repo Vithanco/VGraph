@@ -26,6 +26,7 @@ struct SpyPorts: AppPorts {
     let renderer = NullRenderer()
     let layoutEngine = NullLayoutEngine()
     let documentExporter = VGLExporter()
+    let fragments = VGLFragments(logger: NoOpLogger())
 }
 
 /// Answers a fixed string, so a session that exports through anything but the
@@ -53,6 +54,7 @@ struct SentinelRendererPorts: AppPorts {
     let renderer = SentinelRenderer()
     let layoutEngine = NullLayoutEngine()
     let documentExporter = VGLExporter()
+    let fragments = VGLFragments(logger: NoOpLogger())
 }
 
 struct SentinelExporterPorts: AppPorts {
@@ -62,6 +64,7 @@ struct SentinelExporterPorts: AppPorts {
     let renderer = NullRenderer()
     let layoutEngine = NullLayoutEngine()
     let documentExporter = SentinelExporter()
+    let fragments = VGLFragments(logger: NoOpLogger())
 }
 
 /// Succeeds without doing anything, so a render can reach the renderer.
@@ -77,6 +80,7 @@ struct NoRendererPorts: AppPorts {
     let renderer = NullRenderer()
     let layoutEngine = IdentityLayoutEngine()
     let documentExporter = VGLExporter()
+    let fragments = VGLFragments(logger: NoOpLogger())
 }
 
 struct SessionPortsTest {

@@ -10,6 +10,8 @@ Accepted. Adds one query and two commands to the diagram pane's port from
 [0012](./0012-drag-to-connect.md) left free, and relies throughout on
 [0016](./0016-canvas-is-the-root-group.md)'s root group and
 [0017](./0017-an-edges-group-is-derived.md)'s derived edge membership.
+Amended by [0039](./0039-copy-and-paste-as-vgl-fragments.md): a selection's menu
+also offers Copy.
 
 ## Context
 

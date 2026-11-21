@@ -4,14 +4,14 @@ extension VGraph {
     /// An unused id of the form `a_b`, or `a_b_2` when that is taken. Edge ids
     /// never reach the VGL, but they share the node/edge/group keyspace.
     public func newEdgeId(from: Node, to: Node) -> Edge.Id {
-        let base = "\(from.id)_\(to.id)"
-        if resolveCommandTarget(id: base) == nil { return Edge.Id(string: base) }
+        Edge.Id(string: Self.freeId(near: "\(from.id)_\(to.id)") { resolveCommandTarget(id: $0) != nil })
+    }
+
+    public static func freeId(near base: String, isTaken: (String) -> Bool) -> String {
+        guard isTaken(base) else { return base }
         var index = 2
-        while true {
-            let candidate = "\(base)_\(index)"
-            if resolveCommandTarget(id: candidate) == nil { return Edge.Id(string: candidate) }
-            index += 1
-        }
+        while isTaken("\(base)_\(index)") { index += 1 }
+        return "\(base)_\(index)"
     }
 
     /// An unused id of the form `concept_1`. Synthetic rather than slugged from

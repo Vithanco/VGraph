@@ -156,6 +156,7 @@ test('grouping across a boundary says how much it would move', async ({ page }) 
   await expect(page.locator(s.menuItem)).toHaveText([
     'Group (moves 1 out of their boundaries)',
     'Delete',
+    'Copy',
   ]);
 });
 

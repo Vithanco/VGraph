@@ -104,7 +104,7 @@ struct SelectionTest {
     // MARK: - The menu
 
     /// A one-element selection reproduces today's menu exactly, plus the group
-    /// row — an assertion rather than a hope, because that equality is what
+    /// and copy rows — an assertion rather than a hope, because that equality is what
     /// keeps the two entry points from drifting.
     @Test func oneElementGivesTodaysMenuPlusGrouping() throws {
         let s = try session()
@@ -117,7 +117,7 @@ struct SelectionTest {
         #expect(ids.contains(.addGroup))
 
         var withoutGrouping: [MenuItem] = []
-        for item in fromSelection where item.id != .addGroup { withoutGrouping.append(item) }
+        for item in fromSelection where item.id != .addGroup && item.id != .copy { withoutGrouping.append(item) }
         #expect(withoutGrouping == single)
     }
 
@@ -130,7 +130,7 @@ struct SelectionTest {
 
         var ids: [VCommandID] = []
         for item in items { ids.append(item.id) }
-        #expect(ids == [.addGroup, .delete])
+        #expect(ids == [.addGroup, .delete, .copy])
         #expect(items[0].title == "Group")
         #expect(items[0].enabled)
     }

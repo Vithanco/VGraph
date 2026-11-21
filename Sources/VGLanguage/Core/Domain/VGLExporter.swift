@@ -77,31 +77,39 @@ public struct VGLExporter: ForExportAGraph {
             output += "\n"
         }
 
-        // VGL exports nodes before groups (nodesFirst order)
-        let traverser = GraphStructureTraverser.forStringOutput(
-            onEnterGroup: { [self] (group: Group, graph: VGraph, depth: Int) throws(VError) -> String in
-                try formatGroupEnter(group, in: graph, indent: depth + 1)
-            },
-            onExitGroup: { (_: Group, _: VGraph, depth: Int) throws(VError) -> String in
-                let indentation = String(repeating: "\t", count: depth + 1)
-                return "\(indentation)}\n"
-            },
-            onNode: { [self] (node: Node, graph: VGraph, depth: Int) throws(VError) -> String in
-                try formatNode(node, in: graph, indent: depth + 1)
-            },
-            onEdge: { [self] (edge: Edge, graph: VGraph) throws(VError) -> String in
-                try formatEdge(edge, in: graph, indent: 1)
-            },
-            order: .nodesFirst
-        )
-
-        output += try traverser.traverse(graph)
+        output += try body(of: graph, indent: 1)
         output += "}\n"
         for view in graph.views {
             output += "\n"
             output += try formatView(view, in: graph)
         }
         return output
+    }
+
+    /// A leading blank line is only a group's separator from what stands above it.
+    func export(fragment graph: VGraph) throws(VError) -> String {
+        try graph.requirePristineForDocumentExport()
+        return String(try body(of: graph, indent: 0).drop(while: { $0 == "\n" }))
+    }
+
+    private func body(of graph: VGraph, indent: Int) throws(VError) -> String {
+        let traverser = GraphStructureTraverser.forStringOutput(
+            onEnterGroup: { [self] (group: Group, graph: VGraph, depth: Int) throws(VError) -> String in
+                try formatGroupEnter(group, in: graph, indent: depth + indent)
+            },
+            onExitGroup: { (_: Group, _: VGraph, depth: Int) throws(VError) -> String in
+                let indentation = String(repeating: "\t", count: depth + indent)
+                return "\(indentation)}\n"
+            },
+            onNode: { [self] (node: Node, graph: VGraph, depth: Int) throws(VError) -> String in
+                try formatNode(node, in: graph, indent: depth + indent)
+            },
+            onEdge: { [self] (edge: Edge, graph: VGraph) throws(VError) -> String in
+                try formatEdge(edge, in: graph, indent: indent)
+            },
+            order: .nodesFirst
+        )
+        return try traverser.traverse(graph)
     }
 
     /// Walks the view's own keys, not the graph's elements, so a statement

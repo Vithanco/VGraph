@@ -24,16 +24,14 @@ public func menu(
     let members = selection.effective(in: session)
     guard !members.isEmpty else { return [] }
 
-    var result: [MenuItem] = []
-    if members.count == 1 {
-        result = menu(for: members[0], in: session, notationBreak: notationBreak)
-        result.append(groupingItem(for: members, in: session))
-        return result
-    }
-    result.append(groupingItem(for: members, in: session))
-    result.append(deleteItem(for: members, in: session))
-    return result
+    let rows =
+        members.count == 1
+        ? menu(for: members[0], in: session, notationBreak: notationBreak) + [groupingItem(for: members, in: session)]
+        : [groupingItem(for: members, in: session), deleteItem(for: members, in: session)]
+    return rows + [copyItem]
 }
+
+let copyItem = MenuItem(id: .copy, title: "Copy", availability: .available, enabled: true)
 
 /// The title *is* the warning: one command is one [[Snapshot]], so ⌘Z undoes the
 /// whole restructuring and a confirmation dialog would be a new interaction

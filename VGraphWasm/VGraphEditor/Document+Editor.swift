@@ -68,12 +68,15 @@ func shareLink() -> String? {
 
 func copyShareLink() {
     guard let link = shareLink() else { return }
+    writeToClipboard(link, status: "Link copied — the diagram travels inside it")
+}
 
-    // `writeText` hands back a promise this build cannot await, so a refusal —
-    // no permission, no secure context — is invisible to us. Saying "copied"
-    // when it was not is the one failure here, and it costs the user a retry.
-    _ = JSObject.global.navigator.clipboard.object?.writeText?(link.jsValue)
-    editorModel.status = "Link copied — the diagram travels inside it"
+/// `writeText` hands back a promise this build cannot await, so a refusal —
+/// no permission, no secure context — is invisible to us. Saying "copied"
+/// when it was not is the one failure here, and it costs the user a retry.
+func writeToClipboard(_ text: String, status: String) {
+    _ = JSObject.global.navigator.clipboard.object?.writeText?(text.jsValue)
+    editorModel.status = status
 }
 
 /// VGL the URL carried after `#`. `URLSearchParams` parses the fragment's body

@@ -264,9 +264,10 @@ func updateHoverTitle(x: Double, y: Double) {
     textarea.title = title.jsValue
 }
 
-/// Focus the textarea after a command so the root keydown handler receives the
-/// next Cmd-Z: a right-click otherwise leaves focus on `body`, whose keydown
-/// does not bubble into the editor subtree.
+/// Focus the diagram after a gesture or a command, so the root keydown handler
+/// receives the next ⌘Z — a right-click otherwise leaves focus on `body`, whose
+/// keydown does not bubble into the editor subtree — and ⌘C/⌘V mean the graph,
+/// not the text.
 func focusEditor() {
-    _ = element(DOMId.source)?.focus?()
+    _ = element(DOMId.preview)?.focus?()
 }

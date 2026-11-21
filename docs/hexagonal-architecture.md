@@ -38,6 +38,7 @@ without being able to see `App`.
 | `ForParseAGraph` | `VGraphParser` (VGLanguage) |
 | `ForHighlightVGL` | `VGraphParser`, `NullHighlighter` |
 | `ForExportAGraph` | `VGLExporter` (VGLanguage), `DotExporter` (VGraphvizLib) |
+| `ForExchangeAFragment` | `VGLFragments` (VGLanguage) — see [ADR-0039](adr/0039-copy-and-paste-as-vgl-fragments.md) |
 | `ForLayoutAGraph` | `GraphvizLibLayoutEngine` (VGraphvizLib), `NullLayoutEngine` |
 | `ForRenderAGraph` | `VSVGRenderer` (VGraphSVG), `NullRenderer` — see [ADR-0015](adr/0015-svg-ir-and-elementary-upstreaming.md) |
 | `ForLogMessages` | `PrintLogger` (CLI), `StderrLogger` (MCP), `ConsoleLogger` (WASM), `NoOpLogger`. The CLI and MCP loggers filter by `VGRAPH_LOG_LEVEL` (default `warn`), so a self-hoster does not log diagram content by accident |

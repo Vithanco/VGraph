@@ -81,6 +81,8 @@ public enum VError: Error & Equatable & Sendable {
     case detailingCycle([NodeType])
     /// `group x: Name` would not say whether x is a detailed node or a plain group.
     case typeNameIsNodeAndGroupType(String)
+    /// Refused rather than made unknown: declaring is the author's act.
+    case fragmentNamesUnknownTypes([String])
 }
 
 extension VError: CustomStringConvertible {
@@ -109,6 +111,8 @@ extension VError: CustomStringConvertible {
             return "Detailings form a cycle: \(types.map { $0.id }.joined(separator: " → "))"
         case .typeNameIsNodeAndGroupType(let name):
             return "'\(name)' is both a node type and a group type"
+        case .fragmentNamesUnknownTypes(let names):
+            return "The pasted text uses types this notation lacks: \(names.joined(separator: ", "))"
         case .commandUnavailable(let id, let target):
             return "Command '\(id.raw)' is not available on '\(target)'"
         case .commandAnswersMismatched(let id, let target):

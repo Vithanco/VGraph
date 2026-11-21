@@ -130,6 +130,7 @@ let editorStyleCSS = """
 
        `-webkit-touch-callout` and `user-select` keep iOS's own press-and-hold
        callout off the SVG, where it would race our long press. */
+    #vg-editor-preview:focus { outline:none; }
     #vg-editor-preview { flex:1 1 auto; min-height:0; border:1px solid #ddd; padding:8px;
       overflow:auto; touch-action:pan-x pan-y;
       -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }

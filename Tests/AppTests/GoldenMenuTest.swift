@@ -234,4 +234,39 @@ struct GoldenMenuTest {
                 delete | Delete | enabled
                 """)
     }
+
+    // MARK: - The selection menu (ADR-0018)
+
+    private func selectionMenu(_ session: TestSession, _ ids: [String]) -> String {
+        EditorCore.menu(forSelection: Selection(ids), in: session)
+            .map { "\($0.id.raw) | \($0.title) | \($0.enabled ? "enabled" : "greyed")" }
+            .joined(separator: "\n")
+    }
+
+    @Test("Given one node selected, then the menu offers Copy")
+    func oneSelectedNodeOffersCopy() throws {
+        #expect(
+            selectionMenu(try conceptMap(), ["r"]) == """
+                addSuccessor | Add successor | enabled
+                addPredecessor | Add predecessor | enabled
+                changeType | Change type (breaks notation) | greyed
+                setLabel | Rename | enabled
+                openURL | Open URL | greyed
+                setURL | Add URL… | enabled
+                removeURL | Remove URL | greyed
+                delete | Delete | enabled
+                addGroup | Group | enabled
+                copy | Copy | enabled
+                """)
+    }
+
+    @Test("Given several elements selected, then the menu offers Copy")
+    func severalSelectedElementsOfferCopy() throws {
+        #expect(
+            selectionMenu(try conceptMap(), ["g1", "r"]) == """
+                addGroup | Group | enabled
+                delete | Delete | enabled
+                copy | Copy | enabled
+                """)
+    }
 }

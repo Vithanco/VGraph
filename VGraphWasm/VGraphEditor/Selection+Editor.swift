@@ -112,6 +112,10 @@ func groupFromToolbar() {
 /// looping over a single-element command, would leave the user pressing ⌘Z once
 /// per node.
 func performSelectionCommand(_ commandId: VCommandID) {
+    if commandId == .copy {
+        copySelectionFromMenu()
+        return
+    }
     guard let session = sessionSyncedToText() else { return }
     let members = selection.effective(in: session)
 

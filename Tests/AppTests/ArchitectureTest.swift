@@ -236,6 +236,9 @@ struct ArchitectureTest {
                 // A group made of several elements at once. Both the strict and
                 // the detaching form (ADR-0018).
                 "addGroup",
+                // Copy and paste as VGL: the one member that hands the pane the
+                // graph, and only as text for the clipboard (#112).
+                "vglFragment", "paste",
                 // Queries that replace `origin` for menu building (phase 5).
                 "kind", "nodeType", "isDetailed", "detailCount", "isFolded", "storedURL", "canRename", "nodeTypes",
                 "rootGroupId",

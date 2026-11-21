@@ -38,6 +38,29 @@ extension VGraph {
         return detailTypes(of: holderType).contains(type)
     }
 
+    /// Unlike a move, what is inside counts too: a paste brings it all, and
+    /// none of it was placed under the check before.
+    public func misplacement(among ids: [String], in group: Group?) -> (type: NodeType, holder: Group?)? {
+        for id in ids {
+            guard let element = resolveCommandTarget(id: id) else { continue }
+            if let found = misplacement(of: element, in: group) { return found }
+        }
+        return nil
+    }
+
+    private func misplacement(of element: VCommandTarget, in group: Group?) -> (type: NodeType, holder: Group?)? {
+        if let type = misplacedType(of: element, in: group) { return (type, group) }
+        guard case .group(let inner) = element, let (groups, nodes) = try? groupStructure.getDirectContent(group: inner)
+        else { return nil }
+        for child in groups { if let found = misplacement(of: .group(child), in: inner) { return found } }
+        for node in nodes { if let found = misplacement(of: .node(node), in: inner) { return found } }
+        return nil
+    }
+
+    func misplacedType(of element: VCommandTarget, in group: Group?) -> NodeType? {
+        placedTypes(of: element).first { !allows($0, in: group) }
+    }
+
     /// A plain group is transparent, so it is judged by what it holds. Unknown
     /// types are skipped, as the check skips them.
     func placedTypes(of element: VCommandTarget) -> [NodeType] {

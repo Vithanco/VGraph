@@ -7,6 +7,8 @@ class Parser {
     private let tokens: [Token]
     private var current = 0
     private var nodeIds: Set<String> = []
+    /// What a fragment's edges may also end at: the document it is pasted into.
+    private let knownIds: Set<String>
 
     private let comments: [LexedComment]
     private var commentCursor = 0
@@ -30,9 +32,10 @@ class Parser {
 
     static func edgeSpanKey(from: String, to: String) -> String { "\(from)\u{1}\(to)" }
 
-    init(tokens: [Token], comments: [LexedComment] = []) {
+    init(tokens: [Token], comments: [LexedComment] = [], knownIds: Set<String> = []) {
         self.tokens = tokens
         self.comments = comments
+        self.knownIds = knownIds
     }
 
     // MARK: - Comment attachment
@@ -104,6 +107,29 @@ class Parser {
             return doc
         }
         return .file(vnotations: vnotations, document: doc, views: views)
+    }
+
+    /// A syntax error names its line: pasted text is not on screen.
+    func fragment() throws(VParserError) -> [ASTNode] {
+        do {
+            return try fragmentStatements()
+        } catch {
+            guard case .unexpectedToken(let message) = error else { throw error }
+            throw VParserError.unexpectedToken("\(message) (line \(peek().line))")
+        }
+    }
+
+    /// A document's own values are not a paste's to set.
+    private func fragmentStatements() throws(VParserError) -> [ASTNode] {
+        var statements: [ASTNode] = []
+        while !isAtEnd() {
+            let statement = try statement()
+            if case .attribute = statement {
+                throw VParserError.unexpectedToken("A pasted fragment holds elements, not attributes")
+            }
+            statements.append(statement)
+        }
+        return statements
     }
 
     private static let presentationOnly = "a view sets presentation only"
@@ -637,17 +663,13 @@ class Parser {
         let sourceId = try identifier(.nodeId)
         let startOffset = previous().start
 
-        if !nodeIds.contains(sourceId) {
-            throw VParserError.undefinedNode(sourceId)
-        }
+        try requireDeclared(sourceId)
 
         try consume(.arrow, "Expected '->' in edge declaration")
         let targetId = try identifier(.nodeId)
         var endOffset = previous().end
 
-        if !nodeIds.contains(targetId) {
-            throw VParserError.undefinedNode(targetId)
-        }
+        try requireDeclared(targetId)
 
         var type: String? = nil
         if check(.colon) {
@@ -666,6 +688,10 @@ class Parser {
         return .edge(
             fromId: sourceId, toId: targetId, type: type, label: label, attributes: attributes,
             comments: Comments(leading: leading, trailing: nil))
+    }
+
+    private func requireDeclared(_ id: String) throws(VParserError) {
+        guard nodeIds.contains(id) || knownIds.contains(id) else { throw VParserError.undefinedNode(id) }
     }
 
     private func parseOptionalAttributes() throws(VParserError) -> [ASTNode] {

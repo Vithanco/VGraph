@@ -506,6 +506,14 @@ public final class GraphSession<
         return target
     }
 
+    private func destination(_ groupId: String?, _ command: VCommandID) throws(VError) -> Group? {
+        guard let groupId else { return nil }
+        guard case .group(let group) = try target(groupId, command) else {
+            throw VError.commandUnavailable(command, target: groupId)
+        }
+        return group
+    }
+
     /// The [[Root group]] has always resolved as an ordinary group, so every
     /// group command already ran against it and did something undefined —
     /// `delete` destructively. Nothing could reach it until the menu could
@@ -781,6 +789,29 @@ public final class GraphSession<
         try commit(changed)
     }
 
+    public func vglFragment(of ids: [String]) throws(VError) -> String {
+        let excerpt = try origin.excerpt(of: ids)
+        guard !excerpt.nodes.isEmpty || !excerpt.groups.isEmpty else {
+            throw VError.commandUnavailable(.copy, target: "")
+        }
+        return try app.ports.fragments.export(fragment: excerpt)
+    }
+
+    /// No ⌥ path: a paste never breaks the notation.
+    @discardableResult
+    public func paste(fragment: String, into groupId: String?) throws(VError) -> [String] {
+        guard !fragment.trimmingWhitespace().isEmpty else {
+            throw VError.commandUnavailable(.paste, target: "")
+        }
+        let group = try destination(groupId, .paste)
+        let (changed, pasted) = try app.ports.fragments.parse(fragment: fragment, into: origin, under: group)
+        if let (type, holder) = changed.misplacement(among: pasted, in: group) {
+            throw VError.commandOptionNotOffered(.paste, target: holder?.id.id ?? rootGroupId(), option: type.id)
+        }
+        try commit(changed)
+        return pasted
+    }
+
     /// Take a group apart, leaving its contents where the group was.
     public func ungroup(_ groupId: String) throws(VError) {
         try refuseRoot(groupId, .ungroup)
@@ -851,13 +882,7 @@ public final class GraphSession<
     public func addNode(
         in groupId: String? = nil, ofType type: NodeType, notationBreak: VNotationBreak = .forbidden
     ) throws(VError) -> String? {
-        var group: Group? = nil
-        if let groupId {
-            guard case .group(let named) = try target(groupId, .addNode) else {
-                throw VError.commandUnavailable(.addNode, target: groupId)
-            }
-            group = named
-        }
+        let group = try destination(groupId, .addNode)
         guard notationBreak == .permitted || origin.allows(type, in: group) else {
             throw VError.commandOptionNotOffered(.addNode, target: groupId ?? rootGroupId(), option: type.id)
         }

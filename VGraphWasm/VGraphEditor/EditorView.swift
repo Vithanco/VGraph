@@ -43,6 +43,8 @@ struct EditorView {
         // On the root so keydowns bubbling up from the focused textarea are caught.
         .onKeyDownRaw { handleKeyDown($0) }
         .onKeyUpRaw { handleKeyUp($0) }
+        .onCopyRaw { handleCopy($0) }
+        .onPasteRaw { handlePaste($0) }
         .onPointerMoveRaw { event in handlePointerMove(event) }
         .onPointerUpRaw { event in handleRelease(event) }
         .onPointerCancelRaw { _ in abandonGesture() }
@@ -489,7 +491,9 @@ struct Preview {
             }
         }
         .onChange(of: editorModel.drawnCount, initial: true) { previewPatched() }
-        .attributes(.id(DOMId.preview))
+        // Focusable, so ⌘C and ⌘V after a gesture belong to the diagram and
+        // never reach the source text.
+        .attributes(.id(DOMId.preview), .custom(name: "tabindex", value: "-1"))
         .onContextMenu { event in handleContextMenu(event) }
         .onDoubleClick { event in handleDoubleClick(event) }
         .onPointerDownRaw { event in handlePress(event) }

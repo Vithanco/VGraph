@@ -8,6 +8,8 @@ Accepted. Extends [ADR-0002](0002-origingraph-graphsession-vcommands.md).
 Renamed since — `edit(vgl:)` is now `textEdited(vgl:)` and `sealTextRun()` is
 `textEditingEnded()` — but history itself is unchanged: one stack, one cursor,
 VGL snapshots.
+Amended by [0039](./0039-copy-and-paste-as-vgl-fragments.md): commands and gestures
+focus the preview pane, not the textarea.
 
 ## Context
 
