@@ -4,7 +4,7 @@
 set -euo pipefail
 
 # swift.org's checksum for this release; it must change along with .swift-version.
-CHECKSUM=83baca83553f8c443cda7b84800912e6e709c3acd2e7ebf277794ca5836c0da5
+CHECKSUM=5f24408dc9737ce4cb23b7e3ed4306cabfa02cc02f22ab260b14579b955d4b12
 
 V=$(tr -d '[:space:]' < "$(dirname "$0")/../.swift-version")
 swift sdk install \
