@@ -710,7 +710,7 @@ stage-website:
 
 # Stage, generate and deploy the website, then commit the staged engine.
 [group('publish')]
-publish-website: _require-maintainer _require-vgraph-main stage-website
+publish-website: _require-maintainer _require-vgraph-main (cli "--release") stage-website
     #!/usr/bin/env bash
     set -euo pipefail
     if ! command -v publish >/dev/null 2>&1; then

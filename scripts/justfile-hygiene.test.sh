@@ -66,7 +66,7 @@ echo "$out" | grep -q "LINTED obsidian" || fail "_if-cloned skips a cloned plugi
 out=$(just --justfile justfile --working-directory "$WITH" _if-cloned vscode-vithanco vscode-preview 2>&1)
 echo "$out" | grep -q "PREVIEWED vscode" || fail "_if-cloned skips a cloned plugin: $out"
 
-just --dump --dump-format json | python3 -c '
+out=$(just --dump --dump-format json | python3 -c '
 import json, sys
 r = json.load(sys.stdin)["recipes"]
 build = [d["recipe"] for d in r["build"]["dependencies"]]
@@ -78,12 +78,22 @@ if "just obsidian-lint" in test: print("test lints the obsidian plugin unconditi
 if "just vscode-preview" in test: print("test runs the vscode preview unconditionally")
 if "_if-cloned obsidian-vithanco obsidian-lint" not in test: print("test does not lint the plugins that are present")
 if "_if-cloned vscode-vithanco vscode-preview" not in test: print("test does not run the vscode preview when it is present")
-' | while read -r line; do fail "$line"; done
+')
+[ -z "$out" ] || fail "$out"
 
 # `just doctor` is what a contributor runs first; gcloud only serves the maintainer's deploy.
 grep -qE '^    have +gcloud' justfile && fail "doctor requires gcloud"
 
 # A signing identity names a person's developer account; it comes from the environment.
 grep -qE 'Developer ID Application: [^"]+\([A-Z0-9]{10}\)' justfile && fail "justfile defaults to a signing identity"
+
+# The website renders `vgl-render` blocks with $VGRAPH_REPO/.build/release/vgraph-cli.
+out=$(just --dump --dump-format json | python3 -c '
+import json, sys
+deps = json.load(sys.stdin)["recipes"]["publish-website"]["dependencies"]
+if not any(d["recipe"] == "cli" and d["arguments"] == ["--release"] for d in deps):
+    print("publish-website does not build the release vgraph-cli the website runs")
+')
+[ -z "$out" ] || fail "$out"
 
 exit $FAILED
