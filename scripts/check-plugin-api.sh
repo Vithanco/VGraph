@@ -14,13 +14,13 @@ set -uo pipefail
 MAIN=VGraphWasm/Sources/Main.swift
 
 # name : source dir : the identifier that holds the engine's exports in that
-# consumer. The plugins destructure them onto `exports`; the Node MCP host
+# consumer. The plugins destructure them onto `exports`; the npm MCP host
 # names the object `api`. Grepping for the wrong one finds nothing and reports
 # success, which is the failure mode this script exists to prevent.
 CONSUMERS=(
     "obsidian-vithanco:obsidian-vithanco/src:exports"
     "vscode-vithanco:vscode-vithanco/src:exports"
-    "vgraph-mcp-node:vgraph-mcp-node/src:api"
+    "vgraph-mcp:vgraph-mcp/src:api"
 )
 
 if [ ! -f "$MAIN" ]; then

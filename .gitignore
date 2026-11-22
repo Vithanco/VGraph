@@ -43,6 +43,10 @@ SmokeWasm/
 obsidian-vithanco/
 vscode-vithanco/
 
+# The MCP servers (Swift stdio + HTTP, and the npm host) — an engine consumer
+# like the plugins, built against this checkout as `..`. See ADR 0040.
+vgraph-mcp/
+
 # Mapping skills — like the editor plugins above, its own git repo with its
 # own release cycle, just checked out here for convenience.
 mapping-skills/

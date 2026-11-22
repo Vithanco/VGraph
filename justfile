@@ -1,12 +1,13 @@
 # VGraph task runner — the single front door to this repo.
 #
 #   The command ladder (each rung includes the one below):
-#     build    → compile the engine (WASM, cli, mcp), NO tests, NO plugins
+#     build    → compile the engine (WASM, cli), NO tests, NO plugins
 #     test     → build + swift test + wasm smoke + editor browser tests + plugin lint
 #     release  → test + optimized WASM + plugins + release binaries + .vsix  (nothing pushed)
 #
 #   The plugins bundle only the optimized WASM, which `build` does not make, so
-#   `plugins-build` and `release` build them.
+#   `plugins-build` and `release` build them. The MCP servers live in vgraph-mcp/,
+#   another engine consumer with its own justfile; `just mcp <recipe>` runs one.
 #     publish-*→ actually ship one target (outward-facing / irreversible)
 #
 #   `release` is the safety line: reproducible and reversible. Everything below
@@ -31,10 +32,6 @@ converter_dir := env_var_or_default("VITHANCO_CONVERTER_DIR", justfile_directory
 # No defaults: they name a developer account, so the maintainer sets them.
 signing_id     := env_var_or_default("VITHANCO_SIGNING_ID", "")
 notary_profile := env_var_or_default("VITHANCO_NOTARY_PROFILE", "")
-# Cloud Run image / region / service (used by the cloud recipes).
-cloud_image   := env_var_or_default("VGRAPH_CLOUD_IMAGE", "europe-west1-docker.pkg.dev/vgraph-mcp/cloud-run-source-deploy/vgraph-mcp-http")
-cloud_region  := env_var_or_default("VGRAPH_CLOUD_REGION", "europe-west1")
-cloud_service := env_var_or_default("VGRAPH_CLOUD_SERVICE", "vgraph-mcp")
 
 # Default: show the menu.
 default:
@@ -44,9 +41,9 @@ default:
 # Build / test / release (decomposed from the old build.sh monolith)
 # ═══════════════════════════════════════════════════════════════════════════
 
-# Compile the engine (WASM + cli + mcp) in {{config}} config. No tests, no plugins (see plugins-build).
+# Compile the engine (WASM + cli) in {{config}} config. No tests, no plugins (see plugins-build).
 [group('build')]
-build: _wasm-build cli mcp
+build: _wasm-build cli
     @echo "✓ build complete ({{config}}, no tests)"
 
 # Build the plugins that are cloned (they need the optimized WASM: `just config=release plugins-build`). A clone without them skips.
@@ -93,135 +90,6 @@ fonts:
     # from Google Fonts, so it needs network, and it rewrites committed binaries.
     ./scripts/build-fonts.sh
 
-# Build the native MCP server. FLAGS: --release.
-[group('build')]
-mcp *flags:
-    swift build --product vgraph-mcp -c {{ if flags == "" { config } else if flags == "--release" { "release" } else { error("unknown flag: " + flags + " (only --release)") } }}
-
-# Assemble the Node MCP host: vendor the engine + fonts, refresh tools.json.
-[group('build')]
-mcp-node: mcp
-    #!/usr/bin/env bash
-    set -euo pipefail
-    # Always release, regardless of `config`. This vendors what npm publishes,
-    # and the debug module is 78MB against 4.1MB — `just mcp-node` with the
-    # default config would otherwise quietly build a package nobody should ship.
-    ./build-wasm.sh --release --skip-smoke
-    # Vendored rather than committed: the wasm is 4.1MB, and a copy in git is a
-    # copy that can disagree with the engine it was built from. Same reason the
-    # plugins re-copy it from website/Package on every build.
-    rm -rf vgraph-mcp-node/vendor
-    mkdir -p vgraph-mcp-node/vendor
-    cp -R website/Package vgraph-mcp-node/vendor/Package
-    cp -R fonts vgraph-mcp-node/vendor/fonts
-    # Belt and braces: the line above asks for release, this catches the day
-    # someone changes it back.
-    WASM_BYTES=$(wc -c < vgraph-mcp-node/vendor/Package/VGraphWasm.wasm)
-    if [ "$WASM_BYTES" -gt 20000000 ]; then
-        echo "Error: vendored wasm is $WASM_BYTES bytes — that is a debug build." >&2
-        exit 1
-    fi
-    ./scripts/dump-mcp-tools.sh
-    echo "✓ vgraph-mcp-node vendored ($(du -sh vgraph-mcp-node/vendor | cut -f1))"
-
-# Regenerate every tracked file the build generates (today vgraph-mcp-node/tools.json). CI fails while one is stale.
-[group('build')]
-regen: mcp
-    ./scripts/check-generated.sh --write
-
-# Run the Node MCP host against the current engine build (stdio; Ctrl-C to stop).
-[group('run')]
-mcp-node-run: mcp-node
-    cd vgraph-mcp-node && [ -d node_modules ] || npm install --silent; node src/server.mjs
-
-# Publish the Node MCP host to npm, then list it in the MCP Registry.
-[group('publish')]
-publish-mcp-node otp='': _require-maintainer _require-vgraph-main mcp-node
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cd vgraph-mcp-node
-    PKG=$(node -p "require('./package.json').name")
-    VER=$(node -p "require('./package.json').version")
-
-    # Preflight: everything that can fail, before anything is published. An npm
-    # version cannot be re-published once taken, so discovering a problem
-    # halfway through leaves a burnt version number behind.
-    FAIL=0
-
-    if ! npm whoami >/dev/null 2>&1; then
-        echo "Preflight: not logged in to npm — run 'npm login'." >&2
-        FAIL=1
-    fi
-
-    # Not a failure: npm and the registry are two publishes, and the first run
-    # got npm out and then died on an expired registry token. Aborting here
-    # would have made the recipe unable to finish its own half-done work.
-    NPM_DONE=0
-    if npm view "$PKG@$VER" version >/dev/null 2>&1; then
-        NPM_DONE=1
-    fi
-
-    # The registry verifies a server by matching `mcpName` in the *published*
-    # package against the name in server.json. Getting this wrong is only
-    # discoverable after npm has taken the version.
-    MCP_NAME=$(node -p "require('./package.json').mcpName || ''")
-    SRV_NAME=$(node -p "require('./server.json').name")
-    SRV_VER=$(node -p "require('./server.json').version")
-    SRV_PKG_VER=$(node -p "require('./server.json').packages[0].version")
-    if [ "$MCP_NAME" != "$SRV_NAME" ]; then
-        echo "Preflight: package.json mcpName ($MCP_NAME) != server.json name ($SRV_NAME)." >&2
-        FAIL=1
-    fi
-    if [ "$SRV_VER" != "$VER" ] || [ "$SRV_PKG_VER" != "$VER" ]; then
-        echo "Preflight: server.json versions ($SRV_VER / $SRV_PKG_VER) != package.json ($VER)." >&2
-        FAIL=1
-    fi
-
-    # `just mcp-node` ran above, so these should hold — they catch someone
-    # publishing from a tree where it half-failed.
-    WASM="vendor/Package/VGraphWasm.wasm"
-    if [ ! -f "$WASM" ]; then
-        echo "Preflight: $WASM missing — 'just mcp-node' did not complete." >&2
-        FAIL=1
-    elif [ "$(wc -c < "$WASM")" -gt 20000000 ]; then
-        echo "Preflight: $WASM is a debug build." >&2
-        FAIL=1
-    fi
-    if [ ! -s tools.json ] || [ "$(node -p "require('./tools.json').length")" -eq 0 ]; then
-        echo "Preflight: tools.json is empty — scripts/dump-mcp-tools.sh did not run." >&2
-        FAIL=1
-    fi
-    # OFL 1.1 requires the licence ship with the fonts.
-    if [ ! -f vendor/fonts/OFL.txt ]; then
-        echo "Preflight: vendor/fonts/OFL.txt missing — the fonts must not ship without it." >&2
-        FAIL=1
-    fi
-
-    if [ "$FAIL" -ne 0 ]; then
-        echo "" >&2
-        echo "Nothing was published." >&2
-        exit 1
-    fi
-
-    if [ "$NPM_DONE" -eq 1 ]; then
-        echo "· $PKG@$VER already on npm — skipping, going straight to the registry"
-    else
-        echo "Publishing $PKG@$VER to npm..."
-        # npm requires 2FA or a granular token with 2FA bypass to publish,
-        # whatever the account's own tfa setting says. With a granular token no
-        # OTP is needed; with account 2FA one is, and it must be supplied at the
-        # moment of use because it expires in seconds.
-        if [ -n "{{otp}}" ]; then
-            npm publish --access public --otp="{{otp}}"
-        else
-            npm publish --access public
-        fi
-    fi
-
-    echo ""
-    cd ..
-    ./scripts/mcp-registry.sh
-
 # build + run the full test suite (format + swift + wasm smoke + editor browser + plugin lint). FILTER scopes swift test.
 [group('test')]
 test filter='': build
@@ -241,13 +109,11 @@ test filter='': build
     ./scripts/audit-public.test.sh
     ./scripts/publish-plugins.test.sh
     ./scripts/plugins-release.test.sh
-    ./scripts/mcp-registry.test.sh
     ./scripts/release-stamp.test.sh
     ./scripts/ci-status.test.sh
-    ./scripts/check-generated.test.sh
-    ./scripts/check-generated.sh
     just _if-cloned obsidian-vithanco obsidian-lint
     just _if-cloned vscode-vithanco vscode-preview
+    just _if-cloned vgraph-mcp "mcp test"
 
 # Node WASM smoke tests (vitest) against the deployed website/Package.
 [group('test')]
@@ -329,7 +195,6 @@ release full='': _release-preflight
     if [ -z "{{full}}" ] && ./scripts/ci-status.sh; then
         just config=release build
         just test-wasm
-        ./scripts/check-generated.sh
         just plugin-api
         just _if-cloned obsidian-vithanco obsidian-lint
         just _if-cloned vscode-vithanco vscode-preview
@@ -339,6 +204,7 @@ release full='': _release-preflight
     fi
     just config=release plugins-build
     ( cd vscode-vithanco && npm run package --silent )
+    just mcp release
     ./scripts/release-stamp.sh record
     echo ""
     echo "✓ release artifacts ready (nothing pushed)."
@@ -353,7 +219,7 @@ release full='': _release-preflight
     else
         echo "  just publish-plugins             # tag + push + GitHub releases at v$V"
     fi
-    echo "    just publish-cloud-run / just stage-website"
+    echo "    just mcp publish / just stage-website"
 
 # Bump the JS library version: set it in website/dist/package.json and sync all filenames/refs.
 [group('build')]
@@ -400,11 +266,6 @@ clean:
 run-cli *args:
     VGRAPH_LOG_LEVEL=debug swift run vgraph-cli {{args}}
 
-# Run the native MCP server.
-[group('run')]
-run-mcp:
-    VGRAPH_LOG_LEVEL=debug swift run vgraph-mcp
-
 # Serve website/ locally for manual preview (ES modules need a real server).
 [group('run')]
 serve port='8000':
@@ -415,25 +276,14 @@ serve port='8000':
 dev: _wasm-build
     cd obsidian-vithanco && npm run dev
 
-# Build the LOCAL release MCP binary for Claude Desktop (distinct from the cloud image).
-[group('run')]
-local-server:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "Formatting VGraphMCP..."
-    swift-format -r -i --configuration .swift-format Sources/VGraphMCP
-    echo "Running MCP server tests..."
-    swift test --filter VGraphMCPTests
-    echo "Building vgraph-mcp (release)..."
-    swift build --product vgraph-mcp -c release
-    echo ""
-    echo "✓ Binary: .build/release/vgraph-mcp"
-    ls -lh .build/release/vgraph-mcp | awk '{print "  " $5 " - " $9}'
-    echo "  Quit & relaunch Claude Desktop to reload the server."
-
 # ═══════════════════════════════════════════════════════════════════════════
 # Plugins (separate git repos, driven by plugins.json)
 # ═══════════════════════════════════════════════════════════════════════════
+
+# Run a recipe of vgraph-mcp's own justfile (the MCP servers): `just mcp`, `just mcp test`, `just mcp publish`.
+[group('plugins')]
+mcp *args: (_require-plugin "vgraph-mcp")
+    just --justfile vgraph-mcp/justfile "$@"
 
 # Clone any missing plugin repos listed in plugins.json.
 [group('plugins')]
@@ -460,13 +310,14 @@ plugins-release bump='patch' plugin='': _require-maintainer _release-preflight
     esac
     ./release-plugins.sh "$ARG" {{plugin}}
     V=$(node -p "const r = require('./plugins.json').plugins; (r.find(p => p.path === process.argv[1]) || r[0]).version" "{{plugin}}")
-    # main takes no direct pushes, so VGraph's half of the bump (plugins.json,
-    # vgraph-mcp-node) reaches it through a PR. _release-preflight left the
-    # checkout clean, so this commit holds the bump and nothing else. Each
-    # plugin's half is committed by publish-plugins, with the engine it ships.
+    # main takes no direct pushes, so VGraph's half of the bump (plugins.json)
+    # reaches it through a PR. _release-preflight left the checkout clean, so
+    # this commit holds the bump and nothing else. Each consumer's half is
+    # committed when it is published: by publish-plugins with the engine it
+    # ships, and by `just mcp publish`.
     BRANCH="release/$V"
     git switch -q -c "$BRANCH"
-    git add plugins.json vgraph-mcp-node
+    git add plugins.json
     git commit -q -m "chore: release $V"
     git push -q -u origin "$BRANCH"
     gh pr create --base main --head "$BRANCH" --title "chore: release $V" \
@@ -762,77 +613,15 @@ publish-website: _require-maintainer _require-vgraph-main (cli "--release") stag
 deploy target *flags:
     ./deploy.sh {{target}} {{flags}}
 
-# Build the linux/amd64 image on Cloud Build + push it (no local Docker needed).
-[group('publish')]
-build-cloud-image: _require-maintainer _require-gcloud
-    #!/usr/bin/env bash
-    set -euo pipefail
-    # Built remotely because Cloud Run is x86_64-only and this is an ARM Mac: a
-    # local build must emulate amd64, and the Swift compiler dies under QEMU with
-    # SIGILL partway through. Cloud Build is native amd64 — no emulation, no
-    # Rosetta, no Docker. Use build-cloud-image-local if you want a local image.
-    echo "=== Building {{cloud_service}} on Cloud Build (native linux/amd64) ==="
-    # --tag builds AND pushes, so publish-cloud-run needs no separate docker push.
-    # Upload honours .gcloudignore.
-    gcloud builds submit --tag "{{cloud_image}}" .
-    echo ""
-    echo "✓ built and pushed {{cloud_image}}"
-
-# Fallback: build the image locally with Docker instead of on Cloud Build.
-[group('publish')]
-build-cloud-image-local:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    # Needs an amd64-capable builder. On Apple Silicon that means Rosetta — under
-    # QEMU user-mode emulation the Swift compiler crashes partway through:
-    #   softwareupdate --install-rosetta --agree-to-license
-    #   colima stop && colima start --vm-type=vz --vz-rosetta --cpu 6 --memory 12
-    # Checked up front: without it the failure is a bare 'docker: command not
-    # found' from inside the recipe, which says nothing about what to install.
-    if ! command -v docker >/dev/null 2>&1; then
-        echo "ERROR: docker is not installed, and this recipe builds a linux/amd64 image." >&2
-        echo "" >&2
-        echo "       Any Docker-compatible runtime will do, e.g." >&2
-        echo "         brew install --cask docker        # Docker Desktop" >&2
-        echo "         brew install colima docker        # lighter CLI-only alternative" >&2
-        echo "" >&2
-        echo "       Cloud Run is the only thing that needs this — the plugins, the" >&2
-        echo "       website and the local MCP binary all build without it." >&2
-        exit 1
-    fi
-    if ! docker info >/dev/null 2>&1; then
-        echo "ERROR: docker is installed but the daemon is not running." >&2
-        echo "       Start Docker Desktop (or 'colima start'), then re-run." >&2
-        exit 1
-    fi
-    echo "=== Building {{cloud_service}} image for linux/amd64 ==="
-    docker build --platform linux/amd64 -t "{{cloud_image}}" .
-    SIZE=$(docker image inspect "{{cloud_image}}" --format='{{ "{{" }}.Size{{ "}}" }}')
-    awk "BEGIN { printf \"  Image: {{cloud_image}}\n  Size:  %.0f MB\n\", $SIZE/1024/1024 }"
-
-# Checked before build-cloud-image runs, so a missing gcloud costs a second
-# rather than surfacing after a multi-minute image build.
-_require-gcloud:
-    #!/usr/bin/env bash
-    if ! command -v gcloud >/dev/null 2>&1; then
-        echo "ERROR: gcloud is not installed, and both remaining steps need it —" >&2
-        echo "       'docker push' to Artifact Registry needs its credential helper," >&2
-        echo "       and the deploy is 'gcloud run deploy'." >&2
-        echo "" >&2
-        echo "         brew install --cask google-cloud-sdk" >&2
-        echo "         gcloud auth login && gcloud auth configure-docker" >&2
-        exit 1
-    fi
-
 # First dependency of every recipe that publishes under the maintainer's accounts.
 # What must already hold before a release is built or published, checked in
 # seconds: `just release` runs this first, so a version bump that is not yet
 # merged stops it here, not after its tests and builds.
-_release-preflight: _require-vgraph-main (_require-plugin "obsidian-vithanco") (_require-plugin "vscode-vithanco")
+_release-preflight: _require-vgraph-main (_require-plugin "obsidian-vithanco") (_require-plugin "vscode-vithanco") (_require-plugin "vgraph-mcp")
     #!/usr/bin/env bash
     set -uo pipefail
     FAIL=0
-    for DIR in obsidian-vithanco vscode-vithanco; do
+    for DIR in obsidian-vithanco vscode-vithanco vgraph-mcp; do
         BRANCH=$(git -C "$DIR" branch --show-current)
         if [ "$BRANCH" != main ]; then
             echo "Preflight: $DIR is on '$BRANCH', not main — the release would tag and push that branch." >&2
@@ -873,40 +662,6 @@ _require-maintainer:
         exit 1
     fi
 
-# Build + push the image + roll out a new Cloud Run revision + health check.
-[group('publish')]
-publish-cloud-run: _require-maintainer _require-vgraph-main _require-gcloud build-cloud-image
-    #!/usr/bin/env bash
-    set -euo pipefail
-    # No push step: `gcloud builds submit --tag` already pushed to Artifact
-    # Registry. Building locally instead? Run build-cloud-image-local, then
-    # `docker push {{cloud_image}}` yourself before deploying.
-    echo "=== Deploying to Cloud Run ==="
-    # The service is open to anyone (see SECURITY.md), so these bound what it can cost.
-    # They used to be set by hand with `gcloud run services update`; a fresh deploy
-    # would have lost them.
-    limits=(
-        # --max-instances: one instance caps the bill. The exposure left is
-        # availability, which the per-request limits in MCPLimits are for.
-        --max-instances=1
-        # --concurrency: each render holds a Graphviz layout and, for the PNG, an
-        # rsvg-convert process and its bitmap in the instance's 1 GiB. Four in flight
-        # peaked at about 440 MB; docs/mcp-hardening.md has the measurements.
-        --concurrency=4
-        # --timeout: longer than the 120 s request deadline in MCPLimits, so the
-        # client gets our 504 and not Cloud Run's.
-        --timeout=150
-        # --cpu-throttling: CPU only while a request is in flight. Layout is the
-        # only work, and idle time then costs nothing.
-        --cpu-throttling
-    )
-    gcloud run deploy "{{cloud_service}}" --image "{{cloud_image}}" --port 8080 --region "{{cloud_region}}" --memory 1Gi "${limits[@]}"
-    echo ""
-    echo "=== Verifying health check ==="
-    curl -s https://mcp.vithanco.com/health
-    echo ""
-    echo "✓ Cloud Run deploy complete."
-
 # Coordinated release across all surfaces. Builds, then confirms before anything ships.
 [group('publish')]
 publish-all: _require-maintainer
@@ -934,10 +689,9 @@ publish-all: _require-maintainer
     fi
     VER=$(echo "$VERSIONS" | head -1 | awk '{print $2}')
 
-    # npm auth is checked here rather than inside publish-mcp-node's own
-    # preflight because by then two plugins and a Cloud Run revision are
-    # already out — the same reason publish-plugins preflights before it
-    # mutates anything.
+    # npm auth is checked here rather than inside vgraph-mcp's own publish
+    # because by then two plugins are already out — the same reason
+    # publish-plugins preflights before it mutates anything.
     if ! npm whoami >/dev/null 2>&1; then
         echo "Preflight: not logged in to npm — run 'npm login'." >&2
         echo "  (aborting now rather than after the plugins are already released)" >&2
@@ -957,7 +711,7 @@ publish-all: _require-maintainer
     echo "  • VGraph+plugins → push + tag + GitHub release"
     echo "  • npm + registry → @vithanco/vgraph-mcp and com.vithanco/vgraph-mcp"
     echo "  • Website        → generate + deploy to vithanco.github.io, commit + push"
-    echo "  • Cloud Run      → new revision of '{{cloud_service}}' in {{cloud_region}}"
+    echo "  • Cloud Run      → new revision of the hosted MCP server"
     if [ "$VSCE_AUTO" -eq 1 ]; then
         echo "  • VS Code Mktpl  → vsce publish"
     else
@@ -978,17 +732,9 @@ publish-all: _require-maintainer
         just publish-plugins defer
     fi
 
-    # Both, not npm alone: npm and the registry are two publishes, and skipping
-    # on npm kept a failed registry publish from ever being retried.
-    if [ "$(npm view "@vithanco/vgraph-mcp" version 2>/dev/null)" = "$VER" ] \
-       && ./scripts/mcp-registry.sh --has; then
-        echo "· npm and the MCP Registry already at $VER — skipping"
-    else
-        just publish-mcp-node
-    fi
-
+    # Tag and push, npm, the MCP Registry and Cloud Run; each skips once done.
+    just mcp publish
     just publish-website
-    just publish-cloud-run
 
     ./scripts/vscode-marketplace.sh
     echo ""
@@ -1004,7 +750,7 @@ publish-all: _require-maintainer
     echo "    npm       → @vithanco/vgraph-mcp"
     echo "    registry  → com.vithanco/vgraph-mcp"
     echo "    website   → vithanco.github.io"
-    echo "    Cloud Run → {{cloud_service}} in {{cloud_region}}"
+    echo "    Cloud Run → mcp.vithanco.com"
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Misc
@@ -1019,7 +765,7 @@ setup: plugins-setup
     #!/usr/bin/env bash
     set -euo pipefail
     git config core.hooksPath .githooks
-    for d in obsidian-vithanco vscode-vithanco VGraphWasm/Tests-JS VGraphWasm/Tests-Browser .; do
+    for d in obsidian-vithanco vscode-vithanco vgraph-mcp VGraphWasm/Tests-JS VGraphWasm/Tests-Browser .; do
         if [ -f "$d/package.json" ]; then
             echo "npm install in $d"
             ( cd "$d" && npm install --silent )
@@ -1046,13 +792,7 @@ doctor:
     have jq        "brew install jq"
     have wasm-opt  "brew install binaryen"
     have wasm-strip "brew install wabt"
-    want gcloud    "only for the maintainer's Cloud Run deploy (brew install --cask google-cloud-sdk)"
     want gitleaks  "only for the maintainer's public export (brew install gitleaks)"
-    # Docker is optional now: build-cloud-image runs on Cloud Build. Only the
-    # build-cloud-image-local fallback needs it — and buildx with it, since the
-    # Dockerfile's `RUN --mount=type=cache` will not run on the legacy builder.
-    want docker    "only for build-cloud-image-local (brew install colima docker)"
-    want docker-buildx "with docker; the classic builder works too since the Dockerfile needs no BuildKit"
     have python3   "brew install python (just serve)"
     # Optional: only the wasm build, its smoke tests and the editor's browser
     # tests need the SDK; native `swift build` and `swift test` do not.

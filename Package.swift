@@ -42,24 +42,16 @@ let package = Package(
             name: "vgraph-cli",
             targets: ["vgraph-cli"]
         ),
-        .executable(
-            name: "vgraph-mcp",
-            targets: ["vgraph-mcp"]
-        ),
-        .executable(
-            name: "vgraph-mcp-http",
-            targets: ["vgraph-mcp-http"]
-        ),
+        // The native composition root under test, for the engine consumers'
+        // own test suites (vgraph-mcp).
         .library(
-            name: "VGraphMCPTools",
-            targets: ["VGraphMCPTools"]
+            name: "VGraphTestSupport",
+            targets: ["TestSupport"]
         ),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.3.0"),
-        .package(url: "https://github.com/modelcontextprotocol/swift-sdk", from: "0.10.0"),
         .package(url: "https://github.com/Vithanco/swiftGraphviz.git", .upToNextMinor(from: "0.9.0")),
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.65.0"),
     ],
     targets: [
         // Core: VGraph domain
@@ -186,63 +178,6 @@ let package = Package(
             ]
         ),
 
-        // Shared MCP tool definitions (used by both stdio and HTTP servers)
-        .target(
-            name: "VGraphMCPTools",
-            dependencies: [
-                "App",
-                "VGraph",  // RenderResult, alongside the ports that return it
-                .product(name: "MCP", package: "swift-sdk"),
-            ],
-            path: "Sources/VGraphMCPTools",
-            swiftSettings: [
-                .enableExperimentalFeature("Extern")
-            ]
-        ),
-
-        // MCP server executable (stdio transport — local CLI & Docker)
-        .executableTarget(
-            name: "vgraph-mcp",
-            dependencies: [
-                "VGraphMCPTools",
-                .product(name: "MCP", package: "swift-sdk"),
-            ],
-            path: "Sources/VGraphMCP",
-            swiftSettings: [
-                .enableExperimentalFeature("Extern")
-            ]
-        ),
-
-        // The HTTP layer of the hosted server, a library so it can be tested.
-        .target(
-            name: "VGraphMCPHTTPKit",
-            dependencies: [
-                "VGraphMCPTools",
-                .product(name: "MCP", package: "swift-sdk"),
-                .product(name: "NIOCore", package: "swift-nio"),
-                .product(name: "NIOPosix", package: "swift-nio"),
-                .product(name: "NIOHTTP1", package: "swift-nio"),
-            ],
-            path: "Sources/VGraphMCPHTTPKit",
-            swiftSettings: [
-                .enableExperimentalFeature("Extern")
-            ]
-        ),
-
-        // MCP server executable (HTTP transport — Cloud Run)
-        .executableTarget(
-            name: "vgraph-mcp-http",
-            dependencies: [
-                "VGraphMCPTools",
-                "VGraphMCPHTTPKit",
-                .product(name: "MCP", package: "swift-sdk"),
-            ],
-            path: "Sources/VGraphMCPHTTP",
-            swiftSettings: [
-                .enableExperimentalFeature("Extern")
-            ]
-        ),
-
         // Tests - organized by module
         .testTarget(
             name: "VGraphTests",
@@ -282,25 +217,6 @@ let package = Package(
         .testTarget(
             name: "VGraphvizLibTests",
             dependencies: ["VGraph", "VGraphvizLib", "App", "TestSupport"],
-            swiftSettings: [
-                .enableExperimentalFeature("Extern")
-            ]
-        ),
-        .testTarget(
-            name: "VGraphMCPTests",
-            dependencies: ["VGraph", "VGraphSVG", "vgraph-mcp", "VGraphMCPTools", "TestSupport"],
-            swiftSettings: [
-                .enableExperimentalFeature("Extern")
-            ]
-        ),
-        .testTarget(
-            name: "VGraphMCPHTTPTests",
-            dependencies: [
-                "VGraphMCPHTTPKit", "VGraphMCPTools", "TestSupport",
-                .product(name: "NIOCore", package: "swift-nio"),
-                .product(name: "NIOEmbedded", package: "swift-nio"),
-                .product(name: "NIOHTTP1", package: "swift-nio"),
-            ],
             swiftSettings: [
                 .enableExperimentalFeature("Extern")
             ]

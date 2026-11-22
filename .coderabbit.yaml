@@ -46,17 +46,10 @@ reviews:
         `gvFreeLayout`/`agclose`, reading layout data when `gvLayout` failed, and C
         strings that die before Graphviz copies them. Graphviz uses 72 points per inch
         and returns node sizes in inches; flag mixed-up units.
-    - path: "{Sources/VGraphMCP,Sources/VGraphMCPHTTP,Sources/VGraphMCPHTTPKit,Sources/VGraphMCPTools}/**/*.swift"
-      instructions: |
-        The hosted MCP endpoint is open to anyone (SECURITY.md, docs/mcp-hardening.md).
-        Layout cannot be cancelled, so every input must be bounded before layout through
-        `MCPLimits`. Flag a new tool or parameter that reaches layout or PNG conversion
-        without a limit, unbounded subprocess output or runtime, and error messages that
-        leak paths or internals. Foundation and key paths are fine here.
     - path: "VGraphWasm/**/*.swift"
       instructions: |
         Embedded Swift rules apply. `@JS public func` in VGraphWasm/Sources/Main.swift is
-        the API the Obsidian and VS Code plugins and vgraph-mcp-node call; a removed or
+        the API the Obsidian and VS Code plugins and the vgraph-mcp npm host call; a removed or
         renamed export breaks them silently (scripts/check-plugin-api.sh). DOM code stays
         in VGraphEditor; decisions belong in EditorCore so they can be tested natively.
     - path: "Tests/**/*.swift"
@@ -64,11 +57,10 @@ reviews:
         Tests come before the fix or feature, so a bug-fix PR should add a test that
         fails without it. Prefer asserting on real output (SVG, layout values) over
         "does not crash". A changed snapshot under __Snapshots__ needs a reason in the PR.
-    - path: "{VGraphWasm/Tests-JS,VGraphWasm/Tests-Browser,vgraph-mcp-node}/**/*.{js,mjs}"
+    - path: "{VGraphWasm/Tests-JS,VGraphWasm/Tests-Browser}/**/*.{js,mjs}"
       instructions: |
         Browser tests run in Chromium and WebKit (the iPad project); flag waits on fixed
-        timeouts instead of conditions. vgraph-mcp-node hosts the wasm engine and must
-        call only exports that Main.swift still declares.
+        timeouts instead of conditions.
     - path: "{**/*.sh,justfile}"
       instructions: |
         Shell is written for the maintainer's macOS (bash 3.2, BSD tools) and must also
@@ -83,11 +75,6 @@ reviews:
         minimal, every download is verified by checksum, and `pull_request_target` is
         never used. Nothing is published from CI; releases stay on the maintainer's
         machine, so no publish secret may appear here.
-    - path: "{Dockerfile,deploy.sh,.dockerignore,.gcloudignore}"
-      instructions: |
-        The image serves the public MCP endpoint on Cloud Run. It runs as a non-root
-        user; flag anything that adds secrets to the image, widens what gets copied in,
-        or unpins a base image or download.
     - path: "{GLOSSARY.md,docs/adr/**}"
       instructions: |
         GLOSSARY.md is the glossary; a new term should not duplicate one listed under
@@ -118,7 +105,7 @@ reviews:
           Fail if a `@JS public func` in VGraphWasm/Sources/Main.swift is removed or
           renamed, or its parameters or return type change, and the PR description does
           not name the affected consumers (obsidian-vithanco, vscode-vithanco,
-          vgraph-mcp-node) and say how they are updated. Additions do not count.
+          vgraph-mcp) and say how they are updated. Additions do not count.
       - name: "ADR conflicts are explicit"
         mode: warning
         instructions: |

@@ -12,8 +12,9 @@
       "repo": "https://github.com/Vithanco/vscode-vithanco.git"
     },
     {
-      "path": "vgraph-mcp-node",
-      "version": "1.0.15"
+      "path": "vgraph-mcp",
+      "version": "1.0.15",
+      "repo": "https://github.com/Vithanco/vgraph-mcp.git"
     }
   ]
 }

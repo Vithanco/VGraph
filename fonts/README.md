@@ -15,8 +15,8 @@ A browser opening one of our SVGs gets DM Sans from the `@import` that
   render byte-identically, text missing. Inlining is not a way out.
 
 So every non-browser consumer needs the faces as files: the Docker image
-(`fontconfig` + `rsvg-convert`) and the local MCP server in `vgraph-mcp-node`
-(resvg).
+(`fontconfig` + `rsvg-convert`) and the local MCP server, the npm host in
+`vgraph-mcp` (resvg). Both copy them from here.
 
 ## Why TTF, and why one file per weight
 

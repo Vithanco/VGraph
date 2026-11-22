@@ -108,10 +108,8 @@ struct ArchitectureTest {
         let adapters: Set<String> = ["VGraphSVG", "VGLanguage", "VGraphvizLib"]
         var violations: [String] = []
 
-        for driver in [
-            "Sources/VGraphCLI", "Sources/VGraphMCP", "Sources/VGraphMCPHTTP",
-            "Sources/VGraphMCPHTTPKit", "Sources/VGraphMCPTools", "Tests/TestSupport",
-        ] {
+        // vgraph-mcp holds its own servers to the same rule.
+        for driver in ["Sources/VGraphCLI", "Tests/TestSupport"] {
             for file in try requiredSwiftFiles(under: driver) {
                 let source = try String(contentsOf: file, encoding: .utf8)
                 for module in importedModules(in: source) where adapters.contains(module) {

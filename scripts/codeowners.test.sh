@@ -21,9 +21,6 @@ AGENTS.md
 CLAUDE.md
 .coderabbit.yaml
 justfile
-Dockerfile
-.dockerignore
-.gcloudignore
 plugins.json
 Package.swift
 Package.resolved
@@ -31,8 +28,6 @@ package.json
 package-lock.json
 VGraphWasm/Package.swift
 VGraphWasm/Package.resolved
-vgraph-mcp-node/package.json
-vgraph-mcp-node/release.sh
 website/dist/package.json
 build-wasm.sh
 deploy.sh

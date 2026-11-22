@@ -37,8 +37,8 @@ everything compiled into the wasm module (no key paths, no reflection, no generi
 calls on `any` values). `ArchitectureTest` fails on the ones it can check.
 
 **Some files get a closer look.** Anything that runs commands or steers a coding
-agent (`AGENTS.md`, `.claude/`, `.agents/`, `.github/`, `justfile`, `scripts/`,
-`Dockerfile` and the release scripts) needs the maintainer's approval, listed in
+agent (`AGENTS.md`, `.claude/`, `.agents/`, `.github/`, `justfile`, `scripts/`
+and the release scripts) needs the maintainer's approval, listed in
 `.github/CODEOWNERS`. A pull request should not be able to plant instructions for
 someone else's tools, so changes there are read line by line.
 

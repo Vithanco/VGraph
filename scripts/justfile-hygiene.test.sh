@@ -12,7 +12,7 @@ fail() { echo "FAIL: $*" >&2; FAILED=1; }
 
 # Recipes in the publish group that need no guard: they build or stage locally
 # and push nothing under anyone's account.
-EXEMPT="stage-website deploy build-cloud-image-local"
+EXEMPT="stage-website deploy"
 
 unguarded=$(just --dump --dump-format json | EXEMPT="$EXEMPT" python3 -c '
 import json, os, sys
@@ -78,6 +78,9 @@ if "just obsidian-lint" in test: print("test lints the obsidian plugin unconditi
 if "just vscode-preview" in test: print("test runs the vscode preview unconditionally")
 if "_if-cloned obsidian-vithanco obsidian-lint" not in test: print("test does not lint the plugins that are present")
 if "_if-cloned vscode-vithanco vscode-preview" not in test: print("test does not run the vscode preview when it is present")
+if "_if-cloned vgraph-mcp" not in test: print("test does not test vgraph-mcp when it is present")
+if "mcp release" not in json.dumps(r["release"]["body"]): print("release does not build vgraph-mcp")
+if "vgraph-mcp/justfile" not in json.dumps(r["mcp"]["body"]): print("mcp does not hand over to the vgraph-mcp justfile")
 ')
 [ -z "$out" ] || fail "$out"
 

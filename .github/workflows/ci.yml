@@ -43,18 +43,7 @@ jobs:
           tar -xzf "$JUST" -C /usr/local/bin just
       - run: just lint
       - run: swift build --build-tests
-      # A stale generated file fails the pull request that made it stale, not
-      # the next release. Root in the container does not own the checkout.
-      - name: Generated files are up to date
-        run: |
-          apt-get install -y --no-install-recommends python3
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          ./scripts/check-generated.sh
-      # The PNG tests convert with rsvg-convert, as the server image does.
-      - run: apt-get install -y --no-install-recommends librsvg2-bin fontconfig fonts-liberation
-      # These two assume Linux means "inside the server image", and describe an
-      # image that does not exist: it has no dot and runs as root.
-      - run: swift test --skip-build --skip 'DockerIntegrationTests/test(DockerBuildSucceeds|NonRootUserExecution)'
+      - run: swift test --skip-build
 
   wasm:
     # Builds and tests the wasm; it publishes nothing. Releases stay on the
@@ -136,7 +125,7 @@ jobs:
       - name: Shell tests
         run: |
           failed=0
-          for t in check-wasm-optimized justfile-hygiene doctor-kegs doctor-sdk codeowners licence audit-public record-engine-build publish-plugins mcp-registry release-stamp ci-status check-generated; do
+          for t in check-wasm-optimized justfile-hygiene doctor-kegs doctor-sdk codeowners licence audit-public record-engine-build publish-plugins release-stamp ci-status; do
             echo "::group::$t"
             ./scripts/$t.test.sh || failed=1
             echo "::endgroup::"

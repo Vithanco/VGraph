@@ -43,7 +43,7 @@ document can also declare notations of its own. The
 | **Web editor** | [vithanco.com/editor](https://vithanco.com/editor/): write VGL, see the diagram, edit it on the canvas |
 | **Obsidian** | [obsidian-vithanco](https://github.com/Vithanco/obsidian-vithanco): a `vgl` code block becomes a diagram |
 | **VS Code** | [vscode-vithanco](https://github.com/Vithanco/vscode-vithanco) |
-| **MCP server** | `npx @vithanco/vgraph-mcp` runs it locally; `https://mcp.vithanco.com/mcp` is hosted. [Details](vgraph-mcp-node/README.md) |
+| **MCP server** | `npx @vithanco/vgraph-mcp` runs it locally; `https://mcp.vithanco.com/mcp` is hosted. [vgraph-mcp](https://github.com/Vithanco/vgraph-mcp) |
 | **Command line** | `vgraph-cli`, built from this repository |
 | **Swift package** | the `VGraph`, `VGLanguage` and `VGraphSVG` libraries |
 
@@ -74,7 +74,7 @@ swift sdk install "https://download.swift.org/swift-$V-release/wasm-sdk/swift-$V
 it.
 
 ```bash
-just build     # compile everything: wasm, command line, MCP server
+just build     # compile the engine: wasm, command line
 just test      # build, then the full suite: Swift, wasm smoke tests, editor browser tests
 just           # everything else
 ```

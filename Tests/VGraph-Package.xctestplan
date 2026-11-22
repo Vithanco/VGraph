@@ -64,13 +64,6 @@
         "identifier" : "IntegrationTests",
         "name" : "IntegrationTests"
       }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:",
-        "identifier" : "VGraphMCPTests",
-        "name" : "VGraphMCPTests"
-      }
     }
   ],
   "version" : 1

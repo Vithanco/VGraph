@@ -11,13 +11,13 @@ FAILED=0
 fail() { echo "FAIL: $*" >&2; FAILED=1; }
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.invalid
 
-given_released() { # VGraph with both plugins, the plugins' bump uncommitted, stamp recorded
+given_released() { # VGraph with every engine consumer, their bump uncommitted, stamp recorded
     WORK=$(mktemp -d "$ROOT/work.XXXXXX") || exit 1
     git -C "$WORK" init -q -b main
-    printf '%s\n' .build/ obsidian-vithanco/ vscode-vithanco/ > "$WORK/.gitignore"
+    printf '%s\n' .build/ obsidian-vithanco/ vscode-vithanco/ vgraph-mcp/ > "$WORK/.gitignore"
     echo engine > "$WORK/engine.swift"
     git -C "$WORK" add . && git -C "$WORK" commit -qm engine
-    for p in obsidian-vithanco vscode-vithanco; do
+    for p in obsidian-vithanco vscode-vithanco vgraph-mcp; do
         git -C "$WORK" init -q -b main "$p"
         echo main.js > "$WORK/$p/.gitignore"
         echo '{"version":"1.0.0"}' > "$WORK/$p/package.json"
@@ -39,7 +39,7 @@ stamp check && fail "holds with no release recorded"
 
 # Given the plugins' bump committed by publish-plugins, when resuming, then it still holds.
 given_released
-for p in obsidian-vithanco vscode-vithanco; do git -C "$WORK/$p" commit -qam "chore: release 1.0.1"; done
+for p in obsidian-vithanco vscode-vithanco vgraph-mcp; do git -C "$WORK/$p" commit -qam "chore: release 1.0.1"; done
 stamp check || fail "committing the released bump broke the stamp"
 
 # Given build output a release writes, when checking, then it still holds.
@@ -56,6 +56,11 @@ stamp check && fail "holds after the engine changed"
 given_released
 echo new > "$WORK/vscode-vithanco/extra.ts"
 stamp check && fail "holds after a plugin gained a file"
+
+# Given an MCP server change, when checking, then it does not hold.
+given_released
+echo new > "$WORK/vgraph-mcp/Tool.swift"
+stamp check && fail "holds after vgraph-mcp gained a file"
 
 # Given a new VGraph commit, when checking, then it does not hold.
 given_released

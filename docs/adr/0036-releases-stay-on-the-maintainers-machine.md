@@ -1,11 +1,12 @@
 # 36. Releases stay on the maintainer's machine
 
-Date: 2026-11-08 (revised 2026-11-13, 2026-11-15 and 2026-11-21)
+Date: 2026-11-08 (revised 2026-11-13, 2026-11-15, 2026-11-21 and 2026-11-22)
 
 ## Status
 
 Accepted. Absorbs 0035, which had a VGraph tag start each plugin's build on
-GitHub and was replaced before any release used it.
+GitHub and was replaced before any release used it. Amended by 0040: the MCP
+servers, the npm host among them, are an engine consumer in their own repository.
 
 ## Context
 
@@ -61,7 +62,7 @@ depend on the Node version that builds it.
 
 ## Consequences
 
-The version bump in VGraph (`plugins.json`, `vgraph-mcp-node`) reaches `main`
+The version bump in VGraph (`plugins.json`) reaches `main`
 through a PR like any other change, because `main` takes no direct pushes.
 `plugins-release` commits it on `release/<version>` and opens that PR. Each
 plugin's bump stays uncommitted until `publish-plugins` commits it with the

@@ -12,10 +12,9 @@ touches these, in order. Each step is its own commit in practice.
 2. **Port** — `Sources/VGraph/VStdPorts/For*.swift`. A new member on a driving port must also be added to the expected table in `Tests/AppTests/ArchitectureTest.swift`, which fails until you do.
 3. **Use case** — `Sources/App/Domain/` (`VGraphApplication` for stateless calls, `GraphSession` for the editor's stateful ones). Ports are re-exported under the plain name in `Sources/App/Ports/Inbound/`.
 4. **Editor decisions** — `Sources/EditorCore/` (`Menu`, `Conversation`, `Gesture`, `Views`…). The editor in `VGraphWasm/VGraphEditor/` only hit-tests, measures and paints. Wasm-graph code: see the Embedded rules in AGENTS.md.
-5. **Swift MCP** — `Sources/VGraphMCPTools/VGraphTool.swift`; test in `Tests/VGraphMCPTests/`.
-6. **Wasm** — `VGraphWasm/Sources/Main.swift` (BridgeJS regenerates `Sources/Generated/` on `./build-wasm.sh`); editor UI in `VGraphWasm/VGraphEditor/`; JS smoke tests in `VGraphWasm/Tests-JS/` (`fixtures.js`, `smoke.test.js`); editor browser tests (Playwright) in `VGraphWasm/Tests-Browser/`.
-7. **Node MCP** — `vgraph-mcp-node/src/` (`server.mjs`, `render.mjs`), tests in `vgraph-mcp-node/test/`.
-8. **Docs** — `docs/VGL_GUIDE.md` for language changes, `GLOSSARY.md` for new terms, `docs/adr/` for decisions.
+5. **Wasm** — `VGraphWasm/Sources/Main.swift` (BridgeJS regenerates `Sources/Generated/` on `./build-wasm.sh`); editor UI in `VGraphWasm/VGraphEditor/`; JS smoke tests in `VGraphWasm/Tests-JS/` (`fixtures.js`, `smoke.test.js`); editor browser tests (Playwright) in `VGraphWasm/Tests-Browser/`.
+6. **MCP servers** — another repository, cloned to `vgraph-mcp/` (ADR 0040). Swift: `Sources/VGraphMCPTools/VGraphTool.swift`, tests in `Tests/VGraphMCPTests/`. npm host: `src/` (`server.mjs`, `render.mjs`), tests in `test/`. `just mcp test` runs them against this checkout.
+7. **Docs** — `docs/VGL_GUIDE.md` for language changes, `GLOSSARY.md` for new terms, `docs/adr/` for decisions.
 
 ## Adding a port
 
@@ -42,7 +41,7 @@ SwiftPM lets a target import its transitive graph, but a *test* target compiles 
 | a rendered SVG | `VGraphSVGTests` | `VGraphTestApp()` (`import TestSupport`) |
 | Graphviz layout | `VGraphvizLibTests` | `VGraphTestApp()` |
 | domain types only | `VGraphTests` | none |
-| MCP tool results | `VGraphMCPTests` | `VGraphTool.handle` |
+| MCP tool results | `VGraphMCPTests`, in `vgraph-mcp/` | `VGraphTool.handle` |
 
 `AppTests` does not depend on `VGraphSVG` or `VGraphvizLib`, so a render test written there fails to build; put it in `VGraphSVGTests`.
 `VGraphTestApp` is the native wiring with a silent logger (`Tests/TestSupport/VGraphTestApp.swift`).

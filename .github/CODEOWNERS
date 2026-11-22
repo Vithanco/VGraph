@@ -17,13 +17,10 @@
 /.github/           @Vithanco
 /.githooks/         @Vithanco
 
-# The task runner, scripts and the build context of the images.
+# The task runner and scripts.
 /justfile           @Vithanco
 /scripts/           @Vithanco
 *.sh                @Vithanco
-/Dockerfile         @Vithanco
-/.dockerignore      @Vithanco
-/.gcloudignore      @Vithanco
 
 # Manifests run code when a package is resolved or built, and pin what it fetches.
 Package.swift       @Vithanco

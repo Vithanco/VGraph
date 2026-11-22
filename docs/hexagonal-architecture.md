@@ -175,7 +175,7 @@ Every driver therefore differs only in its logger:
 
 ```swift
 public typealias VGraphCLIApp  = VGraphApplication<NativePorts<PrintLogger>>
-public typealias VGraphMCPApp  = VGraphApplication<NativePorts<StderrLogger>>
+public typealias VGraphMCPApp  = VGraphApplication<NativePorts<StderrLogger>>  // in vgraph-mcp
 public typealias VGraphWasmApp = VGraphApplication<NativePorts<ConsoleLogger>>
 public typealias VGraphTestApp = VGraphApplication<NativePorts<NoOpLogger>>
 ```

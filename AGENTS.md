@@ -12,8 +12,8 @@ already says. Anything worth keeping goes in `/docs` and stays updated.
 - `docs/adr/` — why things are the way they are. Read the ADR before reversing
   a design.
 - `docs/where-things-live.md` — the layer chain a feature crosses (domain, port,
-  app, editor, MCP, wasm, node), and which test target, entry point and owning
-  test a test belongs to. Read it before tracing by hand or adding a test.
+  app, editor, wasm, then the MCP servers in `vgraph-mcp/`), and which test
+  target, entry point and owning test a test belongs to. Read it before tracing by hand or adding a test.
 - `docs/design/` — the normative visual reference for the default theme (light
   and dark). Read its `README.md` before adding or changing a notation, colour,
   token or dark-mode behaviour; renderer output that disagrees with the guide
@@ -97,8 +97,9 @@ Without it, every `String == String`, `hasPrefix` and `contains` leaves an
 undefined symbol. When the build can't find the archive, read
 `docs/wasm-unicode-tables.md` before searching the disk.
 
-`vgraph-cli`, `vgraph-mcp`, `vgraph-mcp-http` and `VGraphMCPTools` sit outside
-that graph and may use Foundation and key paths freely.
+`vgraph-cli` sits outside that graph and may use Foundation and key paths
+freely, as do the MCP servers, which live in their own repository
+(`vgraph-mcp/`, cloned by `just plugins-setup`; ADR 0040).
 `VGraphvizLib` is *not* one of them — Graphviz compiles into the wasm module.
 
 Graphviz layout runs in-process on every platform, so `#if WASM` appears only in

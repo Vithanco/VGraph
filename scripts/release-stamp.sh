@@ -4,8 +4,8 @@
 #   scripts/release-stamp.sh record   # after release has built and checked everything
 #   scripts/release-stamp.sh check    # exit 0 when nothing that ships has changed since
 #
-# The key is the content of VGraph and both plugin checkouts, uncommitted files
-# included, not their commits: publish-plugins commits each plugin's bump after
+# The key is the content of VGraph and every engine consumer's checkout, uncommitted files
+# included, not their commits: publish-plugins and `just mcp publish` commit each bump after
 # the release, and that must not count as a change.
 set -euo pipefail
 
@@ -13,7 +13,7 @@ STAMP=.build/release-passed
 
 key() {
     local dir idx
-    for dir in . obsidian-vithanco vscode-vithanco; do
+    for dir in . obsidian-vithanco vscode-vithanco vgraph-mcp; do
         idx=$(mktemp)
         # -p: git trusts an index entry's timestamps only against the index's
         # own mtime, so a fresh copy hides an edit made in the same second.

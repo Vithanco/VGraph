@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # `just plugins-release` only decides the next version: `just release` builds
-# what ships, so a build here was thrown away. Its VGraph half reaches main
-# through a PR, so it commits that half and opens the PR rather than leaving
-# changes that `just release` then refuses.
+# what ships, so a build here was thrown away. Its VGraph half (plugins.json)
+# reaches main through a PR, so it commits that half and opens the PR rather than
+# leaving changes that `just release` then refuses. Each consumer's own half,
+# vgraph-mcp's included, stays uncommitted in its checkout until it is published.
 set -uo pipefail
 
 REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
@@ -44,7 +45,7 @@ given_everything_at() { # version, in a fresh WORK standing in for a merged VGra
     cp "$REPO_ROOT/release-plugins.sh" "$WORK/"
     printf '#!/bin/sh\necho built >> "%s/built.log"\n' "$WORK" > "$WORK/build-wasm.sh"
     chmod +x "$WORK/build-wasm.sh"
-    for p in obsidian-vithanco vscode-vithanco; do
+    for p in obsidian-vithanco vscode-vithanco vgraph-mcp; do
         git init -q --bare -b main "$WORK/$p.git"
         git init -q -b main "$WORK/$p"
         git -C "$WORK/$p" remote add origin "$WORK/$p.git"
@@ -54,12 +55,9 @@ given_everything_at() { # version, in a fresh WORK standing in for a merged VGra
     done
     cp "$WORK/obsidian-vithanco/package.json" "$WORK/obsidian-vithanco/manifest.json"
     git -C "$WORK/obsidian-vithanco" add . && git -C "$WORK/obsidian-vithanco" commit -qm manifest
-    mkdir "$WORK/vgraph-mcp-node"
-    printf '{"version":"%s"}\n' "$1" > "$WORK/vgraph-mcp-node/package.json"
-    stub_release_sh "$WORK/vgraph-mcp-node"
-    printf '{"plugins":[{"path":"obsidian-vithanco","version":"%s"},{"path":"vscode-vithanco","version":"%s"},{"path":"vgraph-mcp-node","version":"%s"}]}\n' \
+    printf '{"plugins":[{"path":"obsidian-vithanco","version":"%s"},{"path":"vscode-vithanco","version":"%s"},{"path":"vgraph-mcp","version":"%s"}]}\n' \
         "$1" "$1" "$1" > "$WORK/plugins.json"
-    printf '%s\n' '*.git/' obsidian-vithanco/ vscode-vithanco/ out gh.log release.log built.log > "$WORK/.gitignore"
+    printf '%s\n' '*.git/' obsidian-vithanco/ vscode-vithanco/ vgraph-mcp/ out gh.log release.log built.log > "$WORK/.gitignore"
     git init -q --bare -b main "$WORK/vgraph.git"
     git -C "$WORK" init -q -b main
     git -C "$WORK" remote add origin "$WORK/vgraph.git"
@@ -82,8 +80,10 @@ bump patch || fail "plugins-release patch failed: $(cat "$WORK/out")"
 [ -f "$WORK/built.log" ] && fail "plugins-release built the engine"
 git -C "$WORK/vgraph.git" show release/1.2.4:plugins.json 2>/dev/null | grep -q '1.2.4' \
     || fail "release/1.2.4 on origin does not carry the bumped plugins.json"
-git -C "$WORK/vgraph.git" show release/1.2.4:vgraph-mcp-node/package.json 2>/dev/null | grep -q '1.2.4' \
-    || fail "release/1.2.4 on origin does not carry the bumped vgraph-mcp-node"
+[ "$(git -C "$WORK/vgraph.git" diff --name-only main release/1.2.4)" = plugins.json ] \
+    || fail "release/1.2.4 carries more than plugins.json: $(git -C "$WORK/vgraph.git" diff --name-only main release/1.2.4)"
+git -C "$WORK/vgraph-mcp" diff --quiet -- package.json \
+    && fail "vgraph-mcp's bump is not waiting uncommitted in its checkout"
 grep -q '^pr create.*release/1.2.4' "$GH_LOG" || fail "no PR opened for release/1.2.4: $(cat "$GH_LOG")"
 [ "$(git -C "$WORK" branch --show-current)" = main ] || fail "left VGraph on $(git -C "$WORK" branch --show-current)"
 [ -z "$(git -C "$WORK" status --porcelain)" ] || fail "left VGraph dirty: $(git -C "$WORK" status --porcelain)"
@@ -125,7 +125,7 @@ printf '\0asm' > "$REAL/website/Package/VGraphWasm.wasm"
 cp "$REPO_ROOT/LICENSE" "$REPO_ROOT/NOTICE" "$REAL/"
 for spec in "obsidian-vithanco:manifest.json package.json versions.json scripts/set-version.mjs" \
             "vscode-vithanco:package.json" \
-            "vgraph-mcp-node:package.json server.json"; do
+            "vgraph-mcp:package.json server.json"; do
     p=${spec%%:*}
     [ -f "$REPO_ROOT/$p/release.sh" ] || { echo "· skipping $p: not cloned"; continue; }
     mkdir -p "$REAL/$p/scripts"

@@ -69,10 +69,12 @@ given_plugins_at() { # version, in a fresh directory WORK with pushed plugin rep
         git -C "$WORK/$p" add . && git -C "$WORK/$p" commit -qm "bump merged"
         git -C "$WORK/$p" push -q origin main
     done
+    git init -q -b main "$WORK/vgraph-mcp"
+    git -C "$WORK/vgraph-mcp" commit -q --allow-empty -m init
     # WORK stands in for VGraph itself: committed, and pushed to its main.
     mkdir -p "$WORK/Sources" && echo 'engine' > "$WORK/Sources/engine.swift"
     echo '{}' > "$WORK/plugins.json"
-    printf '%s\n' '*.git/' obsidian-vithanco/ vscode-vithanco/ website/Package/ out gh.log npx.log > "$WORK/.gitignore"
+    printf '%s\n' '*.git/' obsidian-vithanco/ vscode-vithanco/ vgraph-mcp/ website/Package/ out gh.log npx.log > "$WORK/.gitignore"
     git init -q --bare -b main "$WORK/vgraph.git"
     git -C "$WORK" init -q -b main
     git -C "$WORK" remote add origin "$WORK/vgraph.git"
@@ -284,15 +286,15 @@ just --justfile "$REPO_ROOT/justfile" --working-directory "$WORK" _release-prefl
     && fail "the release preflight accepted a VGraph whose status could not be read"
 grep -q 'status' "$WORK/out" || fail "does not say the status could not be read: $(cat "$WORK/out")"
 
-# Given VGraph with uncommitted changes, when the npm host, the website or Cloud
-# Run is published on its own (finishing a half-done release), then it refuses:
-# each ships the engine from this checkout.
+# Given VGraph with uncommitted changes, when the website is published on its own
+# (finishing a half-done release), then it refuses: it ships the engine from this
+# checkout. vgraph-mcp's own justfile holds its publish recipes to the same check.
 given_plugins_at 1.2.3
 echo 'change' > "$WORK/engine.swift"
 just --justfile "$REPO_ROOT/justfile" --working-directory "$WORK" _require-vgraph-main >"$WORK/out" 2>&1 \
     && fail "_require-vgraph-main accepted an uncommitted VGraph"
 grep -q 'uncommitted' "$WORK/out" || fail "_require-vgraph-main does not say VGraph is uncommitted: $(cat "$WORK/out")"
-for r in publish-mcp-node publish-website publish-cloud-run; do
+for r in publish-website; do
     just --justfile "$REPO_ROOT/justfile" --show "$r" | grep -q "^$r[^:]*: _require-maintainer _require-vgraph-main" \
         || fail "$r does not check VGraph before it builds: $(just --justfile "$REPO_ROOT/justfile" --show "$r" | grep "^$r")"
 done
@@ -303,6 +305,14 @@ given_plugins_at 1.2.3
 git -C "$WORK/vscode-vithanco" switch -qc some-pr
 just --justfile "$REPO_ROOT/justfile" --working-directory "$WORK" _require-vgraph-main >"$WORK/out" 2>&1 \
     || fail "_require-vgraph-main refused over a plugin branch: $(cat "$WORK/out")"
+
+# Given vgraph-mcp on another branch, when a release starts, then it refuses:
+# publishing it tags and pushes whatever is checked out.
+given_plugins_at 1.2.3
+git -C "$WORK/vgraph-mcp" switch -qc some-pr
+just --justfile "$REPO_ROOT/justfile" --working-directory "$WORK" _release-preflight >"$WORK/out" 2>&1 \
+    && fail "the release preflight accepted vgraph-mcp on a branch"
+grep -q 'vgraph-mcp is on .some-pr.' "$WORK/out" || fail "does not name vgraph-mcp's branch: $(cat "$WORK/out")"
 
 [ "$FAILED" -eq 0 ] && echo "✓ publish-plugins"
 exit "$FAILED"

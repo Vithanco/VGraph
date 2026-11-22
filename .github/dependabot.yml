@@ -9,7 +9,6 @@ updates:
   - package-ecosystem: "npm"
     directories:
       - "/"
-      - "/vgraph-mcp-node"
       - "/VGraphWasm/Tests-JS"
       - "/VGraphWasm/Tests-Browser"
     schedule:

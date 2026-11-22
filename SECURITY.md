@@ -42,7 +42,8 @@ logged, titles and labels included, so only developers set it. Logs are kept for
 
 Origin is not validated. The server is public and keeps no state or credentials,
 so a browser request can reach nothing a direct request could not. There is no
-per-client rate limit; the per-request bounds in `docs/mcp-hardening.md` cap what
+per-client rate limit; the per-request bounds in
+[`docs/mcp-hardening.md`](https://github.com/Vithanco/vgraph-mcp/blob/main/docs/mcp-hardening.md) cap what
 one request costs. Both are revisited if the endpoint is abused.
 
 ## What is not
