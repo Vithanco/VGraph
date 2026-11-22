@@ -51,7 +51,8 @@ extension VGraph {
     /// Replace an edge with a node and the two edges that reattach it.
     ///
     /// `incoming` and `outgoing` are what the notation offered; either may be
-    /// `nil` after a break, and only then is an unknown edge type minted. The
+    /// `nil` after a break. A `nil` half the notation can still join takes a
+    /// known type, so only the half that breaks it gets an unknown one. The
     /// returned node is the one to open an [[Inline edit]] on, or `nil` for a
     /// type that displays no text of its own.
     public func splitting(
@@ -63,7 +64,7 @@ extension VGraph {
         let newNode = newNodeId(for: newType)
         // Where the edge ran is where the node replacing it belongs; read before
         // the delete, which takes the endpoints it is derived from with it.
-        let group = self.group(of: edgeId)
+        let group = self.group(of: edgeId) ?? Group.root
         let written = writing(on: edgeId)
 
         let withNode = try delete(edge: edgeId).adding(placeholder: newNode, ofType: newType, in: group)
@@ -73,8 +74,6 @@ extension VGraph {
         return (result, nodeForInlineEdit(newNode, ofType: newType))
     }
 
-    /// Either half may be missing after a break; only then, and only where the
-    /// notation has no type for the pair, is an unknown edge type minted.
     private func connectingHalf(
         from: Node, to: Node, offered: EdgeType?
     ) throws(VError) -> (VGraph, Edge.Id) {
@@ -97,38 +96,36 @@ extension VGraph {
     ///
     /// `edgeType` is the relationship the notation offered; `nil` mints an
     /// unknown one for the pair, which is the [[Notation break]] and renders as
-    /// such. `outgoing` decides which end the new node lands on — the only
-    /// difference between adding a successor and adding a predecessor.
+    /// such. `newNodeAt` is the only difference between adding a successor
+    /// (`.to`) and adding a predecessor (`.from`).
     ///
     /// The returned node is the one to open an [[Inline edit]] on, or `nil` for
     /// a type that displays no text of its own.
     public func addingRelated(
-        to source: Node, ofType newType: NodeType, using edgeType: EdgeType?, outgoing: Bool
+        to source: Node, ofType newType: NodeType, using edgeType: EdgeType?, newNodeAt end: VEdgeEnd
     ) throws(VError) -> (VGraph, Node?) {
         let newNode = newNodeId(for: newType)
         let withNode = try adding(
-            placeholder: newNode, ofType: newType,
-            in: newNodeGroup(relatedTo: source, by: edgeType, outgoing: outgoing))
+            placeholder: newNode, ofType: newType, in: newNodeGroup(relatedTo: source, by: edgeType))
         let (result, _) =
-            outgoing
-            ? try withNode.connecting(source, to: newNode, offeredOrUnknown: edgeType)
-            : try withNode.connecting(newNode, to: source, offeredOrUnknown: edgeType)
+            switch end {
+            case .to: try withNode.connecting(source, to: newNode, offeredOrUnknown: edgeType)
+            case .from: try withNode.connecting(newNode, to: source, offeredOrUnknown: edgeType)
+            }
         return (result, nodeForInlineEdit(newNode, ofType: newType))
 
         /// Beside what the source counts for: on a gained pair that is the
         /// enclosing detailed node of the declared type, where the far type
         /// belongs (ADR-0032).
-        func newNodeGroup(relatedTo source: Node, by edgeType: EdgeType?, outgoing: Bool) -> Group? {
+        func newNodeGroup(relatedTo source: Node, by edgeType: EdgeType?) -> Group {
             guard let edgeType,
                 case .detailedNode(let holder) = boundElement(
-                    at: source, declared: outgoing ? edgeType.from : edgeType.to)
-            else { return group(of: source) }
-            return parentGroup(of: holder)
+                    at: source, declared: edgeType.nodeType(at: end.opposite))
+            else { return group(of: source) ?? Group.root }
+            return parentGroup(of: holder) ?? Group.root
         }
     }
 
-    /// `nil` is the [[Notation break]]: an unknown type for the pair, which
-    /// renders as such.
     private func connecting(
         _ from: Node, to: Node, offeredOrUnknown offered: EdgeType?
     ) throws(VError) -> (VGraph, Edge.Id) {

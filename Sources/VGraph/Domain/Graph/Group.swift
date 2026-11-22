@@ -621,8 +621,6 @@ extension VGraph {
         return groupAncestry(from: group(of: edge.to)).first { fromAncestry.contains($0) }
     }
 
-    /// `group` and every group around it, innermost first, up to and including
-    /// the root group.
     func groupAncestry(from group: Group?) -> [Group] {
         guard let group else { return [] }
         return Array(sequence(first: group) { parentGroup(of: $0) })

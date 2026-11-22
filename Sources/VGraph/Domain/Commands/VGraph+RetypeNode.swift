@@ -30,7 +30,6 @@ extension VGraph {
         }
     }
 
-    /// Every type other than the current one that may stand in `enclosing`.
     private func retypeOffers(replacing current: NodeType, in enclosing: Group?) -> [NodeType] {
         nodeTypes.filter { candidate in
             candidate != current && !candidate.isUnknown && allows(candidate, in: enclosing)
@@ -51,8 +50,6 @@ extension VGraph {
         }
     }
 
-    /// Retype a node and re-seat every edge around it.
-    ///
     /// `edgeTypes` answers `ambiguousEdges(ifRetyping:to:)` positionally — one per
     /// ambiguous edge, in the same order. An edge the new type determines on its
     /// own needs no answer, and one the notation has no type for at all gets an
@@ -84,8 +81,6 @@ extension VGraph {
         }
         return try result.settingTypes(of: node, to: newType, retyped: retyped)
 
-        /// Short of answers, or an answer naming no option: refuse rather than
-        /// guess which edge the user meant.
         func chosenEdgeType(answer: EdgeType.Id?, among options: [EdgeType]) throws(VError) -> EdgeType {
             guard let answer else {
                 throw VError.commandAnswersMismatched(.changeType, target: node.id)
@@ -115,7 +110,6 @@ extension VGraph {
         options.count > 1
     }
 
-    /// Writes the node's new type and each edge's, once every answer is in.
     /// `retyped` must name every edge at the node.
     private func settingTypes(
         of node: Node, to nodeType: NodeType, retyped: [(edge: Edge.Id, type: EdgeType)]
@@ -138,7 +132,6 @@ extension VGraph {
         }
     }
 
-    /// The edge types `edge` could have were `node` of `newType`.
     private func edgeTypeOptions(for edge: Edge, at node: Node, as newType: NodeType) -> [EdgeType] {
         guard let from = endType(edge.from, at: node, as: newType),
             let to = endType(edge.to, at: node, as: newType)

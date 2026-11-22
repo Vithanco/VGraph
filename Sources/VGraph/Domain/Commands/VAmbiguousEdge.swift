@@ -17,10 +17,4 @@ public struct VAmbiguousEdge: Sendable, Equatable {
     /// How to name the edge to the user — "A → B", by label where there is one.
     public let prompt: String
     public let options: [EdgeType]
-
-    public init(edgeId: String, prompt: String, options: [EdgeType]) {
-        self.edgeId = edgeId
-        self.prompt = prompt
-        self.options = options
-    }
 }

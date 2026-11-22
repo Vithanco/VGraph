@@ -36,10 +36,9 @@ extension VGraph {
     /// What a candidate list counts against a maximum: the edges of `edgeType`
     /// that already count for the element `node` would count for, so an offer and
     /// the check never disagree (ADR-0011).
-    func count(edgesOf edgeType: EdgeType, at node: Node, leaving: Bool) -> Int {
-        let declared = leaving ? edgeType.from : edgeType.to
-        let element = boundElement(at: node, declared: declared)
-        return counted(edgesOf: edgeType).filter { (leaving ? $0.from : $0.to) == element }.count
+    func count(edgesOf edgeType: EdgeType, at node: Node, end: VEdgeEnd) -> Int {
+        let element = boundElement(at: node, declared: edgeType.nodeType(at: end))
+        return counted(edgesOf: edgeType).filter { (end == .from ? $0.from : $0.to) == element }.count
     }
 
     func count(edgesOf edgeType: EdgeType, from: Node, to: Node) -> Int {
@@ -59,9 +58,9 @@ extension VGraph {
     /// Shared by `connectCandidates(from:to:)` and `successorCandidates(from:)`,
     /// so the two offers count a [[Bound]] the same way.
     func exhausted(
-        _ definition: TypedAttributeDefinition<Int>, of nodeType: NodeType, at node: Node, leaving: Bool
+        _ definition: TypedAttributeDefinition<Int>, of nodeType: NodeType, at node: Node, end: VEdgeEnd
     ) -> Bool {
-        exhausted(definition, of: nodeType, count: degree(of: node, leaving: leaving))
+        exhausted(definition, of: nodeType, count: degree(of: node, end: end))
     }
 
     func exhausted(_ definition: TypedAttributeDefinition<Int>, of nodeType: NodeType, count: Int) -> Bool {
@@ -72,12 +71,11 @@ extension VGraph {
         Self.isReached((try? get(edgeType: edgeType.id, attribute: definition)) ?? Bound.unbounded, by: count)
     }
 
-    /// An unstated maximum is never reached.
     private static func isReached(_ max: Int, by count: Int) -> Bool {
         Bound.isStated(max) && count >= max
     }
 
-    private func degree(of node: Node, leaving: Bool) -> Int {
-        edges.filter { (leaving ? $0.from : $0.to) == node }.count
+    private func degree(of node: Node, end: VEdgeEnd) -> Int {
+        edges.filter { $0.node(at: end) == node }.count
     }
 }

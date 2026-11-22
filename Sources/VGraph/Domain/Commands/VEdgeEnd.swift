@@ -13,3 +13,30 @@ public enum VEdgeEnd: Sendable, Equatable {
     case from
     case to
 }
+
+extension VEdgeEnd {
+    public var opposite: VEdgeEnd {
+        switch self {
+        case .from: return .to
+        case .to: return .from
+        }
+    }
+}
+
+extension Edge {
+    func node(at end: VEdgeEnd) -> Node {
+        switch end {
+        case .from: return from
+        case .to: return to
+        }
+    }
+}
+
+extension EdgeType {
+    func nodeType(at end: VEdgeEnd) -> NodeType {
+        switch end {
+        case .from: return from
+        case .to: return to
+        }
+    }
+}

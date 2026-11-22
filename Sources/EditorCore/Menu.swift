@@ -285,12 +285,13 @@ public func suggestedEdgeTypeName(
 /// [[Notation break]] stays reachable. With no candidates at all the break is
 /// the only entry, which is the case a terminal node type lands in.
 public func relatedOptions(
-    from nodeId: String, outgoing: Bool, in session: some ForEditAGraphVisually
+    from nodeId: String, newNodeAt end: VEdgeEnd, in session: some ForEditAGraphVisually
 ) -> [VCommandOption] {
     let candidates =
-        outgoing
-        ? session.successorCandidates(from: nodeId)
-        : session.predecessorCandidates(to: nodeId)
+        switch end {
+        case .to: session.successorCandidates(from: nodeId)
+        case .from: session.predecessorCandidates(to: nodeId)
+        }
 
     var options: [VCommandOption] = []
     for candidate in candidates {

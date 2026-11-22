@@ -17,17 +17,17 @@ extension VGraph {
         guard let sourceType = try? nodeType(for: from), let targetType = try? nodeType(for: to)
         else { return [] }
 
-        if exhausted(Attributes.Node.totalOutDegreeMax, of: sourceType, at: from, leaving: true) { return [] }
-        if exhausted(Attributes.Node.totalInDegreeMax, of: targetType, at: to, leaving: false) { return [] }
+        if exhausted(Attributes.Node.totalOutDegreeMax, of: sourceType, at: from, end: .from) { return [] }
+        if exhausted(Attributes.Node.totalInDegreeMax, of: targetType, at: to, end: .to) { return [] }
         if wouldBeForbiddenParallelEdge(from: from, to: to) { return [] }
 
         return knownEdgeTypes(from: sourceType, to: targetType).filter { !isSpent($0) }
 
         func isSpent(_ edgeType: EdgeType) -> Bool {
             exhausted(
-                Attributes.Edge.outDegreeMax, of: edgeType, count: count(edgesOf: edgeType, at: from, leaving: true))
+                Attributes.Edge.outDegreeMax, of: edgeType, count: count(edgesOf: edgeType, at: from, end: .from))
                 || exhausted(
-                    Attributes.Edge.inDegreeMax, of: edgeType, count: count(edgesOf: edgeType, at: to, leaving: false))
+                    Attributes.Edge.inDegreeMax, of: edgeType, count: count(edgesOf: edgeType, at: to, end: .to))
                 || exhausted(
                     Attributes.Edge.samePairMax, of: edgeType, count: count(edgesOf: edgeType, from: from, to: to))
         }

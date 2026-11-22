@@ -29,10 +29,10 @@ public enum EditorAction: Sendable, Equatable {
     /// Opens an [[Inline edit]] (ADR-0009); the label is typed there.
     case rename(element: String)
     case addNode(in: String, ofType: NodeType, notationBreak: VNotationBreak)
-    case addRelated(to: String, outgoing: Bool, using: EdgeType.Id)
+    case addRelated(to: String, newNodeAt: VEdgeEnd, using: EdgeType.Id)
     /// Past the notation: the node type is chosen directly, so no edge type
     /// carries it and the edge becomes an unknown one.
-    case addRelatedBreaking(to: String, outgoing: Bool, ofType: NodeType)
+    case addRelatedBreaking(to: String, newNodeAt: VEdgeEnd, ofType: NodeType)
     /// `to: nil` leaves the choice to the named method — one candidate it picks
     /// itself, none at all and a permitted break reverses anyway.
     case changeDirection(edge: String, to: EdgeType.Id?, notationBreak: VNotationBreak)
@@ -159,15 +159,15 @@ public func begin(
     case .setLabel: return (.perform(.rename(element: target)), conversation)
 
     case .addSuccessor, .addPredecessor:
-        let outgoing = command == .addSuccessor
-        let options = relatedOptions(from: target, outgoing: outgoing, in: session)
+        let end = newNodeEnd(of: command)
+        let options = relatedOptions(from: target, newNodeAt: end, in: session)
         // One real candidate is not a choice. ⌥ forces the list, which is how
         // the break stays reachable when the question would otherwise be skipped.
         if !forcingChoice, let only = VCommandOption.soleCandidate(in: options) {
             return (
                 .perform(
                     .addRelated(
-                        to: target, outgoing: outgoing, using: EdgeType.Id(string: only.id))),
+                        to: target, newNodeAt: end, using: EdgeType.Id(string: only.id))),
                 conversation
             )
         }
@@ -475,12 +475,12 @@ public func next(
         case .deleteView:
             return (option.id == "delete" ? .perform(.deleteView(name: target)) : .dismiss, conversation)
         case .addSuccessor, .addPredecessor:
-            let outgoing = conversation.command == .addSuccessor
+            let end = newNodeEnd(of: conversation.command)
             if conversation.breakChoice {
                 return (
                     .perform(
                         .addRelatedBreaking(
-                            to: target, outgoing: outgoing,
+                            to: target, newNodeAt: end,
                             ofType: NodeType(string: option.id))),
                     conversation
                 )
@@ -488,7 +488,7 @@ public func next(
             return (
                 .perform(
                     .addRelated(
-                        to: target, outgoing: outgoing,
+                        to: target, newNodeAt: end,
                         using: EdgeType.Id(string: option.id))),
                 conversation
             )
@@ -618,4 +618,8 @@ private func prompt(for command: VCommandID) -> String {
     case .changeType: return "Change type"
     default: return ""
     }
+}
+
+private func newNodeEnd(of command: VCommandID) -> VEdgeEnd {
+    command == .addSuccessor ? .to : .from
 }

@@ -18,8 +18,6 @@ extension VGraph {
         return (result, nodeForInlineEdit(newNode, ofType: type))
     }
 
-    /// `nil` for a type that displays no text of its own, so there is nothing
-    /// to edit.
     func nodeForInlineEdit(_ node: Node, ofType type: NodeType) -> Node? {
         hasUserText(nodeType: type) ? node : nil
     }
@@ -33,10 +31,9 @@ extension VGraph {
         return (try adding(placeholder: newNode, ofType: type, in: group), newNode)
     }
 
-    /// For a caller that had to mint `node`'s id before changing the graph. The
-    /// label is explicit, never absent — an absent label does not survive a
-    /// reparse unchanged (ADR-0009).
-    func adding(placeholder node: Node, ofType type: NodeType, in group: Group?) throws(VError) -> VGraph {
+    /// The label is explicit, never absent — an absent label does not survive
+    /// a reparse unchanged (ADR-0009).
+    func adding(placeholder node: Node, ofType type: NodeType, in group: Group) throws(VError) -> VGraph {
         try add(node: node, type: type, group: group).set(
             node: node,
             attribute: Attributes.Node.label.attribute(Attributes.Node.placeholderLabel))

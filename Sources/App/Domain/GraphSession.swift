@@ -746,8 +746,9 @@ public final class GraphSession<
     }
 
     /// The [[Notation break]] path, for an edge the notation gives nothing to
-    /// insert into: any node type, joined by unknown edge types. Asking for it
-    /// *is* permitting the break, so there is nothing to grey out.
+    /// insert into: any node type, and an unknown edge type for each half the
+    /// notation cannot join. Asking for it *is* permitting the break, so there
+    /// is nothing to grey out.
     @discardableResult
     public func split(_ edgeId: String, ofType node: NodeType) throws(VError) -> String? {
         guard case .edge(let edge) = try target(edgeId, .split) else {
@@ -894,7 +895,7 @@ public final class GraphSession<
     /// The new node's id, or `nil` if the command produced nothing to name.
     @discardableResult
     public func addSuccessor(from nodeId: String, using edge: EdgeType.Id) throws(VError) -> String? {
-        try addRelated(nodeId, using: edge, outgoing: true)
+        try addRelated(nodeId, using: edge, newNodeAt: .to)
     }
 
     /// The [[Notation break]] path: any node type, joined by an unknown edge
@@ -902,32 +903,40 @@ public final class GraphSession<
     /// which is what makes it reachable on a type the notation leads nowhere from.
     @discardableResult
     public func addSuccessor(from nodeId: String, ofType node: NodeType) throws(VError) -> String? {
-        try addRelated(nodeId, ofType: node, outgoing: true)
+        try addRelated(nodeId, ofType: node, newNodeAt: .to)
     }
 
     @discardableResult
     public func addPredecessor(to nodeId: String, using edge: EdgeType.Id) throws(VError) -> String? {
-        try addRelated(nodeId, using: edge, outgoing: false)
+        try addRelated(nodeId, using: edge, newNodeAt: .from)
     }
 
     @discardableResult
     public func addPredecessor(to nodeId: String, ofType node: NodeType) throws(VError) -> String? {
-        try addRelated(nodeId, ofType: node, outgoing: false)
+        try addRelated(nodeId, ofType: node, newNodeAt: .from)
     }
 
     /// Successor and predecessor are one operation with the ends swapped, so
     /// they are one body here too — the direction is the only thing that differs.
+    private static func addRelatedCommand(newNodeAt end: VEdgeEnd) -> VCommandID {
+        switch end {
+        case .to: return .addSuccessor
+        case .from: return .addPredecessor
+        }
+    }
+
     private func addRelated(
-        _ nodeId: String, using edge: EdgeType.Id, outgoing: Bool
+        _ nodeId: String, using edge: EdgeType.Id, newNodeAt end: VEdgeEnd
     ) throws(VError) -> String? {
-        let command: VCommandID = outgoing ? .addSuccessor : .addPredecessor
+        let command = Self.addRelatedCommand(newNodeAt: end)
         guard case .node(let source) = try target(nodeId, command) else {
             throw VError.commandUnavailable(command, target: nodeId)
         }
         let candidates =
-            outgoing
-            ? origin.successorCandidates(from: source)
-            : origin.predecessorCandidates(to: source)
+            switch end {
+            case .to: origin.successorCandidates(from: source)
+            case .from: origin.predecessorCandidates(to: source)
+            }
         // The notation offering nothing is what makes this breakable — and the
         // break has its own overload, so this one refuses.
         guard !candidates.isEmpty else {
@@ -939,20 +948,20 @@ public final class GraphSession<
         }
 
         let (changed, created) = try origin.addingRelated(
-            to: source, ofType: chosen.nodeType, using: chosen.edgeType, outgoing: outgoing)
+            to: source, ofType: chosen.nodeType, using: chosen.edgeType, newNodeAt: end)
         try commit(changed)
         return created?.id
     }
 
     private func addRelated(
-        _ nodeId: String, ofType type: NodeType, outgoing: Bool
+        _ nodeId: String, ofType type: NodeType, newNodeAt end: VEdgeEnd
     ) throws(VError) -> String? {
-        let command: VCommandID = outgoing ? .addSuccessor : .addPredecessor
+        let command = Self.addRelatedCommand(newNodeAt: end)
         guard case .node(let source) = try target(nodeId, command) else {
             throw VError.commandUnavailable(command, target: nodeId)
         }
         let (changed, created) = try origin.addingRelated(
-            to: source, ofType: type, using: nil, outgoing: outgoing)
+            to: source, ofType: type, using: nil, newNodeAt: end)
         try commit(changed)
         return created?.id
     }

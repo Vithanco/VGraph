@@ -17,14 +17,14 @@ extension VGraph {
 
     /// One detail per edge, or a single one for a node with no edges. The
     /// details stand beside the node until it has become their group.
-    private func givingDetails(to node: Node, ofTypes details: [NodeType]) throws(VError) -> Decomposition {
+    private func givingDetails(to node: Node, ofTypes detailTypes: [NodeType]) throws(VError) -> Decomposition {
         let start = Decomposition(graph: self, details: [], parent: group(of: node) ?? Group.root)
         let edgesToMove = edgesInDeclarationOrder(at: node)
         guard !edgesToMove.isEmpty else {
-            return try start.addingDetail(details[0]).decomposition
+            return try start.addingDetail(detailTypes[0]).decomposition
         }
         return try edgesToMove.folding(start) { (soFar, edge) throws(VError) in
-            try soFar.moving(edge, off: node, onto: details)
+            try soFar.moving(edge, off: node, onto: detailTypes)
         }
     }
 
@@ -41,8 +41,8 @@ extension VGraph {
             return (Decomposition(graph: added, details: details + [detail], parent: parent), detail)
         }
 
-        func moving(_ edge: Edge, off node: Node, onto types: [NodeType]) throws(VError) -> Decomposition {
-            let landing = try graph.landing(of: edge, at: node, among: types)
+        func moving(_ edge: Edge, off node: Node, onto detailTypes: [NodeType]) throws(VError) -> Decomposition {
+            let landing = try graph.landing(of: edge, at: node, among: detailTypes)
             let (withFrom, from) = try addingDetail(landing.from)
             let (withTo, to) = try withFrom.addingDetail(landing.to)
             return Decomposition(
@@ -70,12 +70,12 @@ extension VGraph {
     /// for a self-loop. A landing where the edge keeps its type wins, then one
     /// some declared type holds; with neither, R1 mints unknown.
     private func landing(
-        of edge: Edge, at node: Node, among details: [NodeType]
+        of edge: Edge, at node: Node, among detailTypes: [NodeType]
     ) throws(VError) -> (from: NodeType?, to: NodeType?) {
         let fromType = try nodeType(for: edge.from)
         let toType = try nodeType(for: edge.to)
         let current = try edgeType(for: edge.id)
-        let landings = Self.possibleLandings(of: edge, at: node, among: details)
+        let landings = Self.possibleLandings(of: edge, at: node, among: detailTypes)
 
         return landings.first { holds(current, from: pair($0).from, to: pair($0).to) }
             ?? landings.first { declaredEdgeType(holdingFrom: pair($0).from, to: pair($0).to) != nil }
@@ -88,16 +88,15 @@ extension VGraph {
 
     /// `nil` is an end that stays where it is.
     private static func possibleLandings(
-        of edge: Edge, at node: Node, among details: [NodeType]
+        of edge: Edge, at node: Node, among detailTypes: [NodeType]
     ) -> [(from: NodeType?, to: NodeType?)] {
         switch (edge.from == node, edge.to == node) {
-        case (true, true): return details.flatMap { from in details.map { (from: from, to: $0) } }
-        case (true, false): return details.map { (from: $0, to: nil) }
-        default: return details.map { (from: nil, to: $0) }
+        case (true, true): return detailTypes.flatMap { from in detailTypes.map { (from: from, to: $0) } }
+        case (true, false): return detailTypes.map { (from: $0, to: nil) }
+        default: return detailTypes.map { (from: nil, to: $0) }
         }
     }
 
-    /// The values follow the element to its new key, in every layer.
     private func movingValues(from old: ItemKey, to new: ItemKey) -> VGraph {
         updatedSelfWith(ads: ads.rekeying(from: old, to: new))
     }

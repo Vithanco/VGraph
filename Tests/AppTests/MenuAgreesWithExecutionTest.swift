@@ -175,15 +175,15 @@ struct MenuAgreesWithExecutionTest {
                         // The editor always shows a list here — the break entry
                         // is unconditional — so drive it the way the editor
                         // would, through the first real option.
-                        let outgoing = entry.id == .addSuccessor
+                        let end: VEdgeEnd = entry.id == .addSuccessor ? .to : .from
                         let options = EditorCore.relatedOptions(
-                            from: elementId, outgoing: outgoing, in: session)
+                            from: elementId, newNodeAt: end, in: session)
                         guard let real = options.first(where: { !$0.isBreak }) else {
                             continue  // only the break on offer; ⌥ is the way in
                         }
                         let edge = EdgeType.Id(string: real.id)
                         ran = didRun {
-                            if outgoing {
+                            if end == .to {
                                 _ = try session.addSuccessor(from: elementId, using: edge)
                             } else {
                                 _ = try session.addPredecessor(to: elementId, using: edge)

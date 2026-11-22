@@ -56,7 +56,6 @@ extension VGraph {
         EdgeWriting(attributes: getOwnAttributes(edge: edge), place: declarationPosition(of: edge))
     }
 
-    /// Skips any value whose definition has since gone.
     func restoring(_ writing: EdgeWriting, onto edge: Edge.Id) throws(VError) -> VGraph {
         let definitions = attributeDefinitions
         return try writing.attributes.folding(placing(edge: edge, at: writing.place)) { (result, written) throws(VError) in

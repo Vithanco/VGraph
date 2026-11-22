@@ -64,7 +64,6 @@ extension VGraph {
     }
 }
 
-/// A text value every element kind carries, each under its own attribute.
 private struct ElementText {
     let node: TypedAttributeDefinition<String>
     let edge: TypedAttributeDefinition<String>

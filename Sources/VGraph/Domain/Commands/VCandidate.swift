@@ -11,12 +11,6 @@ public struct VCandidate: Sendable, Equatable {
     public let edgeType: EdgeType
     public let nodeType: NodeType
     public let title: String
-
-    public init(edgeType: EdgeType, nodeType: NodeType, title: String) {
-        self.edgeType = edgeType
-        self.nodeType = nodeType
-        self.title = title
-    }
 }
 
 // MARK: - Resolving an answer against what was offered

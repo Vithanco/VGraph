@@ -25,7 +25,7 @@ struct AddSuccessorTest {
     @Test func choosingACandidateCreatesNodeAndEdge() throws {
         let s = try session()
 
-        let options = EditorCore.relatedOptions(from: "a", outgoing: true, in: s)
+        let options = EditorCore.relatedOptions(from: "a", newNodeAt: .to, in: s)
         #expect(options.map(\.title) == ["Relation", "Other type…"])
 
         let created = try s.addSuccessor(from: "a", using: EdgeType.Id(string: "concept_to_relation"))
@@ -207,6 +207,6 @@ struct AddSuccessorTest {
                 """)
 
         // Only the break itself — the notation has no candidate to add.
-        #expect(EditorCore.relatedOptions(from: "o", outgoing: true, in: terminal).map(\.isBreak) == [true])
+        #expect(EditorCore.relatedOptions(from: "o", newNodeAt: .to, in: terminal).map(\.isBreak) == [true])
     }
 }

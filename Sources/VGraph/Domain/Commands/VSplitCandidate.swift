@@ -15,12 +15,6 @@ public struct VSplitCandidate: Sendable, Equatable {
     public let outgoing: EdgeType
     public let title: String
 
-    public init(incoming: EdgeType, outgoing: EdgeType, title: String) {
-        self.incoming = incoming
-        self.outgoing = outgoing
-        self.title = title
-    }
-
     public var nodeType: NodeType { incoming.to }
 
     /// Stable within one conversation, which is all replay needs (ADR-0013).

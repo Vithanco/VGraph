@@ -76,7 +76,7 @@ struct ConversationTest {
             step
                 == .perform(
                     .addRelated(
-                        to: "a", outgoing: true,
+                        to: "a", newNodeAt: .to,
                         using: EdgeType.Id(string: "concept_to_relation"))))
     }
 
@@ -115,7 +115,7 @@ struct ConversationTest {
             step
                 == .perform(
                     .addRelated(
-                        to: "a", outgoing: false,
+                        to: "a", newNodeAt: .from,
                         using: EdgeType.Id(string: "relation_to_concept"))))
     }
 
@@ -521,7 +521,7 @@ struct ConversationTest {
             step
                 == .perform(
                     .addRelatedBreaking(
-                        to: "a", outgoing: true, ofType: NodeType(string: "Concept"))))
+                        to: "a", newNodeAt: .to, ofType: NodeType(string: "Concept"))))
     }
 
     /// The node-type list from `addNode` carries no escape hatch, so its answer
@@ -702,7 +702,7 @@ struct ConversationTest {
             step
                 == .perform(
                     .addRelated(
-                        to: "r", outgoing: true,
+                        to: "r", newNodeAt: .to,
                         using: EdgeType.Id(string: "relation_to_concept"))))
     }
 }

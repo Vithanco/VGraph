@@ -149,11 +149,11 @@ extension GenericQualityChecks {
 
         messages.append(
             contentsOf: shortfallMessages(
-                under: bounds.outDegreeMin, of: edgeType.from, counting: ofThisType, leaving: true,
+                under: bounds.outDegreeMin, of: edgeType.from, counting: ofThisType, at: .from,
                 named: name, in: graph))
         messages.append(
             contentsOf: shortfallMessages(
-                under: bounds.inDegreeMin, of: edgeType.to, counting: ofThisType, leaving: false,
+                under: bounds.inDegreeMin, of: edgeType.to, counting: ofThisType, at: .to,
                 named: name, in: graph))
         messages.append(
             contentsOf: pairShortfallMessages(under: bounds.samePairMin, in: ofThisType, named: name, in: graph))
@@ -185,14 +185,14 @@ extension GenericQualityChecks {
     /// The node, because there is no missing edge to point at; a warning, because
     /// every unfinished document is short of its minima (ADR-0011).
     private static func shortfallMessages(
-        under min: Int, of nodeType: NodeType, counting edges: [Counted], leaving: Bool,
+        under min: Int, of nodeType: NodeType, counting edges: [Counted], at end: VEdgeEnd,
         named name: String, in graph: VGraph
     ) -> [MessageWithSeverity] {
         guard Bound.isStated(min), min > 0 else { return [] }
         var messages: [MessageWithSeverity] = []
         for element in graph.boundElements(of: nodeType) {
             var count = 0
-            for counted in edges where (leaving ? counted.from : counted.to) == element {
+            for counted in edges where (end == .from ? counted.from : counted.to) == element {
                 count += 1
             }
             guard count < min else { continue }
@@ -200,7 +200,7 @@ extension GenericQualityChecks {
                 MessageWithSeverity(
                     message:
                         "\(quoted(label(of: element, in: graph))) needs at least \(min) \"\(name)\" "
-                        + "\(leaving ? "outgoing" : "incoming") edge\(min == 1 ? "" : "s") — has \(count)",
+                        + "\(edgeDirection(at: end)) edge\(min == 1 ? "" : "s") — has \(count)",
                     severity: .warning,
                     target: .node(element.id)))
         }
@@ -257,18 +257,18 @@ extension GenericQualityChecks {
             guard let actual = try? graph.nodeType(for: node), actual == nodeType else { continue }
             messages.append(
                 contentsOf: totalMessages(
-                    node: node, edges: topology.outgoingEdges(of: node), min: outDegreeMin, max: outDegreeMax, leaving: true, in: graph))
+                    node: node, edges: topology.outgoingEdges(of: node), min: outDegreeMin, max: outDegreeMax, at: .from, in: graph))
             messages.append(
                 contentsOf: totalMessages(
-                    node: node, edges: topology.incomingEdges(of: node), min: inDegreeMin, max: inDegreeMax, leaving: false, in: graph))
+                    node: node, edges: topology.incomingEdges(of: node), min: inDegreeMin, max: inDegreeMax, at: .to, in: graph))
         }
         return messages
     }
 
     private static func totalMessages(
-        node: Node, edges: [Edge], min: Int, max: Int, leaving: Bool, in graph: VGraph
+        node: Node, edges: [Edge], min: Int, max: Int, at end: VEdgeEnd, in graph: VGraph
     ) -> [MessageWithSeverity] {
-        let direction = leaving ? "outgoing" : "incoming"
+        let direction = edgeDirection(at: end)
         var messages: [MessageWithSeverity] = []
 
         if Bound.isStated(max), edges.count > max {
@@ -309,5 +309,12 @@ extension GenericQualityChecks {
         case .node(let node): return label(of: node, in: graph)
         case .detailedNode(let group): return label(of: group, in: graph)
         }
+    }
+}
+
+private func edgeDirection(at end: VEdgeEnd) -> String {
+    switch end {
+    case .from: return "outgoing"
+    case .to: return "incoming"
     }
 }

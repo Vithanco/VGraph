@@ -153,7 +153,9 @@ struct SplitEdgeTest {
         let exported = try s.exportVGL()
         #expect(exported.contains("edge a -> concept_2"))
         #expect(exported.contains("edge concept_2 -> r"))
-        #expect(!GenericQualityChecks.unknownEdgeTypes(graph: s.origin).isEmpty)
+        // Concept → Relation is a pair the notation joins; only Concept → Concept breaks it.
+        let unknown = s.origin.edges.filter { (try? s.origin.edgeType(for: $0.id))?.isUnknown == true }
+        #expect(unknown.map { "\($0.from.id) -> \($0.to.id)" } == ["a -> concept_2"])
     }
 
     /// The inserted node takes the edge's place, group included.

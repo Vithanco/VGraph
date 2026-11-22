@@ -111,18 +111,20 @@ private func perform(_ action: EditorAction) {
     case .addNode(let group, let type, let allowed):
         applyMakingNode(group) { s throws(VError) in try s.addNode(in: group, ofType: type, notationBreak: allowed) }
 
-    case .addRelated(let target, let outgoing, let edge):
+    case .addRelated(let target, let end, let edge):
         applyMakingNode(target) { s throws(VError) in
-            outgoing
-                ? try s.addSuccessor(from: target, using: edge)
-                : try s.addPredecessor(to: target, using: edge)
+            switch end {
+            case .to: try s.addSuccessor(from: target, using: edge)
+            case .from: try s.addPredecessor(to: target, using: edge)
+            }
         }
 
-    case .addRelatedBreaking(let target, let outgoing, let type):
+    case .addRelatedBreaking(let target, let end, let type):
         applyMakingNode(target) { s throws(VError) in
-            outgoing
-                ? try s.addSuccessor(from: target, ofType: type)
-                : try s.addPredecessor(to: target, ofType: type)
+            switch end {
+            case .to: try s.addSuccessor(from: target, ofType: type)
+            case .from: try s.addPredecessor(to: target, ofType: type)
+            }
         }
 
     case .connect(let from, let to, let using, let allowed):

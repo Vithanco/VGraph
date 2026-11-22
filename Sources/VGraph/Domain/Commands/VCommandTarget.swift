@@ -31,16 +31,10 @@ public enum VCommandTarget: Sendable, Equatable {
 }
 
 extension VGraph {
-    /// Resolve an element id — as stamped on rendered elements by the display
-    /// pipeline (the SVG `node-`/`edge-`/`group-` id minus its prefix) — to the
-    /// concrete OriginGraph element it names.
-    ///
-    /// Element ids are globally unique within a valid graph (nodes, edges and
-    /// groups share one attribute keyspace; a duplicate fails the parse), so at
-    /// most one kind matches. A folded group renders as a node whose id equals
-    /// the group id, so `resolveCommandTarget(id:)` correctly returns `.group`.
-    /// Returns nil for an unknown id (e.g. a stale menu / a synthesized element
-    /// with no OriginGraph counterpart).
+    /// `id` is a rendered element's SVG id minus its `node-`/`edge-`/`group-`
+    /// prefix. Nodes, edges and groups share one keyspace, so at most one kind
+    /// matches; a folded group renders as a node with the group's id and
+    /// resolves to `.group`.
     public func resolveCommandTarget(id: String) -> VCommandTarget? {
         let node = Node(string: id)
         if has(node: node) { return .node(node) }

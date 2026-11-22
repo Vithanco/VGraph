@@ -29,10 +29,26 @@ struct EdgeOperationsTests {
         let candidate = try #require(graph.successorCandidates(from: source).first)
 
         let (changed, created) = try graph.addingRelated(
-            to: source, ofType: candidate.nodeType, using: candidate.edgeType, outgoing: true)
+            to: source, ofType: candidate.nodeType, using: candidate.edgeType, newNodeAt: .to)
 
         #expect(created == Node(string: "relation_2"))
         #expect(changed.get(edge: Edge.Id(string: "a_relation_2_2")) != nil)
+    }
+
+    /// A node in no group is never drawn, so a new node whose neighbour has no
+    /// group lands in the root, as `addingNode`'s does.
+    @Test func aNewNodeBesideAGrouplessNodeLandsInTheRoot() throws {
+        let graph = try conceptMap()
+        let source = Node(string: "a")
+        let candidate = try #require(graph.successorCandidates(from: source).first)
+
+        let (related, relation) = try graph.addingRelated(
+            to: source, ofType: candidate.nodeType, using: candidate.edgeType, newNodeAt: .to)
+        #expect(related.group(of: try #require(relation)) == Group.root)
+
+        let edge = try #require(related.edges.first).id
+        let (split, inserted) = try related.splitting(edge, into: types.concept, incoming: nil, outgoing: nil)
+        #expect(split.group(of: try #require(inserted)) == Group.root)
     }
 
     /// An edit of an edge that is not there is refused, not silently skipped:
