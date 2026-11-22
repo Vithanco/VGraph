@@ -104,6 +104,7 @@ test filter='': build
     ./scripts/doctor-sdk.test.sh
     ./scripts/embedded-unicode.test.sh
     ./scripts/record-engine-build.test.sh
+    ./scripts/check-engine-build.test.sh
     ./scripts/codeowners.test.sh
     ./scripts/licence.test.sh
     ./scripts/audit-public.test.sh
@@ -437,36 +438,7 @@ publish-plugins marketplace='now': _require-maintainer _release-preflight
     # Both plugins ship the engine, so a release must name the VGraph commit it was
     # built from: the one build-wasm.sh recorded. (_release-preflight has checked
     # VGraph and the plugin branches, and fetched origin/main.)
-    # What build-wasm.sh reads. A version-bump commit after the build is expected.
-    ENGINE_PATHS=(Sources Package.swift Package.resolved .swift-version build-wasm.sh
-        scripts/wasm-sdk.sh scripts/embedded-unicode.sh VGraphWasm/Package.swift
-        VGraphWasm/Package.resolved VGraphWasm/Sources VGraphWasm/VGraphEditor VGraphWasm/scripts)
-    BUILT=""
-    if [ ! -f website/Package/VGRAPH_BUILD ]; then
-        echo "Preflight: no record of which commit built website/Package — rebuild it with 'just release'." >&2
-        FAIL=1
-    else
-        read -r BUILT BUILT_SUM < website/Package/VGRAPH_BUILD
-        if [ "$BUILT" = unknown ]; then
-            echo "Preflight: the engine was built from an unknown commit — git could not read the checkout. Rebuild it here." >&2
-            FAIL=1
-        elif [ "${BUILT%-dirty}" != "$BUILT" ]; then
-            echo "Preflight: the engine was built from uncommitted changes on ${BUILT:0:12} — commit and merge them, then rebuild with 'just release'." >&2
-            FAIL=1
-        elif ! git merge-base --is-ancestor "$BUILT" origin/main 2>/dev/null; then
-            echo "Preflight: the engine was built from ${BUILT:0:12}, which is not on origin/main." >&2
-            FAIL=1
-        elif ! git diff --quiet "$BUILT" HEAD -- "${ENGINE_PATHS[@]}"; then
-            echo "Preflight: the engine sources changed since the build at ${BUILT:0:12} — rebuild with 'just release'." >&2
-            FAIL=1
-        fi
-        for w in website/Package obsidian-vithanco vscode-vithanco; do
-            if [ "$(shasum -a 256 < "$w/VGraphWasm.wasm" | cut -d' ' -f1)" != "$BUILT_SUM" ]; then
-                echo "Preflight: $w/VGraphWasm.wasm is not the engine built at ${BUILT:0:12}." >&2
-                FAIL=1
-            fi
-        done
-    fi
+    BUILT=$(./scripts/check-engine-build.sh obsidian-vithanco vscode-vithanco) || FAIL=1
     ENGINE="VGraph ${BUILT:0:12}"
     for spec in "obsidian-vithanco:main.js" "vscode-vithanco:vithanco-${OBS_V}.vsix"; do
         DIR=${spec%%:*}; ASSET=${spec#*:}

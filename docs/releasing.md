@@ -62,8 +62,12 @@ checks `main` after the push.
 
 Run `just publish-all` again. It skips `just release` while nothing that ships
 has changed since it passed, the plugins when they carry the version, and
-`vgraph-mcp`'s tag, npm and the MCP Registry when each does. It redeploys the
-website and Cloud Run, which is harmless. The registry publish retries on its own, because the registry stalls
+`vgraph-mcp`'s tag, npm and the MCP Registry when each does, and Cloud Build
+when an image was already built from the same sources (its tag is their hash).
+It redeploys the website and Cloud Run, which is harmless.
+
+Nothing compiles twice. Every consumer ships the engine `just release` built:
+the plugins and the npm host refuse any other (`scripts/check-engine-build.sh`). The registry publish retries on its own, because the registry stalls
 now and then.
 To finish one place by hand, run its recipe: `publish-plugins`,
 `publish-website`, `publish-vscode-marketplace`, or in `vgraph-mcp`

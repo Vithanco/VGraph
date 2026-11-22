@@ -45,7 +45,7 @@ given_plugins_at() { # version, in a fresh directory WORK with pushed plugin rep
     export GH_LOG="$WORK/gh.log" NPX_LOG="$WORK/npx.log"
     : > "$GH_LOG"; : > "$NPX_LOG"
     mkdir -p "$WORK/website/Package" "$WORK/scripts"
-    cp "$REPO_ROOT/scripts/check-wasm-optimized.sh" "$REPO_ROOT/scripts/vscode-marketplace.sh" "$WORK/scripts/"
+    cp "$REPO_ROOT/scripts/check-wasm-optimized.sh" "$REPO_ROOT/scripts/vscode-marketplace.sh" "$REPO_ROOT/scripts/check-engine-build.sh" "$WORK/scripts/"
     printf '\0asm\1\0\0\0' > "$WORK/website/Package/VGraphWasm.wasm"
     for p in obsidian-vithanco vscode-vithanco; do
         git init -q --bare -b main "$WORK/$p.git"
