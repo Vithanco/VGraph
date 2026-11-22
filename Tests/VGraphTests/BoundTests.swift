@@ -224,10 +224,8 @@ struct BoundTests {
 
     // MARK: - What the menu is allowed to offer
 
-    /// The two overloads differ in exactly this, which is the only reason both
-    /// exist: a bound is spent at a *node*, and a node type has no edges to count.
-    @Test("The node-type overload ignores bounds")
-    func theTypeOverloadIgnoresBounds() throws {
+    @Test("An exhausted outDegreeMax removes the candidate")
+    func exhaustedPerSourceMaxIsNotOffered() throws {
         var graph = try conceptMap()
         graph = try concept("a", "Dog", in: graph)
         graph = try relation("r", "is a", in: graph)
@@ -235,7 +233,6 @@ struct BoundTests {
         graph = try bound(Attributes.Edge.outDegreeMax, 1, on: CM.EdgeTypes.conceptToRelation, in: graph)
 
         #expect(graph.successorCandidates(from: Node(string: "a")).isEmpty)
-        #expect(graph.successorCandidates(of: CM.NodeTypes.concept).count == 1)
     }
 
     /// The node a candidate would create starts life with exactly one edge, so a

@@ -135,9 +135,9 @@ func performSelectionCommand(_ commandId: VCommandID) {
     var created: String? = nil
     runNamed { s throws(VError) in
         created =
-            target.detached == 0
-            ? try s.addGroup(containing: members)
-            : try s.addGroup(moving: members)
+            target.detachesAny
+            ? try s.addGroup(moving: members)
+            : try s.addGroup(containing: members)
     }
     guard let group = created else { return }
 

@@ -2,7 +2,7 @@ extension VGraph {
     /// What a copy carries. Label, comments, root values and views belong
     /// to the document, not to the elements, so they stay behind.
     public func excerpt(of ids: [String]) throws(VError) -> VGraph {
-        let root = Group(rawValue: rootGroup)
+        let root = Group.root
         var keptNodes: Set<String> = []
         var keptGroups: Set<String> = []
         var result = self

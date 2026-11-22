@@ -6,13 +6,12 @@
 //
 
 /// Names one command. An **open set**, not an enum: `init(_:)` is public, so a
-/// command this build has never heard of is still representable — which is what
-/// keeps the catalogue extensible and lets a caller name a deliberately unknown
-/// id (a stale click, a test).
+/// command this build has never heard of is still representable — which lets a
+/// caller name a deliberately unknown id (a stale click, a test).
 ///
 /// The point is the static members below. An adapter reaching for a command by
 /// name writes `.setLabel`, so a misspelling is a compile error rather than a
-/// silent `.unavailable` that looks exactly like a disabled command.
+/// silent `.notApplicable` that looks exactly like a disabled command.
 public struct VCommandID: Hashable, Sendable {
     public let raw: String
 
@@ -66,8 +65,8 @@ extension VCommandID {
     /// command: unfolding never decomposes.
     public static let decompose = VCommandID("decompose")
 
-    /// The only [[Gesture]], and the one command with no menu entry — an adapter
-    /// that wants it must know it by name (ADR-0012).
+    /// A [[Gesture]] with no menu entry — an adapter that wants it must know it
+    /// by name (ADR-0012).
     public static let connect = VCommandID("connect")
 
     /// Moves one [[Edge end]] to another node. A [[Gesture]] too, and the first

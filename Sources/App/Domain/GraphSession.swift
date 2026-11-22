@@ -934,7 +934,7 @@ public final class GraphSession<
             throw VError.commandUnavailable(command, target: nodeId)
         }
 
-        guard let chosen = candidates.joined(by: edge) else {
+        guard let chosen = candidates.named(edge) else {
             throw VError.commandOptionNotOffered(command, target: nodeId, option: edge.id)
         }
 
@@ -1130,7 +1130,7 @@ public final class GraphSession<
         let sourceType = try origin.nodeType(for: existing.from)
         let targetType = try origin.nodeType(for: existing.to)
         let (declared, edgeType) = try origin.declaring(
-            EdgeType.Id(string: name), from: sourceType, to: targetType)
+            edgeType: EdgeType.Id(string: name), from: sourceType, to: targetType)
         var result = try declared.reattach(edge: edge, edgeType: edgeType)
 
         // Take the minted type away with the last edge wearing it. Promotion

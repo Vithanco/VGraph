@@ -21,12 +21,7 @@ extension VGraph {
 
     /// Plain groups are transparent: they arrange details, they do not detail.
     public func detailedNode(holding group: Group?) -> Group? {
-        var current = group
-        while let candidate = current {
-            if isDetailed(candidate) { return candidate }
-            current = parentGroup(of: candidate)
-        }
-        return nil
+        groupAncestry(from: group).first { isDetailed($0) }
     }
 
     /// ADR-0032's one rule for placement: what the containment check accepts.

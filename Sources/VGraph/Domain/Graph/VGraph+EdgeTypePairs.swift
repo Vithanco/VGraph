@@ -26,6 +26,12 @@ extension VGraph {
         knownEdgeTypes(from: from, to: to).first
     }
 
+    /// What ADR-0032's R1 falls back to when an edge's own type stops holding
+    /// its pair: never a minted or derived type, which stand for one pair only.
+    func declaredEdgeType(holdingFrom from: NodeType, to: NodeType) -> EdgeType? {
+        edgeTypes(holdingFrom: from, to: to).first { gains($0) }
+    }
+
     func holds(_ edgeType: EdgeType, from: NodeType, to: NodeType) -> Bool {
         (edgeType.from == from && edgeType.to == to)
             || gainedPairs(of: edgeType, declared: declaredPairs).contains(NodeTypePair(from: from, to: to))

@@ -19,46 +19,31 @@ extension VGraph {
 
         if exhausted(Attributes.Node.totalOutDegreeMax, of: sourceType, at: from, leaving: true) { return [] }
         if exhausted(Attributes.Node.totalInDegreeMax, of: targetType, at: to, leaving: false) { return [] }
-        if Notations.criteria(of: self).contains(.noParallelEdges), typedGraph.graph.edgeExists(from: from, to: to) {
-            return []
+        if wouldBeForbiddenParallelEdge(from: from, to: to) { return [] }
+
+        return knownEdgeTypes(from: sourceType, to: targetType).filter { !isSpent($0) }
+
+        func isSpent(_ edgeType: EdgeType) -> Bool {
+            exhausted(
+                Attributes.Edge.outDegreeMax, of: edgeType, count: count(edgesOf: edgeType, at: from, leaving: true))
+                || exhausted(
+                    Attributes.Edge.inDegreeMax, of: edgeType, count: count(edgesOf: edgeType, at: to, leaving: false))
+                || exhausted(
+                    Attributes.Edge.samePairMax, of: edgeType, count: count(edgesOf: edgeType, from: from, to: to))
         }
 
-        var result: [EdgeType] = []
-        for edgeType in knownEdgeTypes(from: sourceType, to: targetType) {
-            if exhausted(
-                Attributes.Edge.outDegreeMax, of: edgeType,
-                count: count(edgesOf: edgeType, at: from, leaving: true))
-            {
-                continue
-            }
-            if exhausted(
-                Attributes.Edge.inDegreeMax, of: edgeType,
-                count: count(edgesOf: edgeType, at: to, leaving: false))
-            {
-                continue
-            }
-            if exhausted(
-                Attributes.Edge.samePairMax, of: edgeType,
-                count: count(edgesOf: edgeType, from: from, to: to))
-            {
-                continue
-            }
-            result.append(edgeType)
+        func wouldBeForbiddenParallelEdge(from: Node, to: Node) -> Bool {
+            Notations.criteria(of: self).contains(.noParallelEdges) && typedGraph.getFirstEdge(from: from, to: to) != nil
         }
-        return result
     }
 
-    private func exhausted(
-        _ definition: TypedAttributeDefinition<Int>, of nodeType: NodeType, at node: Node, leaving: Bool
-    ) -> Bool {
-        let max = (try? get(nodeType: nodeType, attribute: definition)) ?? Bound.unbounded
-        return Bound.isStated(max) && degree(of: node, leaving: leaving) >= max
-    }
-
-    private func exhausted(
-        _ definition: TypedAttributeDefinition<Int>, of edgeType: EdgeType, count: Int
-    ) -> Bool {
-        let max = (try? get(edgeType: edgeType.id, attribute: definition)) ?? Bound.unbounded
-        return Bound.isStated(max) && count >= max
+    /// `connectCandidates` for the pair `edge` would join once changed — a `nil`
+    /// end staying where it is — **asked of the graph minus `edge`**. An edge
+    /// about to move or be retyped must not count against the [[Bound]] budget
+    /// it is about to vacate; the command deletes before it adds, so it
+    /// validates against the same reduced graph (ADR-0011, ADR-0021).
+    func connectCandidates(replacing edge: Edge.Id, from: Node? = nil, to: Node? = nil) -> [EdgeType] {
+        guard let existing = get(edge: edge), let withoutEdge = try? delete(edge: edge) else { return [] }
+        return withoutEdge.connectCandidates(from: from ?? existing.from, to: to ?? existing.to)
     }
 }

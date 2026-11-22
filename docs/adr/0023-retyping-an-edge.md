@@ -29,8 +29,8 @@ Two facts found while designing this, and each moved the answer:
   retype: same id, the pairing validated by `add(edge:)`, and the label, comments
   and `itemOrder` carried across. `setEdgeType(edge:type:)` is the other
   candidate and is the wrong one — it does not validate the pairing, which is why
-  `retype(node:…)` has to follow it with `ensureEdgeTypeFits`. Nothing new is
-  needed below the session.
+  node retyping (`settingTypes(of:…)`) has to follow it with
+  `ensureEdgeTypeFits`. Nothing new is needed below the session.
 - **`connectCandidates` cannot be asked directly.** It counts the graph as it
   stands, including the edge being retyped. Under `samePairMax: 1` the list comes
   back empty for the pair the user is standing on — precisely the edges most

@@ -83,9 +83,7 @@ extension VGraph {
     /// The name a view takes from its label, or `nil` when the label cannot give one.
     ///
     /// Refused, not repaired: the label is what the author reads, and silently
-    /// dropping a character would give a name they did not choose. The lexer reads
-    /// an identifier as alphanumerics plus `_`, `.` and `-`; the first character
-    /// must not look like a number.
+    /// dropping a character would give a name they did not choose.
     public static func viewName(forLabel label: String, taken: [String]) -> String? {
         var base = ""
         var gap = false
@@ -94,15 +92,12 @@ extension VGraph {
                 gap = !base.isEmpty
                 continue
             }
-            guard character.isASCII, character.isLetter || character.isNumber || "_.-".contains(character) else {
-                return nil
-            }
+            guard isVGLIdentifierCharacter(character) else { return nil }
             if gap { base += "-" }
             gap = false
             base += String(character).lowercased()
         }
-        guard let first = base.first, first.isLetter || first == "_" else { return nil }
-        guard !isKeyword(base) else { return nil }
+        guard isVGLIdentifier(base), !isVGLKeyword(base) else { return nil }
         var name = base
         var number = 2
         while taken.contains(name) {

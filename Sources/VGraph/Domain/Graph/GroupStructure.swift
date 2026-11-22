@@ -22,7 +22,7 @@ public struct GroupStructure: VProtocol {
     private let types: [Group: Typing]
 
     init() {
-        let root = Group(rawValue: rootGroup)
+        let root = Group.root
         subGroups = [root]
         groupSet = [root]
         mapping = OneToManyLookup()

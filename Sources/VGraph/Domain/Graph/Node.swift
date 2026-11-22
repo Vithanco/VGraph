@@ -22,6 +22,8 @@ public struct NodeTypeDefinition: Sendable {
 extension NodeType {
     public static let unknownPrefix = "__UNKNOWN_NODE_TYPE__"
     public static let unknown = NodeType(string: unknownPrefix)
+
+    public var isUnknown: Bool { id.hasPrefix(Self.unknownPrefix) }
 }
 
 extension Identifier where Value == _Node {

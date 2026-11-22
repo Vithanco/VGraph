@@ -45,9 +45,9 @@ func groupingItem(
             id: .addGroup, title: "Group", availability: .notApplicable, enabled: false)
     }
     let title =
-        target.detached == 0
-        ? "Group"
-        : "Group (moves \(target.detached) out of their boundaries)"
+        target.detachesAny
+        ? "Group (moves \(target.detachedCount) out of their boundaries)"
+        : "Group"
     return MenuItem(id: .addGroup, title: title, availability: .available, enabled: true)
 }
 

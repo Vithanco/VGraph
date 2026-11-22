@@ -6,36 +6,25 @@ extension VGraph {
 
     /// The node becomes a group of the same id that carries its type and
     /// values, with one detail per edge so no edge loses its end; `undetailing`
-    /// is the way back. Its edges move to new details first, while the id is still a
-    /// node's, because a group may not share an id with a node.
+    /// is the way back.
     public func decomposing(_ node: Node) throws(VError) -> VGraph {
         guard canDecompose(node) else {
             throw VError.commandUnavailable(.decompose, target: node.id)
         }
         let type = try nodeType(for: node)
-        let details = detailTypes(of: type)
-        let parent = group(of: node) ?? Group(rawValue: rootGroup)
-        let place = declarationPosition(of: node)
-        let moving = edges(at: node).sorted { declarationPosition(of: $0.id) < declarationPosition(of: $1.id) }
+        return try givingDetails(to: node, ofTypes: detailTypes(of: type)).becomingGroup(node, typed: type)
+    }
 
-        let start = Decomposition(graph: self, details: [], parent: parent)
-        let detailed =
-            moving.isEmpty
-            ? try start.addingDetail(details[0]).decomposition
-            : try moving.folding(start) { (sofar, edge) throws(VError) in
-                try sofar.moving(edge, off: node, onto: details)
-            }
-
-        let group = Group(rawValue: node.id)
-        let regrouped = try detailed.graph
-            .updatedSelfWith(ads: detailed.graph.ads.rekeying(from: Self.key(node), to: Self.key(group)))
-            .delete(node: node)
-            .add(group: group, childOf: parent)
-            .typing(group: group, as: type)
-            .placing(group: group, at: place)
-            .renamingInViews(node.id, from: .node, to: .group)
-        return try detailed.details.folding(regrouped) { (graph, detail) throws(VError) in
-            try graph.addTo(group: group, node: detail)
+    /// One detail per edge, or a single one for a node with no edges. The
+    /// details stand beside the node until it has become their group.
+    private func givingDetails(to node: Node, ofTypes details: [NodeType]) throws(VError) -> Decomposition {
+        let start = Decomposition(graph: self, details: [], parent: group(of: node) ?? Group.root)
+        let edgesToMove = edgesInDeclarationOrder(at: node)
+        guard !edgesToMove.isEmpty else {
+            return try start.addingDetail(details[0]).decomposition
+        }
+        return try edgesToMove.folding(start) { (soFar, edge) throws(VError) in
+            try soFar.moving(edge, off: node, onto: details)
         }
     }
 
@@ -60,6 +49,21 @@ extension VGraph {
                 graph: try withTo.graph.reattachRetyping(edge: edge.id, from: from, to: to),
                 details: withTo.details, parent: parent)
         }
+
+        /// Only once every edge has moved to a detail, while the id is still a
+        /// node's, because a group may not share an id with a node.
+        func becomingGroup(_ node: Node, typed type: NodeType) throws(VError) -> VGraph {
+            let group = Group(rawValue: node.id)
+            let regrouped = try graph.movingValues(from: VGraph.key(node), to: VGraph.key(group))
+                .delete(node: node)
+                .add(group: group, childOf: parent)
+                .typing(group: group, as: type)
+                .placing(group: group, at: graph.declarationPosition(of: node))
+                .renamingInViews(node.id, from: .node, to: .group)
+            return try details.folding(regrouped) { (result, detail) throws(VError) in
+                try result.addTo(group: group, node: detail)
+            }
+        }
     }
 
     /// The detail types an edge's moving ends land on: one for an edge, both
@@ -70,30 +74,32 @@ extension VGraph {
     ) throws(VError) -> (from: NodeType?, to: NodeType?) {
         let fromType = try nodeType(for: edge.from)
         let toType = try nodeType(for: edge.to)
-        var candidates: [(from: NodeType?, to: NodeType?)] = []
-        if edge.from == node && edge.to == node {
-            for from in details {
-                for to in details { candidates.append((from: from, to: to)) }
-            }
-        } else if edge.from == node {
-            candidates = details.map { (from: $0, to: nil) }
-        } else {
-            candidates = details.map { (from: nil, to: $0) }
-        }
-
         let current = try edgeType(for: edge.id)
+        let landings = Self.possibleLandings(of: edge, at: node, among: details)
+
+        return landings.first { holds(current, from: pair($0).from, to: pair($0).to) }
+            ?? landings.first { declaredEdgeType(holdingFrom: pair($0).from, to: pair($0).to) != nil }
+            ?? landings[0]
+
         func pair(_ landing: (from: NodeType?, to: NodeType?)) -> (from: NodeType, to: NodeType) {
             (from: landing.from ?? fromType, to: landing.to ?? toType)
         }
-        if let kept = candidates.first(where: { holds(current, from: pair($0).from, to: pair($0).to) }) {
-            return kept
+    }
+
+    /// `nil` is an end that stays where it is.
+    private static func possibleLandings(
+        of edge: Edge, at node: Node, among details: [NodeType]
+    ) -> [(from: NodeType?, to: NodeType?)] {
+        switch (edge.from == node, edge.to == node) {
+        case (true, true): return details.flatMap { from in details.map { (from: from, to: $0) } }
+        case (true, false): return details.map { (from: $0, to: nil) }
+        default: return details.map { (from: nil, to: $0) }
         }
-        if let retyped = candidates.first(where: {
-            edgeTypes(holdingFrom: pair($0).from, to: pair($0).to).contains { gains($0) }
-        }) {
-            return retyped
-        }
-        return candidates[0]
+    }
+
+    /// The values follow the element to its new key, in every layer.
+    private func movingValues(from old: ItemKey, to new: ItemKey) -> VGraph {
+        updatedSelfWith(ads: ads.rekeying(from: old, to: new))
     }
 }
 
@@ -107,16 +113,15 @@ extension VGraph {
         if let view {
             return try settingInView(view, isFolded.attribute(false), for: Self.key(group))
         }
+        let unfolded = try set(group: group, attribute: isFolded.attribute(false))
+        return try views.folding(unfolded) { (result, declared) throws(VError) in
+            let before = try foldState(in: self, declared.name)
+            guard try foldState(in: result, declared.name) != before else { return result }
+            return try result.settingInView(declared.name, isFolded.attribute(before), for: Self.key(group))
+        }
+
         func foldState(in graph: VGraph, _ view: String) throws(VError) -> Bool {
             try VGraph(base: graph, readLayer: Self.layer(ofView: view)).get(group: group, attribute: isFolded)
         }
-        var result = try set(group: group, attribute: isFolded.attribute(false))
-        for declared in views {
-            let before = try foldState(in: self, declared.name)
-            if try foldState(in: result, declared.name) != before {
-                result = try result.settingInView(declared.name, isFolded.attribute(before), for: Self.key(group))
-            }
-        }
-        return result
     }
 }

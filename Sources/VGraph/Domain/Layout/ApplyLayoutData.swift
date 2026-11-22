@@ -42,7 +42,7 @@ public func applyLayoutData<Logger: VForLogMessages>(
     // (nodes, edge splines, arrowheads, labels), so the SVG renderer can use it
     // directly to size the viewBox.
     if let rootLayout = layoutData.rootLayout {
-        updatedGraph = try applyGroupLayout(rootLayout, to: Group(rawValue: rootGroup), in: updatedGraph)
+        updatedGraph = try applyGroupLayout(rootLayout, to: Group.root, in: updatedGraph)
     }
 
     for (groupId, groupLayout) in layoutData.groupLayouts {

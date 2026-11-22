@@ -8,6 +8,10 @@ public struct Group: VProtocol, UseIdentifier {
 
 public let rootGroup = "vithanco.vgraph.rootGroup.only.for.internal.use"
 
+extension Group {
+    public static let root = Group(rawValue: rootGroup)
+}
+
 public enum FoldingState: EnumAttributeType {
     case normal
     case folded
@@ -613,19 +617,15 @@ extension VGraph {
     /// would not survive an export — and would go stale the moment an end moved.
     public func group(of edge: Edge.Id) -> Group? {
         guard let edge = get(edge: edge) else { return nil }
-        let fromAncestry = Set(groupAncestry(of: edge.from))
-        return groupAncestry(of: edge.to).first { fromAncestry.contains($0) }
+        let fromAncestry = Set(groupAncestry(from: group(of: edge.from)))
+        return groupAncestry(from: group(of: edge.to)).first { fromAncestry.contains($0) }
     }
 
-    /// Innermost first, up to and including the root group.
-    private func groupAncestry(of node: Node) -> [Group] {
-        var result: [Group] = []
-        var current = groupStructure.group(of: node)
-        while let group = current {
-            result.append(group)
-            current = groupStructure.parentGroup(of: group)
-        }
-        return result
+    /// `group` and every group around it, innermost first, up to and including
+    /// the root group.
+    func groupAncestry(from group: Group?) -> [Group] {
+        guard let group else { return [] }
+        return Array(sequence(first: group) { parentGroup(of: $0) })
     }
 
     public func parentGroup(of group: Group) -> Group? {

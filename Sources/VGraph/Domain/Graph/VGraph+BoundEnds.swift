@@ -17,13 +17,10 @@ extension VGraph {
     /// onto a detail counts for the enclosing detailed node of the declared type,
     /// so decomposing takes no edge out of any count.
     func boundElement(at end: Node, declared: NodeType) -> BoundElement {
-        guard let type = try? nodeType(for: end), type != declared else { return .node(end) }
-        var holder = detailedNode(holding: group(of: end))
-        while let candidate = holder {
-            if nodeType(of: candidate) == declared { return .detailedNode(candidate) }
-            holder = detailedNode(holding: parentGroup(of: candidate))
-        }
-        return .node(end)
+        guard let type = try? nodeType(for: end), type != declared,
+            let holder = groupAncestry(from: group(of: end)).first(where: { nodeType(of: $0) == declared })
+        else { return .node(end) }
+        return .detailedNode(holder)
     }
 
     func boundEnds(of edge: Edge, typed edgeType: EdgeType) -> (from: BoundElement, to: BoundElement) {
@@ -55,5 +52,32 @@ extension VGraph {
             guard let actual = try? self.edgeType(for: edge.id), actual.id == edgeType.id else { return nil }
             return boundEnds(of: edge, typed: edgeType)
         }
+    }
+}
+
+extension VGraph {
+    /// Shared by `connectCandidates(from:to:)` and `successorCandidates(from:)`,
+    /// so the two offers count a [[Bound]] the same way.
+    func exhausted(
+        _ definition: TypedAttributeDefinition<Int>, of nodeType: NodeType, at node: Node, leaving: Bool
+    ) -> Bool {
+        exhausted(definition, of: nodeType, count: degree(of: node, leaving: leaving))
+    }
+
+    func exhausted(_ definition: TypedAttributeDefinition<Int>, of nodeType: NodeType, count: Int) -> Bool {
+        Self.isReached((try? get(nodeType: nodeType, attribute: definition)) ?? Bound.unbounded, by: count)
+    }
+
+    func exhausted(_ definition: TypedAttributeDefinition<Int>, of edgeType: EdgeType, count: Int) -> Bool {
+        Self.isReached((try? get(edgeType: edgeType.id, attribute: definition)) ?? Bound.unbounded, by: count)
+    }
+
+    /// An unstated maximum is never reached.
+    private static func isReached(_ max: Int, by count: Int) -> Bool {
+        Bound.isStated(max) && count >= max
+    }
+
+    private func degree(of node: Node, leaving: Bool) -> Int {
+        edges.filter { (leaving ? $0.from : $0.to) == node }.count
     }
 }

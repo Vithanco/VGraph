@@ -385,6 +385,15 @@ public struct VGraph {
         }
     }
 
+    /// For an edit of an edge that is not there: refused, not skipped, since a
+    /// graph handed back unchanged reads as success.
+    func existingEdge(_ id: Edge.Id) throws(VError) -> Edge {
+        guard let edge = graph.get(edge: id) else {
+            throw VError.edgeNotFound(id)
+        }
+        return edge
+    }
+
     public func ensureExists(edgeType id: EdgeType.Id) throws(VError) {
         guard graph.has(edgeType: id) else {
             throw VError.edgeTypeNotFound(id)
@@ -478,6 +487,14 @@ extension VGraph {
 
     public func declarationPosition(of group: Group) -> Int {
         declarationOrder.position(of: ItemKey(.group, group.id.description)) ?? 0
+    }
+
+    func edges(at node: Node) -> [Edge] {
+        edges.filter { $0.from == node || $0.to == node }
+    }
+
+    func edgesInDeclarationOrder(at node: Node) -> [Edge] {
+        edges(at: node).sorted { declarationPosition(of: $0.id) < declarationPosition(of: $1.id) }
     }
 
     /// The group's own type; a plain group has none, whatever it sits inside.
@@ -601,7 +618,7 @@ extension VGraph {
 
     public var groups: [Group] {
         // Filter out the internal root group from the public API
-        let rootGroupId = Group(rawValue: rootGroup)
+        let rootGroupId = Group.root
         return groupStructure.subGroups.filter { $0 != rootGroupId }
     }
 
@@ -614,7 +631,7 @@ extension VGraph {
     }
 
     public func getRootContent() throws(VError) -> ([Group], [Node]) {
-        return try groupStructure.getDirectContent(group: Group(rawValue: rootGroup))
+        return try groupStructure.getDirectContent(group: Group.root)
     }
 
     public func getAllContent(group: Group) throws(VError) -> ([Group], [Node]) {

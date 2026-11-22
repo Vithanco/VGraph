@@ -47,7 +47,7 @@ struct AddingGroupTests {
         let target = g.groupingTarget(for: ["a", "b"])
 
         #expect(target?.parentId == rootGroup)
-        #expect(target?.detached == 0)
+        #expect(target?.detachedCount == 0)
     }
 
     @Test("Elements inside a boundary group inside it")
@@ -57,7 +57,7 @@ struct AddingGroupTests {
         let target = g.groupingTarget(for: ["c"])
 
         #expect(target?.parentId == "g1")
-        #expect(target?.detached == 0)
+        #expect(target?.detachedCount == 0)
     }
 
     @Test("Elements from different parents report what would have to move")
@@ -67,7 +67,7 @@ struct AddingGroupTests {
         let target = g.groupingTarget(for: ["a", "c"])
 
         #expect(target?.parentId == rootGroup)
-        #expect(target?.detached == 1)
+        #expect(target?.detachedCount == 1)
     }
 
     @Test("Nothing selected is nothing to group")
@@ -85,7 +85,7 @@ struct AddingGroupTests {
     func groupingEverythingWrapsTheContents() throws {
         let g = try graph()
 
-        #expect(g.groupingTarget(for: ["a", "b", "g1", "g2"]) == VGroupingTarget(parentId: rootGroup, detached: 0))
+        #expect(g.groupingTarget(for: ["a", "b", "g1", "g2"]) == VGroupingTarget(parentId: rootGroup, detachedCount: 0))
         let (changed, created) = try g.addingGroup(of: ["a", "b", "g1", "g2"], detaching: false)
 
         #expect(changed.parentGroup(of: created) == Group(rawValue: rootGroup))
@@ -120,10 +120,10 @@ struct AddingGroupTests {
         let g = try graph()
 
         #expect(g.outermostElements(of: ["a", "f"]) == ["a", "g3"])
-        #expect(g.groupingTarget(for: ["a", "f"])?.detached == 1)
+        #expect(g.groupingTarget(for: ["a", "f"])?.detachedCount == 1)
 
         #expect(g.outermostElements(of: ["a", "e", "f"]) == ["a", "g2"])
-        #expect(g.groupingTarget(for: ["a", "e", "f"])?.detached == 0)
+        #expect(g.groupingTarget(for: ["a", "e", "f"])?.detachedCount == 0)
     }
 
     /// The same thing said about the graph rather than the set: after any

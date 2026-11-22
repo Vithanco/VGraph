@@ -28,17 +28,8 @@ public struct VCommandOption: Sendable, Equatable {
     /// only a candidate list carries. An adapter uses this to skip a menu nobody
     /// needs to see (ADR-0009).
     public static func soleCandidate(in options: [VCommandOption]) -> VCommandOption? {
-        var candidate: VCommandOption? = nil
-        var count = 0
-        var hasEscapeHatch = false
-        for option in options {
-            if option.isBreak {
-                hasEscapeHatch = true
-            } else {
-                candidate = option
-                count += 1
-            }
-        }
-        return (hasEscapeHatch && count == 1) ? candidate : nil
+        guard options.contains(where: { $0.isBreak }) else { return nil }
+        let candidates = options.filter { !$0.isBreak }
+        return candidates.count == 1 ? candidates.first : nil
     }
 }

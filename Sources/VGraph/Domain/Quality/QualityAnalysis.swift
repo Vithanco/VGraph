@@ -157,8 +157,7 @@ public enum GenericQualityChecks {
 extension GenericQualityChecks {
 
     static func label(of node: Node, in graph: VGraph) -> String {
-        let label = (try? graph.get(node: node, attribute: Attributes.Node.label)) ?? ""
-        return label.isEmpty ? node.id : label
+        graph.name(of: node)
     }
 
     static func label(of group: Group, in graph: VGraph) -> String {

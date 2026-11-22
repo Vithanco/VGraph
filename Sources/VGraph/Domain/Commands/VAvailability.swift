@@ -7,14 +7,10 @@
 
 /// Whether a [[VCommand]] may run on a target, and — when it may not — *why*.
 ///
-/// A `Bool` could not say why, so the reason used to be smuggled out inside the
-/// command's **title**: `"Change type (breaks notation)"`. That made a domain
-/// fact into English prose an adapter could not localise, restyle, or turn into
-/// a "hold ⌥" hint, and made three tests assert on wording.
-///
-/// The distinction is not cosmetic. `addSuccessor` on a terminal node type was
-/// indistinguishable from `changeType` on a node the notation forbids, so ⌥
-/// could not reach the first — see [[Notation break]].
+/// The why decides what ⌥ can reach: both reasons grey a command, but only one
+/// is a [[Notation break]] the user may insist on. A case rather than words in
+/// the command's title, so an adapter can localise it, restyle it, or turn it
+/// into a "hold ⌥" hint.
 public enum VAvailability: Sendable, Equatable {
     case available
 
@@ -27,9 +23,8 @@ public enum VAvailability: Sendable, Equatable {
 }
 
 extension VAvailability {
-    /// The one place the ⌥ rule lives. Every command used to spell out
-    /// `… || notationBreak == .permitted` for itself, and the two that forgot
-    /// are why the bug existed.
+    /// The one place the ⌥ rule lives, so no command spells out
+    /// `… || notationBreak == .permitted` for itself and can forget to.
     public func isEnabled(under notationBreak: VNotationBreak) -> Bool {
         switch self {
         case .available: true

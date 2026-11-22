@@ -14,49 +14,44 @@
 /// which has no Foundation.
 public enum VURL {
 
-    private static let allowedSchemes = ["http", "https", "mailto"]
-
     /// `raw` as something safe to open, or nil when it is not a link at all.
     public static func safe(_ raw: String) -> String? {
         let trimmed = trim(raw)
-        guard !trimmed.isEmpty, !containsWhitespace(trimmed), !trimmed.hasPrefix("/") else {
+        guard !trimmed.isEmpty, !trimmed.contains(where: { isWhitespace($0) }), !trimmed.hasPrefix("/") else {
             return nil
         }
+        guard let scheme = scheme(of: trimmed) else { return completedWithHTTPS(trimmed) }
+        return allowedSchemes.contains(scheme) && hasAddress(trimmed, after: scheme) ? trimmed : nil
 
-        guard let scheme = scheme(of: trimmed) else {
-            // Completing is always safe — whatever follows, the result names
-            // `https` — but only do it for something that could be a host, or free
-            // text like "read this later" becomes a link.
-            guard trimmed.contains("."), !trimmed.hasPrefix(".") else { return nil }
-            return "https://\(trimmed)"
+        /// Completing is always safe — whatever follows, the result names
+        /// `https` — but only do it for something that could be a host, or free
+        /// text like "read this later" becomes a link.
+        func completedWithHTTPS(_ host: String) -> String? {
+            host.contains(".") && !host.hasPrefix(".") ? "https://\(host)" : nil
         }
 
-        var allowed = false
-        for candidate in allowedSchemes where candidate == scheme { allowed = true }
-        guard allowed else { return nil }
-
-        let rest = String(trimmed.dropFirst(scheme.count + 1))
-        let target = rest.hasPrefix("//") ? String(rest.dropFirst(2)) : rest
-        guard !target.isEmpty else { return nil }
-        return trimmed
+        /// `mailto:` takes its address straight after the colon, `http://`
+        /// after the slashes.
+        func hasAddress(_ link: String, after scheme: String) -> Bool {
+            let rest = link.dropFirst(scheme.count + 1)
+            return !(rest.hasPrefix("//") ? rest.dropFirst(2) : rest).isEmpty
+        }
     }
 
     /// True when `raw` holds nothing but whitespace — "no link", as opposed to
     /// text that fails to be one.
     public static func isBlank(_ raw: String) -> Bool {
-        return trim(raw).isEmpty
+        trim(raw).isEmpty
     }
+
+    private static let allowedSchemes = ["http", "https", "mailto"]
 
     /// The lowercased scheme of `text`, or nil when it carries none: a colon
     /// before the first path separator introduces one, and a dot rules one out.
     private static func scheme(of text: String) -> String? {
-        var scheme = ""
-        for char in text {
-            if char == ":" { return scheme.isEmpty ? nil : scheme.lowercased() }
-            if char == "/" || char == "?" || char == "#" || char == "." { return nil }
-            scheme.append(char)
-        }
-        return nil
+        guard let end = text.firstIndex(where: { ":/?#.".contains($0) }), text[end] == ":" else { return nil }
+        let prefix = text[..<end]
+        return prefix.isEmpty ? nil : prefix.lowercased()
     }
 
     private static func trim(_ text: String) -> String {
@@ -66,12 +61,7 @@ public enum VURL {
         return String(result)
     }
 
-    private static func containsWhitespace(_ text: String) -> Bool {
-        for char in text where isWhitespace(char) { return true }
-        return false
-    }
-
-    private static func isWhitespace(_ char: Character) -> Bool {
-        return char == " " || char == "\t" || char == "\n" || char == "\r"
+    private static func isWhitespace(_ character: Character) -> Bool {
+        character == " " || character == "\t" || character == "\n" || character == "\r"
     }
 }
