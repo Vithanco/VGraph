@@ -454,6 +454,16 @@ publish-plugins marketplace='now': _require-maintainer _release-preflight
             echo "Preflight: $DIR/$ASSET is missing — run 'just release' to build it." >&2
             FAIL=1
         fi
+        # The tag carries the committed lockfile, and Obsidian's attest workflow
+        # runs `npm ci` on it: 1.0.15 shipped unattested because that failed.
+        LOCK_CHECK=$(mktemp -d)
+        cp "$DIR/package.json" "$LOCK_CHECK/"
+        if ! git -C "$DIR" show HEAD:package-lock.json > "$LOCK_CHECK/package-lock.json" 2>/dev/null \
+           || ! ( cd "$LOCK_CHECK" && npm ci --dry-run --ignore-scripts --no-audit --no-fund >/dev/null 2>&1 ); then
+            echo "Preflight: $DIR/package-lock.json as committed fails 'npm ci' — run 'npm install' there and commit it." >&2
+            FAIL=1
+        fi
+        rm -rf "$LOCK_CHECK"
     done
     if git rev-parse -q --verify "refs/tags/$OBS_V" >/dev/null \
        || [ -n "$(git ls-remote --tags origin "refs/tags/$OBS_V")" ]; then

@@ -34,7 +34,12 @@ case "$1 $2" in
 esac
 EOF
 printf '#!/bin/sh\nexit 1\n' > "$ROOT/bin/security"
-chmod +x "$ROOT/bin/npx" "$ROOT/bin/security"
+# Like `npm ci --dry-run`: it fails on a lockfile that no longer matches package.json.
+cat > "$ROOT/bin/npm" <<'EOF2'
+#!/usr/bin/env bash
+[ "$1" = ci ] && ! grep -q stale package-lock.json
+EOF2
+chmod +x "$ROOT/bin/npx" "$ROOT/bin/security" "$ROOT/bin/npm"
 export PATH="$ROOT/bin:$PATH"
 unset VSCE_PAT MARKETPLACE_VERSION GH_RELEASED
 export VITHANCO_MAINTAINER=1
@@ -55,6 +60,7 @@ given_plugins_at() { # version, in a fresh directory WORK with pushed plugin rep
         printf '{"version":"%s"}\n' "$1" | tee "$WORK/$p/manifest.json" > "$WORK/$p/package.json"
         echo '{}' > "$WORK/$p/versions.json"
         echo > "$WORK/$p/styles.css"
+        echo '{}' > "$WORK/$p/package-lock.json"
     done
     echo 'VGraphWasm.wasm' > "$WORK/vscode-vithanco/.gitignore"
     rm "$WORK/vscode-vithanco/manifest.json"
@@ -301,6 +307,25 @@ done
 
 # Given a plugin on another branch, when only the website or Cloud Run is
 # deployed, then VGraph's check passes: neither ships a plugin.
+# Given a committed lockfile that npm ci rejects, when publishing, then nothing is
+# released: the directory's attest workflow runs npm ci at the tag, and 1.0.15
+# shipped without an attestation because it failed there.
+given_plugins_at 1.2.3
+echo '{"stale":true}' > "$WORK/obsidian-vithanco/package-lock.json"
+git -C "$WORK/obsidian-vithanco" commit -qam "stale lock"
+publish && fail "published with a lockfile npm ci rejects"
+grep -q 'obsidian-vithanco/package-lock.json' "$WORK/out" || fail "does not name the lockfile: $(cat "$WORK/out")"
+nothing_released "stale lockfile"
+
+# Given a fixed lockfile that is not yet committed, when publishing, then nothing
+# is released: the tag holds the committed lockfile, not the working copy.
+given_plugins_at 1.2.3
+echo '{"stale":true}' > "$WORK/obsidian-vithanco/package-lock.json"
+git -C "$WORK/obsidian-vithanco" commit -qam "stale lock"
+echo '{}' > "$WORK/obsidian-vithanco/package-lock.json"
+publish && fail "published with the fixed lockfile uncommitted"
+nothing_released "uncommitted lockfile fix"
+
 given_plugins_at 1.2.3
 git -C "$WORK/vscode-vithanco" switch -qc some-pr
 just --justfile "$REPO_ROOT/justfile" --working-directory "$WORK" _require-vgraph-main >"$WORK/out" 2>&1 \
