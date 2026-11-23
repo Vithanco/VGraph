@@ -9,47 +9,33 @@ public func applyLayoutData<Logger: VForLogMessages>(
     to graph: VGraph,
     logger: Logger
 ) throws(VError) -> VGraph {
-    var updatedGraph = graph
-
-    for node in graph.nodes {
-        if let position = layoutData.nodePositions[node.id] {
-            updatedGraph = try updatedGraph.set(
-                node: node,
-                attribute: Attributes.Node.layoutedPos.attribute(position)
-            )
-        } else {
+    let placed = try graph.nodes.folding(graph) { (result, node) throws(VError) in
+        guard let position = layoutData.nodePositions[node.id] else {
             logger.log("[applyLayoutData] No position found for node \(node.id)")
+            return result
         }
+        return try result.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(position))
     }
 
-    // Look up each edge's layout by its own id. The layout engine keys
-    // edgeLayouts by the DOT `id` attribute (which DotExporter emits from
-    // edge.id), so no positional sort is needed.
-    for edge in graph.edges {
-        let key = edge.id.description
-        if let edgeLayout = layoutData.edgeLayouts[key] {
-            updatedGraph = try updatedGraph.set(
-                edge: edge,
-                attribute: Attributes.Edge.layoutData.attribute(edgeLayout)
-            )
-        } else {
-            logger.log("[applyLayoutData] ✗ No layout found for \(key)")
+    // The layout engine keys edgeLayouts by the edge's own id, so no positional sort is needed.
+    let routed = try graph.edges.folding(placed) { (result, edge) throws(VError) in
+        guard let edgeLayout = layoutData.edgeLayouts[edge.id.description] else {
+            logger.log("[applyLayoutData] ✗ No layout found for \(edge.id.description)")
+            return result
         }
+        return try result.setting(edge: edge, attribute: Attributes.Edge.layoutData.attribute(edgeLayout))
     }
 
-    // Store the root graph layout (bounding box + optional label) on the root
-    // group. The engine reports a box that already encloses every drawn element
-    // (nodes, edge splines, arrowheads, labels), so the SVG renderer can use it
-    // directly to size the viewBox.
-    if let rootLayout = layoutData.rootLayout {
-        updatedGraph = try applyGroupLayout(rootLayout, to: Group.root, in: updatedGraph)
-    }
+    // The engine's root box already encloses every drawn element (nodes, edge
+    // splines, arrowheads, labels), so the SVG renderer sizes the viewBox from it.
+    let rootLaidOut =
+        try layoutData.rootLayout.map { (layout) throws(VError) in
+            try applyGroupLayout(layout, to: Group.root, in: routed)
+        } ?? routed
 
-    for (groupId, groupLayout) in layoutData.groupLayouts {
-        updatedGraph = try applyGroupLayout(groupLayout, to: Group(rawValue: groupId), in: updatedGraph)
+    return try layoutData.groupLayouts.folding(rootLaidOut) { (result, entry) throws(VError) in
+        try applyGroupLayout(entry.value, to: Group(rawValue: entry.key), in: result)
     }
-
-    return updatedGraph
 }
 
 private func applyGroupLayout(
@@ -57,21 +43,12 @@ private func applyGroupLayout(
     to group: Group,
     in graph: VGraph
 ) throws(VError) -> VGraph {
-    var updated = try graph.set(
-        group: group,
-        attribute: Attributes.Group.layoutedBounds.attribute(layout.boundingBox)
-    )
-    if let labelPos = layout.labelPosition {
-        updated = try updated.set(
-            group: group,
-            attribute: Attributes.Group.labelLayoutedPos.attribute(labelPos)
-        )
-    }
-    if let labelSize = layout.labelSize {
-        updated = try updated.set(
-            group: group,
-            attribute: Attributes.Group.labelLayoutedSize.attribute(labelSize)
-        )
-    }
-    return updated
+    let bounded = try graph.setting(group: group, attribute: Attributes.Group.layoutedBounds.attribute(layout.boundingBox))
+    let labelPlaced =
+        try layout.labelPosition.map { (position) throws(VError) in
+            try bounded.setting(group: group, attribute: Attributes.Group.labelLayoutedPos.attribute(position))
+        } ?? bounded
+    return try layout.labelSize.map { (size) throws(VError) in
+        try labelPlaced.setting(group: group, attribute: Attributes.Group.labelLayoutedSize.attribute(size))
+    } ?? labelPlaced
 }

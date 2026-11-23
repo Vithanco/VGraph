@@ -8,7 +8,7 @@ extension Notations {
     /// desired objective and working backward to identify what must be accomplished first.
     public struct PrerequisiteTree: NotationDeclaration {
 
-        public static var criteria: [QualityCheckSpec] { [.noParallelEdges] }
+        public static var namedQualityChecks: [QualityCheckSpec] { [.noParallelEdges] }
         public static let id: Identifier<Notation> = .init(rawValue: "PRT")
         public static let description =
             "Identifies the obstacles that stand between the current reality and a desired objective, and defines the Intermediate Objectives needed to overcome each one."
@@ -103,10 +103,10 @@ extension Notations {
             private static let intermediateObjectiveId = "IntermediateObjective"
             private static let orJunctorId = "OR"
 
-            public static let objective: NodeType = NodeType(string: objectiveId)
-            public static let obstacle: NodeType = NodeType(string: obstacleId)
-            public static let intermediateObjective: NodeType = NodeType(string: intermediateObjectiveId)
-            public static let orJunctor: NodeType = NodeType(string: orJunctorId)
+            public static let objective: NodeType = NodeType(rawValue: objectiveId)
+            public static let obstacle: NodeType = NodeType(rawValue: obstacleId)
+            public static let intermediateObjective: NodeType = NodeType(rawValue: intermediateObjectiveId)
+            public static let orJunctor: NodeType = NodeType(rawValue: orJunctorId)
         }
 
         public struct EdgeTypes: NotationEdgeTypes {

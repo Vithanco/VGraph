@@ -28,11 +28,11 @@ it back must change nothing ([`ReparseIdentityTest`](../../Tests/AppTests/Repars
   exporter to emit an edge inside its group's braces would have *created* the
   ability to say "this edge is in group A" while both its ends are in group B —
   a state no renderer could honour and the parser would faithfully preserve.
-- **Nothing consumed it.** `getDirectContent(group:)` drops edge entries on the
+- **Nothing consumed it.** `directContent(of:)` drops edge entries on the
   floor; no exporter, layout step or renderer asked which edges a group held.
 - **The one place that genuinely needs the question already derives it.**
-  `FoldingLayoutStep` decides internal-versus-crossing edges from the endpoints
-  (`FoldingLayoutStep.swift:94`), ignoring the stored membership entirely. So
+  `FoldStep` decides internal-versus-crossing edges from the endpoints
+  (`folding(_:from:to:)` in `FoldStep.swift`), ignoring the stored membership entirely. So
   did `connecting`, which computed the group of a new edge by comparing its two
   ends.
 - **It went stale.** Moving a node out of a group left every edge at that node
@@ -42,7 +42,7 @@ it back must change nothing ([`ReparseIdentityTest`](../../Tests/AppTests/Repars
 The one live consumer was attribute inheritance: `getAttributes(edge:)` and
 `get(edge:attribute:)` walk the group chain, so an edge inside a group picks up
 that group's edge attributes. It is reachable only through the API —
-`set(group:attribute:)` does not check the attribute's target, so a caller can
+`setting(group:attribute:)` does not check the attribute's target, so a caller can
 put an `edge`-target attribute on a group. VGL cannot: attributes written inside
 a group block resolve against `.graph` only (`VGraphParser.swift:174`). No
 notation and no example `.vgl` depends on it.
@@ -54,7 +54,7 @@ computed on demand, not stored.
 
 - `VGraph.group(of: Edge.Id)` walks each endpoint's group ancestry and returns
   the first group common to both. `GroupStructure` no longer has an `edge` case,
-  an `addTo(group:edge:)`, or a `group(of: edge)`, and `add(edge:)` no longer
+  an `addTo(group:edge:)`, or a `group(of: edge)`, and `adding(edge:)` no longer
   takes a `group:`.
 - **Sibling subgroups resolve to their parent.** An edge from a node in `A.1` to
   one in `A.2` belongs to `A` — which is where it is drawn, and a question the

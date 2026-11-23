@@ -17,7 +17,7 @@ struct LayerContractTests {
             #"vgraph g: IBIS "G" { node q: Question "Q"; node a: Answer "A"; node x: Nonsense "X"; edge q -> a; }"#)
         let view = AttributeLayer("view")
         let withView = graph.updatedSelfWith(
-            ads: try graph.ads.addLayer(view, parent: .model, admission: .view)
+            attributeStore: try graph.attributeStore.addLayer(view, parent: .model, admission: .view)
                 .set(Attributes.Node.backgroundColor.attribute(fromString: "#ff0000"), for: ItemKey(.node, "q"), in: view, chains: graph)
                 .set(Attributes.Node.fontsize.attribute(40), for: ItemKey(.nodeType, "Answer"), in: view, chains: graph))
 
@@ -25,7 +25,7 @@ struct LayerContractTests {
         #expect(!judged.messages.isEmpty)
         #expect(Notations.analyzeQuality(graph: withView).messages == judged.messages)
         for node in graph.nodes {
-            #expect(try withView.getAttributes(node: node) == graph.getAttributes(node: node), "\(node)")
+            #expect(try withView.attributes(node: node) == graph.attributes(node: node), "\(node)")
         }
     }
 
@@ -55,7 +55,7 @@ struct LayerContractTests {
         let restyled = try graph.placing(
             NotationContent(values: [.nodeType(Notations.FoldGroups.NodeTypes.foldedGroup, [Attributes.Node.fontsize(20)])]),
             in: .vnotation)
-        let folded = try applyFoldingLayoutStep(to: restyled)
+        let folded = try applyFoldStep(to: restyled)
         let standIn = Node(Group(rawValue: "box"))
         #expect(try folded.get(node: standIn, attribute: Attributes.Node.fontsize) == 20)
     }

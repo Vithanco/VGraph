@@ -1,10 +1,5 @@
-//
-//  VGraph+EdgeCandidates.swift
-//  VGraph
-//
-//  What the notation permits when an existing edge is flipped, split, retyped,
-//  or has one end moved (ADR-0021).
-//
+// What the notation permits when an existing edge is flipped, split, retyped,
+// or has one end moved (ADR-0021).
 
 extension VGraph {
     /// The edge types that could carry `edge` the other way round. Empty means
@@ -26,7 +21,7 @@ extension VGraph {
     /// "change it to what it already is" is not an offer. Unknown types need no
     /// filtering here — `connectCandidates` reads `knownEdgeTypes`, which has
     /// already excluded them.
-    public func retypeCandidates(edge: Edge.Id) -> [EdgeType] {
+    public func retypeCandidates(for edge: Edge.Id) -> [EdgeType] {
         guard let current = try? edgeType(for: edge) else { return [] }
         return connectCandidates(replacing: edge).filter { $0.id != current.id }
     }
@@ -59,7 +54,7 @@ extension VGraph {
     /// Asked of the graph minus this edge, which is the whole reason this is not
     /// `connectCandidates(from:to:)`: under `samePairMax: 1`, moving `A→B`'s `to`
     /// end would otherwise be refused because `A→B` still occupies the one slot.
-    public func reattachCandidates(edge: Edge.Id, end: VEdgeEnd, to node: Node) -> [EdgeType] {
+    public func reattachCandidates(for edge: Edge.Id, end: VEdgeEnd, to node: Node) -> [EdgeType] {
         switch end {
         case .from: return connectCandidates(replacing: edge, from: node)
         case .to: return connectCandidates(replacing: edge, to: node)

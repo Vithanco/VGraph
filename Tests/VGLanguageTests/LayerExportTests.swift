@@ -56,7 +56,7 @@ struct LayerExportTests {
             }
             """)
         return try parsed.placing(
-            NotationContent(values: [.groupType(GroupType(string: "Team"), [Attributes.Group.isFolded(true)])]),
+            NotationContent(values: [.groupType(GroupType(rawValue: "Team"), [Attributes.Group.isFolded(true)])]),
             in: .builtin)
     }
 
@@ -70,7 +70,7 @@ struct LayerExportTests {
     @Test("Given a group unfolded against its folded type, when exported, then the unfolding is written")
     func anUnfoldingIsWritten() throws {
         let unfolded = try teamsWithFoldedTeam()
-            .set(group: Group(rawValue: "b"), attribute: Attributes.Group.isFolded.attribute(false))
+            .setting(group: Group(rawValue: "b"), attribute: Attributes.Group.isFolded.attribute(false))
         #expect(try VGLExporter().export(graph: unfolded).contains("isfolded: false"))
     }
 }

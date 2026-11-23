@@ -219,20 +219,20 @@ func drawnElement(for id: String) -> JSObject? {
 private func anchor(of grabbed: Grab) -> VPoint? {
     switch grabbed {
     case .element(let id):
-        return centre(of: drawnElement(for: id))
+        return center(of: drawnElement(for: id))
     case .edgeEnd(let edge, let end):
         let far = SVGElementId.edgeEndSide(end == .from ? .to : .from)
         let selector =
             ".\(SVGElementId.edgeEndClass)"
             + "[\(SVGElementId.edgeEndEdgeAttribute)=\"\(edge)\"]"
             + "[\(SVGElementId.edgeEndSideAttribute)=\"\(far)\"]"
-        return centre(
+        return center(
             of: JSObject.global.document.querySelector(selector).object
                 ?? JSObject.global.document.getElementById(SVGElementId.edge(edge)).object)
     }
 }
 
-private func centre(of element: JSObject?) -> VPoint? {
+private func center(of element: JSObject?) -> VPoint? {
     guard let rect = element?.getBoundingClientRect?().object,
         let left = rect.left.number, let top = rect.top.number,
         let width = rect.width.number, let height = rect.height.number

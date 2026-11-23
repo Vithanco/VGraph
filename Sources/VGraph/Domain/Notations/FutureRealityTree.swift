@@ -7,7 +7,7 @@ extension Notations {
     /// how those solutions lead to desirable effects.
     public struct FutureRealityTree: NotationDeclaration {
 
-        public static var criteria: [QualityCheckSpec] { [.noParallelEdges] }
+        public static var namedQualityChecks: [QualityCheckSpec] { [.noParallelEdges] }
         public static let id: Identifier<Notation> = .init(rawValue: "FRT")
         public static let description =
             "Validates proposed solutions by projecting their cause-and-effect consequences forward to confirm they produce Desirable Effects without new problems, answering 'To what should we change?'"
@@ -116,12 +116,12 @@ extension Notations {
             private static let changeableId = "Changeable"
             private static let andJunctorId = "AndJunctor"
 
-            public static let undesirableEffect: NodeType = NodeType(string: undesirableEffectId)
-            public static let intermediateEffect: NodeType = NodeType(string: intermediateEffectId)
-            public static let desirableEffect: NodeType = NodeType(string: desirableEffectId)
-            public static let given: NodeType = NodeType(string: givenId)
-            public static let changeable: NodeType = NodeType(string: changeableId)
-            public static let andJunctor: NodeType = NodeType(string: andJunctorId)
+            public static let undesirableEffect: NodeType = NodeType(rawValue: undesirableEffectId)
+            public static let intermediateEffect: NodeType = NodeType(rawValue: intermediateEffectId)
+            public static let desirableEffect: NodeType = NodeType(rawValue: desirableEffectId)
+            public static let given: NodeType = NodeType(rawValue: givenId)
+            public static let changeable: NodeType = NodeType(rawValue: changeableId)
+            public static let andJunctor: NodeType = NodeType(rawValue: andJunctorId)
         }
 
         public struct EdgeTypes: NotationEdgeTypes {

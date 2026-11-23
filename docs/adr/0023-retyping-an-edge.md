@@ -25,9 +25,9 @@ node in the same position is retyped from the menu, and so is a group boundary.
 Two facts found while designing this, and each moved the answer:
 
 - **The graph operation already exists.**
-  `VGraph.reattach(edge:from:to:edgeType:)` with *both* ends `nil` is exactly a
-  retype: same id, the pairing validated by `add(edge:)`, and the label, comments
-  and `itemOrder` carried across. `setEdgeType(edge:type:)` is the other
+  `VGraph.reattaching(edge:from:to:edgeType:)` with *both* ends `nil` is exactly a
+  retype: same id, the pairing validated by `adding(edge:)`, and the label, comments
+  and `itemOrder` carried across. `settingEdgeType(edge:type:)` is the other
   candidate and is the wrong one — it does not validate the pairing, which is why
   node retyping (`settingTypes(of:…)`) has to follow it with
   `ensureEdgeTypeFits`. Nothing new is needed below the session.
@@ -47,7 +47,7 @@ assumed: the saving is in `reattach`, not in `connectCandidates`.
 computed on the graph minus that edge.**
 
 ```
-retypeCandidates(edge:) = delete(edge:).connectCandidates(from:to:)
+retypeCandidates(forEdge:) = delete(edge:).connectCandidates(from:to:)
                           minus the current type
 ```
 
@@ -107,7 +107,7 @@ Each layer takes its own layer's convention:
   argument on a port requirement is one every conformer has to explain.
   `using:` names an edge type everywhere else in this port —
   `connect(_:to:using:)`, `reattach(…using:)`, `addSuccessor(from:using:)`. The
-  query is `retypeCandidates(edge:)`, after `reattachCandidates(edge:end:to:)`.
+  query is `retypeCandidates(forEdge:)`, beside `reattachCandidates(for:end:to:)`.
 - **EditorCore**: `edgeRetypeOptions(for:in:)`, after `groupRetypeOptions(for:in:)`
   — the same file's precedent for the same idea on a different element kind. No
   `notationBreak` parameter, following `reversalOptions(for:in:)`.
@@ -136,7 +136,7 @@ which must not exclude an edge id from a list of node types.
 
 ## Consequences
 
-- **`add(edge:)` does not enforce maxima** (0011, 0021), so retype is validated
+- **`adding(edge:)` does not enforce maxima** (0011, 0021), so retype is validated
   on the pairing only. The candidate query is the sole guard against exceeding a
   bound, which makes the minus-this-edge rule load-bearing rather than a
   convenience.

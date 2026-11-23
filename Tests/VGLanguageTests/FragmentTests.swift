@@ -122,7 +122,7 @@ struct FragmentParseTests {
 
         #expect(nodes(result) == ["a", "b", "c"])
         #expect(edges(result) == ["a->b"])
-        #expect(result.group(of: Node("c")) == Group(rawValue: rootGroup))
+        #expect(result.group(of: Node("c")) == Group.root)
     }
 
     @Test("Given a fragment declaring a, when parsed in, then the pasted node is named a_2")

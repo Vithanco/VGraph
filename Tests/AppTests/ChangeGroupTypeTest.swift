@@ -14,7 +14,7 @@ import VGraph
 @testable import App
 
 struct ChangeGroupTypeTest {
-    private let team = GroupType(string: "Team")
+    private let team = GroupType(rawValue: "Team")
 
     private func teams() throws -> TestSession {
         try makeTestSession(
@@ -77,7 +77,7 @@ struct ChangeGroupTypeTest {
         let s = try teams()
 
         #expect(throws: VError.self) {
-            try s.changeType(of: "core", to: GroupType(string: "TrustBoundary"))
+            try s.changeType(of: "core", to: GroupType(rawValue: "TrustBoundary"))
         }
     }
 

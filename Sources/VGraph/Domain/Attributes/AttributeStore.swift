@@ -12,7 +12,11 @@ public struct AttributeStore: VProtocol {
     var layerValues: [AttributeLayer: LayerValues]
 
     public init() {
-        self.definitions = [:]
+        self.init(definitions: [:])
+    }
+
+    init(definitions: AttributeDefContainer) {
+        self.definitions = definitions
         // ADR-0030's stack; views branch off the model.
         self.layers = [
             .engine: LayerInfo(parent: nil, admission: .notation),
@@ -23,7 +27,7 @@ public struct AttributeStore: VProtocol {
         self.layerValues = [:]
     }
 
-    func getAttributeDefinition(_ id: Attribute.Id) throws(VError) -> AttributeDefinition {
+    func definition(of id: Attribute.Id) throws(VError) -> AttributeDefinition {
         guard let definition = definitions[id] else {
             throw VError.attributeNotFound(id)
         }
@@ -46,13 +50,7 @@ public struct AttributeStore: VProtocol {
         return try define(definition.asDefinition)
     }
 
-    public func define(_ definitions: AttributeDefContainer) -> AttributeStore {
-        var result = self
-        for definition in definitions.values {
-            if let added = try? result.define(definition) {
-                result = added
-            }
-        }
-        return result
+    public func define(_ definitions: AttributeDefContainer) throws(VError) -> AttributeStore {
+        try definitions.values.folding(self) { (store, definition) throws(VError) in try store.define(definition) }
     }
 }

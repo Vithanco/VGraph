@@ -1,10 +1,3 @@
-//
-//  VSplitCandidate.swift
-//  VGraph
-//
-//  One way the notation permits inserting a node into an existing edge.
-//
-
 /// One way to split an edge. A **pair** of edge types, not a node type: in a
 /// Causal Loop Diagram the sign of each link is the whole point, so the two
 /// halves are separate choices — see `namesTheRelationshipsWhenTheNodeTypeIsNotEnough`.

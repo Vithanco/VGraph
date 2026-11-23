@@ -15,7 +15,7 @@ struct EffectiveNodeLayoutTest {
     /// disagreeing with what is actually drawn.
     @Test func matchesWhatThePipelineStoresForEveryNotation() throws {
         for (name, entry) in NotationRegistry.entries {
-            let graph = try VGraph().defineStandardAttributes().placing(entry.content, in: .builtin)
+            let graph = try VGraph().placing(entry.content, in: .builtin)
             let assembled = try DisplayPipeline.assembleNodeStyles(graph)
 
             for nodeType in graph.nodeTypes {

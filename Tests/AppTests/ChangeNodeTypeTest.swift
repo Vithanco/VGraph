@@ -40,7 +40,7 @@ struct ChangeNodeTypeTest {
         #expect(
             EditorCore.retypeOptions(for: "p", notationBreak: .permitted, in: s).last?.isBreak == true)
 
-        try s.changeType(of: "p", to: NodeType(string: "Con"))
+        try s.changeType(of: "p", to: NodeType(rawValue: "Con"))
 
         let exported = try s.exportVGL()
         #expect(exported.contains("node p: Con \"It is quicker\""))
@@ -51,7 +51,7 @@ struct ChangeNodeTypeTest {
 
     /// Nothing is deleted and re-added, so everything the user wrote about the
     /// node — its label, the comment above it, its place in the document — simply
-    /// stays where it was. Contrast `reattach(edge:)`, which carries it by hand.
+    /// stays where it was. Contrast `reattaching(edge:from:to:edgeType:)`, which carries it by hand.
     @Test func keepsEverythingTheUserWroteAboutTheNode() throws {
         let s = try makeTestSession(
             vgl: """
@@ -65,7 +65,7 @@ struct ChangeNodeTypeTest {
                 }
                 """)
 
-        try s.changeType(of: "p", to: NodeType(string: "Con"))
+        try s.changeType(of: "p", to: NodeType(rawValue: "Con"))
 
         let exported = try s.exportVGL()
         #expect(exported.contains("// the strongest argument we have"))
@@ -88,10 +88,10 @@ struct ChangeNodeTypeTest {
                 }
                 """)
 
-        let greyed = EditorCore.menu(for: "r", in: s).first { $0.id == .changeType }
-        #expect(greyed?.enabled == false)
-        #expect(greyed?.title == "Change type (breaks notation)")
-        #expect(throws: VError.self) { try s.changeType(of: "r", to: NodeType(string: "Concept")) }
+        let grayed = EditorCore.menu(for: "r", in: s).first { $0.id == .changeType }
+        #expect(grayed?.enabled == false)
+        #expect(grayed?.title == "Change type (breaks notation)")
+        #expect(throws: VError.self) { try s.changeType(of: "r", to: NodeType(rawValue: "Concept")) }
 
         // ⌥ offers the break and nothing else — the notation has no substitution.
         #expect(
@@ -103,7 +103,7 @@ struct ChangeNodeTypeTest {
                 == ["Concept", "EmphasizedConcept"])
 
         try s.changeType(
-            of: "r", to: NodeType(string: "Concept"), edgeTypes: [], notationBreak: .permitted)
+            of: "r", to: NodeType(rawValue: "Concept"), edgeTypes: [], notationBreak: .permitted)
 
         #expect(try s.exportVGL().contains("node r: Concept \"leads to\""))
         #expect(!GenericQualityChecks.unknownEdgeTypes(graph: s.origin).isEmpty)
@@ -131,7 +131,7 @@ struct ChangeNodeTypeTest {
         #expect(decisions.map(\.prompt) == ["Late delivery → Weekly review"])
         #expect(decisions[0].options.map { $0.id.id } == ["mitigated_by", "monitored_by"])
 
-        try s.changeType(of: "i1", to: risk, edgeTypes: [EdgeType.Id(string: "monitored_by")])
+        try s.changeType(of: "i1", to: risk, edgeTypes: [EdgeType.Id(rawValue: "monitored_by")])
 
         let exported = try s.exportVGL()
         #expect(exported.contains("node i1: Risk \"Late delivery\""))
@@ -165,7 +165,7 @@ struct ChangeNodeTypeTest {
 
         try s.changeType(
             of: "i1", to: risk,
-            edgeTypes: [EdgeType.Id(string: "mitigated_by"), EdgeType.Id(string: "monitored_by")])
+            edgeTypes: [EdgeType.Id(rawValue: "mitigated_by"), EdgeType.Id(rawValue: "monitored_by")])
 
         let exported = try s.exportVGL()
         #expect(exported.contains("edge i1 -> c2: mitigated_by"))
@@ -189,7 +189,7 @@ struct ChangeNodeTypeTest {
                 """)
         #expect(!GenericQualityChecks.unknownEdgeTypes(graph: s.origin).isEmpty)
 
-        #expect(s.origin.retypeCandidates(for: Node(string: "c")).map { $0.id } == ["EmphasizedConcept"])
+        #expect(s.origin.retypeCandidates(for: Node(rawValue: "c")).map { $0.id } == ["EmphasizedConcept"])
     }
 
     /// A loop is the one edge whose *both* ends move with the node, so the type
@@ -228,6 +228,6 @@ struct ChangeNodeTypeTest {
         let edgeId = s.origin.edges.first!.id.id
 
         #expect(s.retypeCandidates(for: edgeId).isEmpty)
-        #expect(throws: VError.self) { try s.changeType(of: edgeId, to: NodeType(string: "Con")) }
+        #expect(throws: VError.self) { try s.changeType(of: edgeId, to: NodeType(rawValue: "Con")) }
     }
 }

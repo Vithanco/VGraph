@@ -26,9 +26,9 @@ public protocol VForRenderAGraph {
     ///     extraction). *How* — SVG `<metadata>`, a PNG text chunk, not at all —
     ///     is the adapter's business; callers only promise it is semantically
     ///     the same graph. `nil` serialises without it.
-    func serialise(_ drawing: Drawing, sourceVGL: String?) -> String
+    func serialize(_ drawing: Drawing, sourceVGL: String?) -> String
 
-    /// The `sourceVGL` an earlier `serialise` carried, recovered from the artefact
+    /// The `sourceVGL` an earlier `serialize` carried, recovered from the artefact
     /// alone — what opening a saved diagram as a document depends on.
     ///
     /// The inverse of the promise above, and the same actor's business: only the
@@ -46,7 +46,7 @@ extension VForRenderAGraph {
     public func render(
         graph: VGraph, sourceVGL: String? = nil, darkMode: Bool = false, interactive: Bool = false
     ) throws(VError) -> String {
-        serialise(
+        serialize(
             try draw(graph: graph, darkMode: darkMode, interactive: interactive), sourceVGL: sourceVGL)
     }
 }

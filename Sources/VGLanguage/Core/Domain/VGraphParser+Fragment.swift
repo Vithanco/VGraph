@@ -16,7 +16,7 @@ extension VGraphParser {
 
         let renames = Self.renames(of: declarations.compactMap { $0.declaredId }, avoiding: existing)
         let renamed = statements.map { $0.renaming(renames) }
-        let stack = ParserStack(currentGroup: group ?? Group(rawValue: rootGroup))
+        let stack = ParserStack(currentGroup: group ?? Group.root)
         var result = graph
         for statement in renamed {
             result = try convert(from: statement, graph: result, stack: stack)

@@ -43,15 +43,7 @@ extension Attributes.Group {
         name: "loopMarkers",
         description: "Which loops of a Causal Loop Diagram get a marker: all, independent or none",
         defaultValue: .all,
-        target: .graph
-    )
-
-    public static let derivedEdges = TypedAttributeDefinition<Bool>(
-        id: "graph.derivedEdges",
-        name: "derivedEdges",
-        description: "Whether a view draws a dotted edge for a chain it hides",
-        defaultValue: true,
-        target: .graph
+        target: .group
     )
 }
 
@@ -64,9 +56,5 @@ extension VGraph {
 
     public var loopMarkers: LoopMarkers {
         (try? get(attribute: Attributes.Group.loopMarkers)) ?? .all
-    }
-
-    public var drawsDerivedEdges: Bool {
-        (try? get(attribute: Attributes.Group.derivedEdges)) ?? true
     }
 }

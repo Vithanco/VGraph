@@ -97,11 +97,11 @@ struct BoundRoundTripTest {
             }
             """
         let graph = try parse(source)
-        #expect(try graph.get(nodeType: NodeType(string: "A"), attribute: Attributes.Node.totalOutDegreeMin) == 1)
+        #expect(try graph.get(nodeType: NodeType(rawValue: "A"), attribute: Attributes.Node.totalOutDegreeMin) == 1)
 
         let out = try roundTrip(source)
         #expect(out.contains("totalOutDegreeMin: 1"))
-        #expect(try parse(out).get(nodeType: NodeType(string: "A"), attribute: Attributes.Node.totalOutDegreeMin) == 1)
+        #expect(try parse(out).get(nodeType: NodeType(rawValue: "A"), attribute: Attributes.Node.totalOutDegreeMin) == 1)
     }
 
     /// `vglKey` lowercases, and a hand-written notation uses the camelCase spelling
@@ -219,7 +219,7 @@ struct BoundRoundTripTest {
                 edgeAttrs: "perSourceMin: 1, perSourceMax: 2, perTargetMin: 3, perTargetMax: 4",
                 nodeAttrs: ", totalOutMin: 5, totalOutMax: 6, totalInMin: 7, totalInMax: 8"))
         let edge = EdgeType.Id(rawValue: "aToA")
-        let node = NodeType(string: "A")
+        let node = NodeType(rawValue: "A")
 
         #expect(try graph.get(edgeType: edge, attribute: Attributes.Edge.outDegreeMin) == 1)
         #expect(try graph.get(edgeType: edge, attribute: Attributes.Edge.outDegreeMax) == 2)

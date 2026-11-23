@@ -1,10 +1,3 @@
-//
-//  VGroupingTarget.swift
-//  VGraph
-//
-//  Where a new group of the selection would go. See ADR-0018.
-//
-
 /// One answer to three questions — may the command run, where does the group
 /// land, and what should the menu row say — so the greyed row and the executed
 /// command cannot disagree (ADR-0018).

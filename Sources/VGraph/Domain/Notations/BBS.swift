@@ -2,7 +2,7 @@ extension Notations {
 
     public struct Bbs: NotationDeclaration {
 
-        public static var criteria: [QualityCheckSpec] { [.noParallelEdges] }
+        public static var namedQualityChecks: [QualityCheckSpec] { [.noParallelEdges] }
         public static let id: Identifier<Notation> = .init(rawValue: "BBS")
         public static let description =
             "Plans project execution backwards from investment objectives through benefits and business changes to enabling deliverables."
@@ -88,10 +88,10 @@ extension Notations {
             private static let businessChangeId = "BusinessChange"
             private static let enablerId = "Enabler"
 
-            public static let investmentObjective: NodeType = NodeType(string: investmentObjectiveId)
-            public static let benefit: NodeType = NodeType(string: benefitId)
-            public static let businessChange: NodeType = NodeType(string: businessChangeId)
-            public static let enabler: NodeType = NodeType(string: enablerId)
+            public static let investmentObjective: NodeType = NodeType(rawValue: investmentObjectiveId)
+            public static let benefit: NodeType = NodeType(rawValue: benefitId)
+            public static let businessChange: NodeType = NodeType(rawValue: businessChangeId)
+            public static let enabler: NodeType = NodeType(rawValue: enablerId)
         }
 
         public struct EdgeTypes: NotationEdgeTypes {

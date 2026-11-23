@@ -7,7 +7,7 @@ extension Notations {
     /// and wants, the resulting conflict, and the hidden assumptions that create it.
     public struct EvaporatingCloud: NotationDeclaration {
 
-        public static var criteria: [QualityCheckSpec] { [.noParallelEdges] }
+        public static var namedQualityChecks: [QualityCheckSpec] { [.noParallelEdges] }
         public static let id: Identifier<Notation> = .init(rawValue: "EC")
         public static let description =
             "Surfaces and resolves conflicts by exposing the hidden assumptions behind competing Wants, enabling win-win solutions that dissolve the conflict entirely."
@@ -130,13 +130,13 @@ extension Notations {
             private static let assumptionId = "Assumption"
             private static let solutionId = "Solution"
 
-            public static let commonObjective: NodeType = NodeType(string: commonObjectiveId)
-            public static let need: NodeType = NodeType(string: needId)
-            public static let want: NodeType = NodeType(string: wantId)
-            public static let conflict: NodeType = NodeType(string: conflictId)
-            public static let orJunctor: NodeType = NodeType(string: orJunctorId)
-            public static let assumption: NodeType = NodeType(string: assumptionId)
-            public static let solution: NodeType = NodeType(string: solutionId)
+            public static let commonObjective: NodeType = NodeType(rawValue: commonObjectiveId)
+            public static let need: NodeType = NodeType(rawValue: needId)
+            public static let want: NodeType = NodeType(rawValue: wantId)
+            public static let conflict: NodeType = NodeType(rawValue: conflictId)
+            public static let orJunctor: NodeType = NodeType(rawValue: orJunctorId)
+            public static let assumption: NodeType = NodeType(rawValue: assumptionId)
+            public static let solution: NodeType = NodeType(rawValue: solutionId)
         }
 
         public struct EdgeTypes: NotationEdgeTypes {

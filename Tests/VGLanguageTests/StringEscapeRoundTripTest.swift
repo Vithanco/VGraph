@@ -16,7 +16,7 @@ struct StringEscapeRoundTripTest {
     }
 
     private func label(of node: String, in graph: VGraph) throws -> String {
-        try graph.get(node: Node(string: node), attribute: Attributes.Node.label)
+        try graph.get(node: Node(rawValue: node), attribute: Attributes.Node.label)
     }
 
     // MARK: - The lexer
@@ -66,7 +66,7 @@ struct StringEscapeRoundTripTest {
             }
             """)
 
-        let tooltip: String = try graph.get(node: Node(string: "q"), attribute: Attributes.Node.tooltip)
+        let tooltip: String = try graph.get(node: Node(rawValue: "q"), attribute: Attributes.Node.tooltip)
         #expect(tooltip == #"see "section 3.5.2""#)
     }
 

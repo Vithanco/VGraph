@@ -21,13 +21,13 @@ private func wrapNodeText(node: Node, in graph: VGraph) throws(VError) -> VGraph
     let label = (try? graph.get(node: node, attribute: Attributes.Node.label)) ?? ""
 
     guard !label.isEmpty else {
-        return try graph.set(
+        return try graph.setting(
             node: node,
             attribute: Attributes.Node.wrappedText.attribute([])
         )
     }
 
-    let font: VFont = graph.getFont(forNode: node)
+    let font: VFont = graph.font(of: node)
     let maxNodeWidth: Double = (try? graph.get(attribute: Attributes.Group.maxNodeWidth)) ?? 300.0
 
     let lineHeightMultiplier = 1.2
@@ -41,7 +41,7 @@ private func wrapNodeText(node: Node, in graph: VGraph) throws(VError) -> VGraph
         maxWidth: maxNodeWidth
     )
 
-    return try graph.set(
+    return try graph.setting(
         node: node,
         attribute: Attributes.Node.wrappedText.attribute(wrappingResult.lines)
     )

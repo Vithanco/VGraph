@@ -70,7 +70,7 @@ struct DetailedNodeVGLTest {
         #expect(graph.nodeType(of: try group("p", in: graph)) == Notations.C4.NodeTypes.person)
     }
 
-    @Test func aNodeTypeInTheGroupSlotIsNotColouredAsAnError() {
+    @Test func aNodeTypeInTheGroupSlotIsNotColoredAsAnError() {
         let html = VGraphParser(logger: NoOpLogger()).semanticHighlightHTML(source: Self.source)
 
         #expect(html.contains(">SoftwareSystem</span>"))

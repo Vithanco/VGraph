@@ -102,7 +102,7 @@ struct DeclaredArtworkRenderTests {
 
     @Test("The defs draw what the graph declared, not the built-in of that name")
     func declaredArtworkReachesTheDefs() throws {
-        let graph = try markedGraph().add(icon: "default", artwork: Self.flame)
+        let graph = try markedGraph().adding(icon: "default", artwork: Self.flame)
         let svg = try VGraphTestApp().renderGraph(graph: graph, sourceVGL: "").svg
 
         #expect(svg.contains(Self.flame.path))

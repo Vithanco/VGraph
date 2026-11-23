@@ -2,7 +2,7 @@ extension Notations {
 
     public struct ImpactMapping: NotationDeclaration {
 
-        public static var criteria: [QualityCheckSpec] { [.noParallelEdges] }
+        public static var namedQualityChecks: [QualityCheckSpec] { [.noParallelEdges] }
         public static let id: Identifier<Notation> = .init(rawValue: "ImpactMapping")
         public static let description =
             "Plans how to achieve a goal by mapping Actors, their potential Impacts, and Deliverables that support them."
@@ -85,10 +85,10 @@ extension Notations {
             private static let impactId = "Impact"
             private static let deliverableId = "Deliverable"
 
-            public static let goal: NodeType = NodeType(string: goalId)
-            public static let actor: NodeType = NodeType(string: actorId)
-            public static let impact: NodeType = NodeType(string: impactId)
-            public static let deliverable: NodeType = NodeType(string: deliverableId)
+            public static let goal: NodeType = NodeType(rawValue: goalId)
+            public static let actor: NodeType = NodeType(rawValue: actorId)
+            public static let impact: NodeType = NodeType(rawValue: impactId)
+            public static let deliverable: NodeType = NodeType(rawValue: deliverableId)
         }
 
         public struct EdgeTypes: NotationEdgeTypes {

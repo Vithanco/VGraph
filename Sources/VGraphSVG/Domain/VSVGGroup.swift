@@ -6,7 +6,7 @@ import VGraph
 public enum VSVGGroup {
 
     public static func render(graph: VGraph, darkMode: Bool) throws(VError) -> VSVGNode {
-        let (rootGroups, _) = try graph.getRootContent()
+        let (rootGroups, _) = try graph.directContent(of: Group.root)
         return .fragment(try renderChildren(rootGroups, graph: graph, depth: 0, darkMode: darkMode))
     }
 
@@ -14,7 +14,7 @@ public enum VSVGGroup {
         _ groups: [Group], graph: VGraph, depth: Int, darkMode: Bool
     ) throws(VError) -> [VSVGNode] {
         var result: [VSVGNode] = []
-        for group in try GraphExportOrderPreservation.sortByItemOrder(groups, in: graph) {
+        for group in graph.inDeclarationOrder(groups) {
             result.append(contentsOf: try renderGroup(group, graph: graph, depth: depth, darkMode: darkMode))
         }
         return result
@@ -23,7 +23,7 @@ public enum VSVGGroup {
     private static func renderGroup(
         _ group: Group, graph: VGraph, depth: Int, darkMode: Bool
     ) throws(VError) -> [VSVGNode] {
-        let (subGroups, _) = try graph.getDirectContent(group: group)
+        let (subGroups, _) = try graph.directContent(of: group)
 
         guard let bounds = try? graph.get(group: group, attribute: Attributes.Group.layoutedBounds),
             bounds != VRect.zero

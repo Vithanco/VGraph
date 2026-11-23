@@ -42,9 +42,9 @@ struct DerivedEdgeSessionTests {
     @Test("Given a derived edge's stamp, when the session is asked to retype or reattach it, then the command is refused as an unknown edge")
     func cannotRetypeOrReattach() throws {
         let s = try session()
-        #expect(s.retypeCandidates(edge: "derived-A-C").isEmpty)
+        #expect(s.retypeCandidates(forEdge: "derived-A-C").isEmpty)
         #expect(throws: VError.self) { try s.changeType(of: "derived-A-C") }
-        #expect(s.reattachTargets(edge: "derived-A-C", end: .to).isEmpty)
+        #expect(s.reattachTargets(for: "derived-A-C", end: .to).isEmpty)
         #expect(throws: VError.self) { try s.reattach("derived-A-C", end: .to, to: "A") }
     }
 

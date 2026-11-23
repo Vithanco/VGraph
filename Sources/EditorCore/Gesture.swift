@@ -411,7 +411,7 @@ private func legalTargets(of drag: Drag, in session: some ForEditAGraphVisually)
     let ids =
         switch drag.grab {
         case .edgeEnd(let edge, let end):
-            session.reattachTargets(edge: edge, end: end, notationBreak: notationBreak)
+            session.reattachTargets(for: edge, end: end, notationBreak: notationBreak)
         case .element(let source): session.connectTargets(from: source, notationBreak: notationBreak)
         }
     return LegalTargets(alt: drag.alt, ids: ids)

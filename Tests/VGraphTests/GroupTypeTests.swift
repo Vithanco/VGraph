@@ -9,13 +9,12 @@ struct GroupTypeTests {
     let group1 = Group(rawValue: "group1")
     let n1 = Node("n1")
     let nt1 = NodeType("nt1")
-    let team = GroupType(string: "Team")
+    let team = GroupType(rawValue: "Team")
 
     private func baseGraph() throws(VError) -> VGraph {
         var graph = try VGraph()
-            .defineStandardAttributes()
-            .add(nodeType: nt1)
-        graph = try Notations.FoldGroups.addExtension(addTo: graph)
+            .adding(nodeType: nt1)
+        graph = try Notations.FoldGroups.addExtension(to: graph)
         return graph
     }
 
@@ -31,7 +30,7 @@ struct GroupTypeTests {
 
     @Test("Given a group assigned a group type, when its type is read back, then it reports that type")
     func groupReportsAssignedType() throws(VError) {
-        var graph = try baseGraph().add(group: group1)
+        var graph = try baseGraph().adding(group: group1)
         graph = try graph.typing(group: group1, as: team)
 
         let readBack = graph.groupType(of: group1)
@@ -40,15 +39,15 @@ struct GroupTypeTests {
 
     @Test("Given a typed group, when it is typed as nothing, then it is a plain group again")
     func typingAsNothingMakesAGroupPlain() throws(VError) {
-        let graph = try baseGraph().add(group: group1).typing(group: group1, as: team)
+        let graph = try baseGraph().adding(group: group1).typing(group: group1, as: team)
             .typing(group: group1, as: nil)
         #expect(graph.groupType(of: group1) == nil)
     }
 
     @Test("Given a typed group, when it is deleted and added again, then the new group is plain")
     func aDeletedGroupForgetsItsType() throws(VError) {
-        let graph = try baseGraph().add(group: group1).typing(group: group1, as: team)
-            .delete(group: group1).add(group: group1)
+        let graph = try baseGraph().adding(group: group1).typing(group: group1, as: team)
+            .deleting(group: group1).adding(group: group1)
         #expect(graph.groupType(of: group1) == nil)
     }
 
@@ -56,8 +55,8 @@ struct GroupTypeTests {
     @Test("Given a plain group inside a typed one, when its style resolves, then it is not styled as its parent")
     func aPlainGroupInsideATypedOneIsNotStyledAsIt() throws(VError) {
         let child = Group(rawValue: "child")
-        let graph = try baseGraph().ensureUnknownGroupType().add(group: group1)
-            .add(group: child, childOf: group1)
+        let graph = try baseGraph().ensuringUnknownGroupType().adding(group: group1)
+            .adding(group: child, childOf: group1)
             .typing(group: group1, as: GroupType.unknown)
         #expect(graph.groupType(of: child) == nil)
         #expect(graph.resolvedGroupStyle(child) == nil)
@@ -69,14 +68,14 @@ struct GroupTypeTests {
     func foldedGroupUsesItsTypesFoldedStyle() throws(VError) {
         let style = GroupStyle(folded: customFolded(), unfolded: .default)
         var graph = try baseGraph()
-            .add(group: group1)
-            .add(node: n1, type: nt1, group: group1)
-            .add(groupType: team)
-        graph = try graph.set(groupType: team, attribute: Attributes.Group.groupStyle.attribute(style))
+            .adding(group: group1)
+            .adding(node: n1, type: nt1, group: group1)
+            .adding(groupType: team)
+        graph = try graph.setting(groupType: team, attribute: Attributes.Group.groupStyle.attribute(style))
         graph = try graph.typing(group: group1, as: team)
-        graph = try graph.set(group: group1, def: Attributes.Group.isFolded, value: true)
+        graph = try graph.setting(group: group1, attribute: Attributes.Group.isFolded.attribute(true))
 
-        let result = try applyFoldingLayoutStep(to: graph)
+        let result = try applyFoldStep(to: graph)
 
         let proxyStyle = try result.get(node: groupNode(for: group1), attribute: Attributes.Node.style)
         let expected = try NodeStyleLayout.fromString(customFolded().asString)
@@ -89,15 +88,15 @@ struct GroupTypeTests {
         let overrideFolded = customFolded()
         let overrideStyle = GroupStyle(folded: overrideFolded, unfolded: .default)
         var graph = try baseGraph()
-            .add(group: group1)
-            .add(node: n1, type: nt1, group: group1)
-            .add(groupType: team)
-        graph = try graph.set(groupType: team, attribute: Attributes.Group.groupStyle.attribute(typeStyle))
+            .adding(group: group1)
+            .adding(node: n1, type: nt1, group: group1)
+            .adding(groupType: team)
+        graph = try graph.setting(groupType: team, attribute: Attributes.Group.groupStyle.attribute(typeStyle))
         graph = try graph.typing(group: group1, as: team)
-        graph = try graph.set(group: group1, attribute: Attributes.Group.groupStyle.attribute(overrideStyle))
-        graph = try graph.set(group: group1, def: Attributes.Group.isFolded, value: true)
+        graph = try graph.setting(group: group1, attribute: Attributes.Group.groupStyle.attribute(overrideStyle))
+        graph = try graph.setting(group: group1, attribute: Attributes.Group.isFolded.attribute(true))
 
-        let result = try applyFoldingLayoutStep(to: graph)
+        let result = try applyFoldStep(to: graph)
 
         let proxyStyle = try result.get(node: groupNode(for: group1), attribute: Attributes.Node.style)
         let expected = try NodeStyleLayout.fromString(overrideFolded.asString)
@@ -108,10 +107,10 @@ struct GroupTypeTests {
 
     @Test("Given group types registered on a graph, when the graph is asked for its group types, then it lists them")
     func registeredGroupTypesAreEnumerable() throws(VError) {
-        let guild = GroupType(string: "Guild")
+        let guild = GroupType(rawValue: "Guild")
         let graph = try baseGraph()
-            .add(groupType: team)
-            .add(groupType: guild)
+            .adding(groupType: team)
+            .adding(groupType: guild)
 
         #expect(graph.groupTypes == [team, guild])
     }
@@ -120,8 +119,8 @@ struct GroupTypeTests {
     @Test("Given a registered group type and a declared icon, when the root's attributes are read, then neither is among them")
     func registriesAreNotAttributes() throws(VError) {
         let artwork = IconArtwork(width: 24, height: 24, path: "M0 0L24 24")
-        let graph = try baseGraph().add(groupType: team).add(icon: "mark", artwork: artwork)
-        #expect(try graph.getGraphAttributes().isEmpty)
+        let graph = try baseGraph().adding(groupType: team).adding(icon: "mark", artwork: artwork)
+        #expect(try graph.graphAttributes().isEmpty)
         #expect(graph.groupTypes == [team])
         #expect(graph.declaredIcons["mark"] == artwork)
     }
@@ -131,14 +130,14 @@ struct GroupTypeTests {
         let graph = try baseGraph()
             .declaring(qualityChecks: [QualityCheckSpec(name: "treeStructure")])
             .declaring(transforms: ["identity"])
-        #expect(try graph.getGraphAttributes().isEmpty)
+        #expect(try graph.graphAttributes().isEmpty)
         #expect(graph.notationDefinition.declaredQualityChecks == [QualityCheckSpec(name: "treeStructure")])
         #expect(graph.notationDefinition.declaredTransforms == ["identity"])
     }
 
     @Test("Given a registered group type, when a name is checked against the graph, then only registered names are recognised")
     func membershipFollowsRegistration() throws(VError) {
-        let graph = try baseGraph().add(groupType: team)
+        let graph = try baseGraph().adding(groupType: team)
 
         #expect(graph.has(groupTypeName: "Team"))
         #expect(!graph.has(groupTypeName: "SystemBoundry"))
@@ -149,25 +148,25 @@ struct GroupTypeTests {
     @Test("Given a graph needing the unknown group type twice, when it is ensured, then it is registered once")
     func unknownGroupTypeIsEnsuredOnce() throws(VError) {
         let graph = try baseGraph()
-            .ensureUnknownGroupType()
-            .ensureUnknownGroupType()
+            .ensuringUnknownGroupType()
+            .ensuringUnknownGroupType()
 
         #expect(graph.groupTypes == [GroupType.unknown])
     }
 
-    @Test("Given a group of the unknown type, when its style resolves, then the boundary is drawn in the error colour")
-    func unknownGroupTypeDrawsRedChrome() throws(VError) {
-        var graph = try baseGraph().ensureUnknownGroupType().add(group: group1)
+    @Test("Given a group of the unknown type, when its style resolves, then the frame is drawn in the error colour")
+    func unknownGroupTypeDrawsRedFrame() throws(VError) {
+        var graph = try baseGraph().ensuringUnknownGroupType().adding(group: group1)
         graph = try graph.typing(group: group1, as: GroupType.unknown)
 
         let style = graph.resolvedGroupStyle(group1)
-        #expect(style?.unfolded.borderColor.asString == GroupType.unknownChrome.borderColor.asString)
+        #expect(style?.unfolded.borderColor.asString == GroupType.unknownFrame.borderColor.asString)
     }
 
     @Test("Given a group carrying the unknown type, when quality is analysed, then it is reported as an error")
     func unknownGroupTypeIsReported() throws(VError) {
-        var graph = try baseGraph().ensureUnknownGroupType().add(group: group1)
-        graph = try graph.set(group: group1, attribute: Attributes.Group.label.attribute("Banking"))
+        var graph = try baseGraph().ensuringUnknownGroupType().adding(group: group1)
+        graph = try graph.setting(group: group1, attribute: Attributes.Group.label.attribute("Banking"))
         graph = try graph.typing(group: group1, as: GroupType.unknown)
 
         let messages = GenericQualityChecks.unknownGroupTypes(graph: graph)
@@ -179,7 +178,7 @@ struct GroupTypeTests {
 
     @Test("Given a group of a registered type, when quality is analysed, then nothing is reported")
     func wellTypedGroupsAreNotReported() throws(VError) {
-        var graph = try baseGraph().add(groupType: team).add(group: group1)
+        var graph = try baseGraph().adding(groupType: team).adding(group: group1)
         graph = try graph.typing(group: group1, as: team)
 
         #expect(GenericQualityChecks.unknownGroupTypes(graph: graph).isEmpty)
@@ -188,8 +187,8 @@ struct GroupTypeTests {
     @Test("Given a group inside a typed parent, when quality is analysed, then the child's inherited type is not mistaken for its own")
     func inheritedTypeIsNotTheChildsOwn() throws(VError) {
         let child = Group(rawValue: "child")
-        var graph = try baseGraph().ensureUnknownGroupType().add(group: group1)
-        graph = try graph.add(group: child, childOf: group1)
+        var graph = try baseGraph().ensuringUnknownGroupType().adding(group: group1)
+        graph = try graph.adding(group: child, childOf: group1)
         graph = try graph.typing(group: group1, as: GroupType.unknown)
 
         #expect(GenericQualityChecks.unknownGroupTypes(graph: graph).count == 1)
@@ -198,21 +197,21 @@ struct GroupTypeTests {
     @Test("Given a group whose type defines no style, when the group is folded, then the collapsed box keeps the default folded appearance")
     func typedGroupWithoutTypeStyleUsesDefault() throws(VError) {
         var graph = try baseGraph()
-            .add(group: group1)
-            .add(node: n1, type: nt1, group: group1)
-        graph = try graph.set(group: group1, attribute: Attributes.Group.label.attribute("Plain"))
+            .adding(group: group1)
+            .adding(node: n1, type: nt1, group: group1)
+        graph = try graph.setting(group: group1, attribute: Attributes.Group.label.attribute("Plain"))
         graph = try graph.typing(group: group1, as: team)
-        graph = try graph.set(group: group1, def: Attributes.Group.isFolded, value: true)
+        graph = try graph.setting(group: group1, attribute: Attributes.Group.isFolded.attribute(true))
 
-        let result = try applyFoldingLayoutStep(to: graph)
+        let result = try applyFoldStep(to: graph)
 
         let proxyStyle = try result.get(node: groupNode(for: group1), attribute: Attributes.Node.style)
         let base = NodeStyleLayout.foldedGroupNode(
             label: "Plain",
             count: 1,
-            fill: Notations.FoldGroups.foldedGroupFill,
-            border: Notations.FoldGroups.foldedGroupBorder,
-            textColor: Notations.FoldGroups.foldedGroupText
+            fill: .groupFill,
+            border: .groupBorder,
+            textColor: .groupText
         )
         let expected = try NodeStyleLayout.fromString(base.asString)
         #expect(proxyStyle == expected)

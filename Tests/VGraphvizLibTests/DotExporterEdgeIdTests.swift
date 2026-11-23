@@ -22,11 +22,10 @@ struct DotExporterEdgeIdTests {
 
     private func graphWithTwoNodes() throws(VError) -> VGraph {
         try VGraph()
-            .defineStandardAttributes()
-            .add(nodeType: nodeType)
-            .add(edgeType: edgeType)
-            .add(node: nodeA, type: nodeType)
-            .add(node: nodeB, type: nodeType)
+            .adding(nodeType: nodeType)
+            .adding(edgeType: edgeType)
+            .adding(node: nodeA, type: nodeType)
+            .adding(node: nodeB, type: nodeType)
     }
 
     // MARK: - Edge id emission
@@ -34,7 +33,7 @@ struct DotExporterEdgeIdTests {
     @Test("Given an edge with id 'e1', when exported to DOT, then the edge's attribute block contains id=\"e1\"")
     func edgeIdIsEmittedAsAttribute() throws(VError) {
         var graph = try graphWithTwoNodes()
-        graph = try graph.add(edge: Edge(string: "e1", from: nodeA.id, to: nodeB.id), edgeType: edgeType)
+        graph = try graph.adding(edge: Edge(string: "e1", from: nodeA.id, to: nodeB.id), edgeType: edgeType)
 
         let dot = try DotExporter().export(graph: graph)
 
@@ -44,8 +43,8 @@ struct DotExporterEdgeIdTests {
     @Test("Given two edges between the same node pair with ids 'e1' and 'e2', when exported to DOT, then both ids appear in the output")
     func parallelEdgesEmitDistinctIds() throws(VError) {
         var graph = try graphWithTwoNodes()
-        graph = try graph.add(edge: Edge(string: "e1", from: nodeA.id, to: nodeB.id), edgeType: edgeType)
-        graph = try graph.add(edge: Edge(string: "e2", from: nodeA.id, to: nodeB.id), edgeType: edgeType)
+        graph = try graph.adding(edge: Edge(string: "e1", from: nodeA.id, to: nodeB.id), edgeType: edgeType)
+        graph = try graph.adding(edge: Edge(string: "e2", from: nodeA.id, to: nodeB.id), edgeType: edgeType)
 
         let dot = try DotExporter().export(graph: graph)
 

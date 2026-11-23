@@ -22,9 +22,9 @@ struct VSVGEdgeTests {
         let parser = VGraphParser(logger: TestLogger())
         var graph = try parser.parse(source: input)
         for (index, node) in graph.nodes.enumerated() {
-            graph = try graph.set(
+            graph = try graph.setting(
                 node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: Double(index) * 100 + 50, y: 50)))
-            graph = try graph.set(
+            graph = try graph.setting(
                 node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
         }
         return graph
@@ -64,7 +64,7 @@ struct VSVGEdgeTests {
     // MARK: - Full path (spline + arrowhead + labels)
 
     func withLayoutData(_ graph: VGraph, _ layout: EdgeLayoutData) throws -> VGraph {
-        try graph.set(edge: edgeId(graph), attribute: Attributes.Edge.layoutData.attribute(layout))
+        try graph.setting(edge: edgeId(graph), attribute: Attributes.Edge.layoutData.attribute(layout))
     }
 
     @Test func splinePathWithArrowHead() throws {
@@ -122,7 +122,7 @@ struct VSVGEdgeTests {
         let withLayout = try withLayoutData(graph, layout)
 
         for dir in ["forward", "back", "both", "none"] {
-            let withDir = try withLayout.set(edge: edgeId(graph), attribute: Attributes.Edge.dir.attribute(dir))
+            let withDir = try withLayout.setting(edge: edgeId(graph), attribute: Attributes.Edge.dir.attribute(dir))
             expectSnapshot(withDir, variant: dir)
         }
     }
@@ -196,9 +196,9 @@ struct VSVGEdgeTests {
         let parser = VGraphParser(logger: TestLogger())
         var graph = try parser.parse(source: input)
         for (index, node) in graph.nodes.enumerated() {
-            graph = try graph.set(
+            graph = try graph.setting(
                 node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: Double(index) * 100 + 50, y: 50)))
-            graph = try graph.set(
+            graph = try graph.setting(
                 node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
         }
         let keep = Set([graph.edges[0]])
@@ -316,7 +316,7 @@ struct VSVGEdgeTests {
         #expect(!rendered.contains(SVGElementId.edgeEndClass))
     }
 
-    @Test func endHandleColourFollowsTheEdgeItBelongsTo() throws {
+    @Test func endHandleColorFollowsTheEdgeItBelongsTo() throws {
         let layout = EdgeLayoutData(
             splinePoints: [VPoint(x: 0, y: 0), VPoint(x: 10, y: 0), VPoint(x: 20, y: 10), VPoint(x: 30, y: 10)],
             color: themedColor)
@@ -334,19 +334,18 @@ struct VSVGEdgeTests {
     /// drawn there gets no handle, or the drag could never be undone by gesture.
     @Test func noHandleOnAnEndSittingOnAFoldedGroup() throws {
         var graph = try VGraph()
-            .defineStandardAttributes()
-            .add(nodeType: NodeType(string: "Plain"))
-        graph = try Notations.FoldGroups.addExtension(addTo: graph)
-        graph = try graph.add(
+            .adding(nodeType: NodeType(rawValue: "Plain"))
+        graph = try Notations.FoldGroups.addExtension(to: graph)
+        graph = try graph.adding(
             edgeType: EdgeType(string: "e", from: "Plain", to: "FoldedGroup"))
 
         let plain = Node("plain")
         let folded = Node("box")
-        graph = try graph.add(node: plain, type: NodeType(string: "Plain"))
-        graph = try graph.add(node: folded, type: Notations.FoldGroups.NodeTypes.foldedGroup)
-            .set(node: folded, attribute: Attributes.Node.standsForGroup.attribute(true))
-        let edge = Edge(id: Edge.Id(string: "plainBox"), from: plain, to: folded)
-        graph = try graph.add(edge: edge, edgeType: EdgeType(string: "e", from: "Plain", to: "FoldedGroup"))
+        graph = try graph.adding(node: plain, type: NodeType(rawValue: "Plain"))
+        graph = try graph.adding(node: folded, type: Notations.FoldGroups.NodeTypes.foldedGroup)
+            .setting(node: folded, attribute: Attributes.Node.standsForGroup.attribute(true))
+        let edge = Edge(id: Edge.Id(rawValue: "plainBox"), from: plain, to: folded)
+        graph = try graph.adding(edge: edge, edgeType: EdgeType(string: "e", from: "Plain", to: "FoldedGroup"))
         graph = try withSimpleLayout(graph)
 
         let rendered = VSVGEdge.render(

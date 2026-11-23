@@ -26,13 +26,13 @@ public struct VSVGRenderer<Logger: ForLogMessages>: ForRenderAGraph, Sendable {
     /// tree: it is CDATA, which the IR does not model, and keeping it on this
     /// side is what lets the tree stay entirely mountable (ADR-0015 F1). Only
     /// Save SVG and document re-opening need it; the mounted preview does not.
-    public func serialise(_ drawing: VSVGNode, sourceVGL: String?) -> String {
+    public func serialize(_ drawing: VSVGNode, sourceVGL: String?) -> String {
         let svg = drawing.render()
         guard let sourceVGL else { return svg }
         return SVGBuilder.embedVGL(sourceVGL, in: svg)
     }
 
-    /// `serialise` embeds it as CDATA in `<metadata>`; `SVGBuilder` owns both ends
+    /// `serialize` embeds it as CDATA in `<metadata>`; `SVGBuilder` owns both ends
     /// so the mint and the parse cannot drift.
     public func sourceVGL(from rendered: String) -> String? {
         SVGBuilder.extractVGL(from: rendered)

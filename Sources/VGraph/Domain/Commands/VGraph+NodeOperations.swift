@@ -1,11 +1,6 @@
-//
-//  VGraph+NodeOperations.swift
-//  VGraph
-//
-//  Its sibling in `VGraph+EdgeOperations.swift` grows a node off an existing one
-//  and derives its type from the relationship. Here there is no relationship, so
-//  the type is simply given — the notation has nothing to decide (ADR-0016).
-//
+// Its sibling in `VGraph+EdgeOperations.swift` grows a node off an existing one
+// and derives its type from the relationship. Here there is no relationship, so
+// the type is simply given — the notation has nothing to decide (ADR-0016).
 
 extension VGraph {
     /// The returned node is the one to open an [[Inline edit]] on, or `nil` for a
@@ -34,7 +29,7 @@ extension VGraph {
     /// The label is explicit, never absent — an absent label does not survive
     /// a reparse unchanged (ADR-0009).
     func adding(placeholder node: Node, ofType type: NodeType, in group: Group) throws(VError) -> VGraph {
-        try add(node: node, type: type, group: group).set(
+        try adding(node: node, type: type, group: group).setting(
             node: node,
             attribute: Attributes.Node.label.attribute(Attributes.Node.placeholderLabel))
     }

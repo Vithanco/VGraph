@@ -55,7 +55,7 @@ extension GetAttribute {
     }
 
     func ensure<T>(group: Group, attribute: TypedAttributeDefinition<T>, isSameAs: T) throws {
-        #expect(attribute.target == .graph)
+        #expect(attribute.target == .group)
         let value = try get(group: group, attribute: attribute)
         #expect(value == isSameAs)
     }
@@ -68,7 +68,7 @@ struct BasicParserTest {
     func exampleInputToGraph() throws {
         let parser = VGraphParser(logger: NoOpLogger())
         let graph = try parser.parse(source: exampleInput)
-        let id: String = try graph.get(graphAttribute: Attributes.Group.Id)
+        let id: String = try graph.get(graphAttribute: Attributes.Group.id)
         #expect(id == "myGraph")
         let label: String = try graph.get(graphAttribute: Attributes.Group.label)
         #expect(label == "My Graph")
@@ -111,12 +111,12 @@ struct BasicParserTest {
         #expect((try graph.edgeType(for: edge2)) == Notations.Ibis.EdgeTypes.answerToQuestion)
 
         #expect(group1.id.description == "groupA")
-        try graph.ensure(group: group1, attribute: Attributes.Group.Id, isSameAs: "groupA")
+        try graph.ensure(group: group1, attribute: Attributes.Group.id, isSameAs: "groupA")
         try graph.ensure(group: group1, attribute: Attributes.Group.label, isSameAs: "Group A")
         try graph.ensure(group: group1, attribute: Attributes.Group.style, isSameAs: .filled)
         try graph.ensure(group: group1, attribute: Attributes.Group.isFolded, isSameAs: false)
 
-        try graph.ensure(group: group2, attribute: Attributes.Group.Id, isSameAs: "groupB")
+        try graph.ensure(group: group2, attribute: Attributes.Group.id, isSameAs: "groupB")
 
     }
 
@@ -149,7 +149,7 @@ struct BasicParserTest {
         let parser = VGraphParser(logger: NoOpLogger())
         let graph = try parser.parse(source: input)
 
-        let node1 = Node(string: "node1")
+        let node1 = Node(rawValue: "node1")
         #expect(graph.has(node: node1))
 
         let nodeType = try graph.nodeType(for: node1)
@@ -169,7 +169,7 @@ struct BasicParserTest {
         let parser = VGraphParser(logger: NoOpLogger())
         let graph = try parser.parse(source: input)
 
-        let leads = Node(string: "leads")
+        let leads = Node(rawValue: "leads")
         #expect(graph.has(node: leads))
         try graph.ensure(node: leads, attribute: Attributes.Node.label, isSameAs: "leads")
 
@@ -247,11 +247,11 @@ struct BasicParserTest {
         let parser = VGraphParser(logger: NoOpLogger())
         let graph = try parser.parse(source: input)
 
-        let q1 = Node(string: "q1")
-        let a1 = Node(string: "a1")
-        let p1 = Node(string: "p1")
-        let c1 = Node(string: "c1")
-        let q2 = Node(string: "q2")
+        let q1 = Node(rawValue: "q1")
+        let a1 = Node(rawValue: "a1")
+        let p1 = Node(rawValue: "p1")
+        let c1 = Node(rawValue: "c1")
+        let q2 = Node(rawValue: "q2")
 
         #expect(graph.has(node: q1))
         #expect(graph.has(node: a1))
@@ -312,18 +312,17 @@ struct BasicParserTest {
 
         #expect(graph.groups.count == 1)  // "lsj" group (root group is filtered out)
 
-        let q1 = Node(string: "q1")
-        let a1 = Node(string: "a1")
-        let pro1 = Node(string: "pro1")
-        let con1 = Node(string: "con1")
+        let q1 = Node(rawValue: "q1")
+        let a1 = Node(rawValue: "a1")
+        let pro1 = Node(rawValue: "pro1")
+        let con1 = Node(rawValue: "con1")
 
         let group = graph.groups[0]
         #expect(group.id.description == "lsj")
         try graph.ensure(group: group, attribute: Attributes.Group.label, isSameAs: "Subgraph")
 
-        let rootGroup = Group(rawValue: "vithanco.vgraph.rootGroup.only.for.internal.use")
-        #expect(graph.group(of: q1) == rootGroup)
-        #expect(graph.group(of: a1) == rootGroup)
+        #expect(graph.group(of: q1) == Group.root)
+        #expect(graph.group(of: a1) == Group.root)
         #expect(graph.group(of: pro1) == group)
         #expect(graph.group(of: con1) == group)
 
@@ -353,8 +352,8 @@ struct BasicParserTest {
 
         #expect(graph.nodes.count == 2)
 
-        let q1 = Node(string: "q1")
-        let a1 = Node(string: "a1")
+        let q1 = Node(rawValue: "q1")
+        let a1 = Node(rawValue: "a1")
         try graph.ensure(node: q1, attribute: Attributes.Node.fontsize, isSameAs: 12)
         try graph.ensure(node: a1, attribute: Attributes.Node.fontsize, isSameAs: 10)
         try graph.ensure(node: a1, attribute: Attributes.Node.backgroundColor, isSameAs: VColor(hexString: "#ff0000")!)
@@ -377,8 +376,8 @@ struct BasicParserTest {
         #expect(graph.nodes.count == 2)
         #expect(graph.edges.count == 1)
 
-        let q1 = Node(string: "q1")
-        let a1 = Node(string: "a1")
+        let q1 = Node(rawValue: "q1")
+        let a1 = Node(rawValue: "a1")
         #expect(graph.has(node: q1))
         #expect(graph.has(node: a1))
         try graph.ensure(node: a1, attribute: Attributes.Node.fontsize, isSameAs: 10)

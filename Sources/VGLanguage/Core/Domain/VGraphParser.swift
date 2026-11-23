@@ -1,24 +1,5 @@
 import VGraph
 
-/// Maps old VGL attribute names to canonical names for backward compatibility.
-/// `rankdir`/`layout`/`labelloc` are graphviz-style names from early VGL versions;
-/// `diagramlogic` is an old all-lowercase form.
-func resolveLegacyAttributeName(_ name: String, for target: AttributeTarget = .graph) -> String {
-    switch name.lowercased() {
-    case "rankdir", "layout": return Attributes.Group.layoutDirection.name
-    case "labelloc": return Attributes.Group.labelocation.name
-    case "diagramlogic": return Attributes.Group.diagramLogic.name
-    // Stated rather than left to `find(attributeByName:)`, whose last resort is a
-    // substring match over a Dictionary — "color" would reach "backgroundColor" by
-    // accident, in whatever order the dictionary happened to enumerate.
-    case "color" where target == .node: return Attributes.Node.backgroundColor.name
-    // The native renderer draws a group from its border and background, so a
-    // group's `color` is its background.
-    case "color" where target == .graph: return Attributes.Group.backgroundColor.name
-    default: return name
-    }
-}
-
 public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightVGL {
 
     var edgeIds: Int
@@ -38,10 +19,8 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
         // Reset per-parse state so vnotation declarations don't leak between calls.
         dynamicNotations = [:]
 
-        var graph: VGraph = VGraph()
-        graph = try graph.defineStandardAttributes()
         let ast = try parseToAST(source)
-        return try convert(from: ast, to: graph)
+        return try convert(from: ast, to: VGraph())
     }
 
     /// The bare `catch` (no `as` pattern) is deliberate: under typed throws,
@@ -61,8 +40,7 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
     }
 
     func convert(from: ASTNode, to graph: VGraph? = nil) throws(VError) -> VGraph {
-        let rootGroup = Group(rawValue: "vithanco.vgraph.rootGroup.only.for.internal.use")
-        return try convert(from: from, graph: graph ?? VGraph(), stack: ParserStack(currentGroup: rootGroup))
+        return try convert(from: from, graph: graph ?? VGraph(), stack: ParserStack(currentGroup: Group.root))
     }
 
     func convert(from: ASTNode, graph: VGraph, stack: ParserStack) throws(VError) -> VGraph {
@@ -110,53 +88,53 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
                 result = try convert(from: statement, graph: result, stack: stack)
             }
             if let label = label {
-                result = try result.set(graphAttribute: Attributes.Group.label.attribute(label))
+                result = try result.setting(graphAttribute: Attributes.Group.label.attribute(label))
             }
-            result = try result.set(graphAttribute: Attributes.Group.Id.attribute(id))
+            result = try result.setting(graphAttribute: Attributes.Group.id.attribute(id))
             result = result.using(notation: type).using(extensions: extensions)
             if let leading = comments.leading {
-                result = try result.set(graphAttribute: Attributes.Group.comment.attribute(leading))
+                result = try result.setting(graphAttribute: Attributes.Group.comment.attribute(leading))
             }
             if let trailing = comments.trailing {
-                result = try result.set(graphAttribute: Attributes.Group.trailingComment.attribute(trailing))
+                result = try result.setting(graphAttribute: Attributes.Group.trailingComment.attribute(trailing))
             }
 
         case .node(let id, type: let typeName, let label, let attributes, let comments):
-            let node = Node(string: id)
+            let node = Node(rawValue: id)
 
             let nodeType: NodeType
             if result.has(nodeTypeName: typeName) {
-                nodeType = NodeType(string: typeName)
+                nodeType = NodeType(rawValue: typeName)
             } else {
                 logger.warn("[Parser] Node '\(id)': ⚠️ Node type '\(typeName)' not found")
-                result = try result.ensureUnknownNodeType()
+                result = try result.ensuringUnknownNodeType()
                 nodeType = NodeType.unknown
             }
 
-            result = try result.add(node: node, type: nodeType, group: stack.currentGroup)
+            result = try result.adding(node: node, type: nodeType, group: stack.currentGroup)
             // Use the given label if present and non-empty; otherwise fall back
             // to the node id, which is far more useful than the generic default
             // ("Change Me") and easier to locate in the drawing. The id-derived
             // label is then emitted explicitly on export.
             if let label = label, !label.isEmpty {
-                result = try result.set(node: node, attribute: Attributes.Node.label.attribute(fromString: label))
+                result = try result.setting(node: node, attribute: Attributes.Node.label.attribute(fromString: label))
             } else {
-                result = try result.set(node: node, attribute: Attributes.Node.label.attribute(fromString: id))
+                result = try result.setting(node: node, attribute: Attributes.Node.label.attribute(fromString: id))
             }
             let newStack = ParserStack(currentNode: node, currentGroup: stack.currentGroup)
             for attribute in attributes {
                 result = try convert(from: attribute, graph: result, stack: newStack)
             }
             if let leading = comments.leading {
-                result = try result.set(node: node, attribute: Attributes.Node.comment.attribute(leading))
+                result = try result.setting(node: node, attribute: Attributes.Node.comment.attribute(leading))
             }
             if let trailing = comments.trailing {
-                result = try result.set(node: node, attribute: Attributes.Node.trailingComment.attribute(trailing))
+                result = try result.setting(node: node, attribute: Attributes.Node.trailingComment.attribute(trailing))
             }
 
         case .attribute(id: let key, let value):
             if let currentNode = stack.currentNode {
-                let resolvedKey = resolveLegacyAttributeName(key, for: .node)
+                let resolvedKey = OlderVGLSpellings.current(key, in: .attribute(.node))
                 guard let def = result.find(attributeByName: resolvedKey, for: .node) else {
                     throw VError.attributeNotFound(Attribute.Id(rawValue: key))
                 }
@@ -169,20 +147,20 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
                     throw VError.conversionError(
                         from: value, to: "a hex colour (\"#b6e6bd\") or an SVG colour name (\"cornflowerblue\")")
                 }
-                result = try result.set(node: currentNode, attribute: def.attribute(fromString: stored(value, for: def)))
+                result = try result.setting(node: currentNode, attribute: def.attribute(fromString: stored(value, for: def)))
             } else if let currentEdge = stack.currentEdge {
-                let resolvedKey = resolveLegacyAttributeName(key, for: .edge)
+                let resolvedKey = OlderVGLSpellings.current(key, in: .attribute(.edge))
                 guard let def = result.find(attributeByName: resolvedKey, for: .edge) else {
                     throw VError.attributeNotFound(Attribute.Id(rawValue: key))
                 }
                 try refuseComputed(def, named: key)
-                result = try result.set(edge: currentEdge, attribute: def.attribute(fromString: stored(value, for: def)))
+                result = try result.setting(edge: currentEdge, attribute: def.attribute(fromString: stored(value, for: def)))
             } else if let currentGroup = stack.currentGroup {
                 guard let def = attribute(named: key, among: result.attributeTargets(of: currentGroup), in: result) else {
                     throw VError.attributeNotFound(Attribute.Id(rawValue: key))
                 }
                 try refuseComputed(def, named: key)
-                result = try result.set(group: currentGroup, attribute: def.attribute(fromString: stored(value, for: def)))
+                result = try result.setting(group: currentGroup, attribute: def.attribute(fromString: stored(value, for: def)))
             }
 
         case .edge(let fromId, let toId, let type, let label, let attributes, let comments):
@@ -192,7 +170,7 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
             var edgeType: EdgeType? = nil
 
             if let typeName = type, result.has(edgeTypeId: typeName) {
-                edgeType = result.get(edgeType: EdgeType.Id(string: typeName))
+                edgeType = result.get(edgeType: EdgeType.Id(rawValue: typeName))
             }
 
             if edgeType == nil, type == nil {
@@ -219,18 +197,18 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
 
             if let et = edgeType {
                 do {
-                    result = try result.add(edge: edge, edgeType: et)
-                } catch VError.EdgeTypeWrong {
+                    result = try result.adding(edge: edge, edgeType: et)
+                } catch VError.edgeTypeDoesNotFit {
                     edgeType = nil
                 }
             }
 
             if edgeType == nil {
-                let fromNodeType = (try? result.nodeType(for: Node(string: fromId))) ?? NodeType.unknown
-                let toNodeType = (try? result.nodeType(for: Node(string: toId))) ?? NodeType.unknown
+                let fromNodeType = (try? result.nodeType(for: Node(rawValue: fromId))) ?? NodeType.unknown
+                let toNodeType = (try? result.nodeType(for: Node(rawValue: toId))) ?? NodeType.unknown
                 let unknownEdgeType: EdgeType
-                (result, unknownEdgeType) = try result.ensureUnknownEdgeType(from: fromNodeType, to: toNodeType)
-                result = try result.add(edge: edge, edgeType: unknownEdgeType)
+                (result, unknownEdgeType) = try result.ensuringUnknownEdgeType(from: fromNodeType, to: toNodeType)
+                result = try result.adding(edge: edge, edgeType: unknownEdgeType)
             }
 
             let newStack = ParserStack(currentEdge: edge)
@@ -239,13 +217,13 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
             }
 
             if let label = label {
-                result = try result.set(edge: edge, attribute: Attributes.Edge.label.attribute(fromString: label))
+                result = try result.setting(edge: edge, attribute: Attributes.Edge.label.attribute(fromString: label))
             }
             if let leading = comments.leading {
-                result = try result.set(edge: edge, attribute: Attributes.Edge.comment.attribute(leading))
+                result = try result.setting(edge: edge, attribute: Attributes.Edge.comment.attribute(leading))
             }
             if let trailing = comments.trailing {
-                result = try result.set(edge: edge, attribute: Attributes.Edge.trailingComment.attribute(trailing))
+                result = try result.setting(edge: edge, attribute: Attributes.Edge.trailingComment.attribute(trailing))
             }
 
         case .group(let id, let type, let label, let isFolded, let children, let comments):
@@ -294,8 +272,8 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
 
     /// Out of `convert`, as `declaring` is, to keep its recursive frame small.
     private func typeOfEnd(_ id: String, in graph: VGraph) throws(VError) -> NodeType {
-        guard let type = graph.typedGraph.nodeType(for: Node(string: id)) else {
-            throw VError.nodeWithoutNodeType(Node(string: id))
+        guard let type = graph.typedGraph.nodeType(for: Node(rawValue: id)) else {
+            throw VError.nodeWithoutNodeType(Node(rawValue: id))
         }
         return type
     }
@@ -307,17 +285,17 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
         in graph: VGraph, childOf parent: Group?
     ) throws(VError) -> VGraph {
         let id = group.id.id
-        var result = try graph.add(group: group, childOf: parent)
-        result = try result.set(group: group, attribute: Attributes.Group.Id.attribute(fromString: id))
+        var result = try graph.adding(group: group, childOf: parent)
+        result = try result.setting(group: group, attribute: Attributes.Group.id.attribute(fromString: id))
         if let type = type, !type.isEmpty, result.has(nodeTypeName: type) {
-            result = try result.typing(group: group, as: NodeType(string: type))
+            result = try result.typing(group: group, as: NodeType(rawValue: type))
         } else if let type = type, !type.isEmpty {
             let groupType: GroupType
             if result.has(groupTypeName: type) {
-                groupType = GroupType(string: type)
+                groupType = GroupType(rawValue: type)
             } else {
                 logger.warn("[Parser] Group '\(id)': ⚠️ Group type '\(type)' not found")
-                result = try result.ensureUnknownGroupType()
+                result = try result.ensuringUnknownGroupType()
                 groupType = GroupType.unknown
             }
             result = try result.typing(group: group, as: groupType)
@@ -325,20 +303,20 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
         let detailed = result.isDetailed(group)
         // As for a node, an absent label means the id.
         if detailed, label?.isEmpty ?? true {
-            result = try result.set(label: id, on: .group(group))
+            result = try result.setting(label: id, on: .group(group))
         } else if let label = label {
-            result = try result.set(label: label, on: .group(group))
+            result = try result.setting(label: label, on: .group(group))
         }
         if isFolded {
-            result = try result.set(group: group, attribute: Attributes.Group.isFolded.attribute(true))
+            result = try result.setting(group: group, attribute: Attributes.Group.isFolded.attribute(true))
         }
         if let leading = comments.leading {
             let comment = detailed ? Attributes.Node.comment : Attributes.Group.comment
-            result = try result.set(group: group, attribute: comment.attribute(leading))
+            result = try result.setting(group: group, attribute: comment.attribute(leading))
         }
         if let trailing = comments.trailing {
             let comment = detailed ? Attributes.Node.trailingComment : Attributes.Group.trailingComment
-            result = try result.set(group: group, attribute: comment.attribute(trailing))
+            result = try result.setting(group: group, attribute: comment.attribute(trailing))
         }
         return result
     }
@@ -348,7 +326,7 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
         let result = try graph.declaring(view: ViewDeclaration(name: view.name, label: view.label, rules: view.rules))
         var values: [(key: ItemKey, attribute: Attribute)] = []
         for (key, value) in view.attrs {
-            values.append((.root, try viewAttribute(key, value, for: [.graph], in: result)))
+            values.append((.root, try viewAttribute(key, value, for: [.group], in: result)))
         }
         for statement in view.statements {
             let kind: ItemKind
@@ -374,17 +352,17 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
     private func targets(of key: ItemKey, in graph: VGraph) -> [AttributeTarget] {
         switch key.kind {
         case .node: return [.node]
-        case .nodeType: return [.node, .graph]
+        case .nodeType: return [.node, .group]
         case .group: return graph.attributeTargets(of: Group(rawValue: key.id))
-        case .groupType, .root, .edge, .edgeType: return [.graph]
+        case .groupType, .root, .edge, .edgeType: return [.group]
         }
     }
 
     private func viewAttribute(
         _ key: String, _ value: String, for targets: [AttributeTarget], in graph: VGraph
     ) throws(VError) -> Attribute {
-        guard let definition = attribute(named: key, among: targets, in: graph), targets == [.graph] || !definition.isDiagramOnly else {
-            if targets != [.graph], graph.find(attributeByName: key, for: .graph) != nil {
+        guard let definition = attribute(named: key, among: targets, in: graph), targets == [.group] || !definition.isDiagramOnly else {
+            if targets != [.group], graph.find(attributeByName: key, for: .group) != nil {
                 throw VError.parsingError("'\(key)' applies to the whole diagram; set it in the view's header")
             }
             throw VError.attributeNotFound(Attribute.Id(rawValue: key))
@@ -401,13 +379,13 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
         if definition.typeAsString == Bool.typeName, value != "true", value != "false" {
             throw VError.parsingError("'\(key)' must be true or false, not '\(value)'")
         }
-        return try definition.attribute(fromString: value)
+        return definition.attribute(fromString: value)
     }
 
     private func attribute(
         named key: String, among targets: [AttributeTarget], in graph: VGraph
     ) -> AttributeDefinition? {
-        graph.find(attributeAmong: targets.map { (name: resolveLegacyAttributeName(key, for: $0), target: $0) })
+        graph.find(attributeAmong: targets.map { (name: OlderVGLSpellings.current(key, in: .attribute($0)), target: $0) })
     }
 
     /// Only comments need adjusting — `[comment: "hello"]` is a legal way to
@@ -441,17 +419,17 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
         // Node IDs are prefixed with `_meta_` so they don't collide with NodeType IDs
         // in the shared attribute keyspace (VError.idCollision would otherwise fire).
         for nt in result.nodeTypes where !nt.id.hasPrefix(NodeType.unknownPrefix) {
-            let node = Node(string: "_meta_\(nt.id)")
-            result = try result.add(node: node, type: nt, group: stack.currentGroup)
-            result = try result.set(node: node, attribute: Attributes.Node.label.attribute(fromString: nt.id))
+            let node = Node(rawValue: "_meta_\(nt.id)")
+            result = try result.adding(node: node, type: nt, group: stack.currentGroup)
+            result = try result.setting(node: node, attribute: Attributes.Node.label.attribute(fromString: nt.id))
         }
 
         for et in result.edgeTypes where !et.isUnknown {
             let edge = Edge(
-                id: Edge.Id(string: nextEdgeId(in: result)),
-                from: Node(string: "_meta_\(et.from.id)"),
-                to: Node(string: "_meta_\(et.to.id)"))
-            result = try result.add(edge: edge, edgeType: et)
+                id: Edge.Id(rawValue: nextEdgeId(in: result)),
+                from: Node(rawValue: "_meta_\(et.from.id)"),
+                to: Node(rawValue: "_meta_\(et.to.id)"))
+            result = try result.adding(edge: edge, edgeType: et)
         }
 
         // A detailing is no relationship, so it gets an edge type of its own
@@ -461,18 +439,18 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
                 let detailedBy = EdgeType(
                     string: "detailedBy__\(nt.id)__\(detailType.id)", from: nt.id, to: detailType.id)
                 let edge = Edge(
-                    id: Edge.Id(string: nextEdgeId(in: result)),
-                    from: Node(string: "_meta_\(nt.id)"),
-                    to: Node(string: "_meta_\(detailType.id)"))
-                result = try result.add(edgeType: detailedBy).add(edge: edge, edgeType: detailedBy)
-                result = try result.set(edge: edge.id, attribute: Attributes.Edge.label.attribute("detailed by"))
-                result = try result.set(edge: edge.id, attribute: Attributes.Edge.style.attribute(.dashed))
+                    id: Edge.Id(rawValue: nextEdgeId(in: result)),
+                    from: Node(rawValue: "_meta_\(nt.id)"),
+                    to: Node(rawValue: "_meta_\(detailType.id)"))
+                result = try result.adding(edgeType: detailedBy).adding(edge: edge, edgeType: detailedBy)
+                result = try result.setting(edge: edge.id, attribute: Attributes.Edge.label.attribute("detailed by"))
+                result = try result.setting(edge: edge.id, attribute: Attributes.Edge.style.attribute(.dashed))
             }
         }
 
         let effectiveLabel = label ?? "\(notationName) Meta Model"
-        result = try result.set(graphAttribute: Attributes.Group.label.attribute(effectiveLabel))
-        result = try result.set(graphAttribute: Attributes.Group.Id.attribute(notationName))
+        result = try result.setting(graphAttribute: Attributes.Group.label.attribute(effectiveLabel))
+        result = try result.setting(graphAttribute: Attributes.Group.id.attribute(notationName))
         return result.using(notation: notationName)
     }
 
@@ -481,7 +459,7 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
     /// closures only — no metatypes, no existentials.
     private func applyNotation(named name: String, to graph: VGraph) throws(VError) -> VGraph? {
         if let notation = dynamicNotations[name] {
-            return try notation.addNotation(addTo: graph)
+            return try notation.addNotation(to: graph)
         } else if let entry = NotationRegistry.entry(for: name) {
             return try graph.placing(entry.content, in: .builtin)
         }
@@ -516,7 +494,7 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
     private func buildDynamicNotation(from node: ASTNode) throws(VError) -> DynamicNotation {
         guard
             case .vnotationDecl(
-                let name, let extendsName, let graphAttrs, let nodeTypeDecls, let edgeTypeDecls, let groupTypeDecls,
+                let name, let extendsName, let graphAttributes, let nodeTypeDecls, let edgeTypeDecls, let groupTypeDecls,
                 let iconDecls, let qualityCheckStrs, let transformStrs) = node
         else {
             throw VError.parsingError("Internal error: expected .vnotationDecl AST node")
@@ -540,13 +518,13 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
             var attrs: [String: String] = [:]
             for (key, value) in decl.attrs { attrs[key] = value }
             let nodeStyle = attrs.removeValue(forKey: "nodeStyle")
-            return NodeTypeSpec(name: decl.name, nodeStyle: nodeStyle, rawAttrs: attrs, detailedBy: decl.detailedBy)
+            return NodeTypeSpec(name: decl.name, nodeStyle: nodeStyle, rawAttributes: attrs, detailedBy: decl.detailedBy)
         }
 
         let edgeTypeSpecs: [EdgeTypeSpec] = edgeTypeDecls.map { decl in
             var attrs: [String: String] = [:]
             for (key, value) in decl.attrs { attrs[key] = value }
-            return EdgeTypeSpec(id: decl.id, from: decl.from, to: decl.to, rawAttrs: attrs)
+            return EdgeTypeSpec(id: decl.id, from: decl.from, to: decl.to, rawAttributes: attrs)
         }
 
         var icons: [(name: String, artwork: IconArtwork)] = []
@@ -560,9 +538,9 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
             id: Identifier(rawValue: name),
             nodeTypeSpecs: nodeTypeSpecs,
             edgeTypeSpecs: edgeTypeSpecs,
-            groupTypes: groupTypeDecls.map { GroupType(string: $0.name) },
-            groupTypeAttrs: groupTypeAttrs(groupTypeDecls),
-            graphAttrs: graphAttrs,
+            groupTypes: groupTypeDecls.map { GroupType(rawValue: $0.name) },
+            groupTypeAttributes: groupTypeAttributes(groupTypeDecls),
+            graphAttributes: graphAttributes,
             baseEntry: base,
             baseVglName: extendsName,
             icons: icons,
@@ -573,10 +551,10 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
 
     /// A group type declared twice gets both declarations' attributes, the later
     /// winning where they name the same key.
-    private func groupTypeAttrs(_ decls: [VNotationGroupTypeDecl]) -> [GroupType: [String: String]] {
+    private func groupTypeAttributes(_ decls: [VNotationGroupTypeDecl]) -> [GroupType: [String: String]] {
         let declared = decls.filter { !$0.attrs.isEmpty }.map { decl in
             (
-                GroupType(string: decl.name),
+                GroupType(rawValue: decl.name),
                 Dictionary(decl.attrs.map { ($0.key, $0.value) }, uniquingKeysWith: { _, later in later })
             )
         }

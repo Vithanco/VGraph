@@ -8,7 +8,7 @@ extension Notations {
     /// implementing those changes through concrete action steps.
     public struct TransitionTree: NotationDeclaration {
 
-        public static var criteria: [QualityCheckSpec] { [.noParallelEdges] }
+        public static var namedQualityChecks: [QualityCheckSpec] { [.noParallelEdges] }
         public static let id: Identifier<Notation> = .init(rawValue: "TRT")
         public static let description =
             "Provides a step-by-step action plan for implementing change by linking concrete actions to their expected effects, answering 'How to cause the change?'"
@@ -115,12 +115,12 @@ extension Notations {
             private static let changeableId = "Changeable"
             private static let andJunctorId = "AndJunctor"
 
-            public static let undesirableEffect: NodeType = NodeType(string: undesirableEffectId)
-            public static let intermediateEffect: NodeType = NodeType(string: intermediateEffectId)
-            public static let desirableEffect: NodeType = NodeType(string: desirableEffectId)
-            public static let given: NodeType = NodeType(string: givenId)
-            public static let changeable: NodeType = NodeType(string: changeableId)
-            public static let andJunctor: NodeType = NodeType(string: andJunctorId)
+            public static let undesirableEffect: NodeType = NodeType(rawValue: undesirableEffectId)
+            public static let intermediateEffect: NodeType = NodeType(rawValue: intermediateEffectId)
+            public static let desirableEffect: NodeType = NodeType(rawValue: desirableEffectId)
+            public static let given: NodeType = NodeType(rawValue: givenId)
+            public static let changeable: NodeType = NodeType(rawValue: changeableId)
+            public static let andJunctor: NodeType = NodeType(rawValue: andJunctorId)
         }
 
         public struct EdgeTypes: NotationEdgeTypes {

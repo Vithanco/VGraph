@@ -19,7 +19,7 @@ struct VNotationDetailingTests {
         }
         """
 
-    let system = NodeType(string: "System")
+    let system = NodeType(rawValue: "System")
 
     private func parse(_ source: String) throws -> VGraph {
         try VGraphParser(logger: NoOpLogger()).parse(source: source)
@@ -28,7 +28,7 @@ struct VNotationDetailingTests {
     @Test("Given detailedBy: in a vnotation, when parsed, then the graph answers the detail types")
     func detailedByParses() throws {
         let graph = try parse(Self.source)
-        #expect(graph.detailTypes(of: system) == [NodeType(string: "Container"), NodeType(string: "Database")])
+        #expect(graph.detailTypes(of: system) == [NodeType(rawValue: "Container"), NodeType(rawValue: "Database")])
     }
 
     @Test("Given detailedBy: in a vnotation, when highlighted, then the listed names are node types")
@@ -42,7 +42,7 @@ struct VNotationDetailingTests {
     @Test("Given detailedBy: naming an undeclared type, when parsed, then it is refused")
     func detailedByMustNameDeclaredTypes() {
         let source = Self.source.replacingOccurrences(of: "(Container, Database)", with: "(Container, Datbase)")
-        #expect(throws: VError.detailingNamesUnknownType(of: system, unknown: NodeType(string: "Datbase"))) {
+        #expect(throws: VError.detailingNamesUnknownType(of: system, unknown: NodeType(rawValue: "Datbase"))) {
             try parse(source)
         }
     }
@@ -59,17 +59,17 @@ struct VNotationDetailingTests {
     func detailedByRoundTrips() throws {
         let exported = try VGLExporter().export(graph: parse(Self.source))
         #expect(exported.contains("detailedBy: (Container, Database)"))
-        #expect(try parse(exported).detailTypes(of: system) == [NodeType(string: "Container"), NodeType(string: "Database")])
+        #expect(try parse(exported).detailTypes(of: system) == [NodeType(rawValue: "Container"), NodeType(rawValue: "Database")])
     }
 
     @Test("Given a vnotation adding to a built-in's detailings, when exported, then only its own are written")
     func onlyTheVnotationsOwnDetailingsAreExported() throws {
         let vnotation = DynamicNotation(
             id: .init(rawValue: "Mine"),
-            nodeTypeSpecs: [NodeTypeSpec(name: "System", nodeStyle: nil, rawAttrs: [:], detailedBy: ["Database"])],
-            edgeTypeSpecs: [], graphAttrs: [], baseEntry: Layered.entry)
-        let graph = try vnotation.addNotation(addTo: VGraph().defineStandardAttributes()).using(notation: "Mine")
-        #expect(graph.detailTypes(of: system) == [NodeType(string: "Container"), NodeType(string: "Database")])
+            nodeTypeSpecs: [NodeTypeSpec(name: "System", nodeStyle: nil, rawAttributes: [:], detailedBy: ["Database"])],
+            edgeTypeSpecs: [], graphAttributes: [], baseEntry: Layered.entry)
+        let graph = try vnotation.addNotation(to: VGraph()).using(notation: "Mine")
+        #expect(graph.detailTypes(of: system) == [NodeType(rawValue: "Container"), NodeType(rawValue: "Database")])
 
         let exported = try VGLExporter().export(graph: graph)
         #expect(exported.contains("detailedBy: (Database)"), "\(exported)")
@@ -82,9 +82,9 @@ private enum Layered: NotationDeclaration {
     static let id: Identifier<Notation> = .init(rawValue: "Layered")
 
     struct NodeTypes: NotationNodeTypes {
-        static let system = NodeType(string: "System")
-        static let container = NodeType(string: "Container")
-        static let database = NodeType(string: "Database")
+        static let system = NodeType(rawValue: "System")
+        static let container = NodeType(rawValue: "Container")
+        static let database = NodeType(rawValue: "Database")
         static var all: [NodeType] { [system, container, database] }
         static var allDefinitions: [NodeTypeDefinition] {
             [

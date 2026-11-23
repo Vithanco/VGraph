@@ -9,7 +9,7 @@ import Testing
 struct NodeLabelVisibilityTests {
 
     private func evaporatingCloud() throws -> VGraph {
-        try Notations.EvaporatingCloud.addNotation(addTo: VGraph().defineStandardAttributes())
+        try Notations.EvaporatingCloud.addNotation(to: VGraph())
     }
 
     /// Evaporating Cloud is the discriminating notation: `conflict` is icon-only

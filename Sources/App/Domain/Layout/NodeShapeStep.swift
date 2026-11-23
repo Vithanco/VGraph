@@ -33,7 +33,7 @@ private func extractShape(node: Node, in graph: VGraph) throws(VError) -> VGraph
         }
         return nil
     }) {
-        return try graph.set(
+        return try graph.setting(
             node: node,
             attribute: Attributes.Node.shape.attribute(shape)
         )

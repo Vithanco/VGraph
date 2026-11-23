@@ -4,7 +4,7 @@
 
 extension NodeStyleLayout {
 
-    /// `clear` reports `nil` rather than a colour: a C4 boundary's transparency is
+    /// `clear` reports `nil` rather than a colour: a C4 group's transparency is
     /// deliberate, and giving it a fill would paint over the notation's intent.
     public var backgroundFill: SemanticColor? {
         switch self {
@@ -36,7 +36,7 @@ extension NodeStyleLayout {
         func fill(_ color: SemanticColor) -> SemanticColor {
             color == oldFill ? newFill : color
         }
-        func text(_ color: SemanticColor) -> SemanticColor {
+        func readableText(_ color: SemanticColor) -> SemanticColor {
             if let fontColor { return fontColor }
             return color.isLight == newFill.isLight ? newFill.bwContrastColor : color
         }
@@ -48,9 +48,9 @@ extension NodeStyleLayout {
         case .empty, .icon:
             return self
 
-        case .categoryHeader(let t, let font, let backgroundColor, let textColor):
+        case .categoryHeader(let text, let font, let backgroundColor, let textColor):
             return .categoryHeader(
-                text: t, font: font, backgroundColor: fill(backgroundColor), textColor: text(textColor))
+                text: text, font: font, backgroundColor: fill(backgroundColor), textColor: readableText(textColor))
 
         case .frame(let cornerRadius, let borderWidth, let borderColor):
             return .frame(cornerRadius: cornerRadius, borderWidth: borderWidth, borderColor: fill(borderColor))
@@ -59,10 +59,10 @@ extension NodeStyleLayout {
             return .circleBorder(borderWidth: borderWidth, borderColor: fill(borderColor))
 
         case .nodeText(let color):
-            return .nodeText(color: text(color))
+            return .nodeText(color: readableText(color))
 
         case .italicNodeText(let color):
-            return .italicNodeText(color: text(color))
+            return .italicNodeText(color: readableText(color))
 
         case .padded(let insets, let inner):
             return .padded(insets, recurse(inner))
@@ -85,8 +85,8 @@ extension NodeStyleLayout {
         case .accentBar(let width, let color):
             return .accentBar(width: width, color: fill(color))
 
-        case .typeLabel(let t, let font, let color):
-            return .typeLabel(text: t, font: font, color: text(color))
+        case .typeLabel(let text, let font, let color):
+            return .typeLabel(text: text, font: font, color: readableText(color))
 
         case .typeBadge(let icon, let typeLabel, let color):
             return .typeBadge(icon: icon, typeLabel: typeLabel, color: fill(color))
@@ -96,11 +96,11 @@ extension NodeStyleLayout {
                 cornerRadius: cornerRadius, borderWidth: borderWidth,
                 borderColor: fill(borderColor), dashPattern: dashPattern)
 
-        case .subtitleText(let t, let color):
-            return .subtitleText(text: t, color: text(color))
+        case .subtitleText(let text, let color):
+            return .subtitleText(text: text, color: readableText(color))
 
-        case .pillBadge(let t, let pillFill, let textColor):
-            return .pillBadge(text: t, fill: fill(pillFill), textColor: text(textColor))
+        case .pillBadge(let text, let pillFill, let textColor):
+            return .pillBadge(text: text, fill: fill(pillFill), textColor: readableText(textColor))
 
         case .stackedShadow(let cornerRadius, let borderWidth, let shadowFill, let border, let dash):
             return .stackedShadow(
@@ -108,7 +108,7 @@ extension NodeStyleLayout {
                 fill: fill(shadowFill), border: fill(border), dash: dash)
 
         case .circleContent(let content, let font, let color):
-            return .circleContent(content, font: font, color: text(color))
+            return .circleContent(content, font: font, color: readableText(color))
         }
     }
 }

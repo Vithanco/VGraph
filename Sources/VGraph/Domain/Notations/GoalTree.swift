@@ -7,7 +7,7 @@ extension Notations {
     /// "What must we achieve to reach our Goal?"
     public struct GoalTree: NotationDeclaration {
 
-        public static var criteria: [QualityCheckSpec] { [.noParallelEdges] }
+        public static var namedQualityChecks: [QualityCheckSpec] { [.noParallelEdges] }
         public static let id: Identifier<Notation> = .init(rawValue: "GoalTree")
         public static var diagramLogic: DiagramLogic { .necessaryCondition }
         public static let description =
@@ -92,9 +92,9 @@ extension Notations {
             private static let criticalSuccessFactorId = "CriticalSuccessFactor"
             private static let necessaryConditionId = "NecessaryCondition"
 
-            public static let goal: NodeType = NodeType(string: goalId)
-            public static let criticalSuccessFactor: NodeType = NodeType(string: criticalSuccessFactorId)
-            public static let necessaryCondition: NodeType = NodeType(string: necessaryConditionId)
+            public static let goal: NodeType = NodeType(rawValue: goalId)
+            public static let criticalSuccessFactor: NodeType = NodeType(rawValue: criticalSuccessFactorId)
+            public static let necessaryCondition: NodeType = NodeType(rawValue: necessaryConditionId)
         }
 
         public struct EdgeTypes: NotationEdgeTypes {
@@ -149,34 +149,12 @@ extension Notations {
         // MARK: - Quality Checks
 
         public static var qualityChecks: [QualityCheck] {
-            [exactlyOneGoal, csfCount]
-        }
-
-        static func exactlyOneGoal(_ graph: VGraph) -> [MessageWithSeverity] {
-            let goalNodes = graph.nodes.filter { (try? graph.nodeType(for: $0)) == NodeTypes.goal }
-            if goalNodes.count == 0 {
-                return [
-                    MessageWithSeverity(
-                        message: "Goal Tree has no Goal node (exactly 1 required)",
-                        severity: .error
-                    )
-                ]
-            } else if goalNodes.count > 1 {
-                return [
-                    MessageWithSeverity(
-                        message: "Goal Tree has \(goalNodes.count) Goal nodes (exactly 1 required)",
-                        severity: .error
-                    )
-                ]
-            }
-            return []
+            [QualityCheckRegistry.exactlyOneCheck(nodeTypeName: NodeTypes.goal.id), csfCount]
         }
 
         /// Recommended: 3-5 Critical Success Factors.
         static func csfCount(_ graph: VGraph) -> [MessageWithSeverity] {
-            let csfNodes = graph.nodes.filter {
-                (try? graph.nodeType(for: $0)) == NodeTypes.criticalSuccessFactor
-            }
+            let csfNodes = graph.nodes(ofType: NodeTypes.criticalSuccessFactor)
             if csfNodes.count < 3 || csfNodes.count > 5 {
                 return [
                     MessageWithSeverity(

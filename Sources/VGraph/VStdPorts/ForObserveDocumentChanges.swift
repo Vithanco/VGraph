@@ -1,10 +1,5 @@
-//
-//  VForObserveDocumentChanges.swift
-//  VGraph
-//
-//  Outbound port: how a GraphSession says its document moved.
-//  Rationale: docs/adr/0013-driving-ports-and-named-commands.md.
-//
+// Outbound port: how a GraphSession says its document moved.
+// Rationale: docs/adr/0013-driving-ports-and-named-commands.md.
 
 /// Told that the document reached a new state, so the views over it can catch
 /// up. The **Observer** to a [[GraphSession]]'s subject, and the one direction a

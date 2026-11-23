@@ -28,7 +28,7 @@ struct DecomposeTest {
     }
 
     private func members(of group: String, in s: TestSession) throws -> [Node] {
-        try s.origin.groupStructure.getDirectContent(group: Group(rawValue: group)).1
+        try s.origin.groupStructure.directContent(of: Group(rawValue: group)).1
     }
 
     @Test("Given a node with no edges, when decomposed, then it is a detailed node of the same id, type and label holding one detail")
@@ -39,10 +39,10 @@ struct DecomposeTest {
 
         let bank = Group(rawValue: "bank")
         #expect(!s.origin.has(node: Node("bank")))
-        #expect(s.origin.nodeType(of: bank) == NodeType(string: "System"))
+        #expect(s.origin.nodeType(of: bank) == NodeType(rawValue: "System"))
         let details = try members(of: "bank", in: s)
         try #require(details.count == 1)
-        #expect(try s.origin.nodeType(for: details[0]) == NodeType(string: "Container"))
+        #expect(try s.origin.nodeType(for: details[0]) == NodeType(rawValue: "Container"))
         let exported = try s.exportVGL()
         #expect(exported.contains("group bank: System \"Bank\""), "\(exported)")
         #expect(exported.contains("node \(details[0].id): Container \"\(Attributes.Node.placeholderLabel)\""), "\(exported)")
@@ -115,7 +115,7 @@ struct DecomposeTest {
         try s.decompose("bank")
 
         let login = try #require(s.origin.edges.first)
-        #expect(try s.origin.nodeType(for: login.to) == NodeType(string: "Store"))
+        #expect(try s.origin.nodeType(for: login.to) == NodeType(rawValue: "Store"))
         #expect(try s.origin.edgeType(for: login).id.id == "uses")
     }
 

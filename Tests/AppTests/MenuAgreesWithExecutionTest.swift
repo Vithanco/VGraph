@@ -137,7 +137,7 @@ struct MenuAgreesWithExecutionTest {
     /// named methods. The generic path is gone, so this is the whole check now,
     /// and the `continue`s below are where a command needs an argument only the
     /// editor's picker can supply. Those are covered by their own suites.
-    @Test func namedCommandsRefuseExactlyWhenTheMenuGreysThem() throws {
+    @Test func namedCommandsRefuseExactlyWhenTheMenuGraysThem() throws {
         var mismatches: [String] = []
 
         for (name, vgl) in fixtures {
@@ -168,7 +168,7 @@ struct MenuAgreesWithExecutionTest {
                         // and fall back to the only type when there is no
                         // question to put.
                         let options = EditorCore.addNodeOptions(on: elementId, in: session)
-                        let chosen = options.first.map { NodeType(string: $0.id) }
+                        let chosen = options.first.map { NodeType(rawValue: $0.id) }
                         guard let type = chosen ?? session.nodeTypes(placeableIn: elementId).first else { continue }
                         ran = didRun { _ = try session.addNode(in: elementId, ofType: type) }
                     case .addSuccessor, .addPredecessor:
@@ -181,7 +181,7 @@ struct MenuAgreesWithExecutionTest {
                         guard let real = options.first(where: { !$0.isBreak }) else {
                             continue  // only the break on offer; ⌥ is the way in
                         }
-                        let edge = EdgeType.Id(string: real.id)
+                        let edge = EdgeType.Id(rawValue: real.id)
                         ran = didRun {
                             if end == .to {
                                 _ = try session.addSuccessor(from: elementId, using: edge)
@@ -220,7 +220,7 @@ struct MenuAgreesWithExecutionTest {
                             }
                             let to: GroupType? =
                                 first.id == EditorCore.plainGroupOption.id
-                                ? nil : GroupType(string: first.id)
+                                ? nil : GroupType(rawValue: first.id)
                             ran = didRun { try session.changeType(of: elementId, to: to) }
                         } else if session.kind(of: elementId) == .edge {
                             // As the editor does it: ask whether there is a
@@ -229,10 +229,10 @@ struct MenuAgreesWithExecutionTest {
                             if let first = options.first {
                                 ran = didRun {
                                     try session.changeType(
-                                        of: elementId, using: EdgeType.Id(string: first.id))
+                                        of: elementId, using: EdgeType.Id(rawValue: first.id))
                                 }
                             } else {
-                                guard !session.retypeCandidates(edge: elementId).isEmpty else {
+                                guard !session.retypeCandidates(forEdge: elementId).isEmpty else {
                                     continue  // nothing to become, and no break to reach
                                 }
                                 ran = didRun { try session.changeType(of: elementId, using: nil) }
@@ -255,7 +255,7 @@ struct MenuAgreesWithExecutionTest {
                         if let first = options.first {
                             ran = didRun {
                                 try session.changeDirection(
-                                    of: elementId, to: EdgeType.Id(string: first.id))
+                                    of: elementId, to: EdgeType.Id(rawValue: first.id))
                             }
                         } else {
                             ran = didRun { try session.changeDirection(of: elementId, to: nil) }

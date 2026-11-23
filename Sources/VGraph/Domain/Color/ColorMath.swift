@@ -1,22 +1,15 @@
-////
-////  ColorMath.swift
-////  VGraph
-////
-////  HSL conversion + `darkOf` derivation, used by `SemanticColor` to compute
-////  dark variants for tokens that don't have an explicit pair.
-////
-////  Implements §11 of the Vithanco Diagram Style Guide: each light fill /
-////  border / text triple maps to a dark equivalent through three lightness
-////  bands; hue is preserved so each notation stays identifiable across modes.
-////
-////  Reference algorithm (JS source in the style guide):
-////      if (s < 8)        return hsl(h, s,           100 - l)        // neutral
-////      if (l > 70)       return hsl(h, min(s, 32),  13)             // dark fill
-////      if (l < 30)       return hsl(h, min(s, 60),  86)             // light text
-////                        return hsl(h, min(s+8, 78), max(l, 62))    // mid accent
-////
-
-import MathUtils
+// HSL conversion + `darkOf` derivation, used by `SemanticColor` to compute
+// dark variants for tokens that don't have an explicit pair.
+//
+// Implements §11 of the Vithanco Diagram Style Guide: each light fill /
+// border / text triple maps to a dark equivalent through three lightness
+// bands; hue is preserved so each notation stays identifiable across modes.
+//
+// Reference algorithm (JS source in the style guide):
+//      if (s < 8)        return hsl(h, s,           100 - l)        // neutral
+//      if (l > 70)       return hsl(h, min(s, 32),  13)             // dark fill
+//      if (l < 30)       return hsl(h, min(s, 60),  86)             // light text
+//                        return hsl(h, min(s+8, 78), max(l, 62))    // mid accent
 
 public enum ColorMath {
 
@@ -69,29 +62,18 @@ public enum ColorMath {
     // MARK: - darkOf transform
 
     public static func darkOf(_ color: VColor) -> VColor {
-        let (h, s, l) = rgbToHSL(r: color.redComponent, g: color.greenComponent, b: color.blueComponent)
-        let newH: Double
-        let newS: Double
-        let newL: Double
-        if s < 8 {
-            newH = h
-            newS = s
-            newL = min(100, max(0, 100 - l))
-        } else if l > 70 {
-            newH = h
-            newS = min(s, 32)
-            newL = 13
-        } else if l < 30 {
-            newH = h
-            newS = min(s, 60)
-            newL = 86
-        } else {
-            newH = h
-            newS = min(s + 8, 78)
-            newL = max(l, 62)
-        }
-        let (r, g, b) = hslToRGB(h: newH, s: newS, l: newL)
-        return VColor(red: r, green: g, blue: b, alpha: color.alphaComponent)
+        let (hue, saturation, lightness) = rgbToHSL(r: color.redComponent, g: color.greenComponent, b: color.blueComponent)
+        let dark = darkBand(saturation: saturation, lightness: lightness)
+        let (red, green, blue) = hslToRGB(h: hue, s: dark.saturation, l: dark.lightness)
+        return VColor(red: red, green: green, blue: blue, alpha: color.alphaComponent)
+    }
+
+    /// The four lightness bands of §11; hue is never touched.
+    private static func darkBand(saturation: Double, lightness: Double) -> (saturation: Double, lightness: Double) {
+        if saturation < 8 { return (saturation, min(100, max(0, 100 - lightness))) }  // neutral
+        if lightness > 70 { return (min(saturation, 32), 13) }  // dark fill
+        if lightness < 30 { return (min(saturation, 60), 86) }  // light text
+        return (min(saturation + 8, 78), max(lightness, 62))  // mid accent
     }
 
     /// Returns `lightHex` unchanged if it cannot be parsed (e.g. malformed input).

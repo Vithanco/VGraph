@@ -29,7 +29,7 @@ struct AddNodeTest {
     @Test func addingANodeAtTopLevelCreatesItWithAPlaceholder() throws {
         let s = try session()
 
-        let created = try s.addNode(in: nil, ofType: NodeType(string: "Concept"))
+        let created = try s.addNode(in: nil, ofType: NodeType(rawValue: "Concept"))
         #expect(created == "concept_2")
 
         #expect(try s.exportVGL().contains("node concept_2: Concept \"Change Me\""))
@@ -48,9 +48,9 @@ struct AddNodeTest {
                 }
                 """)
 
-        #expect(try s.addNode(in: "g1", ofType: NodeType(string: "Concept")) == "concept_2")
+        #expect(try s.addNode(in: "g1", ofType: NodeType(rawValue: "Concept")) == "concept_2")
 
-        #expect(s.origin.group(of: Node(string: "concept_2"))?.id.id == "g1")
+        #expect(s.origin.group(of: Node(rawValue: "concept_2"))?.id.id == "g1")
 
         // And emitted *within* the group's braces. Asserting only "before the
         // first }" would pass with the node at the top level, because the
@@ -80,10 +80,10 @@ struct AddNodeTest {
         #expect(s.isFolded("g1"))
         #expect(!s.isFolded("a"), "only a group folds, whatever its group does")
 
-        #expect(try s.addNode(in: "g1", ofType: NodeType(string: "Concept")) == "concept_2")
+        #expect(try s.addNode(in: "g1", ofType: NodeType(rawValue: "Concept")) == "concept_2")
 
         #expect(s.isFolded("g1"))
-        #expect(s.origin.group(of: Node(string: "concept_2"))?.id.id == "g1")
+        #expect(s.origin.group(of: Node(rawValue: "concept_2"))?.id.id == "g1")
     }
 
     /// The pane needs to *name* the root, not merely recognise it: a blank-space
@@ -97,8 +97,8 @@ struct AddNodeTest {
         #expect(s.kind(of: root) == .group)
 
         // Naming it explicitly is the same as passing nil.
-        #expect(try s.addNode(in: root, ofType: NodeType(string: "Concept")) == "concept_2")
-        #expect(s.origin.group(of: Node(string: "concept_2"))?.id.id == root)
+        #expect(try s.addNode(in: root, ofType: NodeType(rawValue: "Concept")) == "concept_2")
+        #expect(s.origin.group(of: Node(rawValue: "concept_2"))?.id.id == root)
         #expect(try s.exportVGL().contains("node concept_2: Concept \"Change Me\""))
     }
 

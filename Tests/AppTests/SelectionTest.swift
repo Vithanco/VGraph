@@ -164,7 +164,7 @@ struct SelectionTest {
     /// What the menu offers and what the command does must agree — the same
     /// invariant `MenuAgreesWithExecutionTest` protects for single elements.
     /// A diagram with nothing in it is what is left to disagree about.
-    @Test func aGreyedGroupRowMeansTheCommandWouldRefuse() throws {
+    @Test func aGrayedGroupRowMeansTheCommandWouldRefuse() throws {
         let s = try makeTestSession(vgl: "vgraph demo: ConceptMap \"Demo\" {\n}")
         let selection = Selection([s.rootGroupId()])
 

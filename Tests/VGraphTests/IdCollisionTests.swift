@@ -19,87 +19,87 @@ struct IdCollisionTests {
 
     @Test("A node may share its id with a node type, and each keeps its own values")
     func aNodeMayShareItsIdWithANodeType() throws(VError) {
-        let nodeType = NodeType(string: "Question")
-        let graph = try VGraph().defineStandardAttributes()
-            .add(nodeType: nodeType)
-            .add(node: Node(string: "Question"), type: nodeType)
-            .set(nodeType: nodeType, attribute: Attributes.Node.fontsize.attribute(20))
-            .set(node: Node(string: "Question"), attribute: Attributes.Node.fontsize.attribute(30))
+        let nodeType = NodeType(rawValue: "Question")
+        let graph = try VGraph()
+            .adding(nodeType: nodeType)
+            .adding(node: Node(rawValue: "Question"), type: nodeType)
+            .setting(nodeType: nodeType, attribute: Attributes.Node.fontsize.attribute(20))
+            .setting(node: Node(rawValue: "Question"), attribute: Attributes.Node.fontsize.attribute(30))
         #expect(try graph.get(nodeType: nodeType, attribute: Attributes.Node.fontsize) == 20)
-        #expect(try graph.get(node: Node(string: "Question"), attribute: Attributes.Node.fontsize) == 30)
+        #expect(try graph.get(node: Node(rawValue: "Question"), attribute: Attributes.Node.fontsize) == 30)
     }
 
     @Test("Group id cannot collide with existing Node id")
     func groupIdCollidesWithNode() throws(VError) {
         var graph = VGraph()
-        let nodeType = NodeType(string: "T")
-        graph = try graph.add(nodeType: nodeType)
-        graph = try graph.add(node: Node(string: "shared"), type: nodeType)
+        let nodeType = NodeType(rawValue: "T")
+        graph = try graph.adding(nodeType: nodeType)
+        graph = try graph.adding(node: Node(rawValue: "shared"), type: nodeType)
 
         #expect(throws: VError.idCollision(id: "shared")) {
-            _ = try graph.add(group: Group(rawValue: "shared"))
+            _ = try graph.adding(group: Group(rawValue: "shared"))
         }
     }
 
     @Test("Node id cannot collide with existing Group id")
     func nodeIdCollidesWithGroup() throws(VError) {
         var graph = VGraph()
-        let nodeType = NodeType(string: "T")
-        graph = try graph.add(nodeType: nodeType)
-        graph = try graph.add(group: Group(rawValue: "shared"))
+        let nodeType = NodeType(rawValue: "T")
+        graph = try graph.adding(nodeType: nodeType)
+        graph = try graph.adding(group: Group(rawValue: "shared"))
 
         #expect(throws: VError.idCollision(id: "shared")) {
-            _ = try graph.add(node: Node(string: "shared"), type: nodeType)
+            _ = try graph.adding(node: Node(rawValue: "shared"), type: nodeType)
         }
     }
 
     // MARK: - delete symmetry: every add has a matching delete that frees the id
 
-    @Test("delete(node:) frees the id for reuse")
+    @Test("deleting(node:) frees the id for reuse")
     func deleteNodeFreesId() throws(VError) {
         var graph = VGraph()
-        let nodeType = NodeType(string: "T")
-        graph = try graph.add(nodeType: nodeType)
-        let node = Node(string: "reuseMe")
-        graph = try graph.add(node: node, type: nodeType)
-        graph = try graph.delete(node: node)
+        let nodeType = NodeType(rawValue: "T")
+        graph = try graph.adding(nodeType: nodeType)
+        let node = Node(rawValue: "reuseMe")
+        graph = try graph.adding(node: node, type: nodeType)
+        graph = try graph.deleting(node: node)
 
         // Reusing the id for a Group must now succeed.
-        _ = try graph.add(group: Group(rawValue: "reuseMe"))
+        _ = try graph.adding(group: Group(rawValue: "reuseMe"))
     }
 
-    @Test("delete(group:) frees the id for reuse")
+    @Test("deleting(group:) frees the id for reuse")
     func deleteGroupFreesId() throws(VError) {
         var graph = VGraph()
-        let nodeType = NodeType(string: "T")
-        graph = try graph.add(nodeType: nodeType)
+        let nodeType = NodeType(rawValue: "T")
+        graph = try graph.adding(nodeType: nodeType)
         let group = Group(rawValue: "reuseMe")
-        graph = try graph.add(group: group)
-        graph = try graph.delete(group: group)
+        graph = try graph.adding(group: group)
+        graph = try graph.deleting(group: group)
 
         // Reusing the id for a Node must now succeed.
-        _ = try graph.add(node: Node(string: "reuseMe"), type: nodeType)
+        _ = try graph.adding(node: Node(rawValue: "reuseMe"), type: nodeType)
     }
 
-    // Note: `delete(nodeType:)` has a pre-existing quirk (requires the type to have
+    // Note: `deleting(nodeType:)` has a pre-existing quirk (requires the type to have
     // been attached to at least one node, and still "in use" detection returns wrong
     // result for never-used types). Its values are cleared by the same
     // `removeKey` as a node's, edge's or group's.
 
-    @Test("delete(edge:) frees the id for reuse")
+    @Test("deleting(edge:) frees the id for reuse")
     func deleteEdgeFreesId() throws(VError) {
         var graph = VGraph()
-        let nt = NodeType(string: "T")
-        graph = try graph.add(nodeType: nt)
-        graph = try graph.add(node: Node(string: "a"), type: nt)
-        graph = try graph.add(node: Node(string: "b"), type: nt)
+        let nt = NodeType(rawValue: "T")
+        graph = try graph.adding(nodeType: nt)
+        graph = try graph.adding(node: Node(rawValue: "a"), type: nt)
+        graph = try graph.adding(node: Node(rawValue: "b"), type: nt)
         let et = EdgeType(id: "e", from: nt, to: nt)
-        graph = try graph.add(edgeType: et)
-        let edge = Edge(id: Edge.Id(string: "reuseMe"), from: Node(string: "a"), to: Node(string: "b"))
-        graph = try graph.add(edge: edge, edgeType: et)
-        graph = try graph.delete(edge: edge.id)
+        graph = try graph.adding(edgeType: et)
+        let edge = Edge(id: Edge.Id(rawValue: "reuseMe"), from: Node(rawValue: "a"), to: Node(rawValue: "b"))
+        graph = try graph.adding(edge: edge, edgeType: et)
+        graph = try graph.deleting(edge: edge.id)
 
         // Reusing the id for a Group must now succeed.
-        _ = try graph.add(group: Group(rawValue: "reuseMe"))
+        _ = try graph.adding(group: Group(rawValue: "reuseMe"))
     }
 }

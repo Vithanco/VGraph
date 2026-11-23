@@ -22,17 +22,17 @@ extension DisplayPipeline {
                 let ns: NodeStyle =
                     (try? graph.get(nodeType: nodeType, attribute: Attributes.Node.nodeStyle)) ?? .bareText
                 guard ns != .presetLayout, let layout = graph.effectiveNodeLayout(for: nodeType) else { continue }
-                result = try result.set(
+                result = try result.setting(
                     nodeType: nodeType,
                     attribute: Attributes.Node.style.attribute(layout)
                 )
             }
             for node in graph.nodes {
-                let own = graph.getOwnAttributes(node: node)
+                let own = graph.ownAttributes(node: node)
                 guard own[Attributes.Node.backgroundColor.id] != nil || own[Attributes.Node.fontColor.id] != nil,
                     let layout = graph.effectiveNodeLayout(for: node)
                 else { continue }
-                result = try result.set(node: node, attribute: Attributes.Node.style.attribute(layout))
+                result = try result.setting(node: node, attribute: Attributes.Node.style.attribute(layout))
             }
             return result
         }

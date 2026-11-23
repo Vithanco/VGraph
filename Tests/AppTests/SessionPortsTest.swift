@@ -44,7 +44,7 @@ struct SentinelRenderer: ForRenderAGraph {
     func draw(graph: VGraph, darkMode: Bool, interactive: Bool) throws(VError) -> Never {
         throw VError.notImplemented("sentinel draws nothing")
     }
-    func serialise(_ drawing: Never, sourceVGL: String?) -> String {}
+    func serialize(_ drawing: Never, sourceVGL: String?) -> String {}
 }
 
 struct SentinelRendererPorts: AppPorts {

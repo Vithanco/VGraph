@@ -36,18 +36,18 @@ struct TimelineOverlayTests {
         ]
         for node in graph.nodes {
             if let pos = positions[node.id] {
-                graph = try graph.set(node: node, attribute: Attributes.Node.layoutedPos.attribute(pos))
-                graph = try graph.set(
+                graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(pos))
+                graph = try graph.setting(
                     node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 30)))
-                graph = try graph.set(
+                graph = try graph.setting(
                     node: node,
                     attribute: Attributes.Node.wrappedText.attribute([node.id == "tp1800" ? "1800" : node.id == "tp1850" ? "1850" : "Napoleon"]))
             }
         }
 
         // Mock root group bounds (covers the full diagram for guide termination).
-        let root = Group(rawValue: rootGroup)
-        graph = try graph.set(
+        let root = Group.root
+        graph = try graph.setting(
             group: root,
             attribute: Attributes.Group.layoutedBounds.attribute(VRect(x: 0, y: 0, width: 400, height: 200)))
 
@@ -64,7 +64,7 @@ struct TimelineOverlayTests {
             splinePoints: [VPoint(x: 100, y: 50), VPoint(x: 300, y: 50)],
             color: "#000000", penwidth: 1.0
         )
-        let graphWithEdge = try graph.set(
+        let graphWithEdge = try graph.setting(
             edge: seqEdge.id, attribute: Attributes.Edge.layoutData.attribute(layout))
         let svg = try VSVGRenderer(logger: TestLogger()).render(graph: graphWithEdge)
 
@@ -121,15 +121,15 @@ struct TimelineOverlayTests {
         let parser = VGraphParser(logger: TestLogger())
         var graph = try parser.parse(source: input)
         for node in graph.nodes {
-            graph = try graph.set(
+            graph = try graph.setting(
                 node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 100, y: 100)))
-            graph = try graph.set(
+            graph = try graph.setting(
                 node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 30)))
-            graph = try graph.set(
+            graph = try graph.setting(
                 node: node, attribute: Attributes.Node.wrappedText.attribute(["Something happened"]))
         }
-        let root = Group(rawValue: rootGroup)
-        graph = try graph.set(
+        let root = Group.root
+        graph = try graph.setting(
             group: root,
             attribute: Attributes.Group.layoutedBounds.attribute(VRect(x: 0, y: 0, width: 200, height: 200)))
 

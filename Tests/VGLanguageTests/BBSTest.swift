@@ -36,7 +36,7 @@ struct BBSTest {
     ])
     func anUntypedEdgeTakesTheOnlyTypeItsEndsAllow(from: String, to: String, id: String) throws {
         let graph = try VGraphParser(logger: NoOpLogger()).parse(source: Self.source)
-        let edge = try #require(graph.edges.first { $0.from == Node(string: from) && $0.to == Node(string: to) })
+        let edge = try #require(graph.edges.first { $0.from == Node(rawValue: from) && $0.to == Node(rawValue: to) })
         #expect(try graph.edgeType(for: edge.id).id.id == id)
     }
 }

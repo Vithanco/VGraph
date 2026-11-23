@@ -5,7 +5,7 @@ import Testing
 struct DeclareTests {
 
     private func conceptMap() throws -> VGraph {
-        try Notations.ConceptMap.addNotation(addTo: VGraph().defineStandardAttributes())
+        try Notations.ConceptMap.addNotation(to: VGraph())
     }
 
     @Test func aVGLIdentifierCanBeDeclared() throws {

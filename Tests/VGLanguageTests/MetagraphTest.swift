@@ -21,7 +21,7 @@ struct MetagraphTest {
         let label: String = try graph.get(graphAttribute: Attributes.Group.label)
         #expect(label == "Timeline Meta Model")
 
-        let id: String = try graph.get(graphAttribute: Attributes.Group.Id)
+        let id: String = try graph.get(graphAttribute: Attributes.Group.id)
         #expect(id == "Timeline")
 
         // Timeline has 2 NodeTypes (TimePoint, Event) and 2 EdgeTypes (sequence, influence).
@@ -42,7 +42,7 @@ struct MetagraphTest {
         }
     }
 
-    @Test("A metagraph shows a notation's types, so the criteria for diagrams stay silent")
+    @Test("A metagraph shows a notation's types, so the quality checks for diagrams stay silent")
     func aMetagraphIsNotJudgedAsADiagram() throws {
         let parser = VGraphParser(logger: NoOpLogger())
         // Stock → Stock twice (same, opposite) is two edge types here, not a parallel edge.

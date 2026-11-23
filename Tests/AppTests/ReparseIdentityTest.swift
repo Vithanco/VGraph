@@ -96,7 +96,7 @@ struct ReparseIdentityTest {
         let session = try makeTestSession(vgl: handWritten)
 
         // `idea` and `detail` are both Concepts, so the new one is the third.
-        let created = try session.addNode(in: nil, ofType: NodeType(string: "Concept"))
+        let created = try session.addNode(in: nil, ofType: NodeType(rawValue: "Concept"))
         #expect(created == "concept_3")
 
         let edgeId = session.origin.edges.first!.id.id

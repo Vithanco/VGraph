@@ -198,8 +198,12 @@ Provenance names the layer, so it already says whether a rule set a value; the
   - `resolve(attribute, key, through: layer)` returns a value and its
     provenance. The most specific layer holding the key or any later step of
     its chain wins, and within it the earliest step. If no layer holds one,
-    the definition's default is returned with provenance *default*;
-  - `resolveAll(key, through: layer)` returns every attribute set on the chain;
+    the definition's default is returned with provenance *default*. A value
+    that does not parse as its type is passed over, as if unset: values stay
+    strings, so VGL text can hold one, and the quality report names it
+    (2026-11: VGL values are type-checked as warnings, not parse errors);
+  - `resolveAll(key, through: layer)` returns every attribute set on the chain,
+    passing over the same values;
   - `values(in: layer, for: key)` returns what one layer holds;
   - `set` and `remove` go through the layer's admission, and `set` prunes a
     redundant value as it writes;

@@ -53,22 +53,22 @@ struct VNotationDocumentTest {
     func elementsResolveAsBefore() throws {
         let (before, after) = try roundTripped()
         for node in before.nodes {
-            #expect(try before.getAttributes(node: node) == after.getAttributes(node: node), "\(node)")
+            #expect(try before.attributes(node: node) == after.attributes(node: node), "\(node)")
         }
         let edge = try #require(before.edges.first).id
         let edgeAfter = try #require(after.edges.first).id
-        #expect(try before.getAttributes(edge: edge) == after.getAttributes(edge: edgeAfter))
-        #expect(try before.getGraphAttributes() == after.getGraphAttributes())
+        #expect(try before.attributes(edge: edge) == after.attributes(edge: edgeAfter))
+        #expect(try before.graphAttributes() == after.graphAttributes())
     }
 
     @Test("Given a vnotation document, when it round-trips, then its types and definition are kept")
     func typesAndDefinitionAreKept() throws {
         let (before, after) = try roundTripped()
         for type in before.nodeTypes {
-            #expect(before.getAllAttributes(nodeType: type) == after.getAllAttributes(nodeType: type), "\(type)")
+            #expect(before.attributes(nodeType: type) == after.attributes(nodeType: type), "\(type)")
         }
         for type in before.edgeTypes {
-            #expect(before.getAllAttributes(edgeType: type.id) == after.getAllAttributes(edgeType: type.id), "\(type.id)")
+            #expect(before.attributes(edgeType: type.id) == after.attributes(edgeType: type.id), "\(type.id)")
         }
         #expect(before.notationDefinition == after.notationDefinition)
     }

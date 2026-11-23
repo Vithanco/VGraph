@@ -49,7 +49,7 @@ struct URLCommandTest {
         #expect(exported.contains("url: \"https://vithanco.com\""))
         // Survives a reparse — the attribute is declared, not invented on export.
         try s.replaceDocument(vgl: exported)
-        #expect(s.origin.url(of: .node(Node(string: "a"))) == "https://vithanco.com")
+        #expect(s.origin.url(of: .node(Node(rawValue: "a"))) == "https://vithanco.com")
     }
 
     /// Add and change are one command: the difference is only what it is seeded
@@ -124,7 +124,7 @@ struct URLCommandTest {
 
         try s.setURL(of: "a", to: "  ")
 
-        #expect(s.origin.url(of: .node(Node(string: "a"))) == nil)
+        #expect(s.origin.url(of: .node(Node(rawValue: "a"))) == nil)
         #expect(!(try s.exportVGL().contains("url:")))
     }
 
@@ -194,7 +194,7 @@ struct URLCommandTest {
 
         let exported = try s.exportVGL()
         #expect(!exported.contains("url:"))
-        #expect(s.origin.url(of: .node(Node(string: "a"))) == nil)
+        #expect(s.origin.url(of: .node(Node(rawValue: "a"))) == nil)
         try s.replaceDocument(vgl: exported)
     }
 }

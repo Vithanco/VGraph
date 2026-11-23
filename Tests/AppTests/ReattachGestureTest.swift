@@ -63,7 +63,7 @@ struct ReattachGestureTest {
     func selfLoopIsOfferedWhereDeclared() throws {
         let s = try causalLoopDiagram()
 
-        #expect(s.reattachTargets(edge: onlyEdgeId(s), end: .to).contains("s1"))
+        #expect(s.reattachTargets(for: onlyEdgeId(s), end: .to).contains("s1"))
     }
 
     /// Only nodes the notation joins are offered, and never the node the end
@@ -74,9 +74,9 @@ struct ReattachGestureTest {
         let s = try conceptMap()
         let edge = onlyEdgeId(s)
 
-        #expect(s.reattachTargets(edge: edge, end: .from) == ["b"])
+        #expect(s.reattachTargets(for: edge, end: .from) == ["b"])
         #expect(
-            Set(s.reattachTargets(edge: edge, end: .from, notationBreak: .permitted))
+            Set(s.reattachTargets(for: edge, end: .from, notationBreak: .permitted))
                 == ["b", "r2", "r"])
     }
 
@@ -100,7 +100,7 @@ struct ReattachGestureTest {
                 }
                 """)
 
-        #expect(s.reattachTargets(edge: onlyEdgeId(s), end: .to).contains("s3"))
+        #expect(s.reattachTargets(for: onlyEdgeId(s), end: .to).contains("s3"))
     }
 
     // MARK: - What the drop produces
@@ -132,7 +132,7 @@ struct ReattachGestureTest {
         #expect(Set(options.map { $0.id }) == ["same", "opposite"])
         #expect(!options.contains { $0.isBreak })
 
-        try s.reattach(edge, end: .to, to: "s3", using: EdgeType.Id(string: "opposite"))
+        try s.reattach(edge, end: .to, to: "s3", using: EdgeType.Id(rawValue: "opposite"))
         #expect(try s.exportVGL().contains("edge s1 -> s3: opposite"))
     }
 
@@ -160,7 +160,7 @@ struct ReattachGestureTest {
 
     /// ⌥ mints an unknown type outright, exactly as `connect`'s does — even over
     /// a pair the notation would have joined happily. The old type cannot
-    /// survive: `add(edge:)` refuses a type whose declared ends no longer match.
+    /// survive: `adding(edge:)` refuses a type whose declared ends no longer match.
     @Test("Allowing the break always produces an unknown edge type")
     func permittingTheBreakAlwaysMintsUnknown() throws {
         let s = try conceptMap()

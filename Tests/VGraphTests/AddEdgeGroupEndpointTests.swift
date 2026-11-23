@@ -8,7 +8,7 @@ import Testing
 
 @testable import VGraph
 
-@Suite("VGraph.add(edge:) rejects group endpoints")
+@Suite("VGraph.adding(edge:) rejects group endpoints")
 struct AddEdgeGroupEndpointTests {
 
     // MARK: - Fixtures
@@ -24,12 +24,11 @@ struct AddEdgeGroupEndpointTests {
     /// Graph with one node type, one edge type, two nodes, and one group — baseline for all tests.
     private func baseGraph() throws(VError) -> VGraph {
         var graph = try VGraph()
-            .defineStandardAttributes()
-            .add(nodeType: nodeType)
-            .add(edgeType: edgeType)
-            .add(node: nodeA, type: nodeType)
-            .add(node: nodeB, type: nodeType)
-        graph = try graph.add(group: group1)
+            .adding(nodeType: nodeType)
+            .adding(edgeType: edgeType)
+            .adding(node: nodeA, type: nodeType)
+            .adding(node: nodeB, type: nodeType)
+        graph = try graph.adding(group: group1)
         return graph
     }
 
@@ -41,7 +40,7 @@ struct AddEdgeGroupEndpointTests {
         let edge = Edge(string: "e1", from: group1.id.id, to: nodeB.id)
 
         #expect(throws: VError.edgeEndpointIsGroup(edge: edge.id, endpoint: group1)) {
-            _ = try graph.add(edge: edge, edgeType: edgeType)
+            _ = try graph.adding(edge: edge, edgeType: edgeType)
         }
     }
 
@@ -51,7 +50,7 @@ struct AddEdgeGroupEndpointTests {
         let edge = Edge(string: "e1", from: nodeA.id, to: group1.id.id)
 
         #expect(throws: VError.edgeEndpointIsGroup(edge: edge.id, endpoint: group1)) {
-            _ = try graph.add(edge: edge, edgeType: edgeType)
+            _ = try graph.adding(edge: edge, edgeType: edgeType)
         }
     }
 }

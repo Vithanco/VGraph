@@ -26,8 +26,8 @@ enum SVGHoverStyles {
         guard !graph.edges.isEmpty else { return "" }
 
         let topology = GraphTopology(edges: graph.edges)
-        let carriers = try Neighbourhood.carriers(in: graph)
-        func glow(_ hovered: String, _ lit: Neighbourhood) -> String {
+        let carriers = try Neighborhood.carriers(in: graph)
+        func glow(_ hovered: String, _ lit: Neighborhood) -> String {
             SVGBuilder.neighborGlowRule(
                 scope: "svg:has(#\(SVGBuilder.cssEscapeIdent(hovered)):hover) ",
                 edgeIds: lit.edges.map { $0.id },
@@ -36,13 +36,13 @@ enum SVGHoverStyles {
 
         var rules = ""
         for node in graph.nodes {
-            let lit = Neighbourhood(
+            let lit = Neighborhood(
                 from: [.leaving(node, by: topology.incidentEdges(of: node))], topology: topology, carriers: carriers)
             if lit.edges.isEmpty && lit.nodes.isEmpty { continue }
             rules += glow(SVGElementId.displayNode(node, in: graph), lit)
         }
         for edge in graph.edges {
-            let lit = Neighbourhood(
+            let lit = Neighborhood(
                 from: [.arriving(edge.from, .against), .arriving(edge.to, .along)], topology: topology, carriers: carriers)
             rules += glow(SVGElementId.edge(edge.id.id), lit)
         }

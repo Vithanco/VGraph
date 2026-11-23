@@ -1,10 +1,5 @@
-//
-//  RenderResult.swift
-//  VGraph
-//
-//  In the core rather than in App because `VForEditAGraphVisually` names it, and
-//  a port declared in the core cannot reach forward into App for its types.
-//
+// In the core rather than in App because `VForEditAGraphVisually` names it, and
+// a port declared in the core cannot reach forward into App for its types.
 
 public struct RenderResult<Drawing> {
     public let svg: String

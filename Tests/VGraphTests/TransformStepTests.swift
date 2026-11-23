@@ -21,7 +21,7 @@ struct TransformStepTests {
     // MARK: - set-after
 
     @Test func runningAStepRecordsItsCompletion() throws {
-        let graph = try VGraph().defineStandardAttributes()
+        let graph = VGraph()
         #expect(!graph.completedSteps.contains("a"))
 
         let result = try noop("a")(graph)
@@ -30,22 +30,22 @@ struct TransformStepTests {
     }
 
     @Test func recordingCompletionAccumulatesOnce() throws {
-        let graph = try VGraph().defineStandardAttributes()
-        let recorded = try graph.recordCompletion(of: "a").recordCompletion(of: "b").recordCompletion(of: "a")
+        let graph = VGraph()
+        let recorded = try graph.recordingCompletion(of: "a").recordingCompletion(of: "b").recordingCompletion(of: "a")
         #expect(recorded.completedSteps == ["a", "b"])
     }
 
     // MARK: - check-before
 
     @Test func missingPrerequisiteThrowsNamingTheGap() throws {
-        let graph = try VGraph().defineStandardAttributes()
+        let graph = VGraph()
         #expect(throws: VError.pipelineContractViolated(step: "b", missing: ["a"])) {
             try noop("b", requires: ["a"])(graph)
         }
     }
 
     @Test func satisfiedPrerequisitePasses() throws {
-        let graph = try VGraph().defineStandardAttributes().marking(["a"])
+        let graph = try VGraph().marking(["a"])
         let result = try noop("b", requires: ["a"])(graph)
         #expect(result.completedSteps.contains("b"))
     }

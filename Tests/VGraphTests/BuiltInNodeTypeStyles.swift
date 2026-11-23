@@ -11,7 +11,7 @@ enum BuiltInNodeTypeStyles {
     static func all() throws -> [(key: String, style: NodeStyleLayout)] {
         var styles: [(key: String, style: NodeStyleLayout)] = []
         for (name, entry) in NotationRegistry.entries {
-            let graph = try VGraph().defineStandardAttributes().placing(entry.content, in: .builtin)
+            let graph = try VGraph().placing(entry.content, in: .builtin)
             for nodeType in graph.nodeTypes {
                 if let style: NodeStyleLayout = try? graph.get(nodeType: nodeType, attribute: Attributes.Node.style) {
                     styles.append((key: "\(name).\(nodeType.description)", style: style))

@@ -110,7 +110,7 @@ platform-specific hexagons and at composition boundaries.
 - **Errors** — typed throws with `VError`: `func f() throws(VError) -> R`.
 - **Identifiers** — `Identifier<T>` wrapper: `let id: Node.Id = .init(rawValue: "node1")`;
   read the string back with `id.id` (so a node's is `node.id.id`), not `rawValue`.
-- **`VProtocol`** — base protocol for domain types (Codable, Hashable, Sendable).
+- **`VProtocol`** — base protocol for domain types (Hashable, Sendable).
 - **`UseIdentifier`** — types with an `id`.
 - **`HasReadableNames`** — enums with display names. Every conformer must supply
   `value`, `readableName` and `typeName` explicitly; the reflection-based

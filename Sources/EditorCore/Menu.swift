@@ -84,7 +84,7 @@ public func menu(
 /// What each element kind offers, in the order it is shown. This was
 /// `appliesTo` plus the registry's array order; menu composition is the
 /// adapter's business, so it is spelled out where the menu is drawn.
-func commands(on kind: VElementKind) -> [VCommandID] {
+func commands(on kind: VItemKind) -> [VCommandID] {
     switch kind {
     case .node:
         return [
@@ -163,8 +163,8 @@ public func availability(
         // something to offer even when the notation names no alternative:
         // declaring a relationship is how that edge stops being red (ADR-0024).
         if session.kind(of: elementId) == .edge {
-            if session.hasUnknownType(edge: elementId) { return .available }
-            return session.retypeCandidates(edge: elementId).isEmpty
+            if session.hasUnknownType(elementId) { return .available }
+            return session.retypeCandidates(forEdge: elementId).isEmpty
                 ? .notApplicable : .available
         }
         return session.retypeCandidates(for: elementId).isEmpty
@@ -396,7 +396,7 @@ public func reattachOptions(
 ) -> [VCommandOption] {
     guard notationBreak == .forbidden else { return [] }
 
-    let candidates = session.reattachCandidates(edge: edge, end: end, to: nodeId)
+    let candidates = session.reattachCandidates(for: edge, end: end, to: nodeId)
     guard candidates.count > 1 else { return [] }
 
     var options: [VCommandOption] = []
@@ -433,11 +433,11 @@ public func retypeOptions(
 public func edgeRetypeOptions(
     for edgeId: String, in session: some ForEditAGraphVisually
 ) -> [VCommandOption] {
-    let candidates = session.retypeCandidates(edge: edgeId)
+    let candidates = session.retypeCandidates(forEdge: edgeId)
     // An unknown-typed edge always has a question, even where the notation
     // names nothing: the list is then the one entry that gets it out of the
     // break it is in (ADR-0024).
-    let unknown = session.hasUnknownType(edge: edgeId)
+    let unknown = session.hasUnknownType(edgeId)
     guard unknown || candidates.count > 1 else { return [] }
 
     var options: [VCommandOption] = []

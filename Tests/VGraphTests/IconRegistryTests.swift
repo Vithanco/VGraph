@@ -13,14 +13,14 @@ struct IconRegistryTests {
 
     @Test("A declared name resolves to its artwork")
     func aDeclaredNameResolves() throws {
-        let graph = try VGraph().add(icon: "flame", artwork: Self.flame)
+        let graph = VGraph().adding(icon: "flame", artwork: Self.flame)
 
         #expect(graph.artwork(forIcon: "flame") == Self.flame)
     }
 
     @Test("A name nobody declared falls through to the built-in set")
     func builtInsAreTheFallback() throws {
-        let graph = try VGraph().add(icon: "flame", artwork: Self.flame)
+        let graph = VGraph().adding(icon: "flame", artwork: Self.flame)
 
         #expect(graph.artwork(forIcon: "and") == BuiltinIcons.artwork(for: "and"))
     }
@@ -29,7 +29,7 @@ struct IconRegistryTests {
     /// already draws its own icon under that name.
     @Test("A declared name shadows a built-in of the same name")
     func declaredShadowsBuiltIn() throws {
-        let graph = try VGraph().add(icon: "and", artwork: Self.flame)
+        let graph = VGraph().adding(icon: "and", artwork: Self.flame)
 
         #expect(graph.artwork(forIcon: "and") == Self.flame)
         #expect(BuiltinIcons.artwork(for: "and") != Self.flame, "the built-in itself is untouched")
@@ -37,14 +37,14 @@ struct IconRegistryTests {
 
     @Test("A name in neither resolves to nothing, for the caller to substitute")
     func anUnknownNameResolvesToNothing() throws {
-        let graph = try VGraph().add(icon: "flame", artwork: Self.flame)
+        let graph = VGraph().adding(icon: "flame", artwork: Self.flame)
 
         #expect(graph.artwork(forIcon: "no.such.mark") == nil)
     }
 
     @Test("The graph carries only what the document declared")
     func onlyDeclaredArtworkIsCarried() throws {
-        let graph = try VGraph().add(icon: "flame", artwork: Self.flame)
+        let graph = VGraph().adding(icon: "flame", artwork: Self.flame)
 
         #expect(graph.declaredIcons.count == 1)
         #expect(graph.declaredIcons["flame"] == Self.flame)
@@ -54,9 +54,9 @@ struct IconRegistryTests {
     @Test("Declaring the same name twice keeps the later artwork")
     func redeclaringReplaces() throws {
         let other = IconArtwork(width: 10, height: 10, path: "M0 0h10v10h-10z")
-        let graph = try VGraph()
-            .add(icon: "flame", artwork: Self.flame)
-            .add(icon: "flame", artwork: other)
+        let graph = VGraph()
+            .adding(icon: "flame", artwork: Self.flame)
+            .adding(icon: "flame", artwork: other)
 
         #expect(graph.artwork(forIcon: "flame") == other)
         #expect(graph.declaredIcons.count == 1)

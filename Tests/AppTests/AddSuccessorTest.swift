@@ -28,7 +28,7 @@ struct AddSuccessorTest {
         let options = EditorCore.relatedOptions(from: "a", newNodeAt: .to, in: s)
         #expect(options.map(\.title) == ["Relation", "Other type…"])
 
-        let created = try s.addSuccessor(from: "a", using: EdgeType.Id(string: "concept_to_relation"))
+        let created = try s.addSuccessor(from: "a", using: EdgeType.Id(rawValue: "concept_to_relation"))
         #expect(created == "relation_1")
 
         let exported = try s.exportVGL()
@@ -50,7 +50,7 @@ struct AddSuccessorTest {
 
         // nil, not an id: an icon-only type has nothing to open an editor on.
         #expect(
-            try s.addSuccessor(from: "u", using: EdgeType.Id(string: "undesirable_to_and_junctor"))
+            try s.addSuccessor(from: "u", using: EdgeType.Id(rawValue: "undesirable_to_and_junctor"))
                 == nil)
 
         let exported = try s.exportVGL()
@@ -67,7 +67,7 @@ struct AddSuccessorTest {
     @Test func otherTypeBreaksTheNotationVisibly() throws {
         let s = try session()
 
-        let created = try s.addSuccessor(from: "a", ofType: NodeType(string: "Concept"))
+        let created = try s.addSuccessor(from: "a", ofType: NodeType(rawValue: "Concept"))
         #expect(created == "concept_2")
 
         #expect(try s.exportVGL().contains("node concept_2: Concept \"Change Me\""))
@@ -86,10 +86,10 @@ struct AddSuccessorTest {
                 """)
 
         #expect(
-            try s.addSuccessor(from: "a", using: EdgeType.Id(string: "concept_to_relation"))
+            try s.addSuccessor(from: "a", using: EdgeType.Id(rawValue: "concept_to_relation"))
                 == "relation_1")
 
-        #expect(s.origin.group(of: Node(string: "relation_1"))?.id.id == "g1")
+        #expect(s.origin.group(of: Node(rawValue: "relation_1"))?.id.id == "g1")
 
         // And it survives the export: emitted within the group's braces, not
         // after them. Bounded on *both* sides — the exporter writes top-level
@@ -113,7 +113,7 @@ struct AddSuccessorTest {
                 """)
 
         #expect(
-            try s.addPredecessor(to: "r", using: EdgeType.Id(string: "concept_to_relation"))
+            try s.addPredecessor(to: "r", using: EdgeType.Id(rawValue: "concept_to_relation"))
                 == "concept_1")
 
         let exported = try s.exportVGL()
@@ -125,7 +125,7 @@ struct AddSuccessorTest {
     /// nodes — so a group already called `relation_1` pushes the new node to
     /// `relation_2`. Narrowing the check to nodes alone would produce a document
     /// that no longer parses.
-    @Test func newNodeIdSkipsIdsTakenByOtherElementKinds() throws {
+    @Test func newNodeIdSkipsIdsTakenByOtherItemKinds() throws {
         let s = try makeTestSession(
             vgl: """
                 vgraph demo: ConceptMap "Demo" {
@@ -136,7 +136,7 @@ struct AddSuccessorTest {
                 """)
 
         #expect(
-            try s.addSuccessor(from: "a", using: EdgeType.Id(string: "concept_to_relation"))
+            try s.addSuccessor(from: "a", using: EdgeType.Id(rawValue: "concept_to_relation"))
                 == "relation_2")
 
         let exported = try s.exportVGL()
@@ -163,13 +163,13 @@ struct AddSuccessorTest {
         #expect(
             throws: VError.commandOptionNotOffered(.addSuccessor, target: "a", option: "nope")
         ) {
-            try s.addSuccessor(from: "a", using: EdgeType.Id(string: "nope"))
+            try s.addSuccessor(from: "a", using: EdgeType.Id(rawValue: "nope"))
         }
         #expect(try s.exportVGL() == before)
         #expect(s.canUndo == false, "a refusal cut an undo step")
 
         // Unknown target id.
-        #expect(throws: VError.self) { try s.addSuccessor(from: "ghost", using: EdgeType.Id(string: "concept_to_relation")) }
+        #expect(throws: VError.self) { try s.addSuccessor(from: "ghost", using: EdgeType.Id(rawValue: "concept_to_relation")) }
 
         // Kind mismatch: addSuccessor is node-only, and an edge endpoint may never
         // be a group, so a group target must not resolve.
@@ -181,7 +181,7 @@ struct AddSuccessorTest {
                   }
                 }
                 """)
-        #expect(throws: VError.self) { try grouped.addSuccessor(from: "g1", using: EdgeType.Id(string: "concept_to_relation")) }
+        #expect(throws: VError.self) { try grouped.addSuccessor(from: "g1", using: EdgeType.Id(rawValue: "concept_to_relation")) }
 
         // Enabled guard: an Outcome is terminal, so nothing may follow it.
         let terminal = try makeTestSession(
@@ -190,7 +190,7 @@ struct AddSuccessorTest {
                   node o: Outcome "Done";
                 }
                 """)
-        #expect(throws: VError.self) { try terminal.addSuccessor(from: "o", using: EdgeType.Id(string: "anything")) }
+        #expect(throws: VError.self) { try terminal.addSuccessor(from: "o", using: EdgeType.Id(rawValue: "anything")) }
 
         #expect(try s.exportVGL() == before)
     }

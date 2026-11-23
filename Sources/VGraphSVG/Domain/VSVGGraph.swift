@@ -17,7 +17,7 @@ public enum VSVGGraph {
                 let nodeTextSize = try? graph.get(node: node, attribute: Attributes.Node.nodeTextSize)
                 let style: NodeStyleLayout =
                     (try? graph.get(node: node, attribute: Attributes.Node.style)) ?? NodeStyleLayout.bareText
-                let font: VFont = graph.getFont(forNode: node)
+                let font: VFont = graph.font(of: node)
                 let nodeSize: VSize = (try? graph.get(node: node, attribute: Attributes.Node.layoutedSize)) ?? .zero
                 let nodeBounds = VRect(
                     origin: VPoint(x: pos.x - nodeSize.width / 2, y: pos.y - nodeSize.height / 2), size: nodeSize)
@@ -44,7 +44,7 @@ public enum VSVGGraph {
     // MARK: - Graph label
 
     static func renderGraphLabel(graph: VGraph, darkMode: Bool) -> VSVGNode {
-        let rootGrp = Group(rawValue: rootGroup)
+        let rootGrp = Group.root
         guard let labelPos = try? graph.get(group: rootGrp, attribute: Attributes.Group.labelLayoutedPos),
             labelPos != VPoint.zero,
             let labelText = try? graph.get(group: rootGrp, attribute: Attributes.Group.label),
@@ -53,7 +53,7 @@ public enum VSVGGraph {
             return .empty
         }
 
-        let font = graph.getFont(forGroup: rootGrp)
+        let font = graph.font(of: rootGrp)
         let color: VColor
         if let fontColor = try? graph.get(group: rootGrp, attribute: Attributes.Group.fontcolor) {
             color = SVGThemeColor.group(fontColor, semantic: SemanticColor.groupText, darkMode: darkMode)

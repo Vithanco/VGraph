@@ -11,21 +11,21 @@ struct WatermarkPlacementTests {
     let bounds = VRect(x: 0, y: 0, width: 400, height: 300)
     let nodeSize = VSize(width: 120, height: 80)
 
-    func laidOut(nodesAt centres: [VPoint], size: VSize? = nil) throws -> VGraph {
-        let declarations = centres.indices.map { "    node n\($0): Question \"Node \($0)\";" }
+    func laidOut(nodesAt centers: [VPoint], size: VSize? = nil) throws -> VGraph {
+        let declarations = centers.indices.map { "    node n\($0): Question \"Node \($0)\";" }
         let source = "vgraph g: IBIS {\n" + declarations.joined(separator: "\n") + "\n}"
         var graph = try VGraphParser(logger: TestLogger()).parse(source: source)
-        for (node, centre) in zip(graph.nodes, centres) {
-            graph = try graph.set(node: node, attribute: Attributes.Node.layoutedPos.attribute(centre))
-            graph = try graph.set(node: node, attribute: Attributes.Node.layoutedSize.attribute(size ?? nodeSize))
+        for (node, center) in zip(graph.nodes, centers) {
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(center))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedSize.attribute(size ?? nodeSize))
         }
-        return try graph.set(
-            group: Group(rawValue: rootGroup), attribute: Attributes.Group.layoutedBounds.attribute(bounds))
+        return try graph.setting(
+            group: Group.root, attribute: Attributes.Group.layoutedBounds.attribute(bounds))
     }
 
-    func nodeRect(at centre: VPoint) -> VRect {
+    func nodeRect(at center: VPoint) -> VRect {
         VRect(
-            x: centre.x - nodeSize.width / 2, y: centre.y - nodeSize.height / 2,
+            x: center.x - nodeSize.width / 2, y: center.y - nodeSize.height / 2,
             width: nodeSize.width, height: nodeSize.height)
     }
 
@@ -72,7 +72,7 @@ struct WatermarkPlacementTests {
         inner.minX >= outer.minX && inner.maxX <= outer.maxX && inner.minY >= outer.minY && inner.maxY <= outer.maxY
     }
 
-    var cornerCentres: [VPoint] {
+    var cornerCenters: [VPoint] {
         [
             VPoint(x: 60, y: 40), VPoint(x: 340, y: 40),
             VPoint(x: 60, y: 260), VPoint(x: 340, y: 260),
@@ -80,11 +80,11 @@ struct WatermarkPlacementTests {
     }
 
     @Test func aNodeInEveryCornerDoesNotPushTheWatermarkOntoOne() throws {
-        let rendered = try svg(laidOut(nodesAt: cornerCentres))
+        let rendered = try svg(laidOut(nodesAt: cornerCenters))
         let watermark = try watermarkRect(in: rendered)
 
-        for centre in cornerCentres {
-            #expect(!overlaps(watermark, nodeRect(at: centre)), "watermark \(watermark) covers node at \(centre)")
+        for center in cornerCenters {
+            #expect(!overlaps(watermark, nodeRect(at: center)), "watermark \(watermark) covers node at \(center)")
         }
     }
 
@@ -96,13 +96,13 @@ struct WatermarkPlacementTests {
     }
 
     @Test func aWatermarkMovedOffTheDiagramStaysInsideTheImage() throws {
-        let rendered = try svg(laidOut(nodesAt: cornerCentres))
+        let rendered = try svg(laidOut(nodesAt: cornerCenters))
 
         #expect(contains(try viewBox(of: rendered), try watermarkRect(in: rendered)))
     }
 
     @Test func anOverlayMarkerInTheFirstCornerIsNotCovered() throws {
-        let graph = try laidOut(nodesAt: [cornerCentres[3]])
+        let graph = try laidOut(nodesAt: [cornerCenters[3]])
         let marker = VRect(x: 0, y: 260, width: 40, height: 40)
         let overlay = MarkerOverlay(notationName: graph.notationName, marker: marker)
         let rendered = try svg(graph, overlays: [graph.notationName: overlay.overlayEntry])
@@ -111,7 +111,7 @@ struct WatermarkPlacementTests {
     }
 
     @Test func aFreeCornerKeepsTheWatermarkOnTheDiagramWithoutGrowingTheImage() throws {
-        let occupied = Array(cornerCentres.dropFirst(2)) + [cornerCentres[1]]
+        let occupied = Array(cornerCenters.dropFirst(2)) + [cornerCenters[1]]
         let rendered = try svg(laidOut(nodesAt: occupied))
         let watermark = try watermarkRect(in: rendered)
 

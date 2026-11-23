@@ -1,9 +1,4 @@
-//
-//  VGraph+Move.swift
-//  VGraph
-//
-//  Changing which group elements belong to. See ADR-0019.
-//
+// Changing which group elements belong to. See ADR-0019.
 
 extension VGraph {
 
@@ -11,7 +6,7 @@ extension VGraph {
     /// something a caller can undo in one step.
     ///
     /// The cycle check is the load-bearing one: the group tree can hold a cycle,
-    /// and `isParent` recurses, so an unguarded move into a descendant would not
+    /// and `isAncestor` recurses, so an unguarded move into a descendant would not
     /// throw; it would hang.
     public func moving(
         _ ids: [String], into destination: String, notationBreak: VNotationBreak = .forbidden
@@ -41,7 +36,7 @@ extension VGraph {
     }
 
     private func canMove(_ id: String, into destination: Group, notationBreak: VNotationBreak) -> Bool {
-        guard id != rootGroup else { return false }
+        guard id != Group.rootId else { return false }
         guard let element = resolveCommandTarget(id: id) else { return false }
         if notationBreak == .forbidden, misplacedType(of: element, in: destination) != nil {
             return false
@@ -54,7 +49,7 @@ extension VGraph {
             if group == destination { return false }
             // The cycle. Safe to ask because the tree is still acyclic here —
             // which is the whole point of asking before writing.
-            if groupStructure.isParent(parent: group, child: destination) { return false }
+            if groupStructure.isAncestor(group, of: destination) { return false }
             return parentGroup(of: group) != destination
         }
     }

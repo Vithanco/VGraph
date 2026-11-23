@@ -1,10 +1,5 @@
-//
-//  VGraph+SuccessorCandidates.swift
-//  VGraph
-//
-//  What the notation permits when a new node grows off an existing one. See
-//  ADR-0013.
-//
+// What the notation permits when a new node grows off an existing one. See
+// ADR-0013.
 
 extension VGraph {
     /// So a menu never offers what the check would flag the instant it is picked

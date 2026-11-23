@@ -9,7 +9,7 @@ struct NotationJunctorIconTests {
     func everyJunctorIconIsTheGuidesJunctorSize() throws {
         var sizes: [String: Double] = [:]
         for (name, entry) in NotationRegistry.entries {
-            let graph = try VGraph().defineStandardAttributes().placing(entry.content, in: .builtin)
+            let graph = try VGraph().placing(entry.content, in: .builtin)
             for nodeType in graph.nodeTypes {
                 guard let style: NodeStyle = try? graph.get(nodeType: nodeType, attribute: Attributes.Node.nodeStyle),
                     style == .iconOnly

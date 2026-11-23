@@ -2,7 +2,7 @@ extension Notations {
 
     /// The C4 model (Simon Brown): software-architecture diagrams at four levels of
     /// zoom — System Context, Container, Component and Code. Each level details the one
-    /// above (ADR-0032): an unfolded system is a boundary around its containers, a
+    /// above (ADR-0032): an unfolded system is a group around its containers, a
     /// folded one is its card.
     public struct C4: NotationDeclaration {
         public static let id: Identifier<Notation> = .init(rawValue: "C4")
@@ -43,36 +43,36 @@ extension Notations {
         public static let containerFill = SemanticColor(id: "c4.container.fill", lightHex: "#438dd5")
         public static let componentFill = SemanticColor(id: "c4.component.fill", lightHex: "#85bbf0")
         public static let codeFill = SemanticColor(id: "c4.code.fill", lightHex: "#cfd8e6")
-        public static let organisationFill = SemanticColor(id: "c4.organisation.fill", lightHex: "#999999")
+        public static let organizationFill = SemanticColor(id: "c4.organisation.fill", lightHex: "#999999")
         public static let onDark = SemanticColor(id: "c4.text.onDark", lightHex: "#ffffff")
         public static let onLight = SemanticColor(id: "c4.text.onLight", lightHex: "#111111")
-        // Boundary chrome: a muted dashed outline with a transparent fill (Structurizr look),
-        // distinct from the generic cluster's fill + border.
-        public static let boundaryBorder = SemanticColor(id: "c4.boundary.border", lightHex: "#7a7a7a", darkHex: "#8f8f8f")
-        public static let boundaryFill = SemanticColor(id: "c4.boundary.fill", lightHex: "#00000000", darkHex: "#00000000")
+        // Frame: a muted dashed outline with a transparent fill (Structurizr look),
+        // distinct from a plain group's fill + border.
+        public static let frameBorder = SemanticColor(id: "c4.frame.border", lightHex: "#7a7a7a", darkHex: "#8f8f8f")
+        public static let frameFill = SemanticColor(id: "c4.frame.fill", lightHex: "#00000000", darkHex: "#00000000")
 
         /// A plain group: the people and systems one organisation owns, such as "Big Bank".
-        public static let organisation = GroupType(string: "Organisation")
+        public static let organization = GroupType(rawValue: "Organisation")
 
         public struct GroupTypes: NotationGroupTypes {
-            public static var all: [GroupType] { [organisation] }
+            public static var all: [GroupType] { [organization] }
 
             public static var allDefinitions: [GroupTypeDefinition] {
                 [
                     GroupTypeDefinition(
-                        organisation,
+                        organization,
                         description: "An organisation's own edge, around the people and software systems it owns.")
                 ]
             }
         }
 
         public struct NodeTypes: NotationNodeTypes {
-            public static let person = NodeType(string: "Person")
-            public static let softwareSystem = NodeType(string: "SoftwareSystem")
-            public static let container = NodeType(string: "Container")
-            public static let component = NodeType(string: "Component")
-            public static let codeElement = NodeType(string: "CodeElement")
-            public static let database = NodeType(string: "Database")
+            public static let person = NodeType(rawValue: "Person")
+            public static let softwareSystem = NodeType(rawValue: "SoftwareSystem")
+            public static let container = NodeType(rawValue: "Container")
+            public static let component = NodeType(rawValue: "Component")
+            public static let codeElement = NodeType(rawValue: "CodeElement")
+            public static let database = NodeType(rawValue: "Database")
 
             public static var all: [NodeType] {
                 [person, softwareSystem, container, component, codeElement, database]
@@ -152,16 +152,16 @@ extension Notations {
                 card(NodeTypes.codeElement, "Code", fill: codeFill, textColor: onLight),
                 card(NodeTypes.database, "Container: Database", fill: containerFill, textColor: onDark, shape: .cylinder),
                 .groupType(
-                    organisation,
+                    organization,
                     [
                         Attributes.Group.groupStyle(
                             GroupStyle(
-                                folded: .c4Element(stereotype: "Organisation", fill: organisationFill, textColor: onDark),
-                                unfolded: boundaryChrome))
+                                folded: .c4Element(stereotype: "Organisation", fill: organizationFill, textColor: onDark),
+                                unfolded: frame))
                     ]),
-                .nodeType(NodeTypes.softwareSystem, [Attributes.Group.boundaryChrome(boundaryChrome)]),
-                .nodeType(NodeTypes.container, [Attributes.Group.boundaryChrome(boundaryChrome)]),
-                .nodeType(NodeTypes.component, [Attributes.Group.boundaryChrome(boundaryChrome)]),
+                .nodeType(NodeTypes.softwareSystem, [Attributes.Group.frame(frame)]),
+                .nodeType(NodeTypes.container, [Attributes.Group.frame(frame)]),
+                .nodeType(NodeTypes.component, [Attributes.Group.frame(frame)]),
             ]
         }
 
@@ -174,47 +174,29 @@ extension Notations {
 
         // MARK: - Quality Checks
 
-        /// Nesting is the engine's containment check, which every notation gets.
+        /// Nesting and orphans are the engine's containment and disconnected-node
+        /// checks, which every notation gets.
         public static var qualityChecks: [QualityCheck] {
-            [orphanElement, unlabelledRelationship]
-        }
-
-        static func orphanElement(_ graph: VGraph) -> [MessageWithSeverity] {
-            let topology = GraphTopology(edges: graph.edges)
-            var messages: [MessageWithSeverity] = []
-            for node in graph.nodes where !topology.connectedNodes.contains(node) {
-                messages.append(
-                    MessageWithSeverity(
-                        message:
-                            "Element \"\(label(of: node, in: graph))\" has no relationships — every element should collaborate with at least one other",
-                        severity: .warning,
-                        target: .node(node.description)))
-            }
-            return messages
+            [unlabeledRelationship]
         }
 
         /// c4model.com's checklist: every arrow has a label stating its purpose.
         /// Code-level `references` are UML arrows (inheritance, realization), which
         /// the arrowhead already says.
-        static func unlabelledRelationship(_ graph: VGraph) -> [MessageWithSeverity] {
+        static func unlabeledRelationship(_ graph: VGraph) -> [MessageWithSeverity] {
             graph.edges.compactMap { edge in
                 guard (try? graph.edgeType(for: edge.id)) != EdgeTypes.references else { return nil }
                 let label = (try? graph.get(edge: edge.id, attribute: Attributes.Edge.label)) ?? ""
                 guard label.isEmpty else { return nil }
                 return MessageWithSeverity(
                     message:
-                        "Relationship from \"\(Self.label(of: edge.from, in: graph))\" to \"\(Self.label(of: edge.to, in: graph))\" has no label — say what it is for",
+                        "Relationship from \"\(graph.name(of: edge.from))\" to \"\(graph.name(of: edge.to))\" has no label — say what it is for",
                     severity: .warning,
                     target: .edge(from: edge.from.description, to: edge.to.description))
             }
         }
 
-        static func label(of node: Node, in graph: VGraph) -> String {
-            let label = (try? graph.get(node: node, attribute: Attributes.Node.label)) ?? ""
-            return label.isEmpty ? node.description : label
-        }
-
-        private static let boundaryChrome = BoundaryChrome(
-            cornerRadius: 8, borderDash: "8,4", borderColor: boundaryBorder, fill: boundaryFill)
+        private static let frame = GroupFrame(
+            cornerRadius: 8, borderDash: "8,4", borderColor: frameBorder, fill: frameFill)
     }
 }

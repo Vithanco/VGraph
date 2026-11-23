@@ -141,7 +141,7 @@ struct ConnectGestureTest {
     func severalTypesAskWhich() throws {
         let s = try causalLoopDiagram()
 
-        try s.connect("s1", to: "s2", using: EdgeType.Id(string: "opposite"))
+        try s.connect("s1", to: "s2", using: EdgeType.Id(rawValue: "opposite"))
         #expect(try s.exportVGL().contains("edge s1 -> s2: opposite"))
     }
 

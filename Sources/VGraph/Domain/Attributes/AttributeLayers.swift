@@ -43,7 +43,7 @@ public enum AttributeCategory: String, VProtocol {
 }
 
 /// Which values a layer may hold. Data rather than a closure, so a layer stays
-/// `Hashable` and `Codable` like the rest of the store.
+/// `Hashable` like the rest of the store.
 public struct LayerAdmission: VProtocol {
     public let kinds: Set<ItemKind>
     public let categories: Set<AttributeCategory>

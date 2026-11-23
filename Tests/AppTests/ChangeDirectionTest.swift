@@ -82,7 +82,7 @@ struct ChangeDirectionTest {
         // the ⌥ gesture, not a menu entry.
         #expect(!options.contains { $0.isBreak })
 
-        try s.changeDirection(of: edgeId, to: EdgeType.Id(string: "opposite"))
+        try s.changeDirection(of: edgeId, to: EdgeType.Id(rawValue: "opposite"))
         #expect(try s.exportVGL().contains("edge s2 -> s1: opposite"))
     }
 
@@ -101,9 +101,9 @@ struct ChangeDirectionTest {
                 """)
         let edgeId = s.origin.edges.first!.id.id
 
-        let greyed = EditorCore.menu(for: edgeId, in: s).first { $0.id == .changeDirection }
-        #expect(greyed?.enabled == false)
-        #expect(greyed?.title == "Change direction (breaks notation)")
+        let grayed = EditorCore.menu(for: edgeId, in: s).first { $0.id == .changeDirection }
+        #expect(grayed?.enabled == false)
+        #expect(grayed?.title == "Change direction (breaks notation)")
         #expect(throws: VError.self) { try s.changeDirection(of: edgeId) }
 
         #expect(

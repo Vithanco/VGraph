@@ -14,10 +14,10 @@ public struct NotationDefinition: VProtocol {
     /// Empty means the built-in notation's own are in force.
     public private(set) var declaredQualityChecks: [QualityCheckSpec] = []
     public private(set) var declaredTransforms: [String] = []
-    /// The boundary keys a `vnotation` wrote on each type. The layers hold the
+    /// The frame keys a `vnotation` wrote on each type. The layers hold the
     /// values, but they keep colours lossily, so which keys were written cannot
     /// be read back from them.
-    private(set) var declaredBoundaryKeys: [ItemKey: [String]] = [:]
+    private(set) var declaredFrameKeys: [ItemKey: [String]] = [:]
     /// Every type that details another, paired with it and the layer that first
     /// declared the pair, so an export can tell a `vnotation`'s own additions
     /// from what it inherits.
@@ -68,6 +68,7 @@ public struct NotationDefinition: VProtocol {
     }
 
     func registering(_ groupType: GroupType) -> NotationDefinition {
+        guard !groupTypes.contains(groupType) else { return self }
         var result = self
         result.groupTypes.append(groupType)
         return result
@@ -85,9 +86,9 @@ public struct NotationDefinition: VProtocol {
         return result
     }
 
-    func declaring(boundaryKeys: [ItemKey: [String]]) -> NotationDefinition {
+    func declaring(frameKeys: [ItemKey: [String]]) -> NotationDefinition {
         var result = self
-        result.declaredBoundaryKeys = boundaryKeys
+        result.declaredFrameKeys = frameKeys
         return result
     }
 

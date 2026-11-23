@@ -1,10 +1,5 @@
-//
-//  VGraph+Grouping.swift
-//  VGraph
-//
-//  Making and unmaking groups, and the canonical form over the group tree that
-//  the editor's [[Effective selection]] is. See ADR-0018.
-//
+// Making and unmaking groups, and the canonical form over the group tree that
+// the editor's [[Effective selection]] is. See ADR-0018.
 
 extension VGraph {
 
@@ -44,7 +39,7 @@ extension VGraph {
     }
 
     func directChildIds(of group: Group) -> [String] {
-        guard let (childGroups, childNodes) = try? getDirectContent(group: group) else { return [] }
+        guard let (childGroups, childNodes) = try? directContent(of: group) else { return [] }
         return childGroups.map { $0.id.id } + childNodes.map { $0.id }
     }
 
@@ -75,7 +70,7 @@ extension VGraph {
         // A detailed node is a node that has details: emptied, it is a node
         // again, which its parent still holds (ADR-0032).
         if let type = nodeType(of: group) { return try undetailing(group, ofType: type) }
-        return try delete(group: group).removingEmptied(from: parentGroup(of: group))
+        return try deleting(group: group).removingEmptied(from: parentGroup(of: group))
     }
 
     private func undetailing(_ detailedNode: Group, ofType type: NodeType) throws(VError) -> VGraph {
@@ -89,7 +84,7 @@ extension VGraph {
 extension VGraph {
 
     /// Grouping's exact inverse, and why it exists beside `deletingWithContents`:
-    /// the natural correction to a boundary drawn by mistake is "not that box",
+    /// the natural correction to a group drawn by mistake is "not that box",
     /// not "not those five nodes" (ADR-0018).
     public func ungrouping(_ group: Group) throws(VError) -> VGraph {
         try ensureExists(group: group)
@@ -98,15 +93,15 @@ extension VGraph {
             throw VError.commandUnavailable(.ungroup, target: group.id.id)
         }
         let parent = parentGroup(of: group) ?? Group.root
-        let (childGroups, childNodes) = try getDirectContent(group: group)
+        let (childGroups, childNodes) = try directContent(of: group)
 
         let withNodesOut = try childNodes.folding(self) { (result, node) throws(VError) in
-            try result.addTo(group: parent, node: node)
+            try result.addingTo(group: parent, node: node)
         }
         let withAllOut = try childGroups.folding(withNodesOut) { (result, child) throws(VError) in
-            try result.addTo(group: parent, childGroup: child)
+            try result.addingTo(group: parent, childGroup: child)
         }
-        return try withAllOut.delete(group: group).removingEmptied(from: parent)
+        return try withAllOut.deleting(group: group).removingEmptied(from: parent)
     }
 
     /// The contents go **explicitly**. Removing only the group leaves its children
@@ -115,15 +110,15 @@ extension VGraph {
     /// deleting them nor keeping them.
     public func deletingWithContents(_ group: Group) throws(VError) -> VGraph {
         try ensureExists(group: group)
-        let (descendantGroups, descendantNodes) = try getAllContent(group: group)
+        let (descendantGroups, descendantNodes) = try allContent(of: group)
 
         let withoutNodes = try descendantNodes.folding(self) { (result, node) throws(VError) in
-            try result.delete(node: node)
+            try result.deleting(node: node)
         }
         let withoutDescendants = try descendantGroups.folding(withoutNodes) { (result, descendant) throws(VError) in
-            result.has(group: descendant) ? try result.delete(group: descendant) : result
+            result.has(group: descendant) ? try result.deleting(group: descendant) : result
         }
-        return try withoutDescendants.delete(group: group).removingEmptied(from: parentGroup(of: group))
+        return try withoutDescendants.deleting(group: group).removingEmptied(from: parentGroup(of: group))
     }
 }
 
@@ -146,27 +141,39 @@ extension VGraph {
         }
     }
 
-    /// A node has exactly one parent group and clusters are strictly nested, so a
+    /// A node has exactly one parent group and groups are strictly nested, so a
     /// new group cannot overlap an existing one: members of another group have to
-    /// *leave* it. `detaching` is whether the caller has said that is intended.
+    /// *leave* it. This form refuses rather than move them; `addingGroup(moving:)`
+    /// is the same command having been told that is intended — a pair, not a
+    /// flag (ADR-0018).
     ///
     /// Edges go unmentioned because they need no mention — an edge is in the
     /// innermost group holding both its ends, derived on demand (ADR-0017), so one
     /// between two members is already inside the result.
-    public func addingGroup(of ids: [String], detaching: Bool) throws(VError) -> (VGraph, Group) {
-        guard let target = groupingTarget(for: ids), detaching || !target.detachesAny else {
+    public func addingGroup(containing ids: [String]) throws(VError) -> (VGraph, Group) {
+        guard let target = groupingTarget(for: ids), !target.detachesAny else {
             throw VError.commandUnavailable(.addGroup, target: ids.first ?? "")
         }
+        return try addingGroup(of: ids, under: target)
+    }
 
+    public func addingGroup(moving ids: [String]) throws(VError) -> (VGraph, Group) {
+        guard let target = groupingTarget(for: ids) else {
+            throw VError.commandUnavailable(.addGroup, target: ids.first ?? "")
+        }
+        return try addingGroup(of: ids, under: target)
+    }
+
+    private func addingGroup(of ids: [String], under target: VGroupingTarget) throws(VError) -> (VGraph, Group) {
         let created = newGroupId()
         // Explicit, never absent, for the reason ADR-0009 gives about nodes: it is
         // what the [[Inline edit]] opens on, and must read the same after a reparse.
-        let labelled = try add(group: created, childOf: Group(rawValue: target.parentId)).set(
+        let labeled = try adding(group: created, childOf: Group(rawValue: target.parentId)).setting(
             group: created,
             attribute: Attributes.Group.label.attribute(Attributes.Node.placeholderLabel))
 
         let members = groupMembers(for: ids).compactMap { resolveCommandTarget(id: $0) }
-        let result = try members.folding(labelled) { (result, member) throws(VError) in
+        let result = try members.folding(labeled) { (result, member) throws(VError) in
             try result.adding(member, to: created)
         }
         return (result, created)
@@ -176,14 +183,14 @@ extension VGraph {
     /// which is what a caller naming the [[Root group]] means (ADR-0018).
     private func groupMembers(for ids: [String]) -> [String] {
         let members = outermostElements(of: ids)
-        guard members.count == 1, members[0] == rootGroup else { return members }
+        guard members.count == 1, members[0] == Group.rootId else { return members }
         return directChildIds(of: Group.root).sorted()
     }
 
     func adding(_ element: VCommandTarget, to group: Group) throws(VError) -> VGraph {
         switch element {
-        case .node(let node): return try addTo(group: group, node: node)
-        case .group(let child): return try addTo(group: group, childGroup: child)
+        case .node(let node): return try addingTo(group: group, node: node)
+        case .group(let child): return try addingTo(group: group, childGroup: child)
         case .edge: return self
         }
     }

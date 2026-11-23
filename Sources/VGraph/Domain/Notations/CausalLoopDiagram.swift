@@ -2,10 +2,10 @@ extension Notations {
 
     public struct CausalLoopDiagram: NotationDeclaration {
 
-        public static var criteria: [QualityCheckSpec] { [.noParallelEdges] }
+        public static var namedQualityChecks: [QualityCheckSpec] { [.noParallelEdges] }
 
         /// Loop markers are the model's loops, so they are recorded before folding.
-        public static var step: TransformStep? { TLoop.recordStep }
+        public static var step: TransformStep? { FeedbackLoop.recordStep }
 
         public static var qualityChecks: [QualityCheck] { [unmarkedLoops] }
 
@@ -90,7 +90,7 @@ extension Notations {
 
             private static let stockId = "Stock"
 
-            public static let stock: NodeType = NodeType(string: stockId)
+            public static let stock: NodeType = NodeType(rawValue: stockId)
         }
 
         public struct EdgeTypes: NotationEdgeTypes {

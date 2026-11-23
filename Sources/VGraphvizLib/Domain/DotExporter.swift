@@ -35,7 +35,7 @@ public struct DotExporter: ForExportAGraph {
         Attributes.Group.label.id: "label",
         Attributes.Group.fontname.id: "fontname",
         Attributes.Group.fontsize.id: "fontsize",
-        Attributes.Group.labelocation.id: "labelloc",
+        Attributes.Group.labelLocation.id: "labelloc",
         Attributes.Group.splines.id: "splines",
         Attributes.Group.ratio.id: "ratio",
         Attributes.Group.fontcolor.id: "fontcolor",
@@ -137,14 +137,14 @@ public struct DotExporter: ForExportAGraph {
         let nameClause = graphName.isEmpty ? "" : " \"\(escapeQuotesOnly(graphName))\""
         var dotFile = "digraph\(nameClause) {\n"
 
-        let graphAttrs = try formatGraphAttributes(graph: graph)
+        let graphAttrs = formatGraphAttributes(graph: graph)
         dotFile += graphAttrs
 
         // Emit label with padding newline for spacing between graph title and nodes.
         // Root graph default labelloc is "b" (bottom).
         if !graphName.isEmpty {
-            let attrs = try graph.getGraphAttributes()
-            let labelloc = attrs[Attributes.Group.labelocation.id] ?? "b"
+            let attrs = graph.graphAttributes()
+            let labelloc = attrs[Attributes.Group.labelLocation.id] ?? "b"
             dotFile += "\tlabel=\"\(paddedLabel(graphName, labelloc: labelloc))\";\n"
         }
 
@@ -184,12 +184,12 @@ public struct DotExporter: ForExportAGraph {
         let traverser = GraphStructureTraverser.forStringOutput(
             onEnterGroup: { [self] (group: Group, graph: VGraph, _: Int) throws(VError) -> String in
                 var result = "\tsubgraph cluster_\(group.id) {\n"
-                var explicit = try graph.getAttributes(group: group)
+                var explicit = graph.attributes(group: group)
                 // A detailed node's title is its node label; Graphviz needs it to reserve room.
                 if graph.isDetailed(group), let label = graph.label(of: .group(group)) {
                     explicit[Attributes.Group.label.id] = label
                 }
-                let attributes = translated(explicit, target: .graph, graph: graph) {
+                let attributes = translated(explicit, target: .group, graph: graph) {
                     try? graph.get(group: group, attribute: $0)
                 }
                 result += formatGroupAttributes(attributes)
@@ -216,7 +216,7 @@ public struct DotExporter: ForExportAGraph {
     }
 
     private func formatAttributes(graph: VGraph, node: Node) throws(VError) -> String {
-        var attributes = translated(try graph.getAttributes(node: node), target: .node, graph: graph) {
+        var attributes = translated(try graph.attributes(node: node), target: .node, graph: graph) {
             try? graph.get(node: node, attribute: $0)
         }
         // Graphviz is told each node's size (`fixedsize`), so the text cannot change
@@ -234,18 +234,18 @@ public struct DotExporter: ForExportAGraph {
         return base.isEmpty ? color : base + ", " + color
     }
 
-    private func formatGraphAttributes(graph: VGraph) throws(VError) -> String {
-        var explicit = try graph.getGraphAttributes()
+    private func formatGraphAttributes(graph: VGraph) -> String {
+        var explicit = graph.graphAttributes()
         // Remove label — it is emitted separately with padding in export()
         explicit.removeValue(forKey: Attributes.Group.label.id)
-        let attributes = translated(explicit, target: .graph, graph: graph) { definition in
+        let attributes = translated(explicit, target: .group, graph: graph) { definition in
             definition.id == Attributes.Group.label.id ? nil : try? graph.get(graphAttribute: definition)
         }
         return formatAttributeContainer(attributes, definitions: graph.attributeDefinitions, isGraphLevel: true)
     }
 
     private func formatAttributes(graph: VGraph, edge: Edge.Id) throws(VError) -> String {
-        let attributes = translated(try graph.getAttributes(edge: edge), target: .edge, graph: graph) {
+        let attributes = translated(try graph.attributes(edge: edge), target: .edge, graph: graph) {
             try? graph.get(edge: edge, attribute: $0)
         }
         return formatAttributeContainer(attributes, definitions: graph.attributeDefinitions)

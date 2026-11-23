@@ -71,7 +71,7 @@ struct ChangeEdgeTypeTest {
         // source reads as closed and nothing comes back.
         #expect(s.connectCandidates(from: "s1", to: "s2").isEmpty)
 
-        #expect(s.retypeCandidates(edge: edge).map { $0.id.id } == ["blocks"])
+        #expect(s.retypeCandidates(forEdge: edge).map { $0.id.id } == ["blocks"])
     }
 
     // MARK: - The command
@@ -79,7 +79,7 @@ struct ChangeEdgeTypeTest {
     @Test func retypesTheEdgeAndWritesItToTheDocument() throws {
         let s = try cld()
 
-        try s.changeType(of: onlyEdge(s), using: EdgeType.Id(string: "opposite"))
+        try s.changeType(of: onlyEdge(s), using: EdgeType.Id(rawValue: "opposite"))
 
         let exported = try s.exportVGL()
         #expect(exported.contains("edge s1 -> s2: opposite"))
@@ -99,7 +99,7 @@ struct ChangeEdgeTypeTest {
                 }
                 """)
 
-        try s.changeType(of: onlyEdge(s), using: EdgeType.Id(string: "opposite"))
+        try s.changeType(of: onlyEdge(s), using: EdgeType.Id(rawValue: "opposite"))
 
         let exported = try s.exportVGL()
         #expect(exported.contains("\"drives\""))
@@ -118,7 +118,7 @@ struct ChangeEdgeTypeTest {
     @Test func refusesWhereThereIsNothingToBecome() throws {
         let s = try conceptMap()
 
-        #expect(s.retypeCandidates(edge: onlyEdge(s)).isEmpty)
+        #expect(s.retypeCandidates(forEdge: onlyEdge(s)).isEmpty)
         #expect(throws: VError.self) { try s.changeType(of: onlyEdge(s), using: nil) }
     }
 
@@ -126,16 +126,16 @@ struct ChangeEdgeTypeTest {
         let s = try cld()
 
         #expect(throws: VError.self) {
-            try s.changeType(of: onlyEdge(s), using: EdgeType.Id(string: "sideways"))
+            try s.changeType(of: onlyEdge(s), using: EdgeType.Id(rawValue: "sideways"))
         }
     }
 
     @Test func refusesToRetypeANode() throws {
         let s = try cld()
 
-        #expect(s.retypeCandidates(edge: "s1").isEmpty)
+        #expect(s.retypeCandidates(forEdge: "s1").isEmpty)
         #expect(throws: VError.self) {
-            try s.changeType(of: "s1", using: EdgeType.Id(string: "opposite"))
+            try s.changeType(of: "s1", using: EdgeType.Id(rawValue: "opposite"))
         }
     }
 
@@ -265,7 +265,7 @@ struct ChangeEdgeTypeTest {
         #expect(throws: VError.self) {
             try s.declareEdgeType(for: edge, named: "concept_to_relation")
         }
-        #expect(s.hasUnknownType(edge: edge))
+        #expect(s.hasUnknownType(edge))
     }
 
     /// The promotion happens once: a second declaration extends the block the
@@ -329,7 +329,7 @@ struct ChangeEdgeTypeTest {
 
         #expect(
             step
-                == .perform(.changeEdgeType(edge: edge, using: EdgeType.Id(string: "blocks"))))
+                == .perform(.changeEdgeType(edge: edge, using: EdgeType.Id(rawValue: "blocks"))))
     }
 
     @Test func dismissesWhereThereIsNothingToBecome() throws {

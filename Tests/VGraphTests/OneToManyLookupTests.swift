@@ -66,7 +66,6 @@ struct OneToManyLookupTests {
         #expect(lookup.getOne(many: "node1") == "type2")
         #expect(lookup.getMany(one: "type2") == ["node1"])
         #expect(lookup.getMany(one: "type1") == nil)
-        #expect(lookup.getAllOnes == ["type2"])
     }
 
     @Test
@@ -82,16 +81,6 @@ struct OneToManyLookupTests {
 
         #expect(lookup.remove(many: "node2") == lookup)
         #expect(lookup.remove(one: "type2") == lookup)
-    }
-
-    @Test
-    func listsAllOnes() {
-        let lookup = OneToManyLookup<String, String>()
-            .add(many: "node1", one: "type1")
-            .add(many: "node2", one: "type1")
-            .add(many: "node3", one: "type2")
-
-        #expect(lookup.getAllOnes.asSet == ["type1", "type2"])
     }
 
     /// Equality is by content, so the order things were added in must not matter.

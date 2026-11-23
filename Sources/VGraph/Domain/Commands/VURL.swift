@@ -1,10 +1,5 @@
-//
-//  VURL.swift
-//  VGraph
-//
-//  What may be stored as a link — and therefore what an adapter may hand to the
-//  host browser.
-//
+// What may be stored as a link — and therefore what an adapter may hand to the
+// host browser.
 
 /// The gate between user-typed text and `window.open`.
 ///
@@ -54,14 +49,13 @@ public enum VURL {
         return prefix.isEmpty ? nil : prefix.lowercased()
     }
 
+    private static let whitespace = " \t\n\r"
+
     private static func trim(_ text: String) -> String {
-        var result = Substring(text)
-        while let first = result.first, isWhitespace(first) { result = result.dropFirst() }
-        while let last = result.last, isWhitespace(last) { result = result.dropLast() }
-        return String(result)
+        text.trimmingCharacters(in: whitespace)
     }
 
     private static func isWhitespace(_ character: Character) -> Bool {
-        character == " " || character == "\t" || character == "\n" || character == "\r"
+        whitespace.contains(character)
     }
 }

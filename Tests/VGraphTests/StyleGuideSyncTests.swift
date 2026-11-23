@@ -73,8 +73,8 @@ struct StyleGuideSyncTests {
 
     @Test func chromeTokensMatchTheGuide() {
         let tokens: [SemanticColor] = [
-            .page, .edgeEndFill, .edge, .edgeBold, .junctor, .ink, .ink2, .ink3, .groupFill, .groupBorder,
-            .groupText, .groupNestedFill, .groupStack, .pillBg, .pillText, .loopIndicator,
+            .page, .edgeEndFill, .edge, .edgeBold, .junctor, .ink2, .groupFill, .groupBorder,
+            .groupText, .loopMarker,
             .ghostPillFill, .ghostPillText, .foldedBadgeFill, .linkBadgeFill,
         ]
         for token in tokens {
@@ -215,7 +215,7 @@ extension StyleGuideSyncTests {
     }
 
     @Suite("The design system's badge icon colour")
-    struct BadgeIconColour {
+    struct BadgeIconColor {
 
         @Test("Given the design system's --badge-icon, when read, then light is #ffffff and dark is #14120f, matching the Swift colour")
         func theTokenMatches() {
@@ -231,11 +231,11 @@ extension StyleGuideSyncTests {
         func theDarkIconIsReadableOnEveryBackground() throws {
             var backgrounds: [String: String] = [:]
             for (key, style) in try BuiltInNodeTypeStyles.all() {
-                let colours: [SemanticColor] = style.walkAll { layout -> SemanticColor? in
+                let colors: [SemanticColor] = style.walkAll { layout -> SemanticColor? in
                     if case .typeBadge(_, _, let color) = layout { return color }
                     return nil
                 }
-                for colour in colours { backgrounds[key] = colour.resolve(darkMode: true).hexString }
+                for color in colors { backgrounds[key] = color.resolve(darkMode: true).hexString }
             }
             #expect(!backgrounds.isEmpty)
             let icon = SemanticColor.badgeIcon.resolve(darkMode: true).hexString

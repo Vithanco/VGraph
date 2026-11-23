@@ -1,9 +1,4 @@
-//
-//  VGraph+ConnectCandidates.swift
-//  VGraph
-//
-//  What the notation permits between two *existing* nodes. See ADR-0012.
-//
+// What the notation permits between two *existing* nodes. See ADR-0012.
 
 extension VGraph {
     /// The edge types that may join `from` to `to` right now, still under every
@@ -33,7 +28,7 @@ extension VGraph {
         }
 
         func wouldBeForbiddenParallelEdge(from: Node, to: Node) -> Bool {
-            Notations.criteria(of: self).contains(.noParallelEdges) && typedGraph.getFirstEdge(from: from, to: to) != nil
+            Notations.namedQualityChecks(of: self).contains(.noParallelEdges) && typedGraph.getFirstEdge(from: from, to: to) != nil
         }
     }
 
@@ -43,7 +38,7 @@ extension VGraph {
     /// it is about to vacate; the command deletes before it adds, so it
     /// validates against the same reduced graph (ADR-0011, ADR-0021).
     func connectCandidates(replacing edge: Edge.Id, from: Node? = nil, to: Node? = nil) -> [EdgeType] {
-        guard let existing = get(edge: edge), let withoutEdge = try? delete(edge: edge) else { return [] }
+        guard let existing = get(edge: edge), let withoutEdge = try? deleting(edge: edge) else { return [] }
         return withoutEdge.connectCandidates(from: from ?? existing.from, to: to ?? existing.to)
     }
 }

@@ -1,4 +1,4 @@
-// `StyleFactories.makeIcon` supplies a default icon name when a `vnotation`
+// `VNotationTypeAttributes.makeIcon` supplies a default icon name when a `vnotation`
 // declares an icon-bearing `nodeStyle` without naming one. Naming nothing means
 // the author did not choose, so the default has to be a mark VGraph really has
 // — a name nobody has is a different state, and draws the missing-icon placeholder.
@@ -37,7 +37,7 @@ struct VNotationIconDefaultTests {
 
     @Test("The default icon names a symbol the renderer has")
     func theDefaultIconResolves() {
-        let icon = StyleFactories.makeIcon(from: [:], defaultIconColorHex: "#ffffff")
+        let icon = VNotationTypeAttributes.makeIcon(from: [:], defaultIconColorHex: "#ffffff")
         #expect(BuiltinIcons.artwork(for: icon.iconName) != nil)
     }
 }

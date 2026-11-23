@@ -1,11 +1,6 @@
-//
-//  ForEditVGL.swift
-//  VGraph
-//
-//  Driving port: what the outside may do to a document's text. Declared in the
-//  core and re-exported by App under its plain name, exactly as a driven port
-//  is — see docs/hexagonal-architecture.md.
-//
+// Driving port: what the outside may do to a document's text. Declared in the
+// core and re-exported by App under its plain name, exactly as a driven port
+// is — see docs/hexagonal-architecture.md.
 
 /// What the **text pane** may do: put VGL in, and colour it. That it offers no
 /// way to render, command or undo is the point of there being three ports, and

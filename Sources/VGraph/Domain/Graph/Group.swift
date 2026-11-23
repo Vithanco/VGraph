@@ -6,31 +6,21 @@ public struct Group: VProtocol, UseIdentifier {
     }
 }
 
-public let rootGroup = "vithanco.vgraph.rootGroup.only.for.internal.use"
-
 extension Group {
-    public static let root = Group(rawValue: rootGroup)
+    /// An id no document can write, so no element ever takes the [[Root group]]'s.
+    public static let rootId = "vithanco.vgraph.rootGroup.only.for.internal.use"
+    public static let root = Group(rawValue: rootId)
 }
 
-public enum FoldingState: EnumAttributeType {
-    case normal
+/// A group's [[Fold state]] as shown, with `hidden` for one inside a folded ancestor.
+public enum FoldState: EnumAttributeType {
+    case unfolded
     case folded
     case hidden
-    public var description: String {
-        switch self {
-        case .normal: return "normal"
-        case .folded: return "folded"
-        case .hidden: return "hidden"
-        }
-    }
-
-    public var contentVisible: Bool {
-        return self == .normal
-    }
 
     public var readableName: String {
         switch self {
-        case .normal: return "normal"
+        case .unfolded: return "unfolded"
         case .folded: return "folded"
         case .hidden: return "hidden"
         }
@@ -38,15 +28,15 @@ public enum FoldingState: EnumAttributeType {
 
     public var toolTip: String {
         switch self {
-        case .normal: return "Visible and Unfolded"
+        case .unfolded: return "Visible and Unfolded"
         case .folded: return "Visible and Folded"
-        case .hidden: return "Hidden within another folded cluster"
+        case .hidden: return "Hidden within a folded group"
         }
     }
 
     public var value: String { readableName }
 
-    public static let typeName: String = "FoldingState"
+    public static let typeName: String = "FoldState"
 }
 
 public enum LayoutDirection: EnumAttributeType {
@@ -77,6 +67,19 @@ public enum LayoutDirection: EnumAttributeType {
         }
     }
 
+    /// Graphviz's spellings too: `rankdir: LR` is kept as written and passed to
+    /// Graphviz as is, so it is a direction like any other.
+    public static func fromString(_ string: String) throws(VError) -> LayoutDirection {
+        let rankdir: [String: LayoutDirection] = [
+            "TB": .topToBottom, "LR": .leftToRight, "BT": .bottomToTop, "RL": .rightToLeft,
+        ]
+        if let direction = rankdir[string] { return direction }
+        if let direction = allCases.first(where: { $0.readableName == string || $0.alias == string || $0.value == string }) {
+            return direction
+        }
+        throw VError.conversionError(from: string, to: typeName)
+    }
+
     public var toolTip: String {
         switch self {
         case .topToBottom: return "Layout nodes from top to bottom"
@@ -101,10 +104,6 @@ public enum RatioType: EnumAttributeType {
 
     public static var allCases: [RatioType] {
         return [.fill, .compress, .expand, .auto, .numeric(0.0)]  // `numeric` isn't a fixed value case
-    }
-
-    public static var readableNames: [String] {
-        return allCases.map { $0.readableName }
     }
 
     public var readableName: String {
@@ -164,26 +163,6 @@ public enum RatioType: EnumAttributeType {
         case .auto: return "auto"
         }
     }
-}
-
-public enum GraphStyleType: EnumAttributeType {
-    case none
-    case filled
-    case striped
-    case rounded
-
-    public var value: String {
-        switch self {
-        case .none: return "none"
-        case .filled: return "filled"
-        case .striped: return "striped"
-        case .rounded: return "rounded"
-        }
-    }
-
-    public var readableName: String { value }
-
-    public static let typeName: String = "GraphStyleType"
 }
 
 extension Attributes {
@@ -249,7 +228,7 @@ extension Attributes {
             name: "isFolded",
             description: "Is this subgraph Folded?",
             defaultValue: false,
-            target: .graph
+            target: .group
         )
 
         public static let label = TypedAttributeDefinition<String>(
@@ -257,7 +236,7 @@ extension Attributes {
             name: "labeltext",
             description: "Name/Label of the Group of Nodes (only visible if \"Render Group Together\" is true",
             defaultValue: "",
-            target: .graph
+            target: .group
         )
 
         public static let url = TypedAttributeDefinition<String>(
@@ -265,15 +244,15 @@ extension Attributes {
             name: "URL",
             description: "A link this group points at, opened by the openURL command",
             defaultValue: "",
-            target: .graph
+            target: .group
         )
 
-        public static let Id = TypedAttributeDefinition<String>(
+        public static let id = TypedAttributeDefinition<String>(
             id: "group.id",
             name: "Id",
             description: "Id of the Group",
             defaultValue: "",
-            target: .graph
+            target: .group
         )
 
         public static let fontname = TypedAttributeDefinition<FontFamily>(
@@ -284,7 +263,7 @@ extension Attributes {
             // title is set in — and `.helvetica` made every diagram mix two
             // typefaces, the title in one and every node label in the other.
             defaultValue: .default,
-            target: .graph
+            target: .group
         )
 
         public static let fontsize = TypedAttributeDefinition<Double>(
@@ -292,15 +271,15 @@ extension Attributes {
             name: "fontSize",
             description: "Font size of the Group's label",
             defaultValue: 14.0,
-            target: .graph
+            target: .group
         )
 
-        public static let labelocation = TypedAttributeDefinition<String>(
+        public static let labelLocation = TypedAttributeDefinition<String>(
             id: "group.labelLocation",
             name: "labelLocation",
             description: "Location of the Group's label",
             defaultValue: "c",
-            target: .graph
+            target: .group
         )
 
         public static let splines = TypedAttributeDefinition<String>(
@@ -308,7 +287,7 @@ extension Attributes {
             name: "splines",
             description: "Line type within this Group",
             defaultValue: "splines",
-            target: .graph
+            target: .group
         )
 
         public static let ratio = TypedAttributeDefinition<RatioType>(
@@ -326,7 +305,7 @@ extension Attributes {
                     Node sizes may be ignored in some calculations, so the resulting drawing may approximate the desired dimensions.
                 """,
             defaultValue: RatioType.numeric(1.0),
-            target: .graph
+            target: .group
         )
 
         public static let fontcolor = TypedAttributeDefinition<VColor>(
@@ -334,7 +313,7 @@ extension Attributes {
             name: "fontColor",
             description: "Font color of the Groups label",
             defaultValue: VColor(hexString: "#505048") ?? VColor.black,
-            target: .graph
+            target: .group
         )
 
         public static let border = TypedAttributeDefinition<Double>(
@@ -342,7 +321,7 @@ extension Attributes {
             name: "border",
             description: "Border thickness of the Group (if \"Render Group Together\" is enabled)",
             defaultValue: 0.0,
-            target: .graph
+            target: .group
         )
 
         public static let layoutDirection = TypedAttributeDefinition<LayoutDirection>(
@@ -350,7 +329,7 @@ extension Attributes {
             name: "Layout Direction",
             description: "Direction of graph layout (top-to-bottom, left-to-right, etc.)",
             defaultValue: LayoutDirection.topToBottom,
-            target: .graph
+            target: .group
         )
 
         public static let layoutEngine = TypedAttributeDefinition<String>(
@@ -358,7 +337,7 @@ extension Attributes {
             name: "Layout Engine",
             description: "Layout engine to use (dot, neato, fdp, circo, twopi, etc.)",
             defaultValue: "dot",
-            target: .graph
+            target: .group
         )
 
         public static let style = TypedAttributeDefinition<StyleType>(
@@ -366,44 +345,42 @@ extension Attributes {
             name: "style",
             description: "Style of the Group",
             defaultValue: StyleType.empty,
-            target: .graph
+            target: .group
         )
 
         public static let groupStyle = TypedAttributeDefinition<GroupStyle>(
             id: "group.groupStyle",
             name: "groupStyle",
-            description: "The style of a group: its folded (collapsed box) and unfolded (boundary) appearance.",
+            description: "The style of a group: its folded (collapsed box) and unfolded (frame) appearance.",
             defaultValue: GroupStyle.default,
-            target: .graph
+            target: .group
         )
 
-        /// The boundary an unfolded group draws, declared on its node type
+        /// The frame an unfolded group draws, declared on its node type
         /// (ADR-0032) or, for a plain group, on its group type, where it beats the
         /// `groupStyle` face.
-        public static let boundaryChrome = TypedAttributeDefinition<BoundaryChrome>(
-            id: "group.boundaryChrome",
-            name: "boundaryChrome",
-            description: "The boundary an unfolded detailed node draws around its details.",
-            defaultValue: BoundaryChrome.default,
-            target: .graph
+        public static let frame = TypedAttributeDefinition<GroupFrame>(
+            id: "group.frame",
+            name: "frame",
+            description: "The frame an unfolded detailed node draws around its details.",
+            defaultValue: GroupFrame.default,
+            target: .group
         )
 
-        /// A node type enumerates itself, being structural; a group type is only a
-        /// styling tag, so its registry is data like the rest of it (ADR-0020).
         public static let labeljust = TypedAttributeDefinition<Labeljust>(
             id: "group.labeljust",
             name: "labeljust",
-            description: "Justification of the Groupøs label",
+            description: "Justification of the Group's label",
             defaultValue: Labeljust.c,
-            target: .graph
+            target: .group
         )
 
         public static let maxNodeWidth = TypedAttributeDefinition<Double>(
             id: "graph.maxNodeWidth",
             name: "Maximum Node Width",
-            description: "Maximum width in pixels for node text wrapping. Text will wrap to fit within this width.",
+            description: "Maximum width in points for node text wrapping. Text will wrap to fit within this width.",
             defaultValue: 150.0,
-            target: .graph
+            target: .group
         )
 
         public static let completedSteps = TypedAttributeDefinition<[String]>(
@@ -411,17 +388,17 @@ extension Attributes {
             name: "Completed Steps",
             description: "Ids of the transform steps that have run on this graph. Runtime-only pipeline bookkeeping.",
             defaultValue: [],
-            target: .graph
+            target: .group
         )
 
         /// The model's loops, recorded before any display transform so they can be
-        /// drawn on the display graph (ADR-0027). Runtime-only, like `completedSteps`.
+        /// drawn on the view graph (ADR-0027). Runtime-only, like `completedSteps`.
         public static let recordedLoops = TypedAttributeDefinition<String>(
             id: "graph.recordedLoops",
             name: "Recorded Loops",
             description: "The OriginGraph's loops as edge ids with their polarity. Runtime-only pipeline bookkeeping.",
             defaultValue: "",
-            target: .graph
+            target: .group
         )
 
         public static let diagramLogic = TypedAttributeDefinition<DiagramLogic>(
@@ -429,7 +406,7 @@ extension Attributes {
             name: "Diagram Logic",
             description: "The logical reasoning type of the diagram (e.g., sufficient cause, necessary condition)",
             defaultValue: DiagramLogic.noLogic,
-            target: .graph
+            target: .group
         )
 
         public static let labelLayoutedPos = TypedAttributeDefinition<VPoint>(
@@ -437,7 +414,7 @@ extension Attributes {
             name: "Label Layouted Position",
             description: "The position of the group label as computed by the layout engine",
             defaultValue: VPoint.zero,
-            target: .graph
+            target: .group
         )
 
         public static let labelLayoutedSize = TypedAttributeDefinition<VSize>(
@@ -445,7 +422,7 @@ extension Attributes {
             name: "Label Layouted Size",
             description: "The size of the group label as computed by the layout engine",
             defaultValue: VSize.zero,
-            target: .graph
+            target: .group
         )
 
         public static let layoutedBounds = TypedAttributeDefinition<VRect>(
@@ -453,15 +430,15 @@ extension Attributes {
             name: "Layouted Bounds",
             description: "The bounding box of the group as computed by the layout engine",
             defaultValue: VRect.zero,
-            target: .graph
+            target: .group
         )
 
         public static let borderWidth = TypedAttributeDefinition<Double>(
             id: "group.borderWidth",
             name: "Border Width",
-            description: "Width of the group border in pixels",
+            description: "Width of the group border in points",
             defaultValue: 1.5,
-            target: .graph
+            target: .group
         )
 
         public static let borderColor = TypedAttributeDefinition<VColor>(
@@ -469,7 +446,7 @@ extension Attributes {
             name: "Border Color",
             description: "Color of the group border",
             defaultValue: VColor(hexString: SemanticColor.groupBorder.lightHex) ?? VColor.gray,
-            target: .graph
+            target: .group
         )
 
         public static let backgroundColor = TypedAttributeDefinition<VColor>(
@@ -477,7 +454,7 @@ extension Attributes {
             name: "Background Color",
             description: "Background color of the group (semi-transparent for stacking)",
             defaultValue: VColor(hexString: SemanticColor.groupFill.lightHex) ?? VColor.white,
-            target: .graph
+            target: .group
         )
 
         public static let borderDash = TypedAttributeDefinition<String>(
@@ -485,7 +462,7 @@ extension Attributes {
             name: "Border Dash",
             description: "SVG stroke-dasharray for the group border (empty = solid)",
             defaultValue: "6,3",
-            target: .graph
+            target: .group
         )
 
         public static let cornerRadius = TypedAttributeDefinition<Double>(
@@ -493,7 +470,7 @@ extension Attributes {
             name: "Corner Radius",
             description: "Corner radius for the rounded rectangle border",
             defaultValue: 8.0,
-            target: .graph
+            target: .group
         )
 
         public static let watermark = TypedAttributeDefinition<Bool>(
@@ -501,7 +478,7 @@ extension Attributes {
             name: "Watermark",
             description: "Whether to show the Vithanco watermark on the exported image",
             defaultValue: true,
-            target: .graph
+            target: .group
         )
 
         public static let overlap = TypedAttributeDefinition<String>(
@@ -509,7 +486,7 @@ extension Attributes {
             name: "Overlap",
             description: "How to handle node overlap (for neato/fdp): scale, false, scalexy, etc.",
             defaultValue: "",
-            target: .graph
+            target: .group
         )
 
         public static let sep = TypedAttributeDefinition<String>(
@@ -517,17 +494,17 @@ extension Attributes {
             name: "Node Separation",
             description: "Minimum separation between nodes (for neato/fdp). Use +value to add to default.",
             defaultValue: "",
-            target: .graph
+            target: .group
         )
 
         /// Holds the comments of a group *and* of the graph itself — both are
-        /// `.graph`-target attributes, the graph's living on the root group.
+        /// `.group`-target attributes, the graph's living on the root group.
         public static let comment = TypedAttributeDefinition<String>(
             id: "group.comment",
             name: "comment",
             description: "Comment lines standing above this group or graph in the source",
             defaultValue: "",
-            target: .graph
+            target: .group
         )
 
         public static let trailingComment = TypedAttributeDefinition<String>(
@@ -535,7 +512,7 @@ extension Attributes {
             name: "trailingComment",
             description: "Comment following this group's or graph's opening line",
             defaultValue: "",
-            target: .graph
+            target: .group
         )
 
         public static let definitions = AttributeDefContainer([
@@ -544,17 +521,17 @@ extension Attributes {
             Group.border.asDefinition,
             Group.style.asDefinition,
             Group.groupStyle.asDefinition,
-            Group.boundaryChrome.asDefinition,
+            Group.frame.asDefinition,
             Group.fontcolor.asDefinition,
             Group.fontname.asDefinition,
             Group.fontsize.asDefinition,
             Group.isFolded.asDefinition,
             Group.label.asDefinition,
-            Group.Id.asDefinition,
+            Group.id.asDefinition,
             Group.completedSteps.asDefinition,
             Group.recordedLoops.asDefinition,
             Group.url.asDefinition,
-            Group.labelocation.asDefinition,
+            Group.labelLocation.asDefinition,
             Group.ratio.asDefinition,
             Group.splines.asDefinition,
             Group.layoutDirection.asDefinition,
@@ -563,7 +540,6 @@ extension Attributes {
             Group.layoutEngine.asDefinition,
             Group.labeljust.asDefinition,
             Group.maxNodeWidth.asDefinition,
-            Group.splines.asDefinition,
             Group.diagramLogic.asDefinition,
             Group.labelLayoutedPos.asDefinition,
             Group.labelLayoutedSize.asDefinition,
@@ -582,30 +558,16 @@ extension Attributes {
 
 extension Group {
     public func isFolded<GA: GetAttribute>(in graph: GA) -> Bool {
-        if let value = try? graph.get(group: self, attribute: Attributes.Group.isFolded) {
-            return value
-        }
-        return Attributes.Group.isFolded.defaultValue
-    }
-
-    public func getName(in graph: VGraph) -> String {
-        graph.label(of: .group(self)) ?? ""
+        (try? graph.get(group: self, attribute: Attributes.Group.isFolded)) ?? Attributes.Group.isFolded.defaultValue
     }
 }
 
 extension VGraph {
-    public func foldingState(group: Group) -> FoldingState {
-        if let parent = groupStructure.parentGroup(of: group) {
-            let parentFoldingState = foldingState(group: parent)
-            if parentFoldingState != .normal {
-                return .hidden
-            }
+    public func foldState(of group: Group) -> FoldState {
+        if let parent = groupStructure.parentGroup(of: group), foldState(of: parent) != .unfolded {
+            return .hidden
         }
-        let myFoldingState = group.isFolded(in: self)
-        if myFoldingState {
-            return .folded
-        }
-        return .normal
+        return group.isFolded(in: self) ? .folded : .unfolded
     }
 
     public func group(of node: Node) -> Group? {
@@ -630,20 +592,10 @@ extension VGraph {
         return groupStructure.parentGroup(of: group)
     }
 
-    public func getFont(forGroup group: Group) -> VFont {
-        var fontSize: Double = 14.0
-        // Second copy of the default, which is how it drifted from the
-        // attribute's the first time. Read it from the definition instead.
-        var fontFamily: FontFamily = Attributes.Group.fontname.defaultValue
-
-        if let size = try? get(group: group, attribute: Attributes.Group.fontsize) {
-            fontSize = size
-        }
-
-        if let family = try? get(group: group, attribute: Attributes.Group.fontname) {
-            fontFamily = family
-        }
-
-        return VFont(family: fontFamily, size: fontSize)
+    public func font(of group: Group) -> VFont {
+        VFont(
+            family: (try? get(group: group, attribute: Attributes.Group.fontname))
+                ?? Attributes.Group.fontname.defaultValue,
+            size: (try? get(group: group, attribute: Attributes.Group.fontsize)) ?? Attributes.Group.fontsize.defaultValue)
     }
 }

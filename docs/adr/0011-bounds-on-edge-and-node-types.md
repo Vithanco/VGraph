@@ -25,10 +25,10 @@ express.
 
 Three mechanical facts constrain where a bound can be enforced:
 
-- **The parser builds edges through `add(edge:edgeType:group:)`**, so anything
-  `add` throws on is a parse failure — in the editor, the last good preview is
+- **The parser builds edges through `adding(edge:edgeType:)`**, so anything
+  `adding` throws on is a parse failure — in the editor, the last good preview is
   retained and the document is effectively unopenable.
-- **Minima cannot be checked incrementally.** `add` sees a graph
+- **Minima cannot be checked incrementally.** `adding` sees a graph
   mid-construction; a cloud legitimately passes through zero and one Need.
 - **Two tiers already exist.** `ensureEdgeTypeFits` throws (hard); `QualityCheck`
   returns severities (soft).
@@ -76,8 +76,8 @@ commands.**
   a minimum, the same effect as `0` but a different intent. This is what makes
   *unbounded everywhere* fall out with no per-notation work.
 
-- **Enforcement is soft.** `add(edge:)` is unchanged; a new `QualityCheck`
-  reports violations. Chosen because the parser routes through `add`, and because
+- **Enforcement is soft.** `adding(edge:)` is unchanged; a new `QualityCheck`
+  reports violations. Chosen because the parser routes through `adding`, and because
   minima are not incrementally checkable anyway — a hard rule could only ever
   have covered half the construct.
 
@@ -119,7 +119,7 @@ commands.**
 
 - **Bounds are attributes**, exactly as colour and icon are, so both declaration
   sites work with **no new syntax**: `vnotation` already parses `[attrs]` into a
-  free-form `rawAttrs`, and a compiled notation sets the same attributes in
+  free-form `rawAttributes`, and a compiled notation sets the same attributes in
   Swift. Nothing in the lexer, grammar or highlighter moves. What is *not*
   generic is either end — a hand-written `switch` in and a hand-written emit list
   out, which must agree exactly or a notation cannot survive a round trip. Both
@@ -149,7 +149,7 @@ commands.**
 
 ## Alternatives considered
 
-- **Hard enforcement in `add(edge:)`.** Originally chosen, reversed once the
+- **Hard enforcement in `adding(edge:)`.** Originally chosen, reversed once the
   min/max asymmetry surfaced. Strongest invariant — an in-memory `VGraph` is
   always notation-valid — at the price of a user's existing file becoming
   unopenable, and it cannot express a minimum at all.
@@ -198,7 +198,7 @@ commands.**
 - **Affordances are blind to criteria**, with one exception. A notation whose
   rule is a criterion gets no help from the gesture: the drop is offered and the
   diagnostics object afterwards. `noParallelEdges` is the exception: a notation
-  declares criteria by name (`criteria`, or a `vnotation`'s `qualityCheck:`
+  declares criteria by name (`namedQualityChecks`, or a `vnotation`'s `qualityCheck:`
   lines), and `connectCandidates` reads that list, so a pair already joined is
   not offered again — through connect, reattach and retype alike. Most built-in
   notations declare it; Arithmetic (`x + x`) and C4 (several real relationships

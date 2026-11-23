@@ -62,7 +62,7 @@ struct PlacementFollowsContainmentTest {
 
         let (step, _) = EditorCore.begin(.addNode, on: "api", forcingChoice: false, in: s)
 
-        #expect(step == .perform(.addNode(in: "api", ofType: NodeType(string: "Component"), notationBreak: .forbidden)))
+        #expect(step == .perform(.addNode(in: "api", ofType: NodeType(rawValue: "Component"), notationBreak: .forbidden)))
     }
 
     @Test("Given the top level, when adding a node, then types that are only ever details are not offered")
@@ -106,7 +106,7 @@ struct PlacementFollowsContainmentTest {
     func addingAnUnlistedTypeIsRefused() throws {
         let s = try session()
 
-        #expect(throws: VError.self) { try s.addNode(in: "ibs", ofType: NodeType(string: "Component")) }
+        #expect(throws: VError.self) { try s.addNode(in: "ibs", ofType: NodeType(rawValue: "Component")) }
         #expect(s.origin.nodes.filter { s.origin.group(of: $0) == Group(rawValue: "ibs") } == [Node("db")])
     }
 
@@ -114,7 +114,7 @@ struct PlacementFollowsContainmentTest {
     func addingADetailOnlyTypeAtTheTopIsRefused() throws {
         let s = try session()
 
-        #expect(throws: VError.self) { try s.addNode(in: nil, ofType: NodeType(string: "Database")) }
+        #expect(throws: VError.self) { try s.addNode(in: nil, ofType: NodeType(rawValue: "Database")) }
     }
 
     @Test("Given ⌥, when adding a type the detailed node does not list, then it is added and the check reports it")
@@ -122,7 +122,7 @@ struct PlacementFollowsContainmentTest {
         let s = try session()
         let warnedBefore = Set(GenericQualityChecks.containment(graph: s.origin).map { $0.target })
 
-        _ = try s.addNode(in: "ibs", ofType: NodeType(string: "Component"), notationBreak: .permitted)
+        _ = try s.addNode(in: "ibs", ofType: NodeType(rawValue: "Component"), notationBreak: .permitted)
 
         let added = s.origin.nodes.filter { s.origin.group(of: $0) == Group(rawValue: "ibs") && $0.id != "db" }
         #expect(added.count == 1)
@@ -140,7 +140,7 @@ struct PlacementFollowsContainmentTest {
 
         #expect(
             step
-                == .perform(.addNode(in: s.rootGroupId(), ofType: NodeType(string: "Component"), notationBreak: .permitted)))
+                == .perform(.addNode(in: s.rootGroupId(), ofType: NodeType(rawValue: "Component"), notationBreak: .permitted)))
     }
 
     // MARK: - Move
@@ -182,7 +182,7 @@ struct PlacementFollowsContainmentTest {
     }
 
     @Test("Given a plain group, when moving it into a detailed node, then its members are judged there")
-    func aPlainGroupCarriesItsMembersJudgement() throws {
+    func aPlainGroupCarriesItsMembersJudgment() throws {
         let s = try session()
 
         #expect(!s.moveDestinations(for: ["misc"]).contains("ibs"))

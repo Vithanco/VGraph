@@ -20,6 +20,11 @@ struct SemanticColorTests {
         #expect(token.id == "literal")
     }
 
+    @Test func aChromeLightHexKeepsTheChromeDarkHex() throws {
+        let parsed = try SemanticColor.fromString(SemanticColor.groupFill.asString)
+        #expect(parsed.darkHex == SemanticColor.groupFill.darkHex)
+    }
+
     /// `darken(to:)` must apply per side so the resulting token stays theme-aware.
     @Test func darkenAppliesPerSide() {
         let blue = SemanticColor(id: "test.blue", lightHex: "#6038d0", darkHex: "#a08fe8")

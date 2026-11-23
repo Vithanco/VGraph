@@ -22,6 +22,36 @@ public struct NotationContent: Sendable {
         self.values = values
     }
 
+    func appending(_ typeValues: TypeValues) -> NotationContent {
+        var result = self
+        result.values.append(typeValues)
+        return result
+    }
+
+    func adding(nodeType: NodeType) -> NotationContent {
+        var result = self
+        result.nodeTypes.append(nodeType)
+        return result
+    }
+
+    func adding(edgeType: EdgeType) -> NotationContent {
+        var result = self
+        result.edgeTypes.append(edgeType)
+        return result
+    }
+
+    func adding(groupType: GroupType) -> NotationContent {
+        var result = self
+        result.groupTypes.append(groupType)
+        return result
+    }
+
+    func adding(_ detailing: Detailing) -> NotationContent {
+        var result = self
+        result.detailings.append(detailing)
+        return result
+    }
+
     /// The last value given for `id` on `key`, if any.
     public func value(of id: Attribute.Id, for key: ItemKey) -> String? {
         values.last { $0.key == key && $0.attributes.contains { $0.id == id } }?
@@ -40,11 +70,11 @@ public struct TypeValues: Sendable {
     }
 
     public static func nodeType(_ type: NodeType, _ attributes: [Attribute]) -> TypeValues {
-        TypeValues(ItemKey(.nodeType, type.description), attributes)
+        TypeValues(ItemKey(type), attributes)
     }
 
     public static func edgeType(_ type: EdgeType.Id, _ attributes: [Attribute]) -> TypeValues {
-        TypeValues(ItemKey(.edgeType, type.description), attributes)
+        TypeValues(ItemKey(type), attributes)
     }
 
     public static func edgeType(_ type: EdgeType, _ attributes: [Attribute]) -> TypeValues {
@@ -52,7 +82,7 @@ public struct TypeValues: Sendable {
     }
 
     public static func groupType(_ type: GroupType, _ attributes: [Attribute]) -> TypeValues {
-        TypeValues(ItemKey(.groupType, type.description), attributes)
+        TypeValues(ItemKey(type), attributes)
     }
 
     public static func diagram(_ attributes: [Attribute]) -> TypeValues {

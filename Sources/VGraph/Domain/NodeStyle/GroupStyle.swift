@@ -1,15 +1,15 @@
 /// The visual style of a group, holding both faces a group can present:
 /// - `folded`: how the group looks when collapsed into a single box (a node layout).
-/// - `unfolded`: the boundary chrome drawn around the group's contents.
+/// - `unfolded`: the frame drawn round the group's contents.
 ///
 /// This is the group-level counterpart of a node's `NodeStyleLayout`. A group's
 /// `GroupType` (or a per-group override) carries a `GroupStyle`; folding uses the
-/// `folded` face for the collapsed proxy, and boundary rendering uses `unfolded`.
+/// `folded` face for the collapsed proxy, and frame rendering uses `unfolded`.
 public struct GroupStyle: VProtocol, AttributeType {
     public let folded: NodeStyleLayout
-    public let unfolded: BoundaryChrome
+    public let unfolded: GroupFrame
 
-    public init(folded: NodeStyleLayout, unfolded: BoundaryChrome) {
+    public init(folded: NodeStyleLayout, unfolded: GroupFrame) {
         self.folded = folded
         self.unfolded = unfolded
     }
@@ -25,8 +25,8 @@ public struct GroupStyle: VProtocol, AttributeType {
     /// Length-prefixed encoding so the (brace-nested) folded layout survives
     /// round-trip without a delimiter collision: "<n>:<folded><unfolded>".
     public var asString: String {
-        let f = folded.asString
-        return "\(f.count):\(f)\(unfolded.asString)"
+        let foldedText = folded.asString
+        return "\(foldedText.count):\(foldedText)\(unfolded.asString)"
     }
 
     public static func fromString(_ string: String) throws(VError) -> GroupStyle {
@@ -42,22 +42,22 @@ public struct GroupStyle: VProtocol, AttributeType {
         let foldedString = String(chars[0..<count])
         let unfoldedString = String(chars[count...])
         let folded = try NodeStyleLayout.fromString(foldedString)
-        let unfolded = try BoundaryChrome.fromString(unfoldedString)
+        let unfolded = try GroupFrame.fromString(unfoldedString)
         return GroupStyle(folded: folded, unfolded: unfolded)
     }
 }
 
-/// The chrome drawn around an unfolded group (its boundary box): the dashed border,
-/// its colour, and the fill. A C4 boundary registers a distinct chrome (muted dashed
-/// border, transparent fill) so it reads differently from a generic cluster; the
-/// unfolded-boundary transform stamps these onto the group's loose `Attributes.Group.*`
+/// The frame drawn round an unfolded group: the dashed border, its colour, and
+/// the fill. A C4 group type registers a distinct frame (muted dashed
+/// border, transparent fill) so it reads differently from a plain group;
+/// `applyGroupFrameStep` stamps these onto the group's loose `Attributes.Group.*`
 /// so the SVG renderer draws them without special-casing group types.
-public struct BoundaryChrome: VProtocol, AttributeType {
+public struct GroupFrame: VProtocol, AttributeType {
     public let cornerRadius: Double
     /// SVG `stroke-dasharray` (empty = solid).
     public let borderDash: String
     public let borderColor: SemanticColor
-    /// Usually clear/transparent for a boundary (`#00000000`).
+    /// Usually clear/transparent for a C4 group (`#00000000`).
     public let fill: SemanticColor
 
     public init(
@@ -72,12 +72,12 @@ public struct BoundaryChrome: VProtocol, AttributeType {
         self.fill = fill
     }
 
-    public static let `default` = BoundaryChrome()
+    public static let `default` = GroupFrame()
 
     // MARK: - AttributeType Conformance
 
     public static var typeName: String {
-        return "BoundaryChrome"
+        return "GroupFrame"
     }
 
     /// Four `|`-separated fields. Colours serialise to `#rrggbbaa` and `borderDash`
@@ -86,29 +86,20 @@ public struct BoundaryChrome: VProtocol, AttributeType {
         return "\(cornerRadius)|\(borderDash)|\(borderColor.asString)|\(fill.asString)"
     }
 
-    public static func fromString(_ string: String) throws(VError) -> BoundaryChrome {
-        // Hand-rolled split preserving empty fields (a solid boundary has an empty
-        // borderDash) — `String.split` omits empties, and this stays Embedded-safe.
-        var fields: [String] = []
-        var current = ""
-        for ch in string {
-            if ch == "|" {
-                fields.append(current)
-                current = ""
-            } else {
-                current.append(ch)
-            }
-        }
-        fields.append(current)
+    public static func fromString(_ string: String) throws(VError) -> GroupFrame {
+        // The `String` separator form keeps empty fields: a solid frame has an
+        // empty borderDash, which `split` and the `Character` form would drop.
+        let separator: String = "|"
+        let fields = string.components(separatedBy: separator)
 
         guard fields.count == 4 else {
-            throw VError.parsingError("BoundaryChrome: expected 4 fields, got \(fields.count)")
+            throw VError.parsingError("GroupFrame: expected 4 fields, got \(fields.count)")
         }
         let cornerRadius = try Double.fromString(fields[0])
         let borderDash = fields[1]
         let borderColor = try SemanticColor.fromString(fields[2])
         let fill = try SemanticColor.fromString(fields[3])
-        return BoundaryChrome(
+        return GroupFrame(
             cornerRadius: cornerRadius, borderDash: borderDash,
             borderColor: borderColor, fill: fill)
     }

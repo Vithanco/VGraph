@@ -318,7 +318,7 @@ class Parser {
 
         try consume(.leftBrace, "Expected '{' after vnotation declaration")
 
-        var graphAttrs: [(key: String, value: String)] = []
+        var graphAttributes: [(key: String, value: String)] = []
         var nodeTypes: [VNotationNodeTypeDecl] = []
         var edgeTypes: [VNotationEdgeTypeDecl] = []
         var groupTypes: [VNotationGroupTypeDecl] = []
@@ -363,9 +363,9 @@ class Parser {
                 try consume(.colon, "Expected ':' after 'to'")
                 let toType = try identifier(.nodeType)
 
-                let rawAttrs = try parseVNotationAttrs()
+                let rawAttributes = try parseVNotationAttrs()
                 _ = match(.semicolon)
-                edgeTypes.append(VNotationEdgeTypeDecl(id: edgeId, from: fromType, to: toType, attrs: rawAttrs))
+                edgeTypes.append(VNotationEdgeTypeDecl(id: edgeId, from: fromType, to: toType, attrs: rawAttributes))
             } else if match(.group) {
                 let typeWord = try identifier(.keyword)
                 guard typeWord == "type" else {
@@ -373,9 +373,9 @@ class Parser {
                 }
                 try consume(.colon, "Expected ':' after 'group type'")
                 let typeName = try identifier(.groupType)
-                let rawAttrs = try parseVNotationAttrs()
+                let rawAttributes = try parseVNotationAttrs()
                 _ = match(.semicolon)
-                groupTypes.append(VNotationGroupTypeDecl(name: typeName, attrs: rawAttrs))
+                groupTypes.append(VNotationGroupTypeDecl(name: typeName, attrs: rawAttributes))
             } else if check(.identifier) {
                 let key = try identifier(.attrKey)
                 if key == "icon" && check(.identifier) {
@@ -399,7 +399,7 @@ class Parser {
                     try consume(.colon, "Expected ':' after '\(key)'")
                     let val = try value()
                     _ = match(.semicolon)
-                    graphAttrs.append((key: key, value: val))
+                    graphAttributes.append((key: key, value: val))
                 }
             } else {
                 // Skip unknown tokens to be lenient
@@ -412,7 +412,7 @@ class Parser {
         return .vnotationDecl(
             name: name,
             extendsNotation: extendsNotation,
-            graphAttrs: graphAttrs,
+            graphAttributes: graphAttributes,
             nodeTypes: nodeTypes,
             edgeTypes: edgeTypes,
             groupTypes: groupTypes,

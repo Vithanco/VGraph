@@ -47,7 +47,7 @@ struct StringSearchTests {
     }
 
     @Test("Given a start index past an earlier match, when searched from it, then the later match is returned")
-    func rangeFromHonoursStartIndex() {
+    func rangeFromHonorsStartIndex() {
         let s = "a-b-c"
         let first = try! #require(s.range(of: "-"))
         let second = try! #require(s.range(of: "-", from: first.upperBound))

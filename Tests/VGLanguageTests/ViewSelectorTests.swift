@@ -384,7 +384,7 @@ private let sideways = """
     """
 
 @Suite("View selectors: reach adds neighbourhoods (ADR-0038)")
-struct ViewSelectorNeighbourhoodTests {
+struct ViewSelectorNeighborhoodTests {
 
     @Test("Given include node prompt +1, then every proposition prompt is part of is shown whole, and no other subject of a shared Relation")
     func aroundAConcept() throws {
@@ -410,7 +410,7 @@ struct ViewSelectorNeighbourhoodTests {
     }
 
     @Test("Given include node prompt then expand 1, then the same as include node prompt +1 is shown")
-    func expandAddsANeighbourhood() throws {
+    func expandAddsANeighborhood() throws {
         #expect(try nodesShown("include node prompt;\nexpand 1;", in: concepts) == ["prompt", "carries", "method", "offers", "server"])
     }
 
@@ -467,7 +467,7 @@ struct ViewSelectorNeighbourhoodTests {
     }
 
     @Test("Given exclude node prompt +1, then prompt's whole neighbourhood goes")
-    func excludeANeighbourhood() throws {
+    func excludeANeighborhood() throws {
         #expect(try nodesShown("exclude node prompt +1;", in: concepts) == ["skill", "context", "tool", "needs"])
     }
 

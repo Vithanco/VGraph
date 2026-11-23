@@ -329,7 +329,7 @@ struct CommentRoundTripTest {
                 }
                 """)
 
-        let attrs = graph.getOwnAttributes(node: Node(string: "q1"))
+        let attrs = graph.ownAttributes(node: Node(rawValue: "q1"))
         #expect(attrs[Attributes.Node.comment.id] == "// why q1 matters")
         #expect(attrs[Attributes.Node.trailingComment.id] == "// and a trailing note")
     }
@@ -348,7 +348,7 @@ struct CommentRoundTripTest {
                 }
                 """)
 
-        let stored = graph.getOwnAttributes(node: Node(string: "q1"))[Attributes.Node.comment.id]
+        let stored = graph.ownAttributes(node: Node(rawValue: "q1"))[Attributes.Node.comment.id]
         #expect(stored == "// banner\n//\n\n// sub-heading")
     }
 

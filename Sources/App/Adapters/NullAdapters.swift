@@ -14,7 +14,7 @@ public struct NullRenderer: ForRenderAGraph {
         throw VError.notImplemented("No renderer available")
     }
 
-    public func serialise(_ drawing: Never, sourceVGL: String?) -> String {}
+    public func serialize(_ drawing: Never, sourceVGL: String?) -> String {}
 }
 
 public struct NullLayoutEngine: ForLayoutAGraph {

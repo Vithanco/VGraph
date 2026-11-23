@@ -1,16 +1,3 @@
-extension Sequence where Element: Hashable {
-
-    public var asArray: [Element] {
-        return Array(self)
-    }
-
-    public func sorted<T: Comparable>(by keyPath: KeyPath<Element, T>) -> [Element] {
-        sorted { a, b in
-            a[keyPath: keyPath] < b[keyPath: keyPath]
-        }
-    }
-}
-
 extension Sequence {
 
     /// `reduce` for a step that throws `VError`; the standard one rethrows

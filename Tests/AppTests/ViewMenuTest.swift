@@ -139,8 +139,8 @@ struct ViewConversationTest {
         #expect(options.map { $0.title } == ["Delete", "Cancel"])
         let (confirmed, _) = EditorCore.next(after: options[0], in: opened, session: s)
         #expect(confirmed == .perform(.deleteView(name: "containers")))
-        let (cancelled, _) = EditorCore.next(after: options[1], in: opened, session: s)
-        #expect(cancelled == .dismiss)
+        let (canceled, _) = EditorCore.next(after: options[1], in: opened, session: s)
+        #expect(canceled == .dismiss)
     }
 }
 
@@ -173,7 +173,7 @@ struct ShownViewTest {
     }
 
     @Test("Given a labelled view is shown, then the status line names it by its label")
-    func labelledView() throws {
+    func labeledView() throws {
         let s = try session(bank)
         try s.selectView("containers")
         let shown = EditorCore.shownView(in: EditorCore.viewOptions(in: s))

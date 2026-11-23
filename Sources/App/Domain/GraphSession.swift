@@ -230,7 +230,7 @@ public final class GraphSession<
     }
 
     /// What kind of thing this id names — what `appliesTo` decides today.
-    public func kind(of elementId: String) -> VElementKind? {
+    public func kind(of elementId: String) -> VItemKind? {
         origin.resolveCommandTarget(id: elementId)?.kind
     }
 
@@ -259,7 +259,7 @@ public final class GraphSession<
 
     public func detailCount(of elementId: String) -> Int {
         guard case .group(let group)? = origin.resolveCommandTarget(id: elementId), origin.isDetailed(group),
-            let (groups, nodes) = try? origin.getDirectContent(group: group)
+            let (groups, nodes) = try? origin.directContent(of: group)
         else { return 0 }
         return groups.count + nodes.count
     }
@@ -307,13 +307,12 @@ public final class GraphSession<
         return origin.retypeCandidates(for: node)
     }
 
-    /// What an edge could become without either end moving. `edge:` rather than
-    /// `for:`, after `reattachCandidates(edge:end:to:)`: an overload differing
-    /// from the node form only in return type would not resolve at a call site
-    /// that reads `.first`.
-    public func retypeCandidates(edge edgeId: String) -> [EdgeType] {
+    /// What an edge could become without either end moving. `forEdge:` rather
+    /// than `for:`: an overload differing from the node form only in return type
+    /// would not resolve at a call site that reads `.first`.
+    public func retypeCandidates(forEdge edgeId: String) -> [EdgeType] {
         guard let edge = edge(edgeId) else { return [] }
-        return origin.retypeCandidates(edge: edge)
+        return origin.retypeCandidates(for: edge)
     }
 
     public func reverseCandidates(for edgeId: String) -> [EdgeType] {
@@ -377,7 +376,7 @@ public final class GraphSession<
     /// legal shape where the notation declares one, and unlike `connect` the
     /// drag did not begin there.
     public func reattachTargets(
-        edge edgeId: String, end: VEdgeEnd, notationBreak: VNotationBreak = .forbidden
+        for edgeId: String, end: VEdgeEnd, notationBreak: VNotationBreak = .forbidden
     ) -> [String] {
         guard case .edge(let edge)? = origin.resolveCommandTarget(id: edgeId),
             let existing = origin.get(edge: edge)
@@ -388,7 +387,7 @@ public final class GraphSession<
         for node in origin.nodes where node != moving {
             guard
                 notationBreak == .permitted
-                    || !origin.reattachCandidates(edge: edge, end: end, to: node).isEmpty
+                    || !origin.reattachCandidates(for: edge, end: end, to: node).isEmpty
             else { continue }
             result.append(node.id)
         }
@@ -398,12 +397,12 @@ public final class GraphSession<
     /// The edge types the notation allows once `end` has moved to `nodeId` — the
     /// question the [[Gesture]] asks after the drop, when there is more than one.
     public func reattachCandidates(
-        edge edgeId: String, end: VEdgeEnd, to nodeId: String
+        for edgeId: String, end: VEdgeEnd, to nodeId: String
     ) -> [EdgeType] {
         guard case .edge(let edge)? = origin.resolveCommandTarget(id: edgeId),
             let node = node(nodeId)
         else { return [] }
-        return origin.reattachCandidates(edge: edge, end: end, to: node)
+        return origin.reattachCandidates(for: edge, end: end, to: node)
     }
 
     /// The node id at one end of an edge — what a [[Reattach]] choice prompt
@@ -458,7 +457,7 @@ public final class GraphSession<
     /// Asked for rather than hard-coded: a blank-canvas click carries no id, so
     /// the pane must be able to *name* the root before it can build a menu — and
     /// the constant's own name says it is internal (ADR-0016).
-    public func rootGroupId() -> String { rootGroup }
+    public func rootGroupId() -> String { Group.rootId }
 
     // MARK: - The commands (ADR-0013)
 
@@ -519,7 +518,7 @@ public final class GraphSession<
     /// `delete` destructively. Nothing could reach it until the menu could
     /// (ADR-0016).
     private func refuseRoot(_ elementId: String, _ command: VCommandID) throws(VError) {
-        guard elementId != rootGroup else {
+        guard elementId != Group.rootId else {
             throw VError.commandUnavailable(command, target: elementId)
         }
     }
@@ -536,11 +535,11 @@ public final class GraphSession<
             throw VError.commandUnavailable(.toggleFolding, target: groupId)
         }
         let folded: Bool = try shownGraph().get(group: group, attribute: Attributes.Group.isFolded)
-        let flipped = try Attributes.Group.isFolded.attribute(!folded)
+        let flipped = Attributes.Group.isFolded.attribute(!folded)
         if let view = shownView {
-            try commit(origin.settingInView(view, flipped, for: ItemKey(.group, groupId)))
+            try commit(origin.settingInView(view, flipped, for: ItemKey(group)))
         } else {
-            try commit(origin.set(group: group, attribute: flipped))
+            try commit(origin.setting(group: group, attribute: flipped))
         }
     }
 
@@ -549,7 +548,7 @@ public final class GraphSession<
     }
 
     public func setLoopMarkers(_ markers: LoopMarkers) throws(VError) {
-        guard origin.marksLoops else { throw VError.commandUnavailable(.loopMarkers, target: rootGroup) }
+        guard origin.marksLoops else { throw VError.commandUnavailable(.loopMarkers, target: Group.rootId) }
         try setPresentation(Attributes.Group.loopMarkers.attribute(markers))
     }
 
@@ -558,7 +557,7 @@ public final class GraphSession<
         if let view = shownView {
             try commit(origin.settingInView(view, attribute, for: .root))
         } else {
-            try commit(origin.set(graphAttribute: attribute))
+            try commit(origin.setting(graphAttribute: attribute))
         }
     }
 
@@ -607,7 +606,7 @@ public final class GraphSession<
     public func renameView(_ name: String?, label: String) throws(VError) {
         guard let name else { throw VError.defaultViewIsFixed }
         guard !label.allSatisfy({ $0 == " " }) else { throw VError.viewLabelRefused(label: label) }
-        try commit(origin.relabelling(view: name, as: label))
+        try commit(origin.relabeling(view: name, as: label))
     }
 
     public func deleteView(_ name: String?) throws(VError) {
@@ -624,8 +623,8 @@ public final class GraphSession<
             // (ADR-0018). Part of *this* change, so one undo brings back the
             // node and the boundary it was the last of.
             let held = origin.group(of: node)
-            try commit(origin.delete(node: node).removingEmptied(from: held))
-        case .edge(let edge): try commit(origin.delete(edge: edge))
+            try commit(origin.deleting(node: node).removingEmptied(from: held))
+        case .edge(let edge): try commit(origin.deleting(edge: edge))
         // Contents and all. `ungroup` is how you keep them (ADR-0018).
         case .group(let group): try commit(origin.deletingWithContents(group))
         }
@@ -648,7 +647,7 @@ public final class GraphSession<
             throw VError.commandUnavailable(.setLabel, target: elementId)
         }
         let text = label.isEmpty ? Attributes.Node.placeholderLabel : label
-        try commit(origin.set(label: text, on: target))
+        try commit(origin.setting(label: text, on: target))
     }
 
     /// Blank clears the link — the user already has the field open, so sending
@@ -659,13 +658,13 @@ public final class GraphSession<
         let target = try target(elementId, .setURL)
 
         if VURL.isBlank(url) {
-            try commit(origin.set(url: "", on: target))
+            try commit(origin.setting(url: "", on: target))
             return
         }
         guard let safe = VURL.safe(url) else {
             throw VError.urlRefused(target: elementId, url: url)
         }
-        try commit(origin.set(url: safe, on: target))
+        try commit(origin.setting(url: safe, on: target))
     }
 
     /// Works for *any* stored link, unlike `urlToOpen` — one too dangerous to
@@ -676,7 +675,7 @@ public final class GraphSession<
         guard origin.url(of: try target(elementId, .removeURL)) != nil else {
             throw VError.commandUnavailable(.removeURL, target: elementId)
         }
-        try commit(origin.set(url: "", on: try target(elementId, .removeURL)))
+        try commit(origin.setting(url: "", on: try target(elementId, .removeURL)))
     }
 
     /// The link to hand the host, or `nil` when there is none worth following —
@@ -780,9 +779,9 @@ public final class GraphSession<
             switch element {
             case .node(let node):
                 let held = changed.group(of: node)
-                changed = try changed.delete(node: node).removingEmptied(from: held)
+                changed = try changed.deleting(node: node).removingEmptied(from: held)
             case .edge(let edge):
-                changed = try changed.delete(edge: edge)
+                changed = try changed.deleting(edge: edge)
             case .group(let group):
                 changed = try changed.deletingWithContents(group)
             }
@@ -863,7 +862,7 @@ public final class GraphSession<
     /// it is in.
     @discardableResult
     public func addGroup(containing ids: [String]) throws(VError) -> String? {
-        try makeGroup(ids, detaching: false)
+        try commitGroup(origin.addingGroup(containing: ids))
     }
 
     /// The same, having been told that detaching is intended. One command is one
@@ -871,13 +870,12 @@ public final class GraphSession<
     /// it needs no confirmation beyond a menu row that says what it will do.
     @discardableResult
     public func addGroup(moving ids: [String]) throws(VError) -> String? {
-        try makeGroup(ids, detaching: true)
+        try commitGroup(origin.addingGroup(moving: ids))
     }
 
-    private func makeGroup(_ ids: [String], detaching: Bool) throws(VError) -> String? {
-        let (changed, created) = try origin.addingGroup(of: ids, detaching: detaching)
-        try commit(changed)
-        return created.id.id
+    private func commitGroup(_ grouped: (VGraph, Group)) throws(VError) -> String? {
+        try commit(grouped.0)
+        return grouped.1.id.id
     }
 
     public func addNode(
@@ -1038,7 +1036,7 @@ public final class GraphSession<
         guard case .edge(let edge) = try target(edgeId, .changeType) else {
             throw VError.commandUnavailable(.changeType, target: edgeId)
         }
-        let candidates = origin.retypeCandidates(edge: edge)
+        let candidates = origin.retypeCandidates(for: edge)
         guard !candidates.isEmpty else {
             throw VError.commandUnavailable(.changeType, target: edgeId)
         }
@@ -1050,14 +1048,14 @@ public final class GraphSession<
             // Both ends `nil`: the identity, the label, the comments and the
             // edge's place in the document all survive, and a flip is unreachable rather than
             // merely refused (ADR-0021, ADR-0023).
-            try commit(origin.reattach(edge: edge, edgeType: chosen))
+            try commit(origin.reattaching(edge: edge, edgeType: chosen))
             return
         }
 
         guard candidates.count == 1 else {
             throw VError.commandAnswersMismatched(.changeType, target: edgeId)
         }
-        try commit(origin.reattach(edge: edge, edgeType: candidates[0]))
+        try commit(origin.reattaching(edge: edge, edgeType: candidates[0]))
     }
 
     public func changeType(of groupId: String, to type: GroupType?) throws(VError) {
@@ -1097,7 +1095,7 @@ public final class GraphSession<
         // instead of hiding behind a `nil` that also serves the ordinary path
         // (ADR-0024).
         guard notationBreak == .forbidden else {
-            let (minted, unknown) = try origin.ensureUnknownEdgeType(
+            let (minted, unknown) = try origin.ensuringUnknownEdgeType(
                 from: try origin.nodeType(for: source), to: try origin.nodeType(for: destination))
             try commit(minted.connecting(source, to: destination, using: unknown))
             return
@@ -1139,8 +1137,8 @@ public final class GraphSession<
         let sourceType = try origin.nodeType(for: existing.from)
         let targetType = try origin.nodeType(for: existing.to)
         let (declared, edgeType) = try origin.declaring(
-            edgeType: EdgeType.Id(string: name), from: sourceType, to: targetType)
-        var result = try declared.reattach(edge: edge, edgeType: edgeType)
+            edgeType: EdgeType.Id(rawValue: name), from: sourceType, to: targetType)
+        var result = try declared.reattaching(edge: edge, edgeType: edgeType)
 
         // Take the minted type away with the last edge wearing it. Promotion
         // makes the document a `vnotation`, and `reconstructVNotation` emits
@@ -1151,7 +1149,7 @@ public final class GraphSession<
         if wasWearing.id.hasPrefix(EdgeType.unknownPrefix),
             !result.edges.contains(where: { (try? result.edgeType(for: $0.id))?.id == wasWearing })
         {
-            result = try result.delete(edgeType: wasWearing)
+            result = try result.deleting(edgeType: wasWearing)
         }
         try commit(result)
     }
@@ -1159,7 +1157,7 @@ public final class GraphSession<
     /// Whether this edge wears a minted type — the one state `declareEdgeType`
     /// exists to leave, and what makes **Change type** reachable on an edge the
     /// notation offers nothing else for.
-    public func hasUnknownType(edge edgeId: String) -> Bool {
+    public func hasUnknownType(_ edgeId: String) -> Bool {
         guard let edge = edge(edgeId), let type = try? origin.edgeType(for: edge) else {
             return false
         }
@@ -1171,7 +1169,7 @@ public final class GraphSession<
     /// nothing to choose.
     ///
     /// The type must be restated rather than kept, and cannot simply be carried:
-    /// `add(edge:)` refuses a type whose declared ends do not match the actual
+    /// `adding(edge:)` refuses a type whose declared ends do not match the actual
     /// node types, so a moved end usually needs a different one — and a break
     /// mints an unknown type rather than preserving the old (ADR-0021).
     public func reattach(
@@ -1195,20 +1193,20 @@ public final class GraphSession<
         guard notationBreak == .forbidden else {
             let newFrom = end == .from ? landing : existing.from
             let newTo = end == .to ? landing : existing.to
-            let (minted, unknown) = try origin.ensureUnknownEdgeType(
+            let (minted, unknown) = try origin.ensuringUnknownEdgeType(
                 from: try origin.nodeType(for: newFrom), to: try origin.nodeType(for: newTo))
             try commit(minted.reattaching(target, end: end, to: landing, using: unknown))
             return
         }
 
-        let candidates = origin.reattachCandidates(edge: target, end: end, to: landing)
+        let candidates = origin.reattachCandidates(for: target, end: end, to: landing)
         guard candidates.count > 1 else {
             guard let only = candidates.first else {
                 // Onto a detail, R1 decides the type and the move never fails (ADR-0032).
                 guard origin.isDetailType(try origin.nodeType(for: landing), of: try origin.nodeType(for: moving))
                 else { throw VError.commandUnavailable(.reattach, target: nodeId) }
                 try commit(
-                    origin.reattachRetyping(
+                    origin.reattachingAndRetyping(
                         edge: target, from: end == .from ? landing : nil, to: end == .to ? landing : nil))
                 return
             }

@@ -9,12 +9,12 @@ import Testing
 struct SuccessorCandidateTests {
 
     private func causalLoopDiagram() throws -> VGraph {
-        try Notations.CausalLoopDiagram.addNotation(addTo: VGraph().defineStandardAttributes())
+        try Notations.CausalLoopDiagram.addNotation(to: VGraph())
     }
 
     private func adding(_ id: String, _ type: NodeType, to graph: VGraph) throws -> (VGraph, Node) {
-        let node = Node(string: id)
-        return (try graph.add(node: node, type: type), node)
+        let node = Node(rawValue: id)
+        return (try graph.adding(node: node, type: type), node)
     }
 
     /// A Causal Loop Diagram has a single node type and two edge types between it,
@@ -31,7 +31,7 @@ struct SuccessorCandidateTests {
     }
 
     private func conceptMap() throws -> VGraph {
-        try Notations.ConceptMap.addNotation(addTo: VGraph().defineStandardAttributes())
+        try Notations.ConceptMap.addNotation(to: VGraph())
     }
 
     /// With nothing to disambiguate against, a candidate is named by its node type

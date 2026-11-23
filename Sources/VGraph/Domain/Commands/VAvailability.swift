@@ -1,10 +1,3 @@
-//
-//  VAvailability.swift
-//  VGraph
-//
-//  Why a command is offered, greyed, or greyed-but-reachable.
-//
-
 /// Whether a [[VCommand]] may run on a target, and — when it may not — *why*.
 ///
 /// The why decides what ⌥ can reach: both reasons grey a command, but only one

@@ -16,19 +16,19 @@ struct VSVGRendererPortTests {
         let parser = VGraphParser(logger: TestLogger())
         var graph = try parser.parse(source: input)
         for (index, node) in graph.nodes.enumerated() {
-            graph = try graph.set(
+            graph = try graph.setting(
                 node: node,
                 attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: Double(index) * 120 + 60, y: 80)))
-            graph = try graph.set(
+            graph = try graph.setting(
                 node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 90, height: 44)))
         }
         for group in graph.groups {
-            graph = try graph.set(
+            graph = try graph.setting(
                 group: group,
                 attribute: Attributes.Group.layoutedBounds.attribute(VRect(x: 20, y: 20, width: 300, height: 160)))
         }
-        graph = try graph.set(
-            group: Group(rawValue: rootGroup),
+        graph = try graph.setting(
+            group: Group.root,
             attribute: Attributes.Group.layoutedBounds.attribute(VRect(x: 0, y: 0, width: 500, height: 300)))
         return graph
     }
@@ -62,7 +62,7 @@ struct VSVGRendererPortTests {
 
     /// An artefact the renderer did not write carries nothing, and says so
     /// rather than guessing.
-    @Test func aForeignArtefactCarriesNoSource() throws {
+    @Test func aForeignArtifactCarriesNoSource() throws {
         let renderer: any ForRenderAGraph = VSVGRenderer(logger: TestLogger())
 
         #expect(renderer.sourceVGL(from: "<svg><rect/></svg>") == nil)
@@ -110,7 +110,7 @@ struct VSVGRendererPortTests {
 
     /// The mounted preview and Save SVG must be one drawing, not two renders
     /// that happen to agree (ADR-0015 F1).
-    @Test func renderIsTheDrawingSerialised() throws {
+    @Test func renderIsTheDrawingSerialized() throws {
         let graph = try laidOut(fixture)
         let renderer = VSVGRenderer(logger: TestLogger())
 
@@ -123,7 +123,7 @@ struct VSVGRendererPortTests {
         #expect(ids(in: drawing).contains("node-q1"))
         #expect(ids(in: drawing).contains("group-g1"))
         #expect(
-            renderer.serialise(drawing, sourceVGL: fixture)
+            renderer.serialize(drawing, sourceVGL: fixture)
                 == (try renderer.render(graph: graph, sourceVGL: fixture, darkMode: false, interactive: true)))
     }
 
@@ -133,7 +133,7 @@ struct VSVGRendererPortTests {
         let drawing = try renderer.draw(graph: try laidOut(fixture), darkMode: false, interactive: false)
 
         #expect(!drawing.render().contains("CDATA"))
-        #expect(renderer.serialise(drawing, sourceVGL: fixture).contains("<![CDATA[\(fixture)]]>"))
+        #expect(renderer.serialize(drawing, sourceVGL: fixture).contains("<![CDATA[\(fixture)]]>"))
     }
 
     /// Through the application, because that is where the editor gets it.
@@ -141,7 +141,7 @@ struct VSVGRendererPortTests {
         let result = try VGraphTestApp().renderGraph(fixture)
 
         #expect(ids(in: result.drawing).contains("node-a1"))
-        #expect(result.svg == VSVGRenderer(logger: TestLogger()).serialise(result.drawing, sourceVGL: fixture))
+        #expect(result.svg == VSVGRenderer(logger: TestLogger()).serialize(result.drawing, sourceVGL: fixture))
     }
 
     /// A struct that stops being stateless stops compiling here.

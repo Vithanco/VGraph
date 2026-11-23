@@ -152,8 +152,8 @@ what stops history being declared twice.
   edge types leaving the source's type, and the new node's type is the edge
   type's far end (`VCandidate`).
 - **Breaking the notation is a second step**, routed through
-  `ensureUnknownEdgeType(from:to:)`, which registers the type, renders it bold red
-  and raises a quality warning. `add(edge:)` hard-validates endpoint types, so
+  `ensuringUnknownEdgeType(from:to:)`, which registers the type, renders it bold red
+  and raises a quality warning. `adding(edge:)` hard-validates endpoint types, so
   this is the only way to break a notation, and a break is never silent.
 - **Whether a new node opens for its label is derived, not declared**:
   `hasUserText(nodeType:)` reads attributes already on the OriginGraph, so it

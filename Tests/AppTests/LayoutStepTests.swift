@@ -14,15 +14,15 @@ struct LayoutStepTests {
     /// derived from the style by the pipeline (`extractNodeShape`), as in production —
     /// the tests never hand-set the shape attribute.
     private func makeGraph(label: String, nodeStyle: NodeStyle = .bareText) throws -> (VGraph, Node) {
-        var graph = try VGraph().defineStandardAttributes()
-        let nodeType = NodeType(string: "TestNode")
-        graph = try graph.add(nodeType: nodeType)
-        graph = try graph.set(nodeType: nodeType, attribute: Attributes.Node.nodeStyle.attribute(nodeStyle))
+        var graph = VGraph()
+        let nodeType = NodeType(rawValue: "TestNode")
+        graph = try graph.adding(nodeType: nodeType)
+        graph = try graph.setting(nodeType: nodeType, attribute: Attributes.Node.nodeStyle.attribute(nodeStyle))
 
-        let node = Node(string: "n")
-        graph = try graph.add(node: node, type: nodeType)
-        graph = try graph.set(node: node, attribute: Attributes.Node.label.attribute(label))
-        graph = try graph.setFont(VFont(size: 14), forNode: node)
+        let node = Node(rawValue: "n")
+        graph = try graph.adding(node: node, type: nodeType)
+        graph = try graph.setting(node: node, attribute: Attributes.Node.label.attribute(label))
+        graph = try graph.setting(node: node, attribute: Attributes.Node.fontsize.attribute(14))
         return (graph, node)
     }
 

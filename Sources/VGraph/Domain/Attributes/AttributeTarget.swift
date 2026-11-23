@@ -1,42 +1,21 @@
 public enum AttributeTarget: HasReadableNames {
     case node
     case edge
-    case graph
-
-    var isGraph: Bool {
-        switch self {
-        case .graph: return true
-        default: return false
-        }
-    }
-
-    var isNode: Bool {
-        switch self {
-        case .node: return true
-        default: return false
-        }
-    }
-
-    var isEdge: Bool {
-        switch self {
-        case .edge: return true
-        default: return false
-        }
-    }
+    case group
 
     public var readableName: String {
         switch self {
         case .node: return "Node"
         case .edge: return "Edge"
-        case .graph: return "Graph"
+        case .group: return "Group"
         }
     }
 
     public var toolTip: String {
         switch self {
         case .node: return "An Attribute for a Node"
-        case .graph: return "An Attribute for a Group of Nodes"
-        case .edge: return "An Attributes for an Edge"
+        case .group: return "An Attribute for a Group of Nodes, or the diagram"
+        case .edge: return "An Attribute for an Edge"
         }
     }
 
@@ -45,7 +24,7 @@ public enum AttributeTarget: HasReadableNames {
         switch self {
         case .node: return "node"
         case .edge: return "edge"
-        case .graph: return "graph"
+        case .group: return "group"
         }
     }
 

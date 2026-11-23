@@ -312,8 +312,8 @@ func assertGraphsAreEqual(_ g1: VGraph, _ g2: VGraph, sourceLocation: SourceLoca
     #expect(g1NodeIds == g2NodeIds, "Node order should be preserved: \(g1NodeIds) vs \(g2NodeIds)", sourceLocation: sourceLocation)
 
     for node in g1.nodes {
-        let attrs1 = try g1.getAttributes(node: node)
-        let attrs2 = try g2.getAttributes(node: node)
+        let attrs1 = try g1.attributes(node: node)
+        let attrs2 = try g2.attributes(node: node)
 
         #expect(
             attrs1.count == attrs2.count,
@@ -350,8 +350,8 @@ func assertGraphsAreEqual(_ g1: VGraph, _ g2: VGraph, sourceLocation: SourceLoca
             continue
         }
 
-        let attrs1 = try g1.getAttributes(edge: edge1.id)
-        let attrs2 = try g2.getAttributes(edge: edge2.id)
+        let attrs1 = try g1.attributes(edge: edge1.id)
+        let attrs2 = try g2.attributes(edge: edge2.id)
 
         #expect(
             attrs1.count == attrs2.count,
@@ -388,8 +388,8 @@ func assertGraphsAreEqual(_ g1: VGraph, _ g2: VGraph, sourceLocation: SourceLoca
             continue
         }
 
-        let attrs1 = try g1.getAttributes(group: group1)
-        let attrs2 = try g2.getAttributes(group: group2)
+        let attrs1 = g1.attributes(group: group1)
+        let attrs2 = g2.attributes(group: group2)
 
         #expect(
             attrs1.count == attrs2.count,
@@ -412,8 +412,8 @@ func assertGraphsAreEqual(_ g1: VGraph, _ g2: VGraph, sourceLocation: SourceLoca
                 sourceLocation: sourceLocation)
         }
 
-        let nodes1 = try g1.getDirectContent(group: group1).1
-        let nodes2 = try g2.getDirectContent(group: group2).1
+        let nodes1 = try g1.directContent(of: group1).1
+        let nodes2 = try g2.directContent(of: group2).1
 
         let nodeIds1 = Set(nodes1.map { $0.id.description })
         let nodeIds2 = Set(nodes2.map { $0.id.description })
@@ -438,8 +438,8 @@ func assertGraphsAreEqual(_ g1: VGraph, _ g2: VGraph, sourceLocation: SourceLoca
             sourceLocation: sourceLocation)
     }
 
-    let graphAttrs1 = try g1.getGraphAttributes()
-    let graphAttrs2 = try g2.getGraphAttributes()
+    let graphAttrs1 = g1.graphAttributes()
+    let graphAttrs2 = g2.graphAttributes()
 
     for (key, value1) in graphAttrs1 where key.description != "notation" {
         guard let value2 = graphAttrs2[key] else {
@@ -489,7 +489,7 @@ struct FullCycleTest {
         }
         #expect(nonRootGroups.count == 6, "Expected exactly 6 groups (A, B, C, D, E, F)")
 
-        let graphId: String = try graph.get(graphAttribute: Attributes.Group.Id)
+        let graphId: String = try graph.get(graphAttribute: Attributes.Group.id)
         #expect(graphId == "complexGraph")
         let graphLabel: String = try graph.get(graphAttribute: Attributes.Group.label)
         #expect(graphLabel == "Complex Test Graph")
@@ -532,28 +532,28 @@ struct FullCycleTest {
             }
         }
 
-        let nodeA1 = Node(string: "a1")
+        let nodeA1 = Node(rawValue: "a1")
         #expect(graph.has(node: nodeA1))
         if let groupA = groupA {
             #expect(graph.group(of: nodeA1) == groupA, "Node a1 should be in group A")
         }
 
-        let nodeE2 = Node(string: "e2")
+        let nodeE2 = Node(rawValue: "e2")
         #expect(graph.has(node: nodeE2))
         if let groupE = groupE {
             #expect(graph.group(of: nodeE2) == groupE, "Node e2 should be in deeply nested group E")
         }
 
-        let root1 = Node(string: "root1")
+        let root1 = Node(rawValue: "root1")
         #expect((try graph.nodeType(for: root1)) == Notations.Ibis.NodeTypes.question)
 
-        let root3 = Node(string: "root3")
+        let root3 = Node(rawValue: "root3")
         #expect((try graph.nodeType(for: root3)) == Notations.Ibis.NodeTypes.answer)
 
-        let root5 = Node(string: "root5")
+        let root5 = Node(rawValue: "root5")
         #expect((try graph.nodeType(for: root5)) == Notations.Ibis.NodeTypes.pro)
 
-        let root6 = Node(string: "root6")
+        let root6 = Node(rawValue: "root6")
         #expect((try graph.nodeType(for: root6)) == Notations.Ibis.NodeTypes.con)
 
         try graph.ensure(node: root1, attribute: Attributes.Node.label, isSameAs: "Root Question 1")
@@ -619,7 +619,7 @@ struct VGLGroupExportTests {
             Issue.record("group groupA not found")
             return
         }
-        guard let groupAEnd = lines[groupAStart...].firstIndex(where: { $0.trimmed() == "}" }) else {
+        guard let groupAEnd = lines[groupAStart...].firstIndex(where: { $0.trimmingWhitespace() == "}" }) else {
             Issue.record("groupA closing brace not found")
             return
         }
@@ -640,7 +640,7 @@ struct VGLGroupExportTests {
         }
 
         // Find the last closing brace for groupB (after nested group)
-        guard let groupBEnd = lines[groupBStart...].lastIndex(where: { $0.trimmed() == "}" }) else {
+        guard let groupBEnd = lines[groupBStart...].lastIndex(where: { $0.trimmingWhitespace() == "}" }) else {
             Issue.record("groupB closing brace not found")
             return
         }
@@ -692,7 +692,7 @@ struct VGLGroupExportTests {
             return
         }
 
-        guard let outerEnd = lines[outerStart...].lastIndex(where: { $0.trimmed() == "}" }) else {
+        guard let outerEnd = lines[outerStart...].lastIndex(where: { $0.trimmingWhitespace() == "}" }) else {
             Issue.record("outer group closing brace not found")
             return
         }
@@ -766,7 +766,7 @@ struct ImpactMappingFullCycleTests {
         }
         #expect(nonRootGroups.count == 4, "Expected 4 groups (marketingTeam, productTeam, developmentTeam, operationsTeam)")
 
-        let graphId: String = try graph.get(graphAttribute: Attributes.Group.Id)
+        let graphId: String = try graph.get(graphAttribute: Attributes.Group.id)
         #expect(graphId == "productLaunch", "Graph ID should be 'productLaunch'")
 
         let graphLabel: String = try graph.get(graphAttribute: Attributes.Group.label)
@@ -775,16 +775,16 @@ struct ImpactMappingFullCycleTests {
         let notationString: String = graph.notationName
         #expect(notationString == Notations.ImpactMapping.id.description, "Notation should be ImpactMapping")
 
-        let goal1 = Node(string: "goal1")
+        let goal1 = Node(rawValue: "goal1")
         #expect(try graph.nodeType(for: goal1) == Notations.ImpactMapping.NodeTypes.goal, "goal1 should be Goal type")
 
-        let actor1 = Node(string: "actor1")
+        let actor1 = Node(rawValue: "actor1")
         #expect(try graph.nodeType(for: actor1) == Notations.ImpactMapping.NodeTypes.actor, "actor1 should be Actor type")
 
-        let impact1 = Node(string: "impact1")
+        let impact1 = Node(rawValue: "impact1")
         #expect(try graph.nodeType(for: impact1) == Notations.ImpactMapping.NodeTypes.impact, "impact1 should be Impact type")
 
-        let deliv1 = Node(string: "deliv1")
+        let deliv1 = Node(rawValue: "deliv1")
         #expect(try graph.nodeType(for: deliv1) == Notations.ImpactMapping.NodeTypes.deliverable, "deliv1 should be Deliverable type")
 
         try graph.ensure(node: goal1, attribute: Attributes.Node.label, isSameAs: "Increase market share by 20%")
@@ -800,8 +800,8 @@ struct ImpactMappingFullCycleTests {
             try graph.ensure(edge: edge, attribute: Attributes.Edge.label, isSameAs: "Leads initiative")
         }
 
-        let impact7 = Node(string: "impact7")
-        let deliv4 = Node(string: "deliv4")
+        let impact7 = Node(rawValue: "impact7")
+        let deliv4 = Node(rawValue: "deliv4")
         let edgeImpactToDeliv = graph.edges.first { $0.from == impact7 && $0.to == deliv4 }
         #expect(edgeImpactToDeliv != nil, "Edge from impact7 to deliv4 should exist")
         if let edge = edgeImpactToDeliv {
@@ -829,7 +829,7 @@ struct ImpactMappingFullCycleTests {
         }
 
         if let group = developmentTeamGroup {
-            let actor5 = Node(string: "actor5")
+            let actor5 = Node(rawValue: "actor5")
             #expect(graph.group(of: actor5) == group, "actor5 should be in developmentTeam")
         }
     }
@@ -862,12 +862,12 @@ struct CausalLoopDiagramFullCycleTests {
         let parser = VGraphParser(logger: NoOpLogger())
         let graph = try parser.parse(source: populationCLDInput)
 
-        #expect(try graph.nodeType(for: Node(string: "births")) == Notations.CausalLoopDiagram.NodeTypes.stock)
+        #expect(try graph.nodeType(for: Node(rawValue: "births")) == Notations.CausalLoopDiagram.NodeTypes.stock)
 
         let reparsed = try parser.parse(source: try VGLExporter().export(graph: graph))
 
         func type(_ from: String, _ to: String) throws -> EdgeType {
-            let edge = try #require(reparsed.edges.first { $0.from == Node(string: from) && $0.to == Node(string: to) })
+            let edge = try #require(reparsed.edges.first { $0.from == Node(rawValue: from) && $0.to == Node(rawValue: to) })
             return try reparsed.edgeType(for: edge.id)
         }
         #expect(try type("births", "population") == Notations.CausalLoopDiagram.EdgeTypes.same)
@@ -948,7 +948,7 @@ struct CurrentRealityTreeFullCycleTests {
 
         #expect(graph.edges.count == 12, "Expected 12 edges")
 
-        let graphId: String = try graph.get(graphAttribute: Attributes.Group.Id)
+        let graphId: String = try graph.get(graphAttribute: Attributes.Group.id)
         #expect(graphId == "salesProblem", "Graph ID should be 'salesProblem'")
 
         let graphLabel: String = try graph.get(graphAttribute: Attributes.Group.label)
@@ -957,29 +957,29 @@ struct CurrentRealityTreeFullCycleTests {
         let notationString: String = graph.notationName
         #expect(notationString == Notations.CurrentRealityTree.id.description, "Notation should be CRT")
 
-        let ude1 = Node(string: "ude1")
+        let ude1 = Node(rawValue: "ude1")
         #expect(try graph.nodeType(for: ude1) == Notations.CurrentRealityTree.NodeTypes.undesirableEffect, "ude1 should be UndesirableEffect type")
 
-        let ie1 = Node(string: "ie1")
+        let ie1 = Node(rawValue: "ie1")
         #expect(try graph.nodeType(for: ie1) == Notations.CurrentRealityTree.NodeTypes.intermediateEffect, "ie1 should be IntermediateEffect type")
 
-        let de1 = Node(string: "de1")
+        let de1 = Node(rawValue: "de1")
         #expect(try graph.nodeType(for: de1) == Notations.CurrentRealityTree.NodeTypes.desirableEffect, "de1 should be DesirableEffect type")
 
-        let g1 = Node(string: "g1")
+        let g1 = Node(rawValue: "g1")
         #expect(try graph.nodeType(for: g1) == Notations.CurrentRealityTree.NodeTypes.given, "g1 should be Given type")
 
-        let c1 = Node(string: "c1")
+        let c1 = Node(rawValue: "c1")
         #expect(try graph.nodeType(for: c1) == Notations.CurrentRealityTree.NodeTypes.changeable, "c1 should be Changeable type")
 
-        let and1 = Node(string: "and1")
+        let and1 = Node(rawValue: "and1")
         #expect(try graph.nodeType(for: and1) == Notations.CurrentRealityTree.NodeTypes.andJunctor, "and1 should be AndJunctor type")
 
         try graph.ensure(node: ude1, attribute: Attributes.Node.label, isSameAs: "Sales revenue declining")
         try graph.ensure(node: g1, attribute: Attributes.Node.label, isSameAs: "Market is highly competitive")
         try graph.ensure(node: c1, attribute: Attributes.Node.label, isSameAs: "Product development cycle is too long")
 
-        let edgeChangeableToIntermediate = graph.edges.first { $0.from == c1 && $0.to == ie1 || $0.from == c1 && $0.to == Node(string: "ie2") }
+        let edgeChangeableToIntermediate = graph.edges.first { $0.from == c1 && $0.to == ie1 || $0.from == c1 && $0.to == Node(rawValue: "ie2") }
         #expect(edgeChangeableToIntermediate != nil, "Edge from changeable to intermediate should exist")
         if let edge = edgeChangeableToIntermediate {
             #expect(
@@ -1079,7 +1079,7 @@ struct FutureRealityTreeFullCycleTests {
 
         #expect(graph.edges.count == 14, "Expected 14 edges")
 
-        let graphId: String = try graph.get(graphAttribute: Attributes.Group.Id)
+        let graphId: String = try graph.get(graphAttribute: Attributes.Group.id)
         #expect(graphId == "salesSolution", "Graph ID should be 'salesSolution'")
 
         let graphLabel: String = try graph.get(graphAttribute: Attributes.Group.label)
@@ -1088,22 +1088,22 @@ struct FutureRealityTreeFullCycleTests {
         let notationString: String = graph.notationName
         #expect(notationString == Notations.FutureRealityTree.id.description, "Notation should be FRT")
 
-        let c1 = Node(string: "c1")
+        let c1 = Node(rawValue: "c1")
         #expect(try graph.nodeType(for: c1) == Notations.FutureRealityTree.NodeTypes.changeable, "c1 should be Changeable type")
 
-        let g1 = Node(string: "g1")
+        let g1 = Node(rawValue: "g1")
         #expect(try graph.nodeType(for: g1) == Notations.FutureRealityTree.NodeTypes.given, "g1 should be Given type")
 
-        let ie1 = Node(string: "ie1")
+        let ie1 = Node(rawValue: "ie1")
         #expect(try graph.nodeType(for: ie1) == Notations.FutureRealityTree.NodeTypes.intermediateEffect, "ie1 should be IntermediateEffect type")
 
-        let de1 = Node(string: "de1")
+        let de1 = Node(rawValue: "de1")
         #expect(try graph.nodeType(for: de1) == Notations.FutureRealityTree.NodeTypes.desirableEffect, "de1 should be DesirableEffect type")
 
-        let ude1 = Node(string: "ude1")
+        let ude1 = Node(rawValue: "ude1")
         #expect(try graph.nodeType(for: ude1) == Notations.FutureRealityTree.NodeTypes.undesirableEffect, "ude1 should be UndesirableEffect type")
 
-        let and1 = Node(string: "and1")
+        let and1 = Node(rawValue: "and1")
         #expect(try graph.nodeType(for: and1) == Notations.FutureRealityTree.NodeTypes.andJunctor, "and1 should be AndJunctor type")
 
         try graph.ensure(node: c1, attribute: Attributes.Node.label, isSameAs: "Implement agile product development")
@@ -1119,7 +1119,7 @@ struct FutureRealityTreeFullCycleTests {
             )
         }
 
-        let ie2 = Node(string: "ie2")
+        let ie2 = Node(rawValue: "ie2")
         let edgeAndJunctorToIntermediate = graph.edges.first { $0.from == and1 && $0.to == ie2 }
         #expect(edgeAndJunctorToIntermediate != nil, "Edge from AndJunctor to IntermediateEffect should exist")
         if let edge = edgeAndJunctorToIntermediate {
@@ -1201,7 +1201,7 @@ struct PrerequisiteTreeFullCycleTests {
 
         #expect(graph.edges.count == 12, "Expected 12 edges")
 
-        let graphId: String = try graph.get(graphAttribute: Attributes.Group.Id)
+        let graphId: String = try graph.get(graphAttribute: Attributes.Group.id)
         #expect(graphId == "projectLaunch", "Graph ID should be 'projectLaunch'")
 
         let graphLabel: String = try graph.get(graphAttribute: Attributes.Group.label)
@@ -1210,17 +1210,17 @@ struct PrerequisiteTreeFullCycleTests {
         let notationString: String = graph.notationName
         #expect(notationString == Notations.PrerequisiteTree.id.description, "Notation should be PRT")
 
-        let obj1 = Node(string: "obj1")
+        let obj1 = Node(rawValue: "obj1")
         #expect(try graph.nodeType(for: obj1) == Notations.PrerequisiteTree.NodeTypes.objective, "obj1 should be Objective type")
 
-        let obs1 = Node(string: "obs1")
+        let obs1 = Node(rawValue: "obs1")
         #expect(try graph.nodeType(for: obs1) == Notations.PrerequisiteTree.NodeTypes.obstacle, "obs1 should be Obstacle type")
 
-        let io1 = Node(string: "io1")
+        let io1 = Node(rawValue: "io1")
         #expect(
             try graph.nodeType(for: io1) == Notations.PrerequisiteTree.NodeTypes.intermediateObjective, "io1 should be IntermediateObjective type")
 
-        let or1 = Node(string: "or1")
+        let or1 = Node(rawValue: "or1")
         #expect(try graph.nodeType(for: or1) == Notations.PrerequisiteTree.NodeTypes.orJunctor, "or1 should be OR type")
 
         try graph.ensure(node: obj1, attribute: Attributes.Node.label, isSameAs: "Successfully launch product by Q3")
@@ -1236,8 +1236,8 @@ struct PrerequisiteTreeFullCycleTests {
             )
         }
 
-        let obs2 = Node(string: "obs2")
-        let io3 = Node(string: "io3")
+        let obs2 = Node(rawValue: "obs2")
+        let io3 = Node(rawValue: "io3")
         let edgeIntermediateToObstacle = graph.edges.first { $0.from == io3 && $0.to == obs2 }
         #expect(edgeIntermediateToObstacle != nil, "Edge from intermediate objective to obstacle should exist")
         if let edge = edgeIntermediateToObstacle {
@@ -1328,7 +1328,7 @@ struct EvaporatingCloudFullCycleTests {
 
         #expect(graph.edges.count == 10, "Expected 10 edges")
 
-        let graphId: String = try graph.get(graphAttribute: Attributes.Group.Id)
+        let graphId: String = try graph.get(graphAttribute: Attributes.Group.id)
         #expect(graphId == "projectConflict", "Graph ID should be 'projectConflict'")
 
         let graphLabel: String = try graph.get(graphAttribute: Attributes.Group.label)
@@ -1337,37 +1337,37 @@ struct EvaporatingCloudFullCycleTests {
         let notationString: String = graph.notationName
         #expect(notationString == Notations.EvaporatingCloud.id.description, "Notation should be EC")
 
-        let obj = Node(string: "obj")
+        let obj = Node(rawValue: "obj")
         #expect(
             try graph.nodeType(for: obj) == Notations.EvaporatingCloud.NodeTypes.commonObjective,
             "obj should be CommonObjective type")
 
-        let needA = Node(string: "needA")
+        let needA = Node(rawValue: "needA")
         #expect(
             try graph.nodeType(for: needA) == Notations.EvaporatingCloud.NodeTypes.need,
             "needA should be Need type")
 
-        let wantA = Node(string: "wantA")
+        let wantA = Node(rawValue: "wantA")
         #expect(
             try graph.nodeType(for: wantA) == Notations.EvaporatingCloud.NodeTypes.want,
             "wantA should be Want type")
 
-        let conf = Node(string: "conf")
+        let conf = Node(rawValue: "conf")
         #expect(
             try graph.nodeType(for: conf) == Notations.EvaporatingCloud.NodeTypes.conflict,
             "conf should be Conflict type")
 
-        let or1 = Node(string: "or1")
+        let or1 = Node(rawValue: "or1")
         #expect(
             try graph.nodeType(for: or1) == Notations.EvaporatingCloud.NodeTypes.orJunctor,
             "or1 should be OrJunctor type")
 
-        let assA = Node(string: "assA")
+        let assA = Node(rawValue: "assA")
         #expect(
             try graph.nodeType(for: assA) == Notations.EvaporatingCloud.NodeTypes.assumption,
             "assA should be Assumption type")
 
-        let sol = Node(string: "sol")
+        let sol = Node(rawValue: "sol")
         #expect(
             try graph.nodeType(for: sol) == Notations.EvaporatingCloud.NodeTypes.solution,
             "sol should be Solution type")
@@ -1483,7 +1483,7 @@ struct TransitionTreeFullCycleTests {
 
         #expect(graph.edges.count == 15, "Expected 15 edges")
 
-        let graphId: String = try graph.get(graphAttribute: Attributes.Group.Id)
+        let graphId: String = try graph.get(graphAttribute: Attributes.Group.id)
         #expect(graphId == "agileTransition", "Graph ID should be 'agileTransition'")
 
         let graphLabel: String = try graph.get(graphAttribute: Attributes.Group.label)
@@ -1492,19 +1492,19 @@ struct TransitionTreeFullCycleTests {
         let notationString: String = graph.notationName
         #expect(notationString == Notations.TransitionTree.id.description, "Notation should be TRT")
 
-        let g1 = Node(string: "g1")
+        let g1 = Node(rawValue: "g1")
         #expect(try graph.nodeType(for: g1) == Notations.TransitionTree.NodeTypes.given, "g1 should be Given type")
 
-        let c1 = Node(string: "c1")
+        let c1 = Node(rawValue: "c1")
         #expect(try graph.nodeType(for: c1) == Notations.TransitionTree.NodeTypes.changeable, "c1 should be Changeable type")
 
-        let ie1 = Node(string: "ie1")
+        let ie1 = Node(rawValue: "ie1")
         #expect(try graph.nodeType(for: ie1) == Notations.TransitionTree.NodeTypes.intermediateEffect, "ie1 should be IntermediateEffect type")
 
-        let and1 = Node(string: "and1")
+        let and1 = Node(rawValue: "and1")
         #expect(try graph.nodeType(for: and1) == Notations.TransitionTree.NodeTypes.andJunctor, "and1 should be AndJunctor type")
 
-        let de1 = Node(string: "de1")
+        let de1 = Node(rawValue: "de1")
         #expect(try graph.nodeType(for: de1) == Notations.TransitionTree.NodeTypes.desirableEffect, "de1 should be DesirableEffect type")
 
         try graph.ensure(node: g1, attribute: Attributes.Node.label, isSameAs: "Company has 5 development teams")
@@ -1520,7 +1520,7 @@ struct TransitionTreeFullCycleTests {
             )
         }
 
-        let edgeAndToDesirable = graph.edges.first { $0.from == Node(string: "and2") && $0.to == Node(string: "de2") }
+        let edgeAndToDesirable = graph.edges.first { $0.from == Node(rawValue: "and2") && $0.to == Node(rawValue: "de2") }
         #expect(edgeAndToDesirable != nil, "Edge from and junctor to desirable should exist")
         if let edge = edgeAndToDesirable {
             #expect(
@@ -1641,7 +1641,7 @@ struct ADTreeFullCycleTests {
         // Count edges: 12 refinement + 12 countermeasure + 10 junctor = 34 edges
         #expect(graph.edges.count == 34, "Expected 34 edges")
 
-        let graphId: String = try graph.get(graphAttribute: Attributes.Group.Id)
+        let graphId: String = try graph.get(graphAttribute: Attributes.Group.id)
         #expect(graphId == "dataConfidentiality", "Graph ID should be 'dataConfidentiality'")
 
         let graphLabel: String = try graph.get(graphAttribute: Attributes.Group.label)
@@ -1650,22 +1650,22 @@ struct ADTreeFullCycleTests {
         let notationString: String = graph.notationName
         #expect(notationString == Notations.ADTree.id.description, "Notation should be ADTree")
 
-        let dataConf = Node(string: "dataConf")
+        let dataConf = Node(rawValue: "dataConf")
         #expect(try graph.nodeType(for: dataConf) == Notations.ADTree.NodeTypes.defense, "dataConf should be Defense type")
 
-        let breakIn = Node(string: "breakIn")
+        let breakIn = Node(rawValue: "breakIn")
         #expect(try graph.nodeType(for: breakIn) == Notations.ADTree.NodeTypes.attack, "breakIn should be Attack type")
 
-        let andOverpower = Node(string: "andOverpower")
+        let andOverpower = Node(rawValue: "andOverpower")
         #expect(try graph.nodeType(for: andOverpower) == Notations.ADTree.NodeTypes.andJunctor, "andOverpower should be AndJunctor type")
 
         try graph.ensure(node: dataConf, attribute: Attributes.Node.label, isSameAs: "Data Confidentiality")
         try graph.ensure(node: breakIn, attribute: Attributes.Node.label, isSameAs: "Break In")
 
-        let andDataConf = Node(string: "andDataConf")
+        let andDataConf = Node(rawValue: "andDataConf")
         #expect(try graph.nodeType(for: andDataConf) == Notations.ADTree.NodeTypes.andJunctor, "andDataConf should be AndJunctor type")
 
-        let edgeDefenseToAnd = graph.edges.first { $0.from == Node(string: "networkSec") && $0.to == andDataConf }
+        let edgeDefenseToAnd = graph.edges.first { $0.from == Node(rawValue: "networkSec") && $0.to == andDataConf }
         #expect(edgeDefenseToAnd != nil, "Edge from networkSec to andDataConf should exist")
         if let edge = edgeDefenseToAnd {
             #expect(
@@ -1683,7 +1683,7 @@ struct ADTreeFullCycleTests {
             )
         }
 
-        let edgeCounterAttack = graph.edges.first { $0.from == Node(string: "employeeAttack") && $0.to == dataConf }
+        let edgeCounterAttack = graph.edges.first { $0.from == Node(rawValue: "employeeAttack") && $0.to == dataConf }
         #expect(edgeCounterAttack != nil, "Edge from employeeAttack to dataConf should exist")
         if let edge = edgeCounterAttack {
             #expect(
@@ -1787,7 +1787,7 @@ struct GoalTreeFullCycleTests {
         // Count edges: 3 csf_to_goal + 7 nc_to_csf + 3 nc_to_nc = 13 edges
         #expect(graph.edges.count == 13, "Expected 13 edges")
 
-        let graphId: String = try graph.get(graphAttribute: Attributes.Group.Id)
+        let graphId: String = try graph.get(graphAttribute: Attributes.Group.id)
         #expect(graphId == "companyStrategy", "Graph ID should be 'companyStrategy'")
 
         let graphLabel: String = try graph.get(graphAttribute: Attributes.Group.label)
@@ -1796,13 +1796,13 @@ struct GoalTreeFullCycleTests {
         let notationString: String = graph.notationName
         #expect(notationString == Notations.GoalTree.id.description, "Notation should be GoalTree")
 
-        let goal = Node(string: "goal")
+        let goal = Node(rawValue: "goal")
         #expect(try graph.nodeType(for: goal) == Notations.GoalTree.NodeTypes.goal, "goal should be Goal type")
 
-        let csf1 = Node(string: "csf1")
+        let csf1 = Node(rawValue: "csf1")
         #expect(try graph.nodeType(for: csf1) == Notations.GoalTree.NodeTypes.criticalSuccessFactor, "csf1 should be CriticalSuccessFactor type")
 
-        let nc1 = Node(string: "nc1")
+        let nc1 = Node(rawValue: "nc1")
         #expect(try graph.nodeType(for: nc1) == Notations.GoalTree.NodeTypes.necessaryCondition, "nc1 should be NecessaryCondition type")
 
         try graph.ensure(node: goal, attribute: Attributes.Node.label, isSameAs: "Make more money, now and in the future")
@@ -1827,7 +1827,7 @@ struct GoalTreeFullCycleTests {
             )
         }
 
-        let nc8 = Node(string: "nc8")
+        let nc8 = Node(rawValue: "nc8")
         let edgeNCToNC = graph.edges.first { $0.from == nc8 && $0.to == nc1 }
         #expect(edgeNCToNC != nil, "Edge from sub-NC to NC should exist")
         if let edge = edgeNCToNC {
@@ -1934,7 +1934,7 @@ struct AnnotationExtensionTests {
         #expect(exportedVGL.contains("node a1: Annotation"), "Should export Annotation node")
 
         let graph2 = try parser.parse(source: exportedVGL)
-        let annotationEdge = try #require(graph2.edges.first { $0.to == Node(string: "a1") })
+        let annotationEdge = try #require(graph2.edges.first { $0.to == Node(rawValue: "a1") })
         #expect(try graph2.edgeType(for: annotationEdge.id).id.id == "annotates__Concept")
         try assertGraphsAreEqual(graph, graph2)
     }
@@ -1959,7 +1959,7 @@ struct AnnotationExtensionTests {
         let graph = try parser.parse(source: input)
 
         // All three concept map node types should be able to connect to Annotation
-        let annotationEdgeIds = try graph.edges.filter { $0.to == Node(string: "a1") }.map {
+        let annotationEdgeIds = try graph.edges.filter { $0.to == Node(rawValue: "a1") }.map {
             try graph.edgeType(for: $0.id).id.id
         }
         #expect(
@@ -2019,7 +2019,7 @@ struct AnnotationExtensionTests {
         #expect(typeIds.contains("Con"))
 
         // Question's color was overridden to red
-        let questionType = NodeType(string: "Question")
+        let questionType = NodeType(rawValue: "Question")
         let questionColor: VColor = try graph.get(nodeType: questionType, attribute: Attributes.Node.backgroundColor)
         #expect(questionColor == VColor(hexString: "#ff0000"))
 
@@ -2028,7 +2028,7 @@ struct AnnotationExtensionTests {
         #expect(nodeStyle == .presetLayout)
 
         // Answer retains its original IBIS color (not overridden)
-        let answerType = NodeType(string: "Answer")
+        let answerType = NodeType(rawValue: "Answer")
         let answerColor: VColor = try graph.get(nodeType: answerType, attribute: Attributes.Node.backgroundColor)
         #expect(answerColor != VColor(hexString: "#ff0000"))
 
@@ -2076,7 +2076,7 @@ struct AnnotationExtensionTests {
         let parser = VGraphParser(logger: NoOpLogger())
         let graph = try parser.parse(source: input)
 
-        let questionType = NodeType(string: "Question")
+        let questionType = NodeType(rawValue: "Question")
         let nodeStyle: NodeStyle = try graph.get(nodeType: questionType, attribute: Attributes.Node.nodeStyle)
         #expect(nodeStyle == .bareText)
     }
@@ -2192,8 +2192,8 @@ struct AttributeRoundTripTests {
             return NodeStyleLayout.bareText.asString
         case GroupStyle.typeName:
             return GroupStyle(folded: .bareText, unfolded: .default).asString
-        case BoundaryChrome.typeName:
-            return BoundaryChrome(cornerRadius: 2, borderDash: "2,2").asString
+        case GroupFrame.typeName:
+            return GroupFrame(cornerRadius: 2, borderDash: "2,2").asString
         case IconInfo.typeName:
             return IconInfo(iconPosition: .none, iconName: "and", iconColor: VColor.green, iconSize: 24).asString
         default:
@@ -2211,7 +2211,7 @@ struct AttributeRoundTripTests {
 
     /// Attributes handled structurally or internal-only.
     private static let excludedAttributeIds: Set<Attribute.Id> = [
-        Attributes.Group.Id.id,
+        Attributes.Group.id.id,
         Attributes.Group.label.id,
         Attributes.Group.isFolded.id,
         Attributes.Node.label.id,
@@ -2231,7 +2231,7 @@ struct AttributeRoundTripTests {
                 """)
 
         let graphDefs = seed.attributeDefinitions.values.filter { def in
-            def.target == .graph && def.category != .computed
+            def.target == .group && def.category != .computed
                 && !Self.excludedAttributeIds.contains(def.id)
         }
 
@@ -2284,7 +2284,7 @@ struct AttributeRoundTripTests {
         ]
 
         let groupDefs = seed.attributeDefinitions.values.filter { def in
-            def.target == .graph && def.category != .computed
+            def.target == .group && def.category != .computed
                 && !Self.excludedAttributeIds.contains(def.id)
                 && !graphOnlyIds.contains(def.id) && !def.isDiagramOnly
         }
@@ -2307,8 +2307,8 @@ struct AttributeRoundTripTests {
             let (g1, g2) = try roundTrip(vgl)
             let grp1 = g1.groups.first { $0.id.description == "g1" }!
             let grp2 = g2.groups.first { $0.id.description == "g1" }!
-            let v1 = try g1.getAttributes(group: grp1)[def.id]
-            let v2 = try g2.getAttributes(group: grp2)[def.id]
+            let v1 = g1.attributes(group: grp1)[def.id]
+            let v2 = g2.attributes(group: grp2)[def.id]
             #expect(v1 != nil, "Group attribute \(def.name) (\(vglKey)) should be set after parse")
             #expect(v1 == v2, "Group attribute \(def.name) (\(vglKey)) should survive round-trip: '\(v1 ?? "nil")' vs '\(v2 ?? "nil")'")
             tested += 1
@@ -2349,8 +2349,8 @@ struct AttributeRoundTripTests {
             let (g1, g2) = try roundTrip(vgl)
             let n1 = g1.nodes.first { $0.id.description == "n1" }!
             let n2 = g2.nodes.first { $0.id.description == "n1" }!
-            let v1 = g1.getOwnAttributes(node: n1)[def.id]
-            let v2 = g2.getOwnAttributes(node: n2)[def.id]
+            let v1 = g1.ownAttributes(node: n1)[def.id]
+            let v2 = g2.ownAttributes(node: n2)[def.id]
             #expect(v1 != nil, "Node attribute \(def.name) (\(vglKey)) should be set after parse")
             #expect(v1 == v2, "Node attribute \(def.name) (\(vglKey)) should survive round-trip: '\(v1 ?? "nil")' vs '\(v2 ?? "nil")'")
             tested += 1
@@ -2395,8 +2395,8 @@ struct AttributeRoundTripTests {
             let (g1, g2) = try roundTrip(vgl)
             let e1 = g1.edges.first!.id
             let e2 = g2.edges.first!.id
-            let v1 = g1.getOwnAttributes(edge: e1)[def.id]
-            let v2 = g2.getOwnAttributes(edge: e2)[def.id]
+            let v1 = g1.ownAttributes(edge: e1)[def.id]
+            let v2 = g2.ownAttributes(edge: e2)[def.id]
             #expect(v1 != nil, "Edge attribute \(def.name) (\(vglKey)) should be set after parse")
             #expect(v1 == v2, "Edge attribute \(def.name) (\(vglKey)) should survive round-trip: '\(v1 ?? "nil")' vs '\(v2 ?? "nil")'")
             tested += 1
@@ -2421,6 +2421,7 @@ struct AttributeRoundTripTests {
         // "rankdir" resolves to layoutDirection via alias; the value is stored as the graphviz spelling
         #expect(v1 == "LR")
         #expect(v2 == "LR")
+        #expect(try g1.get(attribute: Attributes.Group.layoutDirection) == .leftToRight)
     }
 
     @Test
@@ -2973,7 +2974,7 @@ struct TimelineNotationTests {
             Issue.record("Expected a parsingError, got \(String(describing: error))")
             return
         }
-        #expect(message.contains("Unknown qualityCheck 'nonExistentCheck'"))
+        #expect(message.contains("Unknown quality check 'nonExistentCheck'"))
     }
 
 }
@@ -3039,14 +3040,14 @@ struct ArithmeticFullCycleTests {
         let notationString: String = graph.notationName
         #expect(notationString == A.id.description, "Notation should be Arithmetic")
 
-        let minusOp = Node(string: "minusOp")
+        let minusOp = Node(rawValue: "minusOp")
         #expect(try graph.nodeType(for: minusOp) == A.NodeTypes.minus, "minusOp should be Minus type")
 
-        let eq1 = Node(string: "eq1")
+        let eq1 = Node(rawValue: "eq1")
         #expect(try graph.nodeType(for: eq1) == A.NodeTypes.equals, "eq1 should be Equals type")
         try graph.ensure(node: eq1, attribute: Attributes.Node.label, isSameAs: "3")
 
-        let seven = Node(string: "seven")
+        let seven = Node(rawValue: "seven")
         #expect(try graph.nodeType(for: seven) == A.NodeTypes.number, "seven should be Number type")
         try graph.ensure(node: seven, attribute: Attributes.Node.label, isSameAs: "7")
 
@@ -3057,7 +3058,7 @@ struct ArithmeticFullCycleTests {
         }
 
         // The operand side is deliberately unbounded.
-        let four = Node(string: "four")
+        let four = Node(rawValue: "four")
         let fourOutgoing = graph.edges.filter { $0.from == four }
         #expect(fourOutgoing.count == 3, "four should feed minus, times, and divide as an operand")
 
@@ -3082,7 +3083,7 @@ struct ArithmeticFullCycleTests {
         // eq1: 7 − 4 = 3, eq2: 2 + 5 = 7, eq3: 3 × 4 = 12, eq4: 12 : 4 = 3
         let expectedValues: [String: Double] = ["eq1": 3, "eq2": 7, "eq3": 12, "eq4": 3]
         for (equalsId, value) in expectedValues {
-            #expect(outcomes[Node(string: equalsId)] == .correct(value: value), "\(equalsId) should evaluate correct")
+            #expect(outcomes[Node(rawValue: equalsId)] == .correct(value: value), "\(equalsId) should evaluate correct")
         }
     }
 }

@@ -113,19 +113,24 @@ extension AttributeStore {
     public func resolve(
         _ id: Attribute.Id, for key: ItemKey, through layer: AttributeLayer, chains: some ChainSource
     ) throws(VError) -> ResolvedAttribute {
-        let definition = try getAttributeDefinition(id)
+        let definition = try definition(of: id)
         _ = try info(layer)
         let keys = chain(of: key, chains)
-        var current: AttributeLayer? = layer
-        while let name = current {
+        for name in lineage(from: layer) {
             for step in keys {
-                if let value = layerValues[name]?[step.kind]?[step.id]?[id] {
+                if let value = layerValues[name]?[step.kind]?[step.id]?[id], isOfItsType(value, definition) {
                     return ResolvedAttribute(value, from: .layer(name, key: step))
                 }
             }
-            current = layers[name]?.parent
         }
         return ResolvedAttribute(definition.defaultValue, from: .default)
+    }
+
+    /// A value that does not parse as its type is passed over, as if unset: it
+    /// can only come from VGL text, and the quality report names it. Computed
+    /// values are written typed, so they are not parsed twice.
+    private func isOfItsType(_ value: String, _ definition: AttributeDefinition) -> Bool {
+        definition.category == .computed || definition.accepts(value)
     }
 
     /// Every attribute some layer sets along the key's chain. No defaults.
@@ -134,17 +139,24 @@ extension AttributeStore {
     ) throws(VError) -> [Attribute.Id: ResolvedAttribute] {
         _ = try info(layer)
         let keys = chain(of: key, chains)
-        var result: [Attribute.Id: ResolvedAttribute] = [:]
-        var current: AttributeLayer? = layer
-        while let name = current {
-            for step in keys {
-                for (id, value) in layerValues[name]?[step.kind]?[step.id] ?? [:] where result[id] == nil {
-                    result[id] = ResolvedAttribute(value, from: .layer(name, key: step))
+        let mostSpecificFirst = lineage(from: layer).flatMap { name in
+            keys.flatMap { step in
+                (layerValues[name]?[step.kind]?[step.id] ?? [:]).compactMap { (id, value) -> (Attribute.Id, ResolvedAttribute)? in
+                    guard definitions[id].map({ isOfItsType(value, $0) }) ?? true else { return nil }
+                    return (id, ResolvedAttribute(value, from: .layer(name, key: step)))
                 }
             }
-            current = layers[name]?.parent
         }
-        return result
+        return Dictionary(mostSpecificFirst, uniquingKeysWith: { first, _ in first })
+    }
+
+    /// Everything one layer holds, as the attributes it was written as.
+    public func attributes(in layer: AttributeLayer) throws(VError) -> [(key: ItemKey, attribute: Attribute)] {
+        try keys(in: layer).map { (key) throws(VError) in
+            try values(in: layer, for: key).compactMap { id, value in
+                definitions[id].map { (key: key, attribute: Attribute(definition: $0, value: value)) }
+            }
+        }.flatMap { $0 }
     }
 
     /// What one layer holds for one key, and nothing it inherits.
@@ -161,7 +173,7 @@ extension AttributeStore {
     private func admitted(_ id: Attribute.Id, key: ItemKey, in layer: AttributeLayer) throws(VError)
         -> AttributeDefinition
     {
-        let definition = try getAttributeDefinition(id)
+        let definition = try definition(of: id)
         guard try info(layer).admission.admits(key, definition) else {
             throw VError.attributeNotAdmitted(id, key: key, layer: layer)
         }
@@ -219,17 +231,11 @@ extension AttributeStore {
         _ id: Attribute.Id, along keys: [ItemKey], through layer: AttributeLayer, ignoring ignored: ItemKey,
         _ definition: AttributeDefinition
     ) -> String {
-        for step in keys where step != ignored {
-            if let value = layerValues[layer]?[step.kind]?[step.id]?[id] { return value }
+        let ownLayer = keys.filter { $0 != ignored }.lazy.compactMap { layerValues[layer]?[$0.kind]?[$0.id]?[id] }
+        let ancestors = lineage(from: layers[layer]?.parent).lazy.flatMap { name in
+            keys.lazy.compactMap { layerValues[name]?[$0.kind]?[$0.id]?[id] }
         }
-        var current = layers[layer]?.parent
-        while let name = current {
-            for step in keys {
-                if let value = layerValues[name]?[step.kind]?[step.id]?[id] { return value }
-            }
-            current = layers[name]?.parent
-        }
-        return definition.defaultValue
+        return ownLayer.first ?? ancestors.first ?? definition.defaultValue
     }
 
     private func writing(
@@ -277,10 +283,12 @@ extension AttributeStore {
     }
 
     func keys(in layer: AttributeLayer) -> [ItemKey] {
-        var result: [ItemKey] = []
-        for (kind, byId) in layerValues[layer] ?? [:] {
-            for id in byId.keys { result.append(ItemKey(kind, id)) }
-        }
-        return result
+        (layerValues[layer] ?? [:]).flatMap { kind, byId in byId.keys.map { ItemKey(kind, $0) } }
+    }
+
+    /// `layer` and its ancestors, most specific first: the order a lookup asks them in.
+    private func lineage(from layer: AttributeLayer?) -> [AttributeLayer] {
+        guard let layer else { return [] }
+        return Array(sequence(first: layer) { layers[$0]?.parent })
     }
 }

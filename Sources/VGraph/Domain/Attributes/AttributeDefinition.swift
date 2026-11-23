@@ -5,7 +5,10 @@ public struct AttributeDefinition: VProtocol {
     public let description: String
     public let defaultValue: String
     public let target: AttributeTarget
-    public var typeAsString: String
+    public let typeAsString: String
+    /// Values stay strings (ADR-0030), so only the definition can tell whether
+    /// text read from VGL is of its type. Not part of the definition's identity.
+    private let parses: @Sendable (String) -> Bool
 
     public init(
         id: Id, name: String, description: String, defaultValue: String, target: AttributeTarget,
@@ -17,6 +20,7 @@ public struct AttributeDefinition: VProtocol {
         self.defaultValue = defaultValue
         self.target = target
         self.typeAsString = typeAsString
+        self.parses = { _ in true }
     }
 
     public init<T: AttributeType>(
@@ -33,6 +37,26 @@ public struct AttributeDefinition: VProtocol {
         self.defaultValue = defaultValue
         self.target = target
         self.typeAsString = type.typeName
+        self.parses = { (try? T.fromString($0)) != nil }
+    }
+
+    public func accepts(_ value: String) -> Bool {
+        parses(value)
+    }
+
+    public static func == (left: AttributeDefinition, right: AttributeDefinition) -> Bool {
+        left.id == right.id && left.name == right.name && left.description == right.description
+            && left.defaultValue == right.defaultValue && left.target == right.target
+            && left.typeAsString == right.typeAsString
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(name)
+        hasher.combine(description)
+        hasher.combine(defaultValue)
+        hasher.combine(target)
+        hasher.combine(typeAsString)
     }
 
     /// The key used for VGL export, derived from the attribute id.
@@ -44,51 +68,26 @@ public struct AttributeDefinition: VProtocol {
         return id.description.lowercased()
     }
 
-    public func attribute(fromString: String) throws(VError) -> Attribute {
-        return Attribute(definition: self, value: fromString)
+    public func attribute(fromString value: String) -> Attribute {
+        return Attribute(definition: self, value: value)
     }
 
     /// A value that fails to parse is equal only to the same spelling.
-    public func isEqual(_ stringValue1: String, _ stringValue2: String) -> Bool {
-        guard stringValue1 != stringValue2 else { return true }
+    public func isEqual(_ left: String, _ right: String) -> Bool {
+        guard left != right else { return true }
         switch typeAsString {
-        case "Double": return parsedEqual(stringValue1, stringValue2, Double.self)
-        case "Int": return parsedEqual(stringValue1, stringValue2, Int.self)
-        case "Bool": return parsedEqual(stringValue1, stringValue2, Bool.self)
+        case "Double": return parsedEqual(left, right, Double.self)
+        case "Int": return parsedEqual(left, right, Int.self)
+        case "Bool": return parsedEqual(left, right, Bool.self)
         default: return false
         }
     }
 
-    private func parsedEqual<T: AttributeType>(_ stringValue1: String, _ stringValue2: String, _: T.Type) -> Bool {
-        guard let v1 = try? T.fromString(stringValue1), let v2 = try? T.fromString(stringValue2) else { return false }
-        return v1 == v2
+    private func parsedEqual<T: AttributeType>(_ left: String, _ right: String, _: T.Type) -> Bool {
+        guard let leftValue = try? T.fromString(left), let rightValue = try? T.fromString(right) else { return false }
+        return leftValue == rightValue
     }
 
-    public func isLessThan(_ stringValue1: String, _ stringValue2: String) throws(VError) -> Bool {
-        switch typeAsString {
-        case "Double":
-            let v1 = try Double.fromString(stringValue1)
-            let v2 = try Double.fromString(stringValue2)
-            return v1 < v2
-
-        case "Int":
-            let v1 = try Int.fromString(stringValue1)
-            let v2 = try Int.fromString(stringValue2)
-            return v1 < v2
-
-        case "Bool":
-            let v1 = try Bool.fromString(stringValue1)
-            let v2 = try Bool.fromString(stringValue2)
-            // false < true
-            return !v1 && v2
-
-        case "String":
-            return stringValue1 < stringValue2
-
-        default:
-            throw VError.attributeTypeNotComparable(typeAsString)
-        }
-    }
 }
 
 public struct TypedAttributeDefinition<T: AttributeType>: VProtocol {
@@ -120,17 +119,17 @@ public struct TypedAttributeDefinition<T: AttributeType>: VProtocol {
             description: description,
             defaultValue: defaultValue.asString,
             target: target,
-            typeAsString: T.typeName
+            type: T.self
         )
     }
 
-    public func attribute(fromString: String) throws(VError) -> Attribute {
-        let parsed = try T.fromString(fromString)
+    public func attribute(fromString text: String) throws(VError) -> Attribute {
+        let parsed = try T.fromString(text)
         return Attribute(definition: self.asDefinition, value: parsed.asString)
     }
 
-    public func attribute(_ withValue: T) throws(VError) -> Attribute {
-        return Attribute(definition: self.asDefinition, value: withValue.asString)
+    public func attribute(_ value: T) -> Attribute {
+        return Attribute(definition: self.asDefinition, value: value.asString)
     }
 
     /// Cannot fail, so a notation can state its values as data.
@@ -138,7 +137,7 @@ public struct TypedAttributeDefinition<T: AttributeType>: VProtocol {
         Attribute(definition: asDefinition, value: value.asString)
     }
 
-    public func value(fromString: String) throws(VError) -> T {
-        return try T.fromString(fromString)
+    public func value(fromString text: String) throws(VError) -> T {
+        return try T.fromString(text)
     }
 }

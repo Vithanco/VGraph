@@ -33,15 +33,15 @@ struct SVGElementIdTests {
     }
 
     @Test func eachTargetKindGetsItsOwnPrefix() {
-        #expect(SVGElementId.domId(for: .node(Node(string: "a1"))) == "node-a1")
-        #expect(SVGElementId.domId(for: .edge(Edge.Id(string: "relation_1"))) == "edge-relation_1")
+        #expect(SVGElementId.domId(for: .node(Node(rawValue: "a1"))) == "node-a1")
+        #expect(SVGElementId.domId(for: .edge(Edge.Id(rawValue: "relation_1"))) == "edge-relation_1")
         #expect(SVGElementId.domId(for: .group(Group(rawValue: "g1"))) == "group-g1")
     }
 
     @Test func targetDomIdsMatchWhatTheRendererStamps() throws {
         let svg = try renderedSVG()
 
-        #expect(svg.contains("id=\"\(SVGElementId.domId(for: .node(Node(string: "a1"))))\""))
+        #expect(svg.contains("id=\"\(SVGElementId.domId(for: .node(Node(rawValue: "a1"))))\""))
         #expect(svg.contains("id=\"\(SVGElementId.domId(for: .group(Group(rawValue: "g1"))))\""))
     }
 
@@ -80,14 +80,14 @@ struct SVGElementIdTests {
 
         var layouted = graph
         for node in graph.nodes {
-            layouted = try layouted.set(
+            layouted = try layouted.setting(
                 node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 50, y: 50)))
-            layouted = try layouted.set(
+            layouted = try layouted.setting(
                 node: node,
                 attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
         }
         // A group renders only once Graphviz has given it bounds.
-        layouted = try layouted.set(
+        layouted = try layouted.setting(
             group: Group(rawValue: "g1"),
             attribute: Attributes.Group.layoutedBounds.attribute(
                 VRect(origin: VPoint(x: 0, y: 0), size: VSize(width: 200, height: 120))))

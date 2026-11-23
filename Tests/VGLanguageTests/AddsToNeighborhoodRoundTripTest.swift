@@ -35,8 +35,8 @@ struct AddsToNeighborhoodRoundTripTest {
         let exported = try VGLExporter().export(graph: parse(source(adds: "onward")))
         let reparsed = try parse(exported)
 
-        #expect(try reparsed.get(nodeType: NodeType(string: "Verb"), attribute: Attributes.Node.addsToNeighborhood) == .onward)
-        #expect(try reparsed.get(nodeType: NodeType(string: "Thing"), attribute: Attributes.Node.addsToNeighborhood) == .none)
+        #expect(try reparsed.get(nodeType: NodeType(rawValue: "Verb"), attribute: Attributes.Node.addsToNeighborhood) == .onward)
+        #expect(try reparsed.get(nodeType: NodeType(rawValue: "Thing"), attribute: Attributes.Node.addsToNeighborhood) == .none)
     }
 
     @Test func aValueThatIsNotOneOfTheThreeIsRefused() {

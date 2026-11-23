@@ -12,6 +12,15 @@ enum BoundElement: Hashable, Sendable {
     }
 }
 
+/// An edge with the elements its ends count for (ADR-0032).
+struct CountedEdge {
+    let edge: Edge
+    let from: BoundElement
+    let to: BoundElement
+
+    var pair: String { "\(from.id)\u{1}\(to.id)" }
+}
+
 extension VGraph {
     /// An end on its type's declared node type counts for itself. An end moved
     /// onto a detail counts for the enclosing detailed node of the declared type,
@@ -23,12 +32,19 @@ extension VGraph {
         return .detailedNode(holder)
     }
 
+    func name(of element: BoundElement) -> String {
+        switch element {
+        case .node(let node): return name(of: node)
+        case .detailedNode(let group): return name(of: group)
+        }
+    }
+
     func boundEnds(of edge: Edge, typed edgeType: EdgeType) -> (from: BoundElement, to: BoundElement) {
         (boundElement(at: edge.from, declared: edgeType.from), boundElement(at: edge.to, declared: edgeType.to))
     }
 
     func boundElements(of nodeType: NodeType) -> [BoundElement] {
-        let nodes = self.nodes.filter { (try? self.nodeType(for: $0)) == nodeType }.map { BoundElement.node($0) }
+        let nodes = nodes(ofType: nodeType).map { BoundElement.node($0) }
         let detailed = groups.filter { self.nodeType(of: $0) == nodeType }.map { BoundElement.detailedNode($0) }
         return nodes + detailed
     }
@@ -42,14 +58,17 @@ extension VGraph {
     }
 
     func count(edgesOf edgeType: EdgeType, from: Node, to: Node) -> Int {
-        let pair = (boundElement(at: from, declared: edgeType.from), boundElement(at: to, declared: edgeType.to))
-        return counted(edgesOf: edgeType).filter { $0.from == pair.0 && $0.to == pair.1 }.count
+        let source = boundElement(at: from, declared: edgeType.from)
+        let target = boundElement(at: to, declared: edgeType.to)
+        return counted(edgesOf: edgeType).filter { $0.from == source && $0.to == target }.count
     }
 
-    private func counted(edgesOf edgeType: EdgeType) -> [(from: BoundElement, to: BoundElement)] {
+    /// The edges of `edgeType`, each with the elements its ends count for.
+    func counted(edgesOf edgeType: EdgeType) -> [CountedEdge] {
         edges.compactMap { edge in
             guard let actual = try? self.edgeType(for: edge.id), actual.id == edgeType.id else { return nil }
-            return boundEnds(of: edge, typed: edgeType)
+            let ends = boundEnds(of: edge, typed: edgeType)
+            return CountedEdge(edge: edge, from: ends.from, to: ends.to)
         }
     }
 }

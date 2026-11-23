@@ -25,8 +25,8 @@ struct EdgeBundleTests {
         var laidOut = graph
         var x = 50.0
         for node in graph.nodes {
-            laidOut = try laidOut.set(node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: x, y: 50)))
-            laidOut = try laidOut.set(
+            laidOut = try laidOut.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: x, y: 50)))
+            laidOut = try laidOut.setting(
                 node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
             x += 120
         }
@@ -70,7 +70,7 @@ struct EdgeBundleTests {
         let type = try graph.edgeType(for: bundle.id)
 
         #expect(type.id.id.hasPrefix("bundle__"))
-        #expect(graph.getAllAttributes(edgeType: type.id).isEmpty)
+        #expect(graph.attributes(edgeType: type.id).isEmpty)
     }
 
     @Test("A single edge into a folded box stays an edge")

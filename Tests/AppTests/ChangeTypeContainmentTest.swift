@@ -44,7 +44,7 @@ struct ChangeTypeContainmentTest {
 
         #expect(types(s.retypeCandidates(for: "web")) == ["Database", "Queue"])
 
-        try s.changeType(of: "web", to: NodeType(string: "Queue"))
+        try s.changeType(of: "web", to: NodeType(rawValue: "Queue"))
         #expect(try s.exportVGL().contains("node web: Queue \"Web App\""))
     }
 
@@ -67,10 +67,10 @@ struct ChangeTypeContainmentTest {
             	};
             """)
 
-        #expect(throws: VError.self) { try s.changeType(of: "web", to: NodeType(string: "Component")) }
+        #expect(throws: VError.self) { try s.changeType(of: "web", to: NodeType(rawValue: "Component")) }
         #expect(try s.exportVGL().contains("node web: Container \"Web App\""))
 
-        try s.changeType(of: "web", to: NodeType(string: "Component"), notationBreak: .permitted)
+        try s.changeType(of: "web", to: NodeType(rawValue: "Component"), notationBreak: .permitted)
 
         #expect(try s.exportVGL().contains("node web: Component \"Web App\""))
         #expect(GenericQualityChecks.containment(graph: s.origin).map { $0.target } == [.node("web")])
@@ -91,7 +91,7 @@ struct ChangeTypeContainmentTest {
 
         #expect(types(s.retypeCandidates(for: "web")) == ["Queue"])
 
-        try s.changeType(of: "web", to: NodeType(string: "Queue"))
+        try s.changeType(of: "web", to: NodeType(rawValue: "Queue"))
 
         let exported = try s.exportVGL()
         #expect(exported.contains("group web: Queue \"Web App\""))
@@ -111,9 +111,9 @@ struct ChangeTypeContainmentTest {
             	};
             """)
 
-        #expect(throws: VError.self) { try s.changeType(of: "web", to: NodeType(string: "Database")) }
+        #expect(throws: VError.self) { try s.changeType(of: "web", to: NodeType(rawValue: "Database")) }
 
-        try s.changeType(of: "web", to: NodeType(string: "Database"), notationBreak: .permitted)
+        try s.changeType(of: "web", to: NodeType(rawValue: "Database"), notationBreak: .permitted)
 
         #expect(try s.exportVGL().contains("group web: Database \"Web App\""))
         #expect(GenericQualityChecks.containment(graph: s.origin).map { $0.target } == [.node("ctl"), .node("api")])
@@ -138,7 +138,7 @@ struct ChangeTypeContainmentTest {
         #expect(
             step
                 == .perform(
-                    .changeType(node: "web", to: NodeType(string: "Queue"), edgeTypes: [], notationBreak: .forbidden)))
+                    .changeType(node: "web", to: NodeType(rawValue: "Queue"), edgeTypes: [], notationBreak: .forbidden)))
 
         let (asked, opened) = EditorCore.begin(.changeType, on: "web", forcingChoice: true, in: s)
         guard case .ask(_, let options) = asked, let hatch = options.last else {
@@ -166,7 +166,7 @@ struct ChangeTypeContainmentTest {
                 }
                 """)
 
-        #expect(throws: VError.self) { try s.changeType(of: "sys", to: GroupType(string: "Boundary")) }
+        #expect(throws: VError.self) { try s.changeType(of: "sys", to: GroupType(rawValue: "Boundary")) }
         #expect(try s.exportVGL().contains("group sys: System \"Internet Banking\""))
     }
 }

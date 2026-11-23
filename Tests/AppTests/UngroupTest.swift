@@ -37,8 +37,8 @@ struct UngroupTest {
 
         try s.ungroup("g1")
 
-        #expect(s.origin.group(of: Node("c")) == Group(rawValue: rootGroup))
-        #expect(s.origin.parentGroup(of: Group(rawValue: "g2")) == Group(rawValue: rootGroup))
+        #expect(s.origin.group(of: Node("c")) == Group.root)
+        #expect(s.origin.parentGroup(of: Group(rawValue: "g2")) == Group.root)
     }
 
     @Test func aNestedGroupIsUngroupedIntoItsParent() throws {

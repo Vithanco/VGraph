@@ -107,7 +107,7 @@ struct DerivedEdgeJudgingTests {
         #expect(marked(graph).isEmpty)
     }
 
-    @Test("Given a derived A → B and a real B → A, when loops are searched on the display graph, then none is found")
+    @Test("Given a derived A → B and a real B → A, when loops are searched on the view graph, then none is found")
     func findLoopsIgnoresDerivedEdges() throws {
         let graph = try shown(
             """

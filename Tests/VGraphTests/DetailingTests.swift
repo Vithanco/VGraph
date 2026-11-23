@@ -7,10 +7,10 @@ import Testing
 enum Hierarchy: NotationDeclaration {
     static let id: Identifier<Notation> = .init(rawValue: "Hierarchy")
 
-    static let system = NodeType(string: "System")
-    static let container = NodeType(string: "Container")
-    static let database = NodeType(string: "Database")
-    static let process = NodeType(string: "Process")
+    static let system = NodeType(rawValue: "System")
+    static let container = NodeType(rawValue: "Container")
+    static let database = NodeType(rawValue: "Database")
+    static let process = NodeType(rawValue: "Process")
 
     struct NodeTypes: NotationNodeTypes {
         static var all: [NodeType] { [system, container, database, process] }
@@ -31,7 +31,7 @@ enum Hierarchy: NotationDeclaration {
 
 @Suite("Detailings")
 struct DetailingTests {
-    func blank() throws(VError) -> VGraph { try VGraph().defineStandardAttributes() }
+    func blank() throws(VError) -> VGraph { VGraph() }
 
     @Test("Given a built-in notation that declares detailings, when it installs, then the graph answers them")
     func aBuiltInNotationDeclaresDetailings() throws(VError) {
@@ -48,7 +48,7 @@ struct DetailingTests {
 
     @Test("Given a detailing that names an undeclared type, when the notation installs, then it is refused")
     func aDetailingMustNameDeclaredTypes() throws(VError) {
-        let typo = NodeType(string: "Contianer")
+        let typo = NodeType(rawValue: "Contianer")
         let content = NotationContent(
             nodeTypes: [Hierarchy.system], detailings: [Detailing(nodeType: Hierarchy.system, detailTypes: [typo])])
         #expect(throws: VError.detailingNamesUnknownType(of: Hierarchy.system, unknown: typo)) {
@@ -58,9 +58,9 @@ struct DetailingTests {
 
     @Test("Given two types that detail each other, when the notation installs, then the cycle is refused")
     func detailingsNeverFormACycle() throws(VError) {
-        let a = NodeType(string: "A")
-        let b = NodeType(string: "B")
-        let c = NodeType(string: "C")
+        let a = NodeType(rawValue: "A")
+        let b = NodeType(rawValue: "B")
+        let c = NodeType(rawValue: "C")
         let content = NotationContent(
             nodeTypes: [a, b, c],
             detailings: [
@@ -75,7 +75,7 @@ struct DetailingTests {
     @Test("Given a name that is both a node type and a group type, when the notation installs, then it is refused")
     func noNameIsBothANodeTypeAndAGroupType() throws(VError) {
         let graph = try blank().placing(Hierarchy.content, in: .builtin)
-        let clash = NotationContent(groupTypes: [GroupType(string: "Container")])
+        let clash = NotationContent(groupTypes: [GroupType(rawValue: "Container")])
         #expect(throws: VError.typeNameIsNodeAndGroupType("Container")) {
             try graph.placing(clash, in: .builtin)
         }
@@ -85,21 +85,21 @@ struct DetailingTests {
         DynamicNotation(
             id: .init(rawValue: "Mine"),
             nodeTypeSpecs: [
-                NodeTypeSpec(name: nodeType.id, nodeStyle: nil, rawAttrs: [:], detailedBy: detailTypes.map { $0.id })
+                NodeTypeSpec(name: nodeType.id, nodeStyle: nil, rawAttributes: [:], detailedBy: detailTypes.map { $0.id })
             ],
-            edgeTypeSpecs: [], graphAttrs: [], baseEntry: Hierarchy.entry)
+            edgeTypeSpecs: [], graphAttributes: [], baseEntry: Hierarchy.entry)
     }
 
     @Test("Given a vnotation extending a built-in, when it adds a detailing, then the graph answers the union")
     func aVnotationAddsToTheBuiltInDetailings() throws(VError) {
-        let graph = try vnotation(detailing: Hierarchy.system, by: [Hierarchy.process]).addNotation(addTo: blank())
+        let graph = try vnotation(detailing: Hierarchy.system, by: [Hierarchy.process]).addNotation(to: blank())
         #expect(graph.detailTypes(of: Hierarchy.system) == [Hierarchy.container, Hierarchy.database, Hierarchy.process])
         #expect(graph.detailTypes(of: Hierarchy.system, declaredIn: .vnotation) == [Hierarchy.process])
     }
 
     @Test("Given a vnotation restating an inherited detailing, when it installs, then the detailing stays the base's")
     func aRestatedDetailingIsNotTheVnotations() throws(VError) {
-        let graph = try vnotation(detailing: Hierarchy.system, by: [Hierarchy.database]).addNotation(addTo: blank())
+        let graph = try vnotation(detailing: Hierarchy.system, by: [Hierarchy.database]).addNotation(to: blank())
         #expect(graph.detailTypes(of: Hierarchy.system) == [Hierarchy.container, Hierarchy.database])
         #expect(graph.detailTypes(of: Hierarchy.system, declaredIn: .vnotation) == [])
     }
@@ -108,7 +108,7 @@ struct DetailingTests {
     func aCycleClosedByAVnotationIsRefused() throws(VError) {
         let notation = vnotation(detailing: Hierarchy.container, by: [Hierarchy.system])
         #expect(throws: VError.detailingCycle([Hierarchy.system, Hierarchy.container, Hierarchy.system])) {
-            try notation.addNotation(addTo: blank())
+            try notation.addNotation(to: blank())
         }
     }
 }

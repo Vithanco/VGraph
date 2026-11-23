@@ -39,7 +39,7 @@ struct MovingElementsTests {
 
     // MARK: - Moving in
 
-    @Test("A top-level node joins a boundary")
+    @Test("A top-level node joins a group")
     func aNodeMovesIntoAGroup() throws {
         let g = try graph()
 
@@ -70,20 +70,20 @@ struct MovingElementsTests {
     // MARK: - Moving out, which is moving into the root
 
     /// "Out" is not a direction. The canvas is the [[Root group]], so leaving a
-    /// boundary is joining the group outside it (ADR-0016, ADR-0019).
-    @Test("Moving to the root group is how an element leaves a boundary")
+    /// group is joining the group outside it (ADR-0016, ADR-0019).
+    @Test("Moving to the root group is how an element leaves a group")
     func movingOutIsMovingIntoTheRoot() throws {
         let g = try graph()
 
-        let changed = try g.moving(["c"], into: rootGroup)
+        let changed = try g.moving(["c"], into: Group.rootId)
 
-        #expect(changed.group(of: Node("c")) == Group(rawValue: rootGroup))
+        #expect(changed.group(of: Node("c")) == Group.root)
     }
 
     // MARK: - The cycle guard
 
     /// The model has allowed a cyclic group tree since it was written — nothing
-    /// could reach it until moving arrived. `isParent` recurses, so an unguarded
+    /// could reach it until moving arrived. `isAncestor` recurses, so an unguarded
     /// move does not throw, it hangs.
     @Test("A group cannot move into its own descendant")
     func aGroupCannotMoveIntoItsDescendant() throws {
@@ -118,12 +118,12 @@ struct MovingElementsTests {
     /// parser puts every group there, and then the cycle guard refuses too.
     @Test("The root group cannot be moved")
     func theRootCannotMove() throws {
-        let g = try VGraph().add(group: Group(rawValue: "g1"))
+        let g = try VGraph().adding(group: Group(rawValue: "g1"))
 
-        #expect(throws: VError.commandUnavailable(.move, target: rootGroup)) {
-            _ = try g.moving([rootGroup], into: "g1")
+        #expect(throws: VError.commandUnavailable(.move, target: Group.rootId)) {
+            _ = try g.moving([Group.rootId], into: "g1")
         }
-        #expect(g.moveDestinations(for: [rootGroup]).isEmpty)
+        #expect(g.moveDestinations(for: [Group.rootId]).isEmpty)
     }
 
     @Test("Moving nothing is refused")
@@ -159,11 +159,11 @@ struct MovingElementsTests {
 
     /// Same rule `delete` follows (ADR-0018), chosen over exempting move so that
     /// one rule stays one rule.
-    @Test("Emptying a boundary by moving its last child deletes the boundary")
+    @Test("Emptying a group by moving its last child deletes the group")
     func emptyingByMovingDeletesTheGroup() throws {
         let g = try graph()
 
-        let changed = try g.moving(["f"], into: rootGroup)
+        let changed = try g.moving(["f"], into: Group.rootId)
 
         #expect(!changed.has(group: Group(rawValue: "g3")))
         #expect(changed.has(group: Group(rawValue: "g2")))
@@ -173,7 +173,7 @@ struct MovingElementsTests {
     func emptyingCascades() throws {
         let g = try graph()
 
-        let changed = try g.moving(["e", "f"], into: rootGroup)
+        let changed = try g.moving(["e", "f"], into: Group.rootId)
 
         #expect(!changed.has(group: Group(rawValue: "g3")))
         #expect(!changed.has(group: Group(rawValue: "g2")))
@@ -188,7 +188,7 @@ struct MovingElementsTests {
         let destinations = g.moveDestinations(for: ["c"])
 
         #expect(!destinations.contains("g1"))
-        #expect(destinations.contains(rootGroup))
+        #expect(destinations.contains(Group.rootId))
         #expect(destinations.contains("g2"))
     }
 

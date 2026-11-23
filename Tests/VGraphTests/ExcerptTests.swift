@@ -80,7 +80,7 @@ struct ExcerptTests {
         let excerpt = try graph().excerpt(of: ["d"])
 
         #expect(groups(excerpt).isEmpty)
-        #expect(excerpt.group(of: Node("d")) == Group(rawValue: rootGroup))
+        #expect(excerpt.group(of: Node("d")) == Group.root)
     }
 
     @Test("Given a folded g selected, when excerpted, then g is folded in the excerpt")

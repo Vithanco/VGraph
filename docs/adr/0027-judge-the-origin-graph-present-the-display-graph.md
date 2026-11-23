@@ -26,8 +26,8 @@ link across, so its badge vanished.
 
 ## Decision
 
-- **Judging reads the OriginGraph; presenting reads the display graph.** Quality
-  checks, [[Bound]]s, [[Graph criterion]]s and loop detection take the OriginGraph.
+- **Judging reads the OriginGraph; presenting reads the display graph.** [[Quality check]]s,
+  [[Bound]]s and loop detection take the OriginGraph.
   Layout, sizing, boundary chrome, hover highlighting and the *drawing* of loop
   markers take the display graph.
 - **The stand-in node stays**, in the display graph only. The concern it raised —

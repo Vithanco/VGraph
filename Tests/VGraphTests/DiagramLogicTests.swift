@@ -21,7 +21,7 @@ struct DiagramLogicTests {
     ])
     func aNotationInstallsItsDiagramLogic(notation: String, expected: DiagramLogic) throws {
         let entry = try #require(NotationRegistry.entry(for: notation))
-        let graph = try VGraph().defineStandardAttributes().placing(entry.content, in: .builtin)
+        let graph = try VGraph().placing(entry.content, in: .builtin)
 
         let logicString: String = try graph.get(graphAttribute: Attributes.Group.diagramLogic)
         #expect(try DiagramLogic.fromString(logicString) == expected)

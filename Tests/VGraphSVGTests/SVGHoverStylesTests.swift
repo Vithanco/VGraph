@@ -32,7 +32,7 @@ struct SVGHoverStylesTests {
 
     /// What hovering each element lights besides itself, as a set, with edges
     /// named `from->to` so an expectation reads like the diagram.
-    private func neighbourhoods(_ source: String) throws -> [String: Set<String>] {
+    private func neighborhoods(_ source: String) throws -> [String: Set<String>] {
         let graph = try VGraphParser(logger: TestLogger()).parse(source: source)
         var names: [String: String] = [:]
         for node in graph.nodes { names[SVGElementId.displayNode(node, in: graph)] = node.id }
@@ -74,7 +74,7 @@ struct SVGHoverStylesTests {
         // "Prompt carries Method" and "Server offers Prompt" — not Skill, which
         // carries Method in a proposition of its own, nor Tool.
         #expect(
-            try neighbourhoods(conceptMap)["prompt"] == [
+            try neighborhoods(conceptMap)["prompt"] == [
                 "prompt->carries", "carries", "carries->method", "method",
                 "offers->prompt", "offers", "server->offers", "server",
             ])
@@ -82,13 +82,13 @@ struct SVGHoverStylesTests {
 
     @Test func aRelationLightsAllItsPropositions() throws {
         #expect(
-            try neighbourhoods(conceptMap)["carries"] == [
+            try neighborhoods(conceptMap)["carries"] == [
                 "skill->carries", "skill", "prompt->carries", "prompt", "carries->method", "method",
             ])
     }
 
     @Test func anEdgeLightsThePropositionsItBelongsTo() throws {
-        let hoods = try neighbourhoods(conceptMap)
+        let hoods = try neighborhoods(conceptMap)
         #expect(hoods["prompt->carries"] == ["prompt", "carries", "carries->method", "method"])
         #expect(
             hoods["carries->method"] == [
@@ -126,7 +126,7 @@ struct SVGHoverStylesTests {
             "seven->minus", "minus", "four->minus", "four", "minus->eq", "eq",
             "plus->eq", "plus", "two->plus", "two", "one->plus", "one",
         ]
-        #expect(try neighbourhoods(equations)["seven"] == wholeEquation)
+        #expect(try neighborhoods(equations)["seven"] == wholeEquation)
     }
 
     @Test func eachNodeInARowCarriesTheWalkByItsOwnValue() throws {
@@ -153,7 +153,7 @@ struct SVGHoverStylesTests {
                 edge j -> c
             }
             """
-        let hoods = try neighbourhoods(source)
+        let hoods = try neighborhoods(source)
         let everything: Set<String> = ["a->v", "a", "v", "v->j", "j", "b->j", "b", "j->c", "c"]
         #expect(hoods["a"] == everything.subtracting(["a"]))
         #expect(hoods["b"] == everything.subtracting(["b"]))

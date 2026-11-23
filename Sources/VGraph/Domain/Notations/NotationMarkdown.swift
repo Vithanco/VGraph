@@ -7,121 +7,75 @@ public enum NotationMarkdown {
         entry: NotationEntry,
         displayTitle: String? = nil
     ) -> String {
-        var lines: [String] = []
-
-        let title = displayTitle ?? entry.id.id
-        lines.append("# \(title)")
-        lines.append("")
-
-        let tagline = entry.description.trimmingWhitespace()
-        if !tagline.isEmpty {
-            lines.append("> \(tagline)")
-            lines.append("")
-        }
-
-        let purpose = entry.purpose.trimmingWhitespace()
-        if !purpose.isEmpty {
-            lines.append("## Purpose")
-            lines.append("")
-            lines.append(purpose)
-            lines.append("")
-        }
-
-        let whenToUse = entry.whenToUse.map { $0.trimmingWhitespace() }.filter { !$0.isEmpty }
-        if !whenToUse.isEmpty {
-            lines.append("## When to use")
-            lines.append("")
-            for bullet in whenToUse {
-                lines.append("- \(bullet)")
-            }
-            lines.append("")
-        }
-
-        let nodeDefs = entry.nodeTypeDefinitions
-        if !nodeDefs.isEmpty {
-            lines.append("## Node types")
-            lines.append("")
-            lines.append("| Type | Description |")
-            lines.append("|------|-------------|")
-            for def in nodeDefs {
-                let typeId = def.nodeType.id
-                let desc = escapeTableCell(def.description)
-                lines.append("| \(typeId) | \(desc) |")
-            }
-            lines.append("")
-        }
-
-        let edgeDefs = entry.edgeTypeDefinitions
-        if !edgeDefs.isEmpty {
-            lines.append("## Edge types")
-            lines.append("")
-            lines.append("| From → To | Meaning |")
-            lines.append("|-----------|---------|")
-            for def in edgeDefs {
-                let from = def.edgeType.from.id
-                let to = def.edgeType.to.id
-                let desc = escapeTableCell(def.description)
-                lines.append("| \(from) → \(to) | \(desc) |")
-            }
-            lines.append("")
-        }
-
-        // Carries the syntax line as well as the table: a reader shown only the
-        // type names still would not know a group can be typed at all.
-        let groupDefs = entry.groupTypeDefinitions
-        if !groupDefs.isEmpty {
-            lines.append("## Group types")
-            lines.append("")
-            lines.append("Boundaries: `group <id>: <GroupType> \"<label>\" { … }`")
-            lines.append("")
-            lines.append("| Type | Description |")
-            lines.append("|------|-------------|")
-            for def in groupDefs {
-                let typeId = def.groupType.id
-                let desc = escapeTableCell(def.description)
-                lines.append("| \(typeId) | \(desc) |")
-            }
-            lines.append("")
-        }
-
-        let detailings = entry.content.detailings
-        if !detailings.isEmpty {
-            lines.append("## Detailings")
-            lines.append("")
-            lines.append("A detailed node holds nodes of its detail types: `group <id>: <NodeType> \"<label>\" { … }`")
-            lines.append("")
-            lines.append("| Type | Detailed by |")
-            lines.append("|------|-------------|")
-            for detailing in detailings {
-                let detailTypes = detailing.detailTypes.map { $0.id }.joined(separator: ", ")
-                lines.append("| \(detailing.nodeType.id) | \(detailTypes) |")
-            }
-            lines.append("")
-        }
-
-        let history = entry.history.trimmingWhitespace()
-        if !history.isEmpty {
-            lines.append("## History")
-            lines.append("")
-            lines.append(history)
-            lines.append("")
-        }
-
-        let refs = entry.references
-        if !refs.isEmpty {
-            lines.append("## References")
-            lines.append("")
-            for ref in refs {
-                if let url = ref.url, !url.isEmpty {
-                    lines.append("- [\(ref.title)](\(url))")
-                } else {
-                    lines.append("- \(ref.title)")
+        let sections: [[String]?] = [
+            ["# \(displayTitle ?? entry.id.id)"],
+            nonEmpty(entry.description.trimmingWhitespace()).map { ["> \($0)"] },
+            paragraph("Purpose", entry.purpose),
+            bulletList("When to use", entry.whenToUse.map { $0.trimmingWhitespace() }.filter { !$0.isEmpty }),
+            Table(
+                heading: "Node types", intro: nil, header: ["Type", "Description"],
+                rows: entry.nodeTypeDefinitions.map { [$0.nodeType.id, escapeTableCell($0.description)] }
+            ).lines,
+            Table(
+                heading: "Edge types", intro: nil, header: ["From → To", "Meaning"],
+                rows: entry.edgeTypeDefinitions.map {
+                    ["\($0.edgeType.from.id) → \($0.edgeType.to.id)", escapeTableCell($0.description)]
                 }
-            }
-            lines.append("")
+            ).lines,
+            // Carries the syntax line as well as the table: a reader shown only the
+            // type names still would not know a group can be typed at all.
+            Table(
+                heading: "Group types", intro: "A typed group: `group <id>: <GroupType> \"<label>\" { … }`",
+                header: ["Type", "Description"],
+                rows: entry.groupTypeDefinitions.map { [$0.groupType.id, escapeTableCell($0.description)] }
+            ).lines,
+            Table(
+                heading: "Detailings",
+                intro: "A detailed node holds nodes of its detail types: `group <id>: <NodeType> \"<label>\" { … }`",
+                header: ["Type", "Detailed by"],
+                rows: entry.content.detailings.map {
+                    [$0.nodeType.id, $0.detailTypes.map { $0.id }.joined(separator: ", ")]
+                }
+            ).lines,
+            paragraph("History", entry.history),
+            bulletList("References", entry.references.map(link)),
+        ]
+        return sections.compactMap { $0 }.map { ($0 + [""]).joined(separator: "\n") }.joined(separator: "\n")
+    }
+
+    private static func nonEmpty(_ text: String) -> String? {
+        text.isEmpty ? nil : text
+    }
+
+    private static func paragraph(_ heading: String, _ text: String) -> [String]? {
+        nonEmpty(text.trimmingWhitespace()).map { ["## \(heading)", "", $0] }
+    }
+
+    private static func bulletList(_ heading: String, _ bullets: [String]) -> [String]? {
+        bullets.isEmpty ? nil : ["## \(heading)", ""] + bullets.map { "- \($0)" }
+    }
+
+    private struct Table {
+        let heading: String
+        let intro: String?
+        let header: [String]
+        let rows: [[String]]
+
+        var lines: [String]? {
+            guard !rows.isEmpty else { return nil }
+            let introLines = intro.map { [$0, ""] } ?? []
+            let separator = "|" + header.map { String(repeating: "-", count: $0.count + 2) }.joined(separator: "|") + "|"
+            return ["## \(heading)", ""] + introLines + [row(header), separator] + rows.map { row($0) }
         }
 
-        return lines.joined(separator: "\n")
+        private func row(_ cells: [String]) -> String {
+            "|" + cells.map { " \($0) " }.joined(separator: "|") + "|"
+        }
+    }
+
+    private static func link(_ reference: NotationReference) -> String {
+        guard let url = reference.url, !url.isEmpty else { return reference.title }
+        return "[\(reference.title)](\(url))"
     }
 
     // MARK: - Tool-prompt fragments

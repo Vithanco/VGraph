@@ -17,4 +17,9 @@ struct VColorTests {
 
     }
 
+    @Test
+    func yellowIsAColorAndNotOutOfRange() {
+        #expect(VColor.yellow.hexString == "#fee060")
+    }
+
 }

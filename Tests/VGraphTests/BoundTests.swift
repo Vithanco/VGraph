@@ -20,33 +20,33 @@ struct BoundTests {
 
     /// Concept →(conceptToRelation) Relation →(relationToConcept) Concept.
     private func conceptMap() throws(VError) -> VGraph {
-        var graph = try VGraph().defineStandardAttributes()
-        graph = try CM.addNotation(addTo: graph)
+        var graph = VGraph()
+        graph = try CM.addNotation(to: graph)
         return graph.using(notation: "ConceptMap")
     }
 
     private func concept(_ id: String, _ label: String, in graph: VGraph) throws(VError) -> VGraph {
-        let node = Node(string: id)
-        let result = try graph.add(node: node, type: CM.NodeTypes.concept)
-        return try result.set(node: node, attribute: Attributes.Node.label.attribute(label))
+        let node = Node(rawValue: id)
+        let result = try graph.adding(node: node, type: CM.NodeTypes.concept)
+        return try result.setting(node: node, attribute: Attributes.Node.label.attribute(label))
     }
 
     private func relation(_ id: String, _ label: String, in graph: VGraph) throws(VError) -> VGraph {
-        let node = Node(string: id)
-        let result = try graph.add(node: node, type: CM.NodeTypes.relation)
-        return try result.set(node: node, attribute: Attributes.Node.label.attribute(label))
+        let node = Node(rawValue: id)
+        let result = try graph.adding(node: node, type: CM.NodeTypes.relation)
+        return try result.setting(node: node, attribute: Attributes.Node.label.attribute(label))
     }
 
     private func edge(_ id: String, _ from: String, _ to: String, _ type: EdgeType, in graph: VGraph)
         throws(VError) -> VGraph
     {
-        try graph.add(edge: Edge(string: id, from: from, to: to), edgeType: type)
+        try graph.adding(edge: Edge(string: id, from: from, to: to), edgeType: type)
     }
 
     private func bound(
         _ definition: TypedAttributeDefinition<Int>, _ value: Int, on edgeType: EdgeType, in graph: VGraph
     ) throws(VError) -> VGraph {
-        try graph.set(edgeType: edgeType, attribute: definition.attribute(value))
+        try graph.setting(edgeType: edgeType, attribute: definition.attribute(value))
     }
 
     // MARK: - The default: nothing is bounded
@@ -232,7 +232,7 @@ struct BoundTests {
         graph = try edge("e1", "a", "r", CM.EdgeTypes.conceptToRelation, in: graph)
         graph = try bound(Attributes.Edge.outDegreeMax, 1, on: CM.EdgeTypes.conceptToRelation, in: graph)
 
-        #expect(graph.successorCandidates(from: Node(string: "a")).isEmpty)
+        #expect(graph.successorCandidates(from: Node(rawValue: "a")).isEmpty)
     }
 
     /// The node a candidate would create starts life with exactly one edge, so a
@@ -241,10 +241,10 @@ struct BoundTests {
     func farEndAdmittingNothingIsNotOffered() throws {
         var graph = try conceptMap()
         graph = try concept("a", "Dog", in: graph)
-        graph = try graph.set(
+        graph = try graph.setting(
             nodeType: CM.NodeTypes.relation, attribute: Attributes.Node.totalInDegreeMax.attribute(0))
 
-        #expect(graph.successorCandidates(from: Node(string: "a")).isEmpty)
+        #expect(graph.successorCandidates(from: Node(rawValue: "a")).isEmpty)
     }
 
     @Test("A outDegreeMax with room left still offers the candidate")
@@ -255,7 +255,7 @@ struct BoundTests {
         graph = try edge("e1", "a", "r", CM.EdgeTypes.conceptToRelation, in: graph)
         graph = try bound(Attributes.Edge.outDegreeMax, 2, on: CM.EdgeTypes.conceptToRelation, in: graph)
 
-        #expect(graph.successorCandidates(from: Node(string: "a")).count == 1)
+        #expect(graph.successorCandidates(from: Node(rawValue: "a")).count == 1)
     }
 
     @Test("An exhausted totalOutDegreeMax removes every candidate")
@@ -264,10 +264,10 @@ struct BoundTests {
         graph = try concept("a", "Dog", in: graph)
         graph = try relation("r", "is a", in: graph)
         graph = try edge("e1", "a", "r", CM.EdgeTypes.conceptToRelation, in: graph)
-        graph = try graph.set(
+        graph = try graph.setting(
             nodeType: CM.NodeTypes.concept, attribute: Attributes.Node.totalOutDegreeMax.attribute(1))
 
-        #expect(graph.successorCandidates(from: Node(string: "a")).isEmpty)
+        #expect(graph.successorCandidates(from: Node(rawValue: "a")).isEmpty)
     }
 
     /// The mirror: `Add predecessor` reads the bound at the arriving end. Relation
@@ -281,7 +281,7 @@ struct BoundTests {
         graph = try edge("e1", "a", "r", CM.EdgeTypes.conceptToRelation, in: graph)
         graph = try bound(Attributes.Edge.inDegreeMax, 1, on: CM.EdgeTypes.conceptToRelation, in: graph)
 
-        let candidates = graph.predecessorCandidates(to: Node(string: "r"))
+        let candidates = graph.predecessorCandidates(to: Node(rawValue: "r"))
         #expect(candidates.map(\.nodeType) == [CM.NodeTypes.emphasizedConcept])
     }
 
@@ -291,7 +291,7 @@ struct BoundTests {
         graph = try concept("a", "Dog", in: graph)
         graph = try bound(Attributes.Edge.outDegreeMin, 5, on: CM.EdgeTypes.conceptToRelation, in: graph)
 
-        #expect(graph.successorCandidates(from: Node(string: "a")).count == 1)
+        #expect(graph.successorCandidates(from: Node(rawValue: "a")).count == 1)
     }
 
     // MARK: - Aggregate bounds on a node type
@@ -301,7 +301,7 @@ struct BoundTests {
     func totalOutMinAggregates() throws {
         var graph = try conceptMap()
         graph = try concept("a", "Dog", in: graph)
-        graph = try graph.set(
+        graph = try graph.setting(
             nodeType: CM.NodeTypes.concept, attribute: Attributes.Node.totalOutDegreeMin.attribute(1))
 
         let messages = GenericQualityChecks.brokenBounds(graph: graph)
@@ -316,7 +316,7 @@ struct BoundTests {
         graph = try concept("a", "Dog", in: graph)
         graph = try relation("r1", "likes", in: graph)
         graph = try edge("e1", "a", "r1", CM.EdgeTypes.conceptToRelation, in: graph)
-        graph = try graph.set(
+        graph = try graph.setting(
             nodeType: CM.NodeTypes.concept, attribute: Attributes.Node.totalOutDegreeMin.attribute(1))
 
         #expect(GenericQualityChecks.brokenBounds(graph: graph).isEmpty)
@@ -326,7 +326,7 @@ struct BoundTests {
     func totalInMinAggregates() throws {
         var graph = try conceptMap()
         graph = try relation("r1", "likes", in: graph)
-        graph = try graph.set(
+        graph = try graph.setting(
             nodeType: CM.NodeTypes.relation, attribute: Attributes.Node.totalInDegreeMin.attribute(1))
 
         let messages = GenericQualityChecks.brokenBounds(graph: graph)
@@ -347,9 +347,9 @@ struct BoundTests {
         graph = try edge("e2", "a", "r2", CM.EdgeTypes.conceptToRelation, in: graph)
         graph = try edge("e3", "a", "r3", CM.EdgeTypes.conceptToRelation, in: graph)
         graph = try edge("e4", "b", "r1", CM.EdgeTypes.conceptToRelation, in: graph)
-        graph = try graph.set(
+        graph = try graph.setting(
             nodeType: CM.NodeTypes.concept, attribute: Attributes.Node.totalOutDegreeMax.attribute(1))
-        graph = try graph.set(
+        graph = try graph.setting(
             nodeType: CM.NodeTypes.relation, attribute: Attributes.Node.totalInDegreeMax.attribute(1))
 
         let messages = GenericQualityChecks.brokenBounds(graph: graph)

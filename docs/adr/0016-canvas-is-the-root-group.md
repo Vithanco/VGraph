@@ -22,10 +22,10 @@ from an element id. Blank canvas names nothing.
 
 Four facts decided what "nothing" should name:
 
-- **The model already says the graph is a group.** `rootGroup` is a real `Group`:
+- **The model already says the graph is a group.** `Group.root` is a real `Group`:
   the parser puts every top-level node and group under it, layout applies to it,
-  and graph-level attributes are *stored* on it (`set(graphAttribute:)` is
-  `setAttribute(target: rootGroup, …)`). The only place it is hidden is
+  and graph-level attributes are *stored* on it (`setting(graphAttribute:)` is
+  `writing(_:for: .root)`). The only place it is hidden is
   `VGraph.groups`, which filters it out of the public list.
 - **It is already a legal command target.** `GroupStructure.init` seeds
   `groupSet` with the root, so `resolveCommandTarget(id:)` already returns
@@ -80,7 +80,7 @@ Four facts decided what "nothing" should name:
 
 ## Considered alternatives
 
-- **A fourth `VElementKind` (`.canvas` or `.graph`)**, with the background
+- **A fourth `VItemKind` (`.canvas` or `.graph`)**, with the background
   resolving to the `vgraph` id. A new case rippling through every switch for one
   menu row — and the id is not safe: nothing stops a document declaring
   `vgraph foo` and `node foo`, which would make `resolveCommandTarget(id:)`

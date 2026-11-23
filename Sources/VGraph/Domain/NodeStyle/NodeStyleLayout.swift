@@ -48,71 +48,38 @@ public indirect enum NodeStyleLayout: VProtocol, AttributeType {
 
     // MARK: - Generic Walker
 
+    /// The layouts directly inside this one, in drawing order.
+    private var children: [NodeStyleLayout] {
+        switch self {
+        case .categoryHeader, .frame, .circleBorder, .icon, .nodeText, .empty,
+            .accentBar, .typeLabel, .typeBadge, .dashedFrame, .italicNodeText,
+            .subtitleText, .pillBadge, .stackedShadow, .circleContent:
+            return []
+        case .padded(_, let inner), .background(_, let inner), .sized(_, let inner):
+            return [inner]
+        case .vertical(let layouts, _), .horizontal(let layouts, _):
+            return layouts
+        case .overlay(let base, let overlay):
+            return [base, overlay]
+        }
+    }
+
+    /// The first answer `visitor` gives, depth first.
     public func walk<T>(_ visitor: (NodeStyleLayout) -> T?) -> T? {
         if let result = visitor(self) {
             return result
         }
-
-        switch self {
-        case .categoryHeader, .frame, .circleBorder, .icon, .nodeText, .empty,
-            .accentBar, .typeLabel, .typeBadge, .dashedFrame, .italicNodeText,
-            .subtitleText, .pillBadge, .stackedShadow, .circleContent:
-            return nil
-
-        case .padded(_, let inner),
-            .background(_, let inner),
-            .sized(_, let inner):
-            return inner.walk(visitor)
-
-        case .vertical(let layouts, _),
-            .horizontal(let layouts, _):
-            for layout in layouts {
-                if let result = layout.walk(visitor) {
-                    return result
-                }
-            }
-            return nil
-
-        case .overlay(let base, let overlay):
-            if let result = base.walk(visitor) {
+        for child in children {
+            if let result = child.walk(visitor) {
                 return result
             }
-            return overlay.walk(visitor)
         }
+        return nil
     }
 
+    /// Every answer `visitor` gives, depth first.
     public func walkAll<T>(_ visitor: (NodeStyleLayout) -> T?) -> [T] {
-        var results: [T] = []
-        walkAllCollecting(visitor, into: &results)
-        return results
-    }
-
-    private func walkAllCollecting<T>(_ visitor: (NodeStyleLayout) -> T?, into results: inout [T]) {
-        if let result = visitor(self) {
-            results.append(result)
-        }
-
-        switch self {
-        case .categoryHeader, .frame, .circleBorder, .icon, .nodeText, .empty,
-            .accentBar, .typeLabel, .typeBadge, .dashedFrame, .italicNodeText,
-            .subtitleText, .pillBadge, .stackedShadow, .circleContent:
-            break
-
-        case .padded(_, let inner),
-            .background(_, let inner),
-            .sized(_, let inner):
-            inner.walkAllCollecting(visitor, into: &results)
-
-        case .vertical(let layouts, _),
-            .horizontal(let layouts, _):
-            for layout in layouts {
-                layout.walkAllCollecting(visitor, into: &results)
-            }
-
-        case .overlay(let base, let overlay):
-            base.walkAllCollecting(visitor, into: &results)
-            overlay.walkAllCollecting(visitor, into: &results)
-        }
+        (visitor(self).map { [$0] } ?? []) + children.flatMap { $0.walkAll(visitor) }
     }
 
     // MARK: - Icon Extraction
@@ -142,8 +109,8 @@ public indirect enum NodeStyleLayout: VProtocol, AttributeType {
 
     public var asString: String {
         switch self {
-        case .categoryHeader(let text, let font, let bgColor, let textColor):
-            return "cat{\(text)|\(font.asString)|\(bgColor.asString)|\(textColor.asString)}"
+        case .categoryHeader(let text, let font, let backgroundColor, let textColor):
+            return "cat{\(text)|\(font.asString)|\(backgroundColor.asString)|\(textColor.asString)}"
         case .frame(let cornerRadius, let borderWidth, let borderColor):
             return "fr{\(cornerRadius)|\(borderWidth)|\(borderColor.asString)}"
         case .circleBorder(let borderWidth, let borderColor):
@@ -156,8 +123,8 @@ public indirect enum NodeStyleLayout: VProtocol, AttributeType {
             return "empty"
         case .padded(let insets, let layout):
             return "pad{\(insets.asString)|\(layout.asString)}"
-        case .background(let bg, let layout):
-            return "bg{\(bg.asString)|\(layout.asString)}"
+        case .background(let background, let layout):
+            return "bg{\(background.asString)|\(layout.asString)}"
         case .sized(let multiplier, let layout):
             return "sz{\(multiplier)|\(layout.asString)}"
         case .vertical(let layouts, let spacing):
@@ -182,8 +149,8 @@ public indirect enum NodeStyleLayout: VProtocol, AttributeType {
             return "stxt{\(text)|\(color.asString)}"
         case .pillBadge(let text, let fill, let textColor):
             return "pill{\(text)|\(fill.asString)|\(textColor.asString)}"
-        case .stackedShadow(let cr, let bw, let fill, let border, let dash):
-            return "stshdw{\(cr)|\(bw)|\(fill.asString)|\(border.asString)|\(dash)}"
+        case .stackedShadow(let cornerRadius, let borderWidth, let fill, let border, let dash):
+            return "stshdw{\(cornerRadius)|\(borderWidth)|\(fill.asString)|\(border.asString)|\(dash)}"
         case .circleContent(let content, let font, let color):
             return "ccont{\(content.asString)|\(font.asString)|\(color.asString)}"
         }
@@ -192,7 +159,7 @@ public indirect enum NodeStyleLayout: VProtocol, AttributeType {
     // MARK: - Parser
 
     private struct Parser {
-        var string: String
+        let string: String
         var index: String.Index
 
         init(string: String) {
@@ -202,219 +169,89 @@ public indirect enum NodeStyleLayout: VProtocol, AttributeType {
 
         mutating func parseLayout() throws(VError) -> NodeStyleLayout {
             skipWhitespace()
-
-            if peek(count: 5) == "empty" {
-                advance(count: 5)
-                return .empty
-            }
-
-            if peek(count: 4) == "cat{" {
-                return try parseCategoryHeader()
-            }
-
-            if peek(count: 3) == "fr{" {
-                return try parseFrame()
-            }
-
-            if peek(count: 3) == "cb{" {
-                return try parseCircleBorder()
-            }
-
-            if peek(count: 3) == "ic{" {
-                return try parseIcon()
-            }
-
-            if peek(count: 4) == "txt{" {
-                return try parseNodeText()
-            }
-
-            if peek(count: 4) == "pad{" {
-                return try parsePadded()
-            }
-
-            if peek(count: 3) == "bg{" {
-                return try parseBackground()
-            }
-
-            if peek(count: 3) == "sz{" {
-                return try parseSized()
-            }
-
-            if peek(count: 2) == "v{" {
-                return try parseVertical()
-            }
-
-            if peek(count: 2) == "h{" {
-                return try parseHorizontal()
-            }
-
-            if peek(count: 2) == "o{" {
-                return try parseOverlay()
-            }
-
-            if peek(count: 5) == "abar{" {
-                return try parseAccentBar()
-            }
-
-            if peek(count: 5) == "tlbl{" {
-                return try parseTypeLabel()
-            }
-
-            if peek(count: 5) == "tbdg{" {
-                return try parseTypeBadge()
-            }
-
-            if peek(count: 4) == "dfr{" {
-                return try parseDashedFrame()
-            }
-
-            if peek(count: 5) == "itxt{" {
-                return try parseItalicNodeText()
-            }
-
-            if peek(count: 5) == "stxt{" {
-                return try parseSubtitleText()
-            }
-
-            if peek(count: 5) == "pill{" {
-                return try parsePillBadge()
-            }
-
-            if peek(count: 7) == "stshdw{" {
-                return try parseStackedShadow()
-            }
-
-            if peek(count: 6) == "ccont{" {
-                return try parseCircleContent()
-            }
-
+            if consume("empty") { return .empty }
+            if consume("cat{") { return try parseCategoryHeader() }
+            if consume("fr{") { return try parseFrame() }
+            if consume("cb{") { return try parseCircleBorder() }
+            if consume("ic{") { return .icon(try IconInfo.fromString(try soleField())) }
+            if consume("txt{") { return .nodeText(color: try SemanticColor.fromString(try soleField())) }
+            if consume("pad{") { return try parsePadded() }
+            if consume("bg{") { return try parseBackground() }
+            if consume("sz{") { return try parseSized() }
+            if consume("v{") { return try parseVertical() }
+            if consume("h{") { return try parseHorizontal() }
+            if consume("o{") { return try parseOverlay() }
+            if consume("abar{") { return try parseAccentBar() }
+            if consume("tlbl{") { return try parseTypeLabel() }
+            if consume("tbdg{") { return try parseTypeBadge() }
+            if consume("dfr{") { return try parseDashedFrame() }
+            if consume("itxt{") { return .italicNodeText(color: try SemanticColor.fromString(try soleField())) }
+            if consume("stxt{") { return try parseSubtitleText() }
+            if consume("pill{") { return try parsePillBadge() }
+            if consume("stshdw{") { return try parseStackedShadow() }
+            if consume("ccont{") { return try parseCircleContent() }
             throw VError.conversionError(from: string, to: "NodeStyleLayout")
         }
 
         mutating func parseCategoryHeader() throws(VError) -> NodeStyleLayout {
-            advance(count: 4)
-            let text = try readUntil("|")
-            advance(count: 1)
-            let fontStr = try readUntil("|")
-            advance(count: 1)
-            let bgColorStr = try readUntil("|")
-            advance(count: 1)
-            let textColorStr = try readUntil("}")
-            advance(count: 1)
-            let font = try VFont.fromString(fontStr)
-            let bgColor = try SemanticColor.fromString(bgColorStr)
-            let textColor = try SemanticColor.fromString(textColorStr)
-            return .categoryHeader(text: text, font: font, backgroundColor: bgColor, textColor: textColor)
+            let field = try fields(4)
+            return .categoryHeader(
+                text: field[0], font: try VFont.fromString(field[1]),
+                backgroundColor: try SemanticColor.fromString(field[2]), textColor: try SemanticColor.fromString(field[3]))
         }
 
         mutating func parseFrame() throws(VError) -> NodeStyleLayout {
-            advance(count: 3)
-            let cornerRadiusStr = try readUntil("|")
-            advance(count: 1)
-            let borderWidthStr = try readUntil("|")
-            advance(count: 1)
-            let borderColorStr = try readUntil("}")
-            advance(count: 1)
-            guard let cornerRadius = Double(cornerRadiusStr),
-                let borderWidth = Double(borderWidthStr)
-            else {
-                throw VError.conversionError(from: string, to: "NodeStyleLayout")
-            }
-            let borderColor = try SemanticColor.fromString(borderColorStr)
-            return .frame(cornerRadius: cornerRadius, borderWidth: borderWidth, borderColor: borderColor)
+            let field = try fields(3)
+            return .frame(
+                cornerRadius: try number(field[0]), borderWidth: try number(field[1]),
+                borderColor: try SemanticColor.fromString(field[2]))
         }
 
         mutating func parseCircleBorder() throws(VError) -> NodeStyleLayout {
-            advance(count: 3)
-            let borderWidthStr = try readUntil("|")
-            advance(count: 1)
-            let borderColorStr = try readUntil("}")
-            advance(count: 1)
-            guard let borderWidth = Double(borderWidthStr) else {
-                throw VError.conversionError(from: string, to: "NodeStyleLayout")
-            }
-            let borderColor = try SemanticColor.fromString(borderColorStr)
-            return .circleBorder(borderWidth: borderWidth, borderColor: borderColor)
-        }
-
-        mutating func parseIcon() throws(VError) -> NodeStyleLayout {
-            advance(count: 3)
-            let content = try readUntil("}")
-            advance(count: 1)
-            let icon = try IconInfo.fromString(content)
-            return .icon(icon)
-        }
-
-        mutating func parseNodeText() throws(VError) -> NodeStyleLayout {
-            advance(count: 4)
-            let colorStr = try readUntil("}")
-            advance(count: 1)
-            let color = try SemanticColor.fromString(colorStr)
-            return .nodeText(color: color)
+            let field = try fields(2)
+            return .circleBorder(borderWidth: try number(field[0]), borderColor: try SemanticColor.fromString(field[1]))
         }
 
         mutating func parsePadded() throws(VError) -> NodeStyleLayout {
-            advance(count: 4)
-            let insetsStr = try readUntil("|")
-            advance(count: 1)
-            let insets = try VEdgeInsets.fromString(insetsStr)
+            let insets = try VEdgeInsets.fromString(try field())
             let layout = try parseLayout()
-            expect("}")
+            try expect("}")
             return .padded(insets, layout)
         }
 
         mutating func parseBackground() throws(VError) -> NodeStyleLayout {
-            advance(count: 3)
-            let bgStr = try readUntil("|")
-            advance(count: 1)
-            let background = try NodeBackground.fromString(bgStr)
+            let background = try NodeBackground.fromString(try field())
             let layout = try parseLayout()
-            expect("}")
+            try expect("}")
             return .background(background, layout)
         }
 
         mutating func parseSized() throws(VError) -> NodeStyleLayout {
-            advance(count: 3)
-            let multiplierStr = try readUntil("|")
-            advance(count: 1)
-            guard let multiplier = Double(multiplierStr) else {
-                throw VError.conversionError(from: multiplierStr, to: "Double")
-            }
+            let multiplier = try number(try field())
             let layout = try parseLayout()
-            expect("}")
+            try expect("}")
             return .sized(multiplier: multiplier, layout)
         }
 
         mutating func parseVertical() throws(VError) -> NodeStyleLayout {
-            advance(count: 2)
-            let spacingStr = try readUntil("|")
-            advance(count: 1)
-            guard let spacing = Double(spacingStr) else {
-                throw VError.conversionError(from: spacingStr, to: "Double")
-            }
+            let spacing = try number(try field())
             let layouts = try parseLayoutList()
-            expect("}")
+            try expect("}")
             return .vertical(layouts, spacing: spacing)
         }
 
         mutating func parseHorizontal() throws(VError) -> NodeStyleLayout {
-            advance(count: 2)
-            let spacingStr = try readUntil("|")
-            advance(count: 1)
-            guard let spacing = Double(spacingStr) else {
-                throw VError.conversionError(from: spacingStr, to: "Double")
-            }
+            let spacing = try number(try field())
             let layouts = try parseLayoutList()
-            expect("}")
+            try expect("}")
             return .horizontal(layouts, spacing: spacing)
         }
 
         mutating func parseOverlay() throws(VError) -> NodeStyleLayout {
-            advance(count: 2)
             let base = try parseLayout()
-            expect("|")
+            try expect("|")
             let overlay = try parseLayout()
-            expect("}")
+            try expect("}")
             return .overlay(base: base, overlay: overlay)
         }
 
@@ -433,125 +270,87 @@ public indirect enum NodeStyleLayout: VProtocol, AttributeType {
         }
 
         mutating func parseAccentBar() throws(VError) -> NodeStyleLayout {
-            advance(count: 5)
-            let widthStr = try readUntil("|")
-            advance(count: 1)
-            let colorStr = try readUntil("}")
-            advance(count: 1)
-            guard let width = Double(widthStr) else {
-                throw VError.conversionError(from: string, to: "NodeStyleLayout")
-            }
-            let color = try SemanticColor.fromString(colorStr)
-            return .accentBar(width: width, color: color)
+            let field = try fields(2)
+            return .accentBar(width: try number(field[0]), color: try SemanticColor.fromString(field[1]))
         }
 
         mutating func parseTypeLabel() throws(VError) -> NodeStyleLayout {
-            advance(count: 5)
-            let text = try readUntil("|")
-            advance(count: 1)
-            let fontStr = try readUntil("|")
-            advance(count: 1)
-            let colorStr = try readUntil("}")
-            advance(count: 1)
-            let font = try VFont.fromString(fontStr)
-            let color = try SemanticColor.fromString(colorStr)
-            return .typeLabel(text: text, font: font, color: color)
+            let field = try fields(3)
+            return .typeLabel(
+                text: field[0], font: try VFont.fromString(field[1]), color: try SemanticColor.fromString(field[2]))
         }
 
         mutating func parseTypeBadge() throws(VError) -> NodeStyleLayout {
-            advance(count: 5)
-            let icon = try readUntil("|")
-            advance(count: 1)
-            let label = try readUntil("|")
-            advance(count: 1)
-            let colorStr = try readUntil("}")
-            advance(count: 1)
-            let color = try SemanticColor.fromString(colorStr)
-            return .typeBadge(icon: icon, typeLabel: label, color: color)
+            let field = try fields(3)
+            return .typeBadge(icon: field[0], typeLabel: field[1], color: try SemanticColor.fromString(field[2]))
         }
 
         mutating func parseDashedFrame() throws(VError) -> NodeStyleLayout {
-            advance(count: 4)
-            let cornerRadiusStr = try readUntil("|")
-            advance(count: 1)
-            let borderWidthStr = try readUntil("|")
-            advance(count: 1)
-            let borderColorStr = try readUntil("|")
-            advance(count: 1)
-            let dashPattern = try readUntil("}")
-            advance(count: 1)
-            guard let cornerRadius = Double(cornerRadiusStr),
-                let borderWidth = Double(borderWidthStr)
-            else {
-                throw VError.conversionError(from: string, to: "NodeStyleLayout")
-            }
-            let borderColor = try SemanticColor.fromString(borderColorStr)
-            return .dashedFrame(cornerRadius: cornerRadius, borderWidth: borderWidth, borderColor: borderColor, dashPattern: dashPattern)
-        }
-
-        mutating func parseItalicNodeText() throws(VError) -> NodeStyleLayout {
-            advance(count: 5)
-            let colorStr = try readUntil("}")
-            advance(count: 1)
-            let color = try SemanticColor.fromString(colorStr)
-            return .italicNodeText(color: color)
+            let field = try fields(4)
+            return .dashedFrame(
+                cornerRadius: try number(field[0]), borderWidth: try number(field[1]),
+                borderColor: try SemanticColor.fromString(field[2]), dashPattern: field[3])
         }
 
         mutating func parseSubtitleText() throws(VError) -> NodeStyleLayout {
-            advance(count: 5)
-            let text = try readUntil("|")
-            advance(count: 1)
-            let colorStr = try readUntil("}")
-            advance(count: 1)
-            let color = try SemanticColor.fromString(colorStr)
-            return .subtitleText(text: text, color: color)
+            let field = try fields(2)
+            return .subtitleText(text: field[0], color: try SemanticColor.fromString(field[1]))
         }
 
         mutating func parsePillBadge() throws(VError) -> NodeStyleLayout {
-            advance(count: 5)
-            let text = try readUntil("|")
-            advance(count: 1)
-            let fillStr = try readUntil("|")
-            advance(count: 1)
-            let textColorStr = try readUntil("}")
-            advance(count: 1)
-            let fill = try SemanticColor.fromString(fillStr)
-            let textColor = try SemanticColor.fromString(textColorStr)
-            return .pillBadge(text: text, fill: fill, textColor: textColor)
+            let field = try fields(3)
+            return .pillBadge(
+                text: field[0], fill: try SemanticColor.fromString(field[1]),
+                textColor: try SemanticColor.fromString(field[2]))
         }
 
         mutating func parseStackedShadow() throws(VError) -> NodeStyleLayout {
-            advance(count: 7)
-            let crStr = try readUntil("|")
-            advance(count: 1)
-            let bwStr = try readUntil("|")
-            advance(count: 1)
-            let fillStr = try readUntil("|")
-            advance(count: 1)
-            let borderStr = try readUntil("|")
-            advance(count: 1)
-            let dash = try readUntil("}")
-            advance(count: 1)
-            guard let cr = Double(crStr), let bw = Double(bwStr) else {
-                throw VError.conversionError(from: string, to: "NodeStyleLayout")
-            }
-            let fill = try SemanticColor.fromString(fillStr)
-            let border = try SemanticColor.fromString(borderStr)
-            return .stackedShadow(cornerRadius: cr, borderWidth: bw, fill: fill, border: border, dash: dash)
+            let field = try fields(5)
+            return .stackedShadow(
+                cornerRadius: try number(field[0]), borderWidth: try number(field[1]),
+                fill: try SemanticColor.fromString(field[2]), border: try SemanticColor.fromString(field[3]),
+                dash: field[4])
         }
 
         mutating func parseCircleContent() throws(VError) -> NodeStyleLayout {
-            advance(count: 6)
-            let contentStr = try readUntil("|")
+            let field = try fields(3)
+            return .circleContent(
+                try CircleContent.fromString(field[0]), font: try VFont.fromString(field[1]),
+                color: try SemanticColor.fromString(field[2]))
+        }
+
+        /// Steps past `tag` when the text continues with it.
+        mutating func consume(_ tag: String) -> Bool {
+            guard peek(count: tag.count) == tag else { return false }
+            advance(count: tag.count)
+            return true
+        }
+
+        /// A leaf's `|`-separated fields, through its closing brace.
+        mutating func fields(_ count: Int) throws(VError) -> [String] {
+            var result: [String] = []
+            for _ in 1..<count { result.append(try field()) }
+            result.append(try readUntil("}"))
             advance(count: 1)
-            let fontStr = try readUntil("|")
+            return result
+        }
+
+        mutating func soleField() throws(VError) -> String {
+            try fields(1)[0]
+        }
+
+        /// The text up to the next `|`, which is stepped past.
+        mutating func field() throws(VError) -> String {
+            let value = try readUntil("|")
             advance(count: 1)
-            let colorStr = try readUntil("}")
-            advance(count: 1)
-            let content = try CircleContent.fromString(contentStr)
-            let font = try VFont.fromString(fontStr)
-            let color = try SemanticColor.fromString(colorStr)
-            return .circleContent(content, font: font, color: color)
+            return value
+        }
+
+        func number(_ text: String) throws(VError) -> Double {
+            guard let value = Double(text) else {
+                throw VError.conversionError(from: string, to: "NodeStyleLayout")
+            }
+            return value
         }
 
         mutating func readUntil(_ char: String) throws(VError) -> String {
@@ -575,17 +374,18 @@ public indirect enum NodeStyleLayout: VProtocol, AttributeType {
             throw VError.conversionError(from: string, to: "NodeStyleLayout")
         }
 
-        mutating func expect(_ char: String) {
+        mutating func expect(_ char: String) throws(VError) {
             skipWhitespace()
-            if peek() == char {
-                advance(count: 1)
+            guard peek() == char else {
+                throw VError.parsingError("NodeStyleLayout: expected '\(char)' in '\(string)'")
             }
+            advance(count: 1)
         }
 
         func peek(count: Int = 1) -> String {
             guard index < string.endIndex else { return "" }
-            let endIdx = string.index(index, offsetBy: count, limitedBy: string.endIndex) ?? string.endIndex
-            return String(string[index..<endIdx])
+            let end = string.index(index, offsetBy: count, limitedBy: string.endIndex) ?? string.endIndex
+            return String(string[index..<end])
         }
 
         mutating func advance(count: Int) {

@@ -344,8 +344,7 @@ by now.
   reports this too.
 
 **C4**
-- *warning* — an element with no relationships at all. This one applies to every
-  node type, not just elements that look like they should collaborate.
+- *warning* — a relationship with no label, except a code-level `references`.
 - Where elements may sit is the containment check every notation with
   [detailings](#detailedby--a-hierarchical-notation) gets (below).
 
@@ -357,10 +356,12 @@ by now.
 - *error* — an operator with more than one first operand, second operand or
   result.
 
-More quality warnings come from elsewhere: a
+More quality warnings come from elsewhere: a node with no relationships at all, a
 [redundant junctor](#diagram-logic-and-junctors), an
 [unknown node or edge type](#grammar), and a node placed where its notation's
-[detailings](#detailedby--a-hierarchical-notation) do not allow.
+[detailings](#detailedby--a-hierarchical-notation) do not allow, and an
+[attribute](#attributes) whose value is not of its type (`fontsize: big`), which
+is drawn as if it were not there.
 
 ### Extensions
 
@@ -1440,23 +1441,25 @@ vnotation <Name> [extends <BuiltinNotation>] {
     icon      <IconName>   [viewBox: "<minX minY width height>", path: "<svg path data>"]
     node type: <TypeName>  [nodeStyle: <name>, backgroundColor: "#hex", icon: "<IconName>", ...]
     edge type: <edge_id>   from: <TypeName>  to: <TypeName>  [color: "#hex"]
-    group type: <GroupTypeName> [boundaryDash: "8,4", boundaryColor: "#hex", ...]
+    group type: <GroupTypeName> [frameDash: "8,4", frameColor: "#hex", ...]
 }
 ```
 
 `group type:` names a kind of plain group, so `group g: <GroupTypeName> { … }`
 is accepted and `group type:` view rules can select it.
 
-**Boundary look.** `node type:` and `group type:` both take four keys for the
-boundary an unfolded group draws: `boundaryDash` (an SVG dash pattern, `""` for
-a solid line), `boundaryColor`, `boundaryFill` (hex, `#rrggbbaa` for
-transparency) and `boundaryRadius`. On a node type it is the boundary of its
-detailed nodes; on a group type, of its groups. A key left out keeps the look
-the type already had, so `group type: Organisation [boundaryColor: "#00aa00"]`
-in a block extending C4 recolours the boundary and keeps its dashes. A type with
-no boundary of its own, from the block or the notation it extends, draws the
-generic cluster. These are the only keys `group type:` takes; a group type
-declared in a `vnotation` folds into the generic folded box.
+**Frame.** `node type:` and `group type:` both take four keys for the frame an
+unfolded group draws: `frameDash` (an SVG dash pattern, `""` for a solid line),
+`frameColor`, `frameFill` (hex, `#rrggbbaa` for transparency) and
+`frameRadius`. On a node type it is the frame of its detailed nodes; on a group
+type, of its groups. A key left out keeps the look the type already had, so
+`group type: Organisation [frameColor: "#00aa00"]` in a block extending C4
+recolours the frame and keeps its dashes. A type with no frame of its own, from
+the block or the notation it extends, draws the generic cluster. These are the
+only keys `group type:` takes; a group type declared in a `vnotation` folds into
+the generic folded box. The older spellings `boundaryDash`, `boundaryColor`,
+`boundaryFill` and `boundaryRadius`, and `boundaryChrome` for a group's `frame`,
+are still read; a saved file uses the new ones.
 
 **What hovering lights.** Hovering a node lights its edges and the nodes at
 their far ends. `addsToNeighborhood:` on a node type lets the highlight go
@@ -1478,11 +1481,12 @@ references them**, which allows single-pass parsing.
 on input, but `backgroundColor` is what a document exports — the same name a node
 instance stores it under, so the two surfaces agree.
 
-`qualityCheck: <name>` adds a [quality check](#quality-checks) by name — a graph
-criterion such as `noParallelEdges`; an unknown name is refused with the list of
-available ones. `transform: <name>` adds a step that rewrites the graph before
-layout — `mergeRelations`, say, which merges Concept Map relations — refused the
-same way when unknown.
+`qualityCheck: <name>` adds a [quality check](#quality-checks) by name, such as
+`noParallelEdges`; an unknown name is a warning in the quality report, with the
+list of available ones, and the diagram still renders. `transform: <name>` adds a
+step that rewrites the graph before layout — `mergeRelations`, say, which merges
+Concept Map relations — and an unknown one is refused with the list of available
+ones.
 
 ### `nodeStyle:` — required on every node type
 

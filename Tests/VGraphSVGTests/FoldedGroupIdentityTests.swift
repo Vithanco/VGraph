@@ -1,4 +1,4 @@
-// A folded group is drawn from a stand-in node in the display graph, but the box
+// A folded group is drawn from a stand-in node in the view graph, but the box
 // on screen represents the group, so it is stamped as one (ADR-0027). The box, the
 // rule that lights it on hover and the rule that lights its neighbours must all
 // use the same id, or hovering stops working on exactly the folded boxes.
@@ -28,8 +28,8 @@ struct FoldedGroupIdentityTests {
         var graph = try TransformStep.pipeline(Notations.extensionSteps)(parsed)
         var x = 50.0
         for node in graph.nodes {
-            graph = try graph.set(node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: x, y: 50)))
-            graph = try graph.set(
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: x, y: 50)))
+            graph = try graph.setting(
                 node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
             x += 120
         }

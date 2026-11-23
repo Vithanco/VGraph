@@ -1,11 +1,6 @@
-//
-//  ForEditAGraphVisually.swift
-//  VGraph
-//
-//  Driving port: what the outside may do to the diagram. Declared in the core
-//  and re-exported by App under its plain name, exactly as a driven port is —
-//  see docs/hexagonal-architecture.md.
-//
+// Driving port: what the outside may do to the diagram. Declared in the core
+// and re-exported by App under its plain name, exactly as a driven port is —
+// see docs/hexagonal-architecture.md.
 
 /// What the **diagram pane** may do: draw the graph, and change it by a named
 /// command or a [[Gesture]].
@@ -41,7 +36,7 @@ public protocol VForEditAGraphVisually {
     // needs to title, grey and populate, and never derives a notation rule.
 
     /// What kind of thing this id names.
-    func kind(of elementId: String) -> VElementKind?
+    func kind(of elementId: String) -> VItemKind?
     /// The node's own type, a [[Detailed node]]'s included — `nil` for anything
     /// that is not a node.
     func nodeType(of elementId: String) -> NodeType?
@@ -63,14 +58,14 @@ public protocol VForEditAGraphVisually {
     func predecessorCandidates(to nodeId: String) -> [VCandidate]
     func retypeCandidates(for nodeId: String) -> [NodeType]
     func reverseCandidates(for edgeId: String) -> [EdgeType]
-    /// What an edge could become with both ends where they are. `edge:` rather
+    /// What an edge could become with both ends where they are. `forEdge:` rather
     /// than `for:`: an overload of the node form differing only in return type
     /// would not resolve at a call site that reads `.first`.
-    func retypeCandidates(edge edgeId: String) -> [EdgeType]
+    func retypeCandidates(forEdge edgeId: String) -> [EdgeType]
     /// Whether this edge wears a minted type. **Change type** is reachable on an
     /// edge the notation offers nothing else for, because declaring a
     /// relationship for it is the way out (ADR-0024).
-    func hasUnknownType(edge edgeId: String) -> Bool
+    func hasUnknownType(_ edgeId: String) -> Bool
     func splitCandidates(for edgeId: String) -> [VSplitCandidate]
     /// The types the notation allows between two existing nodes.
     func connectCandidates(from: String, to: String) -> [EdgeType]
@@ -88,8 +83,8 @@ public protocol VForEditAGraphVisually {
     /// a moving `from` end has no mirror to ask — and both must count the bounds
     /// against the graph **minus this edge**, which is the domain's job and not
     /// the pane's (ADR-0021).
-    func reattachTargets(edge: String, end: VEdgeEnd, notationBreak: VNotationBreak) -> [String]
-    func reattachCandidates(edge: String, end: VEdgeEnd, to nodeId: String) -> [EdgeType]
+    func reattachTargets(for edgeId: String, end: VEdgeEnd, notationBreak: VNotationBreak) -> [String]
+    func reattachCandidates(for edgeId: String, end: VEdgeEnd, to nodeId: String) -> [EdgeType]
     /// The node id at one end of an edge — what a [[Reattach]] choice prompt
     /// needs for the end the drag left untouched, since the pane holds only the
     /// edge, the side grabbed, and the node dropped on. `nil` for a stale edge id.
@@ -102,7 +97,7 @@ public protocol VForEditAGraphVisually {
     /// Those a node added to `groupId` may take without a [[Notation break]]:
     /// what the containment check accepts there (ADR-0032).
     func nodeTypes(placeableIn groupId: String) -> [NodeType]
-    /// The boundary kinds this notation registered. Empty for most notations, and
+    /// The group types this notation registered. Empty for most notations, and
     /// that emptiness is the answer to whether typing a group is worth offering.
     func groupTypes() -> [GroupType]
     /// `nil` for a plain group and for anything that is not a group. An ancestor's
@@ -214,9 +209,9 @@ public protocol VForEditAGraphVisually {
     func split(_ edgeId: String, ofType node: NodeType) throws(VError) -> String?
 
     /// Make a group of these elements, and return its id so the caller can name
-    /// it. Two forms because a node has exactly one parent group and clusters are
+    /// it. Two forms because a node has exactly one parent group and groups are
     /// strictly nested: a member of another group has to *leave* it, and
-    /// `containing` refuses rather than restructuring boundaries the caller did
+    /// `containing` refuses rather than restructuring groups the caller did
     /// not name. `moving` is the same command having been told that is fine — a
     /// pair like `split(_:with:)`/`split(_:ofType:)`, not a flag (ADR-0018).
     @discardableResult
@@ -275,8 +270,8 @@ public protocol VForEditAGraphVisually {
     /// absence of one, so the way back has to be sayable.
     ///
     /// No conversation to hold, unlike the node form: an edge's group is derived
-    /// (ADR-0017), so retyping a boundary leaves nothing ambiguous. And no
-    /// [[Notation break]]: a boundary kind the notation never registered is what a
+    /// (ADR-0017), so retyping a group leaves nothing ambiguous. And no
+    /// [[Notation break]]: a group type the notation never registered is what a
     /// broken *document* produces, never something to offer.
     func changeType(of groupId: String, to type: GroupType?) throws(VError)
 

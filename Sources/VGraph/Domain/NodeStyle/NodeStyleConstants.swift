@@ -11,20 +11,15 @@ public struct NodeStyleConstants {
     public static let defaultPadding: Double = emptyBorder + readableDiff
 
     public static let categoryFont = VFont(family: .dmSans, size: categoryTextFontSize)
-    public static let defaultFont = VFont(family: .dmSans, size: 11)
     public static let typeLabelFont = VFont(family: .dmSans, size: 9)
-    public static let contentFont = VFont(family: .dmSans, size: 13)
     public static let accentBarWidth: Double = 4
     public static let typeLabelRowHeight: Double = 22
 
-    // Insets for content below category header - just regular padding on all sides
-    // Note: The category height is already handled by the vertical layout
     public static let belowCategoryInsets = VEdgeInsets(regular: defaultPadding)
 
     public static let roundedBoxInsets = VEdgeInsets(regular: defaultPadding)
 
-    // Padding to prevent frame stroke from being clipped
-    // SVG strokes are centered on the path, so we need half the border width as padding
+    // An SVG stroke is centred on its path, so half of it would be clipped.
     public static let frameStrokePadding = VEdgeInsets(regular: borderWidth / 2)
 
     // C4 shape metrics. Fixed (not proportional to the card) so the layout can reserve
@@ -35,16 +30,28 @@ public struct NodeStyleConstants {
     /// C4 database cylinder: elliptical cap height (top and bottom).
     public static let c4CylinderCapHeight: Double = 9
 
+    /// The circle a type badge's icon sits on, and the gap before the type name.
+    public static let typeBadgeDiameter: Double = 18
+    public static let typeBadgeGap: Double = 6
+    /// An accent strip's content insets, left and right.
+    public static let accentStripLeftInset: Double = 12
+    public static let accentStripRightInset: Double = 8
+    public static let accentStripInsets = VEdgeInsets(
+        top: 4, left: accentStripLeftInset, bottom: 6, right: accentStripRightInset)
+
     /// Minimum width for an iconAccentStrip node so the badge (circle + type name) never clips.
-    /// Formula: badgeDiameter(18) + gap(6) + labelWidth + left(12) + right(8)
-    /// Uppercase letters render ~20% wider than the average-char estimate, and letter-spacing
-    /// 0.06em adds ~0.06 × fontSize per character — both accounted for below.
     public static func iconBadgeMinWidth(typeLabel: String) -> Double {
-        let upper = typeLabel.uppercased()
-        let baseWidth = TextSizeEstimator.estimateWidth(text: upper, font: typeLabelFont)
+        typeBadgeDiameter + typeBadgeGap + uppercaseLabelWidth(typeLabel, font: typeLabelFont, letterSpacing: 0.06)
+            + accentStripLeftInset + accentStripRightInset
+    }
+
+    /// The width of a label the renderer draws uppercased and letter-spaced by
+    /// `letterSpacing` em. Uppercase letters run about 20% wider than the
+    /// average-character estimate, and the spacing adds to every character.
+    public static func uppercaseLabelWidth(_ text: String, font: VFont, letterSpacing: Double) -> Double {
+        let upper = text.uppercased()
         let uppercaseFactor = 1.2
-        let letterSpacing = Double(upper.count) * typeLabelFont.size * 0.06
-        let labelWidth = baseWidth * uppercaseFactor + letterSpacing
-        return 18 + 6 + labelWidth + 12 + 8
+        return TextSizeEstimator.estimateWidth(text: upper, font: font) * uppercaseFactor
+            + Double(upper.count) * font.size * letterSpacing
     }
 }

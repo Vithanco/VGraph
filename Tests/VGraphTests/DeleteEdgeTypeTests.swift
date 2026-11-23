@@ -21,15 +21,15 @@ struct DeleteEdgeTypeTests {
     typealias CM = Notations.ConceptMap
 
     private func conceptMap() throws(VError) -> VGraph {
-        var graph = try VGraph().defineStandardAttributes()
-        graph = try CM.addNotation(addTo: graph)
+        var graph = VGraph()
+        graph = try CM.addNotation(to: graph)
         return graph.using(notation: "ConceptMap")
     }
 
     private func node(_ id: String, _ type: NodeType, in graph: VGraph) throws(VError) -> VGraph {
-        let node = Node(string: id)
-        let result = try graph.add(node: node, type: type)
-        return try result.set(node: node, attribute: Attributes.Node.label.attribute(id))
+        let node = Node(rawValue: id)
+        let result = try graph.adding(node: node, type: type)
+        return try result.setting(node: node, attribute: Attributes.Node.label.attribute(id))
     }
 
     /// A pair with an edge on it, and the minted type that joins them.
@@ -38,9 +38,9 @@ struct DeleteEdgeTypeTests {
         graph = try node("a", CM.NodeTypes.concept, in: graph)
         graph = try node("b", CM.NodeTypes.concept, in: graph)
         let minted: EdgeType
-        (graph, minted) = try graph.ensureUnknownEdgeType(
+        (graph, minted) = try graph.ensuringUnknownEdgeType(
             from: CM.NodeTypes.concept, to: CM.NodeTypes.concept)
-        graph = try graph.add(
+        graph = try graph.adding(
             edge: Edge(string: "e1", from: "a", to: "b"), edgeType: minted)
         return (graph, minted)
     }
@@ -48,10 +48,10 @@ struct DeleteEdgeTypeTests {
     @Test("A type no edge wears is removed")
     func anUnusedTypeIsRemoved() throws {
         let (graph, minted) = try withAMintedEdge()
-        let without = try graph.delete(edge: Edge.Id(string: "e1"))
+        let without = try graph.deleting(edge: Edge.Id(rawValue: "e1"))
         #expect(without.get(edgeType: minted.id) != nil)
 
-        let cleaned = try without.delete(edgeType: minted.id)
+        let cleaned = try without.deleting(edgeType: minted.id)
 
         #expect(cleaned.get(edgeType: minted.id) == nil)
         #expect(!cleaned.edgeTypes.contains { $0.id == minted.id })
@@ -63,8 +63,8 @@ struct DeleteEdgeTypeTests {
     func aTypeStillInUseIsRefused() throws {
         let (graph, minted) = try withAMintedEdge()
 
-        #expect(throws: VError.edgeTypeStillInUse(Edge.Id(string: "e1"))) {
-            _ = try graph.delete(edgeType: minted.id)
+        #expect(throws: VError.edgeTypeStillInUse(Edge.Id(rawValue: "e1"))) {
+            _ = try graph.deleting(edgeType: minted.id)
         }
         #expect(graph.get(edgeType: minted.id) != nil)
     }
@@ -72,10 +72,10 @@ struct DeleteEdgeTypeTests {
     @Test("A type the graph never had is not found")
     func anAbsentTypeIsNotFound() throws {
         let graph = try conceptMap()
-        let absent = EdgeType.Id(string: "no_such_type")
+        let absent = EdgeType.Id(rawValue: "no_such_type")
 
         #expect(throws: VError.edgeTypeNotFound(absent)) {
-            _ = try graph.delete(edgeType: absent)
+            _ = try graph.deleting(edgeType: absent)
         }
     }
 }

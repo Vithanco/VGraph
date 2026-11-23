@@ -19,11 +19,11 @@ extension DisplayPipeline {
 
 private func calculateTextSize(node: Node, in graph: VGraph) throws(VError) -> VGraph {
     let wrappedLines = (try? graph.get(node: node, attribute: Attributes.Node.wrappedText)) ?? []
-    let font = graph.getFont(forNode: node)
+    let font = graph.font(of: node)
 
     let textSize = TextSizeEstimator.estimateSize(lines: wrappedLines, font: font)
 
-    return try graph.set(
+    return try graph.setting(
         node: node,
         attribute: Attributes.Node.nodeTextSize.attribute(textSize)
     )

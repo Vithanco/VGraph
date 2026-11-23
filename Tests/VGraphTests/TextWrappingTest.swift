@@ -219,4 +219,20 @@ struct TextWrappingTest {
         #expect(!result.lines.isEmpty, "Safety net must keep the label visible")
         #expect(result.lines.first == text, "Single token cannot be subdivided")
     }
+
+    /// Every word is wider than allowed, so a line per word is asked for; the
+    /// two short words still share one, and the block is that one line shorter.
+    @Test
+    func findOptimalLineBreaksReportsTheLinesItProduced() {
+        let result = TextWrapping.findOptimalLineBreaks(
+            "on a framework design review sometimes",
+            characterWidthToHeightRatio: 1.0,
+            lineHeightMultiplier: 2.0,
+            maxWidth: 3.0
+        )
+
+        #expect(result.lines == ["on a", "framework", "design", "review", "sometimes"])
+        #expect(result.lineCount == 5)
+        #expect(result.height == 10.0)
+    }
 }

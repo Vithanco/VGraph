@@ -1,10 +1,3 @@
-//
-//  VNotationBreak.swift
-//  VGraph
-//
-//  Whether a VCommand may go beyond what the notation permits.
-//
-
 /// Permission to break the notation. The editor binds `.permitted` to ⌥; the
 /// domain never learns which key gave it (ADR-0001).
 ///
@@ -24,7 +17,7 @@
 ///
 /// A command with no break at all takes neither: `changeType(of groupId:to:)`
 /// and `changeType(of edgeId:using:)`, for the reason ADR-0020 and ADR-0023
-/// give — an unknown boundary kind is what a broken document produces, and an
+/// give — an unknown group type is what a broken document produces, and an
 /// unknown edge type over a pair the notation already joins de-types a legal
 /// edge. Where there is no rule worth breaking, the command answers
 /// `.notApplicable` and ⌥ leaves it greyed.

@@ -72,7 +72,7 @@ struct NodeRendererTests {
     /// The viewport is `iconSize` square whatever the artwork's proportions: the
     /// `<symbol>` carries the viewBox, so SVG's own `xMidYMid meet` does the
     /// fitting and the node path never has to resolve the artwork. ADR-0022.
-    @Test func theIconViewportIsSquareAndCentredWhateverTheArtwork() throws {
+    @Test func theIconViewportIsSquareAndCenteredWhateverTheArtwork() throws {
         let tall = IconInfo(iconPosition: .center, iconName: "tall.unresolved", iconColor: VColor.blue, iconSize: 24)
         let wide = IconInfo(iconPosition: .center, iconName: "wide.unresolved", iconColor: VColor.blue, iconSize: 24)
 

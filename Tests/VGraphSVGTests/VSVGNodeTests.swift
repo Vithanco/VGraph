@@ -53,7 +53,7 @@ struct VSVGNodeTests {
                 == ##"<path d="M0 0 L1 1" fill="none" stroke="#0b5fff" stroke-width="1" stroke-dasharray="4 2"/>"##)
     }
 
-    @Test func textAndMultilineTextCarryFontAndColour() {
+    @Test func textAndMultilineTextCarryFontAndColor() {
         let font = VFont(size: 13)
         #expect(
             VSVGBuilder.text(x: 4, y: 8, content: "Idea", font: font, color: blue).render()

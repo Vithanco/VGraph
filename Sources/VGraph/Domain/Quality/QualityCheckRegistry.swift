@@ -12,7 +12,7 @@ public struct QualityCheckSpec: VProtocol {
         self.params = params
     }
 
-    /// At most one edge between two nodes in the same direction. See [[Graph criterion]].
+    /// At most one edge between two nodes in the same direction.
     public static let noParallelEdges = QualityCheckSpec(name: "noParallelEdges")
 
     /// e.g. `"nodeCountRange(Battle, 1, 20)"` or `"treeStructure"`
@@ -22,8 +22,8 @@ public struct QualityCheckSpec: VProtocol {
     }
 
     /// Parse a spec string like `"nodeCountRange(Battle, 1, 20)"` or `"treeStructure"`.
-    public static func parse(_ s: String) -> QualityCheckSpec {
-        let trimmed = s.trimmingWhitespace()
+    public static func parse(_ text: String) -> QualityCheckSpec {
+        let trimmed = text.trimmingWhitespace()
         guard let parenStart = trimmed.firstIndex(of: "("),
             let parenEnd = trimmed.lastIndex(of: ")"),
             parenStart < parenEnd
@@ -31,55 +31,63 @@ public struct QualityCheckSpec: VProtocol {
             return QualityCheckSpec(name: trimmed)
         }
         let name = String(trimmed[trimmed.startIndex..<parenStart])
-        let paramsStr = String(trimmed[trimmed.index(after: parenStart)..<parenEnd])
-        let params = paramsStr.split(separator: ",").map { String($0).trimmingWhitespace() }
+        let params = trimmed[trimmed.index(after: parenStart)..<parenEnd].split(separator: ",").map {
+            String($0).trimmingWhitespace()
+        }
         return QualityCheckSpec(name: name, params: params)
     }
 }
 
 public enum QualityCheckRegistry {
 
+    private typealias Make = (QualityCheckSpec) throws(VError) -> QualityCheck
+
+    /// One list for dispatch and for the names an unknown one is told about, so the
+    /// two cannot drift.
+    private static var checks: [(name: String, make: Make)] {
+        [
+            ("treeStructure", { _ in treeStructureCheck }),
+            ("disconnectedNodes", { _ in GenericQualityChecks.disconnectedNodes }),
+            ("noParallelEdges", { _ in noParallelEdgesCheck }),
+            ("redundantJunctor", { _ in GenericQualityChecks.redundantJunctor }),
+            (
+                "exactlyOne",
+                { (spec: QualityCheckSpec) throws(VError) -> QualityCheck in
+                    guard let nodeTypeName = spec.params.first, spec.params.count == 1 else {
+                        throw VError.parsingError(
+                            "qualityCheck 'exactlyOne' requires exactly 1 parameter: exactlyOne(NodeTypeName)")
+                    }
+                    return exactlyOneCheck(nodeTypeName: nodeTypeName)
+                }
+            ),
+            (
+                "nodeCountRange",
+                { (spec: QualityCheckSpec) throws(VError) -> QualityCheck in
+                    guard spec.params.count == 3, let min = Int(spec.params[1]), let max = Int(spec.params[2]) else {
+                        throw VError.parsingError(
+                            "qualityCheck 'nodeCountRange' requires 3 parameters: nodeCountRange(NodeTypeName, min, max)")
+                    }
+                    return nodeCountRangeCheck(nodeTypeName: spec.params[0], min: min, max: max)
+                }
+            ),
+            (
+                "labelLength",
+                { (spec: QualityCheckSpec) throws(VError) -> QualityCheck in
+                    guard spec.params.count == 1, let maxWords = Int(spec.params[0]) else {
+                        throw VError.parsingError("qualityCheck 'labelLength' requires 1 parameter: labelLength(maxWords)")
+                    }
+                    return labelLengthCheck(maxWords: maxWords)
+                }
+            ),
+        ]
+    }
+
     public static func resolve(_ spec: QualityCheckSpec) throws(VError) -> QualityCheck {
-        switch spec.name {
-
-        case "treeStructure":
-            return treeStructureCheck
-
-        case "disconnectedNodes":
-            return GenericQualityChecks.disconnectedNodes
-
-        case "noParallelEdges":
-            return noParallelEdgesCheck
-
-        case "redundantJunctor":
-            return GenericQualityChecks.redundantJunctor
-
-        case "exactlyOne":
-            guard let nodeTypeName = spec.params.first, spec.params.count == 1 else {
-                throw VError.parsingError("qualityCheck 'exactlyOne' requires exactly 1 parameter: exactlyOne(NodeTypeName)")
-            }
-            return exactlyOneCheck(nodeTypeName: nodeTypeName)
-
-        case "nodeCountRange":
-            guard spec.params.count == 3,
-                let min = Int(spec.params[1]),
-                let max = Int(spec.params[2])
-            else {
-                throw VError.parsingError("qualityCheck 'nodeCountRange' requires 3 parameters: nodeCountRange(NodeTypeName, min, max)")
-            }
-            return nodeCountRangeCheck(nodeTypeName: spec.params[0], min: min, max: max)
-
-        case "labelLength":
-            guard spec.params.count == 1, let maxWords = Int(spec.params[0]) else {
-                throw VError.parsingError("qualityCheck 'labelLength' requires 1 parameter: labelLength(maxWords)")
-            }
-            return labelLengthCheck(maxWords: maxWords)
-
-        default:
+        guard let check = checks.first(where: { $0.name == spec.name }) else {
             throw VError.parsingError(
-                "Unknown qualityCheck '\(spec.name)'. Available: treeStructure, disconnectedNodes, noParallelEdges, redundantJunctor, exactlyOne, nodeCountRange, labelLength"
-            )
+                "Unknown quality check '\(spec.name)'. Available: \(checks.map { $0.name }.joined(separator: ", "))")
         }
+        return try check.make(spec)
     }
 
     // MARK: - Check implementations
@@ -87,24 +95,20 @@ public enum QualityCheckRegistry {
     /// Warns if any node has more than one incoming edge (tree structure violation).
     static func treeStructureCheck(_ graph: VGraph) -> [MessageWithSeverity] {
         let topology = GraphTopology(edges: graph.edges)
-        var messages: [MessageWithSeverity] = []
-        for node in graph.nodes {
+        return graph.nodes.compactMap { node in
             let incomingCount = topology.incomingEdges(of: node).count
-            if incomingCount > 1 {
-                let label = (try? graph.get(node: node, attribute: Attributes.Node.label)) ?? node.description
-                let typeName = ((try? graph.nodeType(for: node))?.id.description) ?? "Node"
-                messages.append(
-                    MessageWithSeverity(
-                        message: "\(typeName) \"\(label)\" has \(incomingCount) parent nodes (tree structure expects at most 1)",
-                        severity: .warning,
-                        target: .node(node.description)
-                    ))
-            }
+            guard incomingCount > 1 else { return nil }
+            let typeName = ((try? graph.nodeType(for: node))?.id.description) ?? "Node"
+            return MessageWithSeverity(
+                message:
+                    "\(typeName) \"\(graph.name(of: node))\" has \(incomingCount) parent nodes (tree structure expects at most 1)",
+                severity: .warning,
+                target: .node(node.description)
+            )
         }
-        return messages
     }
 
-    /// A [[Graph criterion]] rather than a [[Bound]] bound because it counts
+    /// A [[Quality check]] rather than a [[Bound]] because it counts
     /// across every edge type at once, which a bound declared on one edge type
     /// cannot (ADR-0011).
     static func noParallelEdgesCheck(_ graph: VGraph) -> [MessageWithSeverity] {
@@ -119,7 +123,7 @@ public enum QualityCheckRegistry {
             messages.append(
                 MessageWithSeverity(
                     message:
-                        "\(nodeLabel(edge.from, in: graph)) → \(nodeLabel(edge.to, in: graph)) "
+                        "\"\(graph.name(of: edge.from))\" → \"\(graph.name(of: edge.to))\" "
                         + "is drawn more than once — at most one edge between two nodes",
                     severity: .error,
                     target: .edge(from: edge.from.description, to: edge.to.description)))
@@ -127,18 +131,10 @@ public enum QualityCheckRegistry {
         return messages
     }
 
-    private static func nodeLabel(_ node: Node, in graph: VGraph) -> String {
-        guard let label: String = try? graph.get(node: node, attribute: Attributes.Node.label),
-            !label.isEmpty
-        else { return "\"\(node.description)\"" }
-        return "\"\(label)\""
-    }
-
     /// Error if the count of nodes with the given type name is not exactly 1.
     static func exactlyOneCheck(nodeTypeName: String) -> QualityCheck {
-        let targetType = NodeType(string: nodeTypeName)
         return { graph in
-            let count = graph.nodes.filter { (try? graph.nodeType(for: $0)) == targetType }.count
+            let count = nodeCount(ofTypeNamed: nodeTypeName, in: graph)
             if count == 0 {
                 return [
                     MessageWithSeverity(
@@ -160,9 +156,8 @@ public enum QualityCheckRegistry {
 
     /// Warns if the count of nodes with the given type name is outside [min, max].
     static func nodeCountRangeCheck(nodeTypeName: String, min: Int, max: Int) -> QualityCheck {
-        let targetType = NodeType(string: nodeTypeName)
         return { graph in
-            let count = graph.nodes.filter { (try? graph.nodeType(for: $0)) == targetType }.count
+            let count = nodeCount(ofTypeNamed: nodeTypeName, in: graph)
             if count < min || count > max {
                 return [
                     MessageWithSeverity(
@@ -175,23 +170,25 @@ public enum QualityCheckRegistry {
         }
     }
 
-    /// Warns if any node label has more than maxWords words.
-    static func labelLengthCheck(maxWords: Int) -> QualityCheck {
+    private static func nodeCount(ofTypeNamed name: String, in graph: VGraph) -> Int {
+        graph.nodes(ofType: NodeType(rawValue: name)).count
+    }
+
+    /// Warns if any label among `nodes` has more than maxWords words.
+    static func labelLengthCheck(maxWords: Int, among nodes: @escaping (VGraph) -> [Node] = { $0.nodes })
+        -> QualityCheck
+    {
         return { graph in
-            var messages: [MessageWithSeverity] = []
-            for node in graph.nodes {
-                guard let label: String = try? graph.get(node: node, attribute: Attributes.Node.label) else { continue }
+            nodes(graph).compactMap { node in
+                guard let label: String = try? graph.get(node: node, attribute: Attributes.Node.label) else { return nil }
                 let wordCount = label.split(separator: " ").count
-                if wordCount > maxWords {
-                    messages.append(
-                        MessageWithSeverity(
-                            message: "Node \"\(label)\" has \(wordCount) words (recommended: \(maxWords) or fewer)",
-                            severity: .warning,
-                            target: .node(node.description)
-                        ))
-                }
+                guard wordCount > maxWords else { return nil }
+                return MessageWithSeverity(
+                    message: "Node \"\(label)\" has \(wordCount) words (recommended: \(maxWords) or fewer)",
+                    severity: .warning,
+                    target: .node(node.description)
+                )
             }
-            return messages
         }
     }
 }

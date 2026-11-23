@@ -16,39 +16,39 @@ extension VGraph {
     public func effectiveNodeLayout(
         for nodeType: NodeType, background: VColor?, fontColor: VColor?
     ) -> NodeStyleLayout? {
-        let ns: NodeStyle = (try? get(nodeType: nodeType, attribute: Attributes.Node.nodeStyle)) ?? .bareText
-        let bg: VColor = background ?? backgroundColor(of: nodeType)
+        let style: NodeStyle = (try? get(nodeType: nodeType, attribute: Attributes.Node.nodeStyle)) ?? .bareText
+        let fill: SemanticColor = .literal(background ?? backgroundColor(of: nodeType))
         let text: SemanticColor? = fontColor.map { SemanticColor.literal($0) }
 
-        switch ns {
+        switch style {
         case .presetLayout:
             let baked = try? get(nodeType: nodeType, attribute: Attributes.Node.style)
             guard background != nil || fontColor != nil else { return baked }
-            return baked?.recolored(to: .literal(bg), fontColor: text)
+            return baked?.recolored(to: fill, fontColor: text)
 
         case .iconWithText:
-            return .iconWithText(backgroundColor: .literal(bg), icon: icon(of: nodeType))
+            return .iconWithText(backgroundColor: fill, icon: icon(of: nodeType))
 
         case .simpleRoundedText:
-            return .simpleRoundedText(color: .literal(bg))
+            return .simpleRoundedText(color: fill)
 
         case .simpleRoundedBox:
-            return .simpleRoundedBox(color: .literal(bg))
+            return .simpleRoundedBox(color: fill)
 
         case .withCategory:
-            return .withCategory(category: categoryText(of: nodeType), categoryColor: .literal(bg))
+            return .withCategory(category: categoryText(of: nodeType), categoryColor: fill)
 
         case .withCategoryAndIcon:
             return .withCategoryAndIcon(
                 category: categoryText(of: nodeType),
-                categoryColor: .literal(bg),
+                categoryColor: fill,
                 icon: icon(of: nodeType))
 
         case .iconOnly:
             return .iconOnly(icon: icon(of: nodeType))
 
         case .circle:
-            return .circle(color: .literal(bg))
+            return .circle(color: fill)
 
         case .bareText:
             return .bareText
@@ -62,7 +62,7 @@ extension VGraph {
     /// report every node as overridden.
     public func effectiveNodeLayout(for node: Node) -> NodeStyleLayout? {
         guard let nodeType = try? nodeType(for: node) else { return nil }
-        let own = getOwnAttributes(node: node)
+        let own = ownAttributes(node: node)
         // `fromString`, not `hexString`: the store keeps what the author wrote, and
         // that may be a colour name.
         let background: VColor? = own[Attributes.Node.backgroundColor.id].flatMap { try? VColor.fromString($0) }
@@ -89,9 +89,8 @@ extension VGraph {
     }
 
     private func categoryText(of nodeType: NodeType) -> String {
-        if let cat = try? get(nodeType: nodeType, attribute: Attributes.Node.category), !cat.isEmpty {
-            return cat
-        }
-        return nodeType.id
+        guard let category = try? get(nodeType: nodeType, attribute: Attributes.Node.category), !category.isEmpty
+        else { return nodeType.id }
+        return category
     }
 }

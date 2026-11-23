@@ -1,7 +1,7 @@
 public protocol HasReadableNames: CaseIterable & Identifiable & NameDescribable & VProtocol & AttributeType {
     var readableName: String { get }
     var alias: String { get }
-    /// The programmatic/VGL name for this value, derived from the Swift enum case name.
+    /// The programmatic/VGL name for this value.
     var value: String { get }
     var toolTip: String { get }
     static var typeName: String { get }
@@ -16,10 +16,8 @@ extension HasReadableNames {
         return readableName
     }
 
-    // Note: `value` and `readableName` have no default implementation — under
-    // Embedded Swift `"\(self)"` does not return the enum case name (no reflection),
-    // so every conformer must provide an explicit `switch self`. The pre-Embedded
-    // reflection-based defaults were deleted in the Phase 1 embedded migration.
+    // No default `value` or `readableName`: under Embedded Swift `"\(self)"` does
+    // not yield the case name, so every conformer spells them out.
 }
 
 extension HasReadableNames {
@@ -31,9 +29,6 @@ extension HasReadableNames {
             return result
         }
         throw VError.conversionError(from: string, to: Self.typeName)
-    }
-    public static func toString(_ value: Self) -> String {
-        return value.readableName
     }
 
     public var asString: String {

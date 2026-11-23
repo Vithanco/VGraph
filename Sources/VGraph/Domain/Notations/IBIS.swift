@@ -1,10 +1,8 @@
-import MathUtils
-
 extension Notations {
 
     public struct Ibis: NotationDeclaration {
 
-        public static var criteria: [QualityCheckSpec] { [.noParallelEdges] }
+        public static var namedQualityChecks: [QualityCheckSpec] { [.noParallelEdges] }
         public static let id: Identifier<Notation> = .init(rawValue: "Ibis")
         public static let description =
             "Models arguments and decisions as Questions, Answers, Pros, and Cons, enabling structured exploration of any problem."
@@ -94,10 +92,10 @@ extension Notations {
             private static let proId = "Pro"
             private static let conId = "Con"
 
-            public static let question: NodeType = NodeType(string: questionId)
-            public static let answer: NodeType = NodeType(string: answerId)
-            public static let pro: NodeType = NodeType(string: proId)
-            public static let con: NodeType = NodeType(string: conId)
+            public static let question: NodeType = NodeType(rawValue: questionId)
+            public static let answer: NodeType = NodeType(rawValue: answerId)
+            public static let pro: NodeType = NodeType(rawValue: proId)
+            public static let con: NodeType = NodeType(rawValue: conId)
         }
 
         public struct EdgeTypes: NotationEdgeTypes {
@@ -182,26 +180,18 @@ extension Notations {
         /// Every Question should have at least one Answer.
         static func unansweredQuestions(_ graph: VGraph) -> [MessageWithSeverity] {
             let topology = GraphTopology(edges: graph.edges)
-            var messages: [MessageWithSeverity] = []
-            for node in graph.nodes {
-                guard let nt = try? graph.nodeType(for: node), nt == NodeTypes.question else { continue }
-                let hasAnswer = topology.outgoingEdges(of: node).contains {
-                    (try? graph.nodeType(for: $0.to)) == NodeTypes.answer
-                }
-                if !hasAnswer {
-                    let label =
-                        (try? graph.get(node: node, attribute: Attributes.Node.label))
-                        ?? node.description
-                    messages.append(
-                        MessageWithSeverity(
-                            message:
-                                "Question \"\(label)\" has no Answer — every Question should have at least one Answer",
-                            severity: .warning,
-                            target: .node(node.description)
-                        ))
-                }
+            return graph.nodes(ofType: NodeTypes.question).filter { !hasAnswer($0) }.map { question in
+                MessageWithSeverity(
+                    message:
+                        "Question \"\(graph.name(of: question))\" has no Answer — every Question should have at least one Answer",
+                    severity: .warning,
+                    target: .node(question.description)
+                )
             }
-            return messages
+
+            func hasAnswer(_ question: Node) -> Bool {
+                topology.outgoingEdges(of: question).contains { (try? graph.nodeType(for: $0.to)) == NodeTypes.answer }
+            }
         }
     }
 

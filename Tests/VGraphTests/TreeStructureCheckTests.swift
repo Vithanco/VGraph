@@ -11,15 +11,15 @@ struct TreeStructureCheckTests {
     typealias CLD = Notations.CausalLoopDiagram
 
     private func graph(_ nodes: [String], _ edges: [(String, String, String)]) throws(VError) -> VGraph {
-        var graph = try VGraph().defineStandardAttributes()
-        graph = try CLD.addNotation(addTo: graph)
+        var graph = VGraph()
+        graph = try CLD.addNotation(to: graph)
         for id in nodes {
-            let node = Node(string: id)
-            graph = try graph.add(node: node, type: CLD.NodeTypes.stock)
-            graph = try graph.set(node: node, attribute: Attributes.Node.label.attribute(id.uppercased()))
+            let node = Node(rawValue: id)
+            graph = try graph.adding(node: node, type: CLD.NodeTypes.stock)
+            graph = try graph.setting(node: node, attribute: Attributes.Node.label.attribute(id.uppercased()))
         }
         for (id, from, to) in edges {
-            graph = try graph.add(edge: Edge(string: id, from: from, to: to), edgeType: CLD.EdgeTypes.same)
+            graph = try graph.adding(edge: Edge(string: id, from: from, to: to), edgeType: CLD.EdgeTypes.same)
         }
         return graph
     }

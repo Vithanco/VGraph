@@ -2,29 +2,21 @@ extension VGraph {
     /// What a copy carries. Label, comments, root values and views belong
     /// to the document, not to the elements, so they stay behind.
     public func excerpt(of ids: [String]) throws(VError) -> VGraph {
-        let root = Group.root
-        var keptNodes: Set<String> = []
-        var keptGroups: Set<String> = []
-        var result = self
-        for id in outermostElements(of: ids) {
-            switch resolveCommandTarget(id: id) {
-            case .node(let node)?:
-                keptNodes.insert(node.id)
-                result = try result.addTo(group: root, node: node)
-            case .group(let group)?:
-                keptGroups.insert(group.id.id)
-                let (groups, nodes) = try groupStructure.getAllContent(group: group)
-                for inner in groups { keptGroups.insert(inner.id.id) }
-                for node in nodes { keptNodes.insert(node.id) }
-                result = try result.addTo(group: root, childGroup: group)
-            case .edge?, nil:
-                continue
-            }
+        let copied = outermostElements(of: ids).compactMap { resolveCommandTarget(id: $0) }
+        let atTopLevel = try copied.folding(self) { (graph, element) throws(VError) in
+            try graph.adding(element, to: Group.root)
         }
-        result = try result.keeping(nodes: keptNodes, groups: keptGroups)
-        for view in result.views {
-            result = try result.removing(view: view.name)
+        let elementsOnly = try atTopLevel.keeping(try copiedSubset(copied))
+        let withoutViews = try elementsOnly.views.folding(elementsOnly) { (graph, view) throws(VError) in
+            try graph.removing(view: view.name)
         }
-        return result.updatedSelfWith(ads: result.ads.removeKey(.root))
+        return withoutViews.updatedSelfWith(attributeStore: withoutViews.attributeStore.removeKey(.root))
+    }
+
+    /// A copied group brings everything inside it.
+    private func copiedSubset(_ copied: [VCommandTarget]) throws(VError) -> Subset {
+        var kept = try subset(containing: copied.compactMap { if case .group(let group) = $0 { group } else { nil } })
+        kept.nodes.formUnion(copied.compactMap { if case .node(let node) = $0 { node.id } else { nil } })
+        return kept
     }
 }

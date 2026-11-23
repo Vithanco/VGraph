@@ -1,11 +1,6 @@
-//
-//  ForManageADocument.swift
-//  VGraph
-//
-//  Driving port: what the outside may do to the document as a whole. Declared
-//  in the core and re-exported by App under its plain name, exactly as a driven
-//  port is — see docs/hexagonal-architecture.md.
-//
+// Driving port: what the outside may do to the document as a whole. Declared
+// in the core and re-exported by App under its plain name, exactly as a driven
+// port is — see docs/hexagonal-architecture.md.
 
 /// What the **toolbar** may do: the document as a whole, rather than either view
 /// of it — load one, get its text out, move its [[History]].

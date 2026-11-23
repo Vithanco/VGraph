@@ -17,9 +17,7 @@ public struct TextWrapping {
         return text.split(
             maxSplits: 1000,
             omittingEmptySubsequences: true,
-            whereSeparator: { (s: Character) -> Bool in
-                return s == " " || s == "\n"
-            }
+            whereSeparator: { $0 == " " || $0 == "\n" }
         ).map { String($0) }
     }
 
@@ -34,18 +32,18 @@ public struct TextWrapping {
         for chunk in splitText(text) {
             var current = ""
             var firstSubToken = true
-            for ch in chunk {
-                current.append(ch)
-                if ch == "/" || ch == "-" {
+            for character in chunk {
+                current.append(character)
+                if character == "/" || character == "-" {
                     tokens.append(current)
-                    softBreakBefore.append(firstSubToken ? false : true)
+                    softBreakBefore.append(!firstSubToken)
                     current = ""
                     firstSubToken = false
                 }
             }
             if !current.isEmpty {
                 tokens.append(current)
-                softBreakBefore.append(firstSubToken ? false : true)
+                softBreakBefore.append(!firstSubToken)
             }
         }
 
@@ -56,18 +54,10 @@ public struct TextWrapping {
     private static func joinLine(
         tokens: ArraySlice<String>, softBreakBefore: ArraySlice<Bool>
     ) -> String {
-        var result = ""
-        var first = true
-        var sbIter = softBreakBefore.makeIterator()
-        for tok in tokens {
-            let soft = sbIter.next() ?? false
-            if !first && !soft {
-                result += " "
-            }
-            result += tok
-            first = false
-        }
-        return result
+        zip(tokens, softBreakBefore).enumerated().map { index, entry in
+            let (token, isSoft) = entry
+            return index == 0 || isSoft ? token : " " + token
+        }.joined()
     }
 
     /// This algorithm minimizes the variance in line lengths by:
@@ -78,86 +68,56 @@ public struct TextWrapping {
     ///
     /// Algorithm from: https://stackoverflow.com/questions/5059956/algorithm-to-divide-text-into-3-evenly-sized-groups
     public static func splitText(_ text: String, numberOfLines: Int) -> [String] {
-        if text.trimmed().isEmpty {
+        if text.trimmingWhitespace().isEmpty {
             return []
         }
         assert(numberOfLines > 0)
 
         let (words, softBreakBefore) = tokenizeForWrapping(text)
-        let linesNr = numberOfLines > words.count ? words.count : numberOfLines
-        assert(linesNr > 0)
+        let lineCount = min(numberOfLines, words.count)
+        assert(lineCount > 0)
 
-        var cumwordwidth = [Int]()
-        cumwordwidth.append(0)
-        for word in words {
-            cumwordwidth.append(cumwordwidth[cumwordwidth.count - 1] + word.count)
+        // Prefix sums: characters in words[0..<k], and gaps before them — 1 for a
+        // hard break, 0 for a soft one or for the first word.
+        let charactersBefore = words.reduce(into: [0]) { sums, word in sums.append(sums[sums.count - 1] + word.count) }
+        let gapsBefore = words.indices.reduce(into: [0]) { sums, index in
+            sums.append(sums[sums.count - 1] + ((index == 0 || softBreakBefore[index]) ? 0 : 1))
         }
+        let totalWidth = charactersBefore[words.count] + gapsBefore[words.count]
+        let idealLineWidth = Float(totalWidth - (lineCount - 1)) / Float(lineCount)
 
-        // Prefix-sum of gap widths. cumGap[k] = sum of gapBefore[0..<k], where
-        // gapBefore[i] is 1 for a hard break preceding token i and 0 for a soft break
-        // (or for token 0). Used by the cost function below.
-        var cumGap = [Int]()
-        cumGap.append(0)
-        for i in 0..<words.count {
-            let gap = (i == 0 || softBreakBefore[i]) ? 0 : 1
-            cumGap.append(cumGap[cumGap.count - 1] + gap)
-        }
-
-        let totalwidth = cumwordwidth[cumwordwidth.count - 1] + cumGap[cumGap.count - 1]
-        let linewidth: Float = Float(totalwidth - (linesNr - 1)) / Float(linesNr)
-
-        // Cost function for one line containing words[i..<j]
-        // Delivers squared difference between ideal linewidth and actual width.
-        // Number of inter-token gaps within words[i..<j] is cumGap[j] - cumGap[i+1].
-        let cost = { (i: Int, j: Int) -> Float in
-            let gapsInLine = j > i ? cumGap[j] - cumGap[i + 1] : 0
-            let actuallinewidth = gapsInLine + (cumwordwidth[j] - cumwordwidth[i])
-            let remainingWidth: Float = linewidth - Float(actuallinewidth)
+        /// Squared distance from the ideal width for one line holding words[first..<end].
+        func cost(_ first: Int, _ end: Int) -> Float {
+            let gapsInLine = end > first ? gapsBefore[end] - gapsBefore[first + 1] : 0
+            let remainingWidth = idealLineWidth - Float(gapsInLine + charactersBefore[end] - charactersBefore[first])
             return remainingWidth * remainingWidth
         }
 
-        typealias MinRag = (Float, Int)  // (cost for lines so far, word index)
-
-        var best = [[MinRag]]()
-        var tmp = [MinRag]()
-
-        tmp.append((0, -1))
-        for _ in words {
-            tmp.append((Float.infinity, -1))
-        }
-        best.append(tmp)
-
-        for l in 0...linesNr - 1 {
-            tmp = [MinRag]()
-            for j in 0...words.count {
-                var min: MinRag = (best[l][0].0 + cost(0, j), 0)
-                for k in 0..<j {
-                    let loc: Float = best[l][k].0 + cost(k, j)
-                    if loc < min.0 || (loc == min.0 && k < min.1) {
-                        min = (loc, k)
+        // best[lines][end]: the least cost of putting words[0..<end] on that many
+        // lines, and where the last of them starts.
+        typealias Split = (cost: Float, lastLineStart: Int)
+        let noLines: [Split] = [(0, -1)] + words.map { _ in (Float.infinity, -1) }
+        let best = (0..<lineCount).reduce(into: [noLines]) { table, previousLines in
+            table.append(
+                (0...words.count).map { end in
+                    (0..<end).reduce((cost: table[previousLines][0].cost + cost(0, end), lastLineStart: 0)) { cheapest, start in
+                        let candidate = table[previousLines][start].cost + cost(start, end)
+                        return candidate < cheapest.cost || (candidate == cheapest.cost && start < cheapest.lastLineStart)
+                            ? (candidate, start) : cheapest
                     }
-                }
-                tmp.append(min)
-            }
-            best.append(tmp)
+                })
         }
 
-        var lines = [String]()
-        var b = words.count
-        for o in (1...linesNr).reversed() {
-            let a = best[o][b].1
-            // Handle edge case where two one-letter words are at the end
-            if a < b {
-                lines.append(
-                    joinLine(
-                        tokens: words[a..<b],
-                        softBreakBefore: softBreakBefore[a..<b]
-                    )
-                )
+        // Walk back from the last line; an empty line (two one-letter words at the end) is skipped.
+        var lines: [String] = []
+        var end = words.count
+        for line in (1...lineCount).reversed() {
+            let start = best[line][end].lastLineStart
+            if start < end {
+                lines.append(joinLine(tokens: words[start..<end], softBreakBefore: softBreakBefore[start..<end]))
             }
-            b = a
+            end = start
         }
-
         return Array(lines.reversed())
     }
 
@@ -177,25 +137,9 @@ public struct TextWrapping {
             return (0, [], 0, 0)
         }
 
-        let maxCharsPerLine = Int(floor(maxWidth / characterWidthToHeightRatio))
-
-        // Find minimum lines needed to fit text within width.
-        // A soft break preceding a token costs 0 chars; a hard break costs 1.
-        var currentLineLength = 0
-        var minLinesForWidth = 1
-
-        for (index, word) in tokens.enumerated() {
-            let wordLength = word.count
-            let gap = (index > 0 && !softBreakBefore[index]) ? 1 : 0
-            let spaceNeeded = currentLineLength + gap + wordLength
-
-            if spaceNeeded > maxCharsPerLine && currentLineLength > 0 {
-                minLinesForWidth += 1
-                currentLineLength = wordLength
-            } else {
-                currentLineLength = spaceNeeded
-            }
-        }
+        let minLinesForWidth = greedyLineCount(
+            tokens, softBreakBefore: softBreakBefore,
+            maxCharsPerLine: Int(floor(maxWidth / characterWidthToHeightRatio)))
 
         // Start searching around the square root of word count, but respect width constraint
         let approxLines = Int(floor(sqrt(Double(wordCount))))
@@ -210,10 +154,7 @@ public struct TextWrapping {
 
         for numLines in minLines...min(maxLines, wordCount) {
             let lines = splitText(text, numberOfLines: numLines)
-
-            let maxLineLength = lines.map { $0.count }.max() ?? 0
-            let estimatedWidth = Double(maxLineLength) * characterWidthToHeightRatio
-            let estimatedHeight = Double(numLines) * lineHeightMultiplier
+            let (estimatedWidth, estimatedHeight) = size(of: lines)
 
             if estimatedWidth > maxWidth {
                 continue
@@ -223,7 +164,7 @@ public struct TextWrapping {
 
             if area < bestArea {
                 bestArea = area
-                bestLineCount = numLines
+                bestLineCount = lines.count
                 bestLines = lines
                 bestWidth = estimatedWidth
                 bestHeight = estimatedHeight
@@ -237,13 +178,29 @@ public struct TextWrapping {
         if bestLines.isEmpty {
             let fallbackLineCount = max(minLinesForWidth, 1)
             let lines = splitText(text, numberOfLines: fallbackLineCount)
-            let maxLineLength = lines.map { $0.count }.max() ?? 0
-            bestLineCount = fallbackLineCount
+            bestLineCount = lines.count
             bestLines = lines
-            bestWidth = Double(maxLineLength) * characterWidthToHeightRatio
-            bestHeight = Double(fallbackLineCount) * lineHeightMultiplier
+            (bestWidth, bestHeight) = size(of: lines)
         }
 
         return (bestLineCount, bestLines, bestWidth, bestHeight)
+
+        /// From the lines produced: `splitText` may return fewer than it was asked for.
+        func size(of lines: [String]) -> (width: Double, height: Double) {
+            let longestLine = lines.map { $0.count }.max() ?? 0
+            return (Double(longestLine) * characterWidthToHeightRatio, Double(lines.count) * lineHeightMultiplier)
+        }
+    }
+
+    /// The fewest lines that keep every line within `maxCharsPerLine`, filling
+    /// each as far as it goes. A soft break costs no character; a hard one costs a space.
+    private static func greedyLineCount(_ tokens: [String], softBreakBefore: [Bool], maxCharsPerLine: Int) -> Int {
+        let (lines, _) = tokens.enumerated().reduce((lines: 1, currentLength: 0)) { state, entry in
+            let gap = (entry.offset > 0 && !softBreakBefore[entry.offset]) ? 1 : 0
+            let spaceNeeded = state.currentLength + gap + entry.element.count
+            guard spaceNeeded > maxCharsPerLine && state.currentLength > 0 else { return (state.lines, spaceNeeded) }
+            return (state.lines + 1, entry.element.count)
+        }
+        return lines
     }
 }

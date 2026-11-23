@@ -1,10 +1,5 @@
-//
-//  VGraph+RetypeNode.swift
-//  VGraph
-//
-//  What a node may be retyped to, what that leaves to ask about its edges, and
-//  the retype itself once the answers are in.
-//
+// What a node may be retyped to, what that leaves to ask about its edges, and
+// the retype itself once the answers are in.
 
 extension VGraph {
     /// The types `node` may become with every one of its edges still carried by a
@@ -100,7 +95,7 @@ extension VGraph {
             guard let toType = endType(edge.to, at: node, as: newType) else {
                 throw VError.nodeWithoutNodeType(edge.to)
             }
-            return try graph.ensureUnknownEdgeType(from: fromType, to: toType)
+            return try graph.ensuringUnknownEdgeType(from: fromType, to: toType)
         }
     }
 
@@ -114,14 +109,14 @@ extension VGraph {
     private func settingTypes(
         of node: Node, to nodeType: NodeType, retyped: [(edge: Edge.Id, type: EdgeType)]
     ) throws(VError) -> VGraph {
-        let result = try retyped.folding(try setNodeType(node: node, type: nodeType)) { (graph, change) throws(VError) in
-            try graph.setEdgeType(edge: change.edge, type: change.type.id)
+        let result = try retyped.folding(try settingNodeType(node: node, type: nodeType)) { (graph, change) throws(VError) in
+            try graph.settingEdgeType(edge: change.edge, type: change.type.id)
         }
         try result.ensureEdgesFitTheirTypes(at: node)
         return result
     }
 
-    /// Neither setter validates the pairing the way `add(edge:)` does, so the
+    /// Neither setter validates the pairing the way `adding(edge:)` does, so the
     /// result is checked here rather than surfacing as a parse failure later.
     private func ensureEdgesFitTheirTypes(at node: Node) throws(VError) {
         for edge in edges(at: node) {

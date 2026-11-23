@@ -1,11 +1,6 @@
-//
-//  VCommandOption.swift
-//  VGraph
-//
-//  What a picker shows. The domain decides the entries — their ids, their
-//  titles, and which one is the way past the notation — because every one of
-//  those is a notation fact. An adapter draws the list and hands back the id.
-//
+// What a picker shows. The domain decides the entries — their ids, their
+// titles, and which one is the way past the notation — because every one of
+// those is a notation fact. An adapter draws the list and hands back the id.
 
 /// One entry in a list an adapter puts on screen — a candidate the notation
 /// offered, or the escape hatch past it.

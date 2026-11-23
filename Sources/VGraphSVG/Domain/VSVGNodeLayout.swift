@@ -336,7 +336,7 @@ public enum VSVGNodeLayout {
         guard !layouts.isEmpty else { return .empty }
         let textSize =
             nodeTextSize ?? NodeStyleLayout.vertical(layouts, spacing: spacing).fallbackTextSize()
-        let heights = layouts.map { $0.calculateSizeWithText(textSize).height }
+        let heights = layouts.map { $0.size(aroundText: textSize).height }
 
         var children: [VSVGNode] = []
         var currentY = bounds.origin.y
@@ -360,7 +360,7 @@ public enum VSVGNodeLayout {
         guard !layouts.isEmpty else { return .empty }
         let textSize =
             nodeTextSize ?? NodeStyleLayout.horizontal(layouts, spacing: spacing).fallbackTextSize()
-        let widths = layouts.map { $0.calculateSizeWithText(textSize).width }
+        let widths = layouts.map { $0.size(aroundText: textSize).width }
 
         var children: [VSVGNode] = []
         var currentX = bounds.origin.x

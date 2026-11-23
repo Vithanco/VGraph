@@ -37,7 +37,7 @@ struct BBSNotationFillTests {
     ])
     func eachNodeTypeWearsItsOwnFill(node: String, type: NodeType, fill: String) throws {
         let graph = try parsed()
-        #expect(try graph.nodeType(for: Node(string: node)) == type)
+        #expect(try graph.nodeType(for: Node(rawValue: node)) == type)
         let background = graph.effectiveNodeLayout(for: type)?.backgroundFill
             .map { String($0.lightHex.lowercased().prefix(7)) }
         #expect(background == fill)
@@ -52,7 +52,7 @@ struct BBSNotationFillTests {
     ])
     func theEdgeIdsUsersWriteResolveToTheirTypes(from: String, to: String, id: String) throws {
         let graph = try parsed()
-        let edge = try #require(graph.edges.first { $0.from == Node(string: from) && $0.to == Node(string: to) })
+        let edge = try #require(graph.edges.first { $0.from == Node(rawValue: from) && $0.to == Node(rawValue: to) })
         #expect(try graph.edgeType(for: edge.id).id.id == id)
     }
 }

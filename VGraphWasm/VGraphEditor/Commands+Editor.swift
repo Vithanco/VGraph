@@ -215,7 +215,7 @@ private func openNamedURL(_ targetId: String) {
 
 /// Bring the whole surface up to date after a command changed the graph.
 func commandApplied(
-    edit: (elementId: String, kind: VElementKind)?, in session: VGraphWasmSession
+    edit: (elementId: String, kind: VItemKind)?, in session: VGraphWasmSession
 ) {
     dismissMenu()
     syncSurface(to: (try? session.exportVGL()) ?? editorModel.vgl)

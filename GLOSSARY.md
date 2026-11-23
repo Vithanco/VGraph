@@ -62,6 +62,13 @@ A check states what *good* means for its notation. It never rejects a diagram: a
 [[Notation break]] is the user overriding guidance on purpose, so a check reports
 and leaves the decision alone.
 
+A notation names the checks it wants, and many speak about the **shape of the
+whole graph** rather than about any one type: "this is a tree", "no node stands
+alone", "at most one edge between any two nodes". A [[Bound]] is the other kind of
+rule — a value on a type — and a check reports its violations too.
+*Avoid*: "criterion", "graph criterion" (the old name for a check on the whole
+graph).
+
 ### Quality report
 What one diagram got back: the messages every applicable [[Quality check]]
 emitted, plus the notation they were run for. It exists only after a render.
@@ -235,11 +242,17 @@ rewrites such as folding), **Layout Graph** (Graphviz positions), **Render Graph
 (SVG). Each rendered element is stamped with the OriginGraph id of the element it
 represents, so a right-click can resolve back to a [[VCommand]] target by id.
 
+Between selecting and drawing, the pipeline is a sequence of graph transform
+steps (`TransformStep`), each taking the graph the one before produced and
+returning a new one. Folding is one (`FoldStep`); sizing and Graphviz layout are
+steps too.
+*Avoid*: "layout step" for a step that positions nothing.
+
 ### View graph
 The `VGraph` the [[Display pipeline]] transforms the [[OriginGraph]] into, and the
 one that gets laid out and drawn — a folded group reduced to a single stand-in
 node, its crossing edges attached to that box. It is for **presenting**, never for
-**judging**: quality checks, [[Bound]]s, [[Graph criterion]]s and loop detection
+**judging**: [[Quality check]]s, [[Bound]]s and loop detection
 all read the OriginGraph, so a fold can hide a problem from view but never from
 the diagnostics, and can never invent a loop the model does not have.
 
@@ -311,7 +324,7 @@ whether or not the document declares any `vview`.
 
 A view overrides [[Presentation attribute]]s only, never [[Content attribute]]s.
 The test for which is which: **if anything judges it, or it says what the diagram
-claims, it is content** — quality checks, [[Bound]]s, [[Graph criterion]]s, loop
+claims, it is content** — [[Quality check]]s, [[Bound]]s, loop
 detection, labels. Where that is unclear, ask whether two readers of the same
 diagram could rightly want it different.
 
@@ -519,7 +532,7 @@ breaks it even when the resulting graph is the one the notation wanted.
 
 The gesture supplies elements; it never supplies judgement. Which drops are legal
 comes from the command, which reads the notation, its [[Bound]]s and the
-[[Graph criterion]] `noParallelEdges`; the notation's other quality checks are
+[[Quality check]] `noParallelEdges`; the notation's other quality checks are
 not consulted, so a legal drop can still draw a warning. Feedback while dragging
 lives *outside* the SVG for the reason an [[Inline edit]] does — every render
 replaces it — and a render cancels the drag outright.
@@ -643,7 +656,7 @@ tinted and everything else stays silent; `connect`'s red has no counterpart. See
 
 ### Edge end
 One of an edge's two attachments — its `from` or its `to`. **Not an
-[[Element]]**: it has no id of its own, because it is a *position on* an edge
+[[Item]]**: it has no id of its own, because it is a *position on* an edge
 rather than a thing in the graph, so it is named by the pair (edge, end) and
 never by a single id. That is why the renderer stamps it as chrome carrying its
 edge and its side, and why `originId(fromDomId:)` keeps its promise that a
@@ -720,7 +733,22 @@ edge between two nodes is something to offer. Exceeding a bound is a
 default; a notation opts in. See [[0011-bounds-on-edge-and-node-types]].
 
 A bound is a claim about a **type**. A claim about the whole graph's shape is a
-[[Graph criterion]] instead — the two look alike and behave differently.
+[[Quality check]] instead — the two look alike and behave differently, and the
+test is what the rule is *about*. "An Objective has exactly two Needs" names a
+type and is a bound. A Causal Loop Diagram's "at most one link between two
+stocks" names no type — it is a statement that the diagram is a simple digraph,
+and it cannot be expressed as a bound on either edge type involved, because
+neither can speak for the other.
+
+The practical difference: a bound is a value a [[Gesture]] reads before it
+offers a drop, while a check runs over the whole graph, which the
+gesture would have to run on the graph with the edge added. It does not, so a
+notation whose rule is such a check gets no help from the diagram: the drop is
+offered and the diagnostics object afterwards. `noParallelEdges` is the
+exception: a notation names it, and the candidate queries behind connect,
+reattach and retype read that list, so a pair already joined is not offered
+again — which is how the Causal Loop Diagram rule above reaches the diagram after
+all.
 
 An edge type's bound counts its edges on every pair it holds, gained ones
 included. An end that sits on a detail counts for the [[Detailed node]] of the
@@ -754,7 +782,7 @@ link; or **none**. An independent set is not "the important loops" — it can le
 a loop the author drew unmarked. See [[0028-loops-are-found-over-nodes-shortest-first-and-capped]].
 The markers exist only in the [[View graph]]; the choice is a presentation
 setting of the diagram, so a [[View]] may make its own.
-*Avoid*: "loop indicator" in conversation (the code's name), "SILS" for the
+*Avoid*: "loop indicator", "SILS" for the
 option — ours covers every link but does not claim Oliva's full set.
 
 ### Proposition
@@ -772,28 +800,6 @@ not a junctor: it relates two concepts, and each of its pairs is its own
 [[Proposition]].
 *Avoid*: "junctor" for a node merely drawn as its icon alone, or for any node
 that is not a thing.
-
-### Graph criterion
-A rule about the **shape of the whole graph** rather than about any one type:
-"this is a tree", "no node stands alone", "at most one edge between any two
-nodes". Named in a notation and reported by graph analysis, exactly as a
-[[Bound]] violation is.
-
-The two are easy to confuse and the test is what the rule is *about*. "An
-Objective has exactly two Needs" names a type and is a bound. A Causal
-Loop Diagram's "at most one link between two stocks" names no type — it is a
-statement that the diagram is a simple digraph, and it cannot be expressed as a
-bound on either edge type involved, because neither can speak for the other.
-
-The practical difference: a bound is a value a [[Gesture]] reads before it
-offers a drop, while a criterion is a check over a whole graph, which it would
-have to run on the graph with the edge added. Today it does not, so a notation
-whose rule is a criterion gets no help from the diagram: the drop is offered and
-the diagnostics object afterwards. `noParallelEdges` is the exception: a
-notation names it, and the candidate queries behind connect, reattach and retype
-read that list, so a pair already joined is not offered again — which is how the
-Causal Loop Diagram rule above reaches the diagram after all. See
-[[0011-bounds-on-edge-and-node-types]].
 
 ### Notation break
 A deliberate deviation from the notation's rules. The user must reach for it
@@ -842,6 +848,12 @@ Umbrella term for the C4 node kinds — Person, Software System, Container,
 Component, Code Element, Database. When we say "an element" in a C4 context we
 mean one of these boxes, regardless of which kind. Being external is not a kind:
 an external Container is a Container someone else owns.
+
+### Item
+A node, an edge or a group: a thing in a graph with an id of its own, which a
+[[VCommand]] can target and a [[Layer]] can hold values for. Prose may say
+*element*; a name in code says item, since [[Element]] is C4's word.
+*Avoid*: "element" in a name.
 
 ### Container (C4)
 In C4, a **Container** is a separately deployable/runnable unit — an application,

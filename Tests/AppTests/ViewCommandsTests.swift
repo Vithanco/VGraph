@@ -129,7 +129,7 @@ struct ViewStructureTests {
     func addGoesToTheModel() throws {
         let s = try session(bank)
         try s.selectView("containers")
-        let id = try #require(try s.addNode(in: nil, ofType: NodeType(string: "Concept")))
+        let id = try #require(try s.addNode(in: nil, ofType: NodeType(rawValue: "Concept")))
         let text = try s.exportVGL()
         #expect(model(of: text).contains(id))
         #expect(!viewBlock("containers", in: text).contains(id))
@@ -150,9 +150,9 @@ struct ViewStructureTests {
         let s = try session(bank)
         try s.selectView("containers")
         try s.toggleFolding(of: "bank")
-        let id = try #require(try s.addNode(in: "bank", ofType: NodeType(string: "Concept")))
+        let id = try #require(try s.addNode(in: "bank", ofType: NodeType(rawValue: "Concept")))
         #expect(s.isFolded("bank"))
-        #expect(s.origin.group(of: Node(string: id))?.id.id == "bank")
+        #expect(s.origin.group(of: Node(rawValue: id))?.id.id == "bank")
     }
 }
 

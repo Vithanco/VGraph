@@ -7,7 +7,7 @@ import Testing
 struct C4ShapeTests {
 
     private func cardStyleString(_ nodeType: NodeType) throws(VError) -> String {
-        let graph = try Notations.C4.addNotation(addTo: VGraph().defineStandardAttributes())
+        let graph = try Notations.C4.addNotation(to: VGraph())
         return try graph.get(nodeType: nodeType, attribute: Attributes.Node.style).asString
     }
 

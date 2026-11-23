@@ -30,7 +30,7 @@ this group looks folded, and here is how it looks unfolded."
 Give a group a first-class `GroupStyle` with two faces, symmetric to a node's
 style:
 
-- `GroupStyle { folded: NodeStyleLayout, unfolded: BoundaryChrome }`.
+- `GroupStyle { folded: NodeStyleLayout, unfolded: GroupFrame }`.
   - `folded` — the collapsed box (reuses the node styling vocabulary, so a folded
     C4 system looks exactly like the element card it stands for).
   - `unfolded` — the frame drawn round the contents (dashed border, colour, fill).
@@ -38,11 +38,11 @@ style:
   override wins, else the group's [[GroupType]]'s registered style, else `nil`
   (caller falls back to the generic proxy).
 - `GroupType` is an attribute-based type tag (unlike the structural `NodeType`),
-  registered with `add(groupType:)` and styled with `set(groupType:attribute:)`.
+  registered with `adding(groupType:)` and styled with `setting(groupType:attribute:)`.
 
 Rendering consumes each face through a transform, not by special-casing the SVG
-renderer: `FoldingLayoutStep` stamps the `folded` face onto the collapsed proxy
-node, and `BoundaryChromeStep` stamps the `unfolded` face onto the group's loose
+renderer: `FoldStep` stamps the `folded` face onto the collapsed proxy
+node, and `GroupFrameStep` stamps the `unfolded` face onto the group's loose
 `Attributes.Group.*` so the renderer draws it with no knowledge of `GroupType`.
 
 ## Consequences
@@ -55,5 +55,5 @@ node, and `BoundaryChromeStep` stamps the `unfolded` face onto the group's loose
   with an id comes back as a `literal` with a recomputed dark hex), so tests
   compare `GroupStyle` canonically (`x.asString`) rather than by structural
   equality.
-- Changed the fold path (`FoldingLayoutStep`) and introduced the boundary path
-  (`BoundaryChromeStep`), both under the [[Display pipeline]].
+- Changed the fold path (`FoldStep`) and introduced the boundary path
+  (`GroupFrameStep`), both under the [[Display pipeline]].

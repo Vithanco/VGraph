@@ -84,7 +84,7 @@ struct NamedCommandOptionRefusalTest {
             throws: VError.commandOptionNotOffered(
                 .changeDirection, target: edgeId, option: "nonsense")
         ) {
-            try s.changeDirection(of: edgeId, to: EdgeType.Id(string: "nonsense"))
+            try s.changeDirection(of: edgeId, to: EdgeType.Id(rawValue: "nonsense"))
         }
 
         #expect(s.canUndo == false)
@@ -103,7 +103,7 @@ struct NamedCommandOptionRefusalTest {
         #expect(
             throws: VError.commandOptionNotOffered(.addPredecessor, target: "a", option: "nonsense")
         ) {
-            try s.addPredecessor(to: "a", using: EdgeType.Id(string: "nonsense"))
+            try s.addPredecessor(to: "a", using: EdgeType.Id(rawValue: "nonsense"))
         }
 
         #expect(s.canUndo == false)
@@ -125,7 +125,7 @@ struct NamedCommandOptionRefusalTest {
         #expect(
             throws: VError.commandOptionNotOffered(.connect, target: "s2", option: "nonsense")
         ) {
-            try s.connect("s1", to: "s2", using: EdgeType.Id(string: "nonsense"))
+            try s.connect("s1", to: "s2", using: EdgeType.Id(rawValue: "nonsense"))
         }
 
         #expect(s.canUndo == false)
@@ -144,7 +144,7 @@ struct NamedCommandOptionRefusalTest {
         #expect(
             throws: VError.commandOptionNotOffered(.changeType, target: "i1", option: "nonsense")
         ) {
-            try s.changeType(of: "i1", to: risk, edgeTypes: [EdgeType.Id(string: "nonsense")])
+            try s.changeType(of: "i1", to: risk, edgeTypes: [EdgeType.Id(rawValue: "nonsense")])
         }
 
         #expect(s.canUndo == false)
@@ -227,7 +227,7 @@ struct NamedCommandAnswerPreconditionTest {
             try s.changeType(
                 of: "i1", to: risk,
                 edgeTypes: [
-                    EdgeType.Id(string: "monitored_by"), EdgeType.Id(string: "mitigated_by"),
+                    EdgeType.Id(rawValue: "monitored_by"), EdgeType.Id(rawValue: "mitigated_by"),
                 ])
         }
 
@@ -260,7 +260,7 @@ struct NamedCommandAnswerPreconditionTest {
             _ = try s.origin.retyping(
                 node, to: risk,
                 edgeTypes: [
-                    EdgeType.Id(string: "monitored_by"), EdgeType.Id(string: "mitigated_by"),
+                    EdgeType.Id(rawValue: "monitored_by"), EdgeType.Id(rawValue: "mitigated_by"),
                 ])
         }
     }

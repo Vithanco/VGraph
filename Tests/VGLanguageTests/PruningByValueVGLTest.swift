@@ -38,10 +38,10 @@ struct PruningByValueVGLTest {
 
     @Test func aNodeThatOnlyRepeatedItsTypeFollowsTheTypesChange() throws {
         let graph = try parse(Self.source)
-            .set(nodeType: Notations.C4.NodeTypes.person, attribute: Attributes.Node.fontsize(30))
-            .set(nodeType: Notations.C4.NodeTypes.softwareSystem, attribute: Attributes.Node.fontsize(30))
+            .setting(nodeType: Notations.C4.NodeTypes.person, attribute: Attributes.Node.fontsize(30))
+            .setting(nodeType: Notations.C4.NodeTypes.softwareSystem, attribute: Attributes.Node.fontsize(30))
 
-        #expect(try graph.get(node: Node(string: "customer"), attribute: Attributes.Node.fontsize) == 30)
+        #expect(try graph.get(node: Node(rawValue: "customer"), attribute: Attributes.Node.fontsize) == 30)
         #expect(try graph.get(group: Group(rawValue: "ibs"), attribute: Attributes.Node.fontsize) == 30)
     }
 

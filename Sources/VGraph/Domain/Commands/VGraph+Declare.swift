@@ -1,17 +1,12 @@
-//
-//  VGraph+Declare.swift
-//  VGraph
-//
-//  Declaring a relationship the notation lacks — the alternative to minting an
-//  unknown edge type. See ADR-0024.
-//
+// Declaring a relationship the notation lacks — the alternative to minting an
+// unknown edge type. See ADR-0024.
 
 extension VGraph {
     /// Whether `name` is a relationship name this graph can take: a VGL
     /// identifier the parser will read back, not one of its keywords, and not a
     /// type this graph already has.
     public func canDeclare(edgeTypeNamed name: String) -> Bool {
-        Self.isVGLIdentifier(name) && !Self.isVGLKeyword(name) && get(edgeType: EdgeType.Id(string: name)) == nil
+        Self.isVGLIdentifier(name) && !Self.isVGLKeyword(name) && get(edgeType: EdgeType.Id(rawValue: name)) == nil
     }
 
     /// Add an edge type the notation does not declare, and make the document's
@@ -28,7 +23,7 @@ extension VGraph {
         edgeType id: EdgeType.Id, from: NodeType, to: NodeType
     ) throws(VError) -> (VGraph, EdgeType) {
         let edgeType = EdgeType(id: id.id, from: from, to: to)
-        return (try add(edgeType: edgeType).onDynamicNotation(), edgeType)
+        return (try adding(edgeType: edgeType).onDynamicNotation(), edgeType)
     }
 
     /// Happens once: a document already on a dynamic notation keeps its name

@@ -20,19 +20,19 @@ struct ConnectCandidateTests {
     // MARK: - Fixtures
 
     private func conceptMap() throws(VError) -> VGraph {
-        var graph = try VGraph().defineStandardAttributes()
-        graph = try CM.addNotation(addTo: graph)
+        var graph = VGraph()
+        graph = try CM.addNotation(to: graph)
         return graph.using(notation: "ConceptMap")
     }
 
     private func causalLoopDiagram() throws(VError) -> VGraph {
-        var graph = try VGraph().defineStandardAttributes()
-        graph = try CLD.addNotation(addTo: graph)
+        var graph = VGraph()
+        graph = try CLD.addNotation(to: graph)
         return graph.using(notation: "CLD")
     }
 
     /// The same types under a notation name the registry does not know, so no
-    /// [[Graph criterion]] is in force and only bounds decide — for the tests
+    /// named [[Quality check]] is in force and only bounds decide — for the tests
     /// about bounds alone, which CLD's and ConceptMap's `noParallelEdges` would
     /// otherwise answer first.
     private func boundsOnly(_ graph: VGraph) throws(VError) -> VGraph {
@@ -40,25 +40,25 @@ struct ConnectCandidateTests {
     }
 
     private func node(_ id: String, _ type: NodeType, in graph: VGraph) throws(VError) -> VGraph {
-        let node = Node(string: id)
-        let result = try graph.add(node: node, type: type)
-        return try result.set(node: node, attribute: Attributes.Node.label.attribute(id))
+        let node = Node(rawValue: id)
+        let result = try graph.adding(node: node, type: type)
+        return try result.setting(node: node, attribute: Attributes.Node.label.attribute(id))
     }
 
     private func edge(_ id: String, _ from: String, _ to: String, _ type: EdgeType, in graph: VGraph)
         throws(VError) -> VGraph
     {
-        try graph.add(edge: Edge(string: id, from: from, to: to), edgeType: type)
+        try graph.adding(edge: Edge(string: id, from: from, to: to), edgeType: type)
     }
 
     private func bound(
         _ definition: TypedAttributeDefinition<Int>, _ value: Int, on edgeType: EdgeType, in graph: VGraph
     ) throws(VError) -> VGraph {
-        try graph.set(edgeType: edgeType, attribute: definition.attribute(value))
+        try graph.setting(edgeType: edgeType, attribute: definition.attribute(value))
     }
 
     private func candidates(_ graph: VGraph, _ from: String, _ to: String) -> [String] {
-        graph.connectCandidates(from: Node(string: from), to: Node(string: to)).map { $0.id.id }
+        graph.connectCandidates(from: Node(rawValue: from), to: Node(rawValue: to)).map { $0.id.id }
     }
 
     // MARK: - What the notation declares
@@ -114,7 +114,7 @@ struct ConnectCandidateTests {
         graph = try node("a", CM.NodeTypes.concept, in: graph)
         graph = try node("b", CM.NodeTypes.concept, in: graph)
         let unknown: EdgeType
-        (graph, unknown) = try graph.ensureUnknownEdgeType(
+        (graph, unknown) = try graph.ensuringUnknownEdgeType(
             from: CM.NodeTypes.concept, to: CM.NodeTypes.concept)
         graph = try edge("e1", "a", "b", unknown, in: graph)
 
@@ -171,7 +171,7 @@ struct ConnectCandidateTests {
         graph = try node("r1", CM.NodeTypes.relation, in: graph)
         graph = try node("r2", CM.NodeTypes.relation, in: graph)
         graph = try edge("e1", "a", "r1", CM.EdgeTypes.conceptToRelation, in: graph)
-        graph = try graph.set(
+        graph = try graph.setting(
             nodeType: CM.NodeTypes.concept, attribute: Attributes.Node.totalOutDegreeMax.attribute(1))
 
         #expect(candidates(graph, "a", "r2").isEmpty)
@@ -187,7 +187,7 @@ struct ConnectCandidateTests {
         graph = try node("b", CM.NodeTypes.concept, in: graph)
         graph = try node("r", CM.NodeTypes.relation, in: graph)
         graph = try edge("e1", "a", "r", CM.EdgeTypes.conceptToRelation, in: graph)
-        graph = try graph.set(
+        graph = try graph.setting(
             nodeType: CM.NodeTypes.relation, attribute: Attributes.Node.totalInDegreeMax.attribute(1))
 
         #expect(candidates(graph, "b", "r").isEmpty)
@@ -236,7 +236,7 @@ struct ConnectCandidateTests {
 
     // MARK: - noParallelEdges
 
-    /// The criterion is data, so the gesture can read it: a pair already joined is
+    /// The check is named, so the gesture can read it: a pair already joined is
     /// not offered again, in either type. The other direction is a loop, not a
     /// parallel link.
     @Test("A declaring notation offers nothing for a pair already joined")
@@ -246,8 +246,8 @@ struct ConnectCandidateTests {
         graph = try node("b", CLD.NodeTypes.stock, in: graph)
         graph = try edge("e1", "a", "b", CLD.EdgeTypes.same, in: graph)
 
-        #expect(graph.connectCandidates(from: Node(string: "a"), to: Node(string: "b")).isEmpty)
-        #expect(!graph.connectCandidates(from: Node(string: "b"), to: Node(string: "a")).isEmpty)
+        #expect(graph.connectCandidates(from: Node(rawValue: "a"), to: Node(rawValue: "b")).isEmpty)
+        #expect(!graph.connectCandidates(from: Node(rawValue: "b"), to: Node(rawValue: "a")).isEmpty)
     }
 
     /// Reattach and retype ask against the graph without the edge in hand, so an
@@ -259,7 +259,7 @@ struct ConnectCandidateTests {
         graph = try node("b", CLD.NodeTypes.stock, in: graph)
         graph = try edge("e1", "a", "b", CLD.EdgeTypes.same, in: graph)
 
-        #expect(graph.retypeCandidates(edge: Edge.Id(string: "e1")).map { $0.id } == [CLD.EdgeTypes.opposite.id])
+        #expect(graph.retypeCandidates(for: Edge.Id(rawValue: "e1")).map { $0.id } == [CLD.EdgeTypes.opposite.id])
     }
 
     @Test("Reattaching an end onto a pair already joined is not offered")
@@ -271,22 +271,22 @@ struct ConnectCandidateTests {
         graph = try edge("e1", "a", "b", CLD.EdgeTypes.same, in: graph)
         graph = try edge("e2", "c", "b", CLD.EdgeTypes.same, in: graph)
 
-        #expect(graph.reattachCandidates(edge: Edge.Id(string: "e2"), end: .from, to: Node(string: "a")).isEmpty)
-        #expect(!graph.reattachCandidates(edge: Edge.Id(string: "e2"), end: .from, to: Node(string: "c")).isEmpty)
+        #expect(graph.reattachCandidates(for: Edge.Id(rawValue: "e2"), end: .from, to: Node(rawValue: "a")).isEmpty)
+        #expect(!graph.reattachCandidates(for: Edge.Id(rawValue: "e2"), end: .from, to: Node(rawValue: "c")).isEmpty)
     }
 
-    @Test("A notation without the criterion still offers a second link")
+    @Test("A notation without the check still offers a second link")
     func arithmeticStillOffersTheSecondOperand() throws {
         typealias A = Notations.Arithmetic
-        var graph = try VGraph().defineStandardAttributes()
-        graph = try A.addNotation(addTo: graph)
+        var graph = VGraph()
+        graph = try A.addNotation(to: graph)
         graph = graph.using(notation: "Arithmetic")
-        graph = try graph.add(node: Node(string: "x"), type: A.NodeTypes.number)
-        graph = try graph.add(node: Node(string: "op"), type: A.NodeTypes.plus)
-        graph = try graph.add(edge: Edge(string: "e1", from: "x", to: "op"), edgeType: A.EdgeTypes.plusFirstOperand)
+        graph = try graph.adding(node: Node(rawValue: "x"), type: A.NodeTypes.number)
+        graph = try graph.adding(node: Node(rawValue: "op"), type: A.NodeTypes.plus)
+        graph = try graph.adding(edge: Edge(string: "e1", from: "x", to: "op"), edgeType: A.EdgeTypes.plusFirstOperand)
 
         #expect(
-            graph.connectCandidates(from: Node(string: "x"), to: Node(string: "op")).map { $0.id }
+            graph.connectCandidates(from: Node(rawValue: "x"), to: Node(rawValue: "op")).map { $0.id }
                 == [A.EdgeTypes.plusSecondOperand.id])
     }
 }

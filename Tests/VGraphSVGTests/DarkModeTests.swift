@@ -26,10 +26,10 @@ struct DarkModeTests {
         let graph = try parser.parse(source: input)
         var layoutedGraph = graph
         for node in graph.nodes {
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node,
                 attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 50, y: 50)))
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node,
                 attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
         }
@@ -70,20 +70,20 @@ struct DarkModeTests {
 
         var layoutedGraph = graph
         for (index, node) in graph.nodes.enumerated() {
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node,
                 attribute: Attributes.Node.layoutedPos.attribute(
                     VPoint(x: Double(index) * 100 + 50, y: 50)))
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node,
                 attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
         }
         let group = graph.groups[0]
-        layoutedGraph = try layoutedGraph.set(
+        layoutedGraph = try layoutedGraph.setting(
             group: group,
             attribute: Attributes.Group.layoutedBounds.attribute(
                 VRect(x: 80, y: 10, width: 200, height: 100)))
-        layoutedGraph = try layoutedGraph.set(
+        layoutedGraph = try layoutedGraph.setting(
             group: group,
             attribute: Attributes.Group.labelLayoutedPos.attribute(VPoint(x: 180, y: 20)))
 
@@ -113,6 +113,29 @@ struct DarkModeTests {
         #expect(!darkGroup.contains("#505048"))
     }
 
+    @Test func foldingKeepsTheGroupsDarkColors() throws {
+        let graph = try VGraphParser(logger: TestLogger()).parse(
+            source: """
+                vgraph myGraph: IBIS "Test Graph" {
+                    folded group g1 "My Group" {
+                        node a1: Answer "Answer in group";
+                    };
+                }
+                """)
+        var folded = try TransformStep.pipeline(Notations.extensionSteps)(graph)
+        for node in folded.nodes {
+            folded = try folded.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 100, y: 50)))
+            folded = try folded.setting(
+                node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 160, height: 50)))
+        }
+
+        let darkSvg = try VSVGRenderer(logger: TestLogger()).render(graph: folded, darkMode: true)
+
+        #expect(darkSvg.contains("fill=\"\(SemanticColor.groupFill.darkHex)\""))
+        #expect(darkSvg.contains("stroke=\"\(SemanticColor.groupBorder.darkHex)\""))
+        #expect(darkSvg.contains("fill=\"\(SemanticColor.groupText.darkHex)\""))
+    }
+
     /// Edge labels must render as DM Sans 11px italic in `SemanticColor.ink2`
     /// (Diagram Style Guide §04/§05 update). Promoted from ink-3 to ink-2 to
     /// clear AA contrast at small italic sizes in dark mode.
@@ -129,11 +152,11 @@ struct DarkModeTests {
         let graph = try parser.parse(source: input)
         var layoutedGraph = graph
         for (index, node) in graph.nodes.enumerated() {
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node,
                 attribute: Attributes.Node.layoutedPos.attribute(
                     VPoint(x: Double(index) * 100 + 50, y: 50)))
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node,
                 attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
         }
@@ -143,7 +166,7 @@ struct DarkModeTests {
             splinePoints: [VPoint(x: 50, y: 50), VPoint(x: 150, y: 50)],
             label: LabelData(text: "edge-label-here", position: VPoint(x: 100, y: 50))
         )
-        layoutedGraph = try layoutedGraph.set(
+        layoutedGraph = try layoutedGraph.setting(
             edge: edge.id,
             attribute: Attributes.Edge.layoutData.attribute(edgeLayout))
 

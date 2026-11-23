@@ -167,7 +167,7 @@ public func begin(
             return (
                 .perform(
                     .addRelated(
-                        to: target, newNodeAt: end, using: EdgeType.Id(string: only.id))),
+                        to: target, newNodeAt: end, using: EdgeType.Id(rawValue: only.id))),
                 conversation
             )
         }
@@ -208,7 +208,7 @@ public func begin(
             // the command picks itself, or none at all — and `availability` has
             // already greyed the second.
             guard !options.isEmpty else {
-                guard !session.retypeCandidates(edge: target).isEmpty else {
+                guard !session.retypeCandidates(forEdge: target).isEmpty else {
                     return (.dismiss, conversation)
                 }
                 return (.perform(.changeEdgeType(edge: target, using: nil)), conversation)
@@ -233,7 +233,7 @@ public func begin(
         }
         if !forcingChoice, let only = VCommandOption.soleCandidate(in: options) {
             return beganRetype(
-                conversation, node: target, to: NodeType(string: only.id), in: session)
+                conversation, node: target, to: NodeType(rawValue: only.id), in: session)
         }
         return (.ask(prompt: prompt(for: command), options: options), conversation)
 
@@ -450,7 +450,7 @@ public func next(
         return (
             .perform(
                 .connect(
-                    from: from, to: to, using: EdgeType.Id(string: option.id),
+                    from: from, to: to, using: EdgeType.Id(rawValue: option.id),
                     notationBreak: .forbidden)),
             conversation
         )
@@ -460,7 +460,7 @@ public func next(
             .perform(
                 .reattach(
                     edge: edge, end: end, to: droppedOn,
-                    using: EdgeType.Id(string: option.id), notationBreak: .forbidden)),
+                    using: EdgeType.Id(rawValue: option.id), notationBreak: .forbidden)),
             conversation
         )
 
@@ -481,7 +481,7 @@ public func next(
                     .perform(
                         .addRelatedBreaking(
                             to: target, newNodeAt: end,
-                            ofType: NodeType(string: option.id))),
+                            ofType: NodeType(rawValue: option.id))),
                     conversation
                 )
             }
@@ -489,7 +489,7 @@ public func next(
                 .perform(
                     .addRelated(
                         to: target, newNodeAt: end,
-                        using: EdgeType.Id(string: option.id))),
+                        using: EdgeType.Id(rawValue: option.id))),
                 conversation
             )
 
@@ -497,7 +497,7 @@ public func next(
             return (
                 .perform(
                     .addNode(
-                        in: target, ofType: NodeType(string: option.id),
+                        in: target, ofType: NodeType(rawValue: option.id),
                         notationBreak: conversation.notationBreak)),
                 conversation
             )
@@ -505,7 +505,7 @@ public func next(
         case .split:
             if conversation.breakChoice {
                 return (
-                    .perform(.splitBreaking(edge: target, ofType: NodeType(string: option.id))),
+                    .perform(.splitBreaking(edge: target, ofType: NodeType(rawValue: option.id))),
                     conversation
                 )
             }
@@ -525,7 +525,7 @@ public func next(
                 }
                 return (
                     .perform(
-                        .changeEdgeType(edge: target, using: EdgeType.Id(string: option.id))),
+                        .changeEdgeType(edge: target, using: EdgeType.Id(rawValue: option.id))),
                     conversation
                 )
             }
@@ -535,23 +535,23 @@ public func next(
                         .changeGroupType(
                             group: target,
                             to: option.id == plainGroupOption.id
-                                ? nil : GroupType(string: option.id))),
+                                ? nil : GroupType(rawValue: option.id))),
                     conversation
                 )
             }
             if var retype = conversation.retype {
-                retype.chosen.append(EdgeType.Id(string: option.id))
+                retype.chosen.append(EdgeType.Id(rawValue: option.id))
                 var advanced = conversation
                 advanced.retype = retype
                 return (nextEdgeOrRetype(advanced, node: target), advanced)
             }
-            return beganRetype(conversation, node: target, to: NodeType(string: option.id), in: session)
+            return beganRetype(conversation, node: target, to: NodeType(rawValue: option.id), in: session)
 
         case .changeDirection:
             return (
                 .perform(
                     .changeDirection(
-                        edge: target, to: EdgeType.Id(string: option.id),
+                        edge: target, to: EdgeType.Id(rawValue: option.id),
                         notationBreak: conversation.notationBreak)),
                 conversation
             )

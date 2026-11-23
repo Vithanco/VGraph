@@ -1,12 +1,5 @@
-////
-////  SemanticColor.swift
-////  VGraph
-////
-////  A theme-aware colour token: an explicit light + dark hex pair resolved to a
-////  concrete `VColor` at render time, once `darkMode` is known.
-////
-
-import MathUtils
+// A theme-aware colour token: an explicit light + dark hex pair resolved to a
+// concrete `VColor` at render time, once `darkMode` is known.
 
 public struct SemanticColor: Hashable, Sendable {
     public let id: String
@@ -25,13 +18,18 @@ public struct SemanticColor: Hashable, Sendable {
         self.darkHex = ColorMath.darkHex(of: lightHex)
     }
 
+    /// Dark mode is keyed on the light hex (style guide Rule 1): a chrome token's
+    /// light hex keeps the token's dark hex, so a colour that went through a
+    /// stored string still flips like the token it came from.
     public static func literal(lightHex: String) -> SemanticColor {
-        SemanticColor(id: "literal", lightHex: lightHex)
+        let light = VColor(hexString: lightHex)
+        let chromeDark = chrome.first { VColor(hexString: $0.lightHex) == light }?.darkHex
+        return SemanticColor(id: "literal", lightHex: lightHex, darkHex: chromeDark ?? ColorMath.darkHex(of: lightHex))
     }
 
     public static func literal(_ color: VColor) -> SemanticColor {
         // Keep alpha: lifting via the alpha-less `hexString` would silently turn a
-        // transparent colour opaque on round-trip (a boundary's clear fill would
+        // transparent colour opaque on round-trip (a group frame's clear fill would
         // render as solid black).
         SemanticColor.literal(lightHex: color.hexStringWithAlpha)
     }
@@ -47,21 +45,25 @@ public struct SemanticColor: Hashable, Sendable {
     // MARK: - Derivations
 
     public func darken(to factor: Double) -> SemanticColor {
-        let light = (VColor(hexString: lightHex) ?? .black).darken(to: factor).hexString
-        let dark = (VColor(hexString: darkHex) ?? .black).darken(to: factor).hexString
-        return SemanticColor(id: "\(id).darken(\(factor))", lightHex: light, darkHex: dark)
+        deriving("darken(\(factor))") { $0.darken(to: factor) }
     }
 
     /// `bwContrastColor`'s judgement without its answer, so a recolour can ask
     /// whether text still reads before deciding to overwrite it.
     public var isLight: Bool {
-        (VColor(hexString: lightHex) ?? .black).bwContrastColor.hexString.lowercased() == "#000000"
+        resolve(darkMode: false).bwContrastColor == .black
     }
 
     public var bwContrastColor: SemanticColor {
-        let light = (VColor(hexString: lightHex) ?? .black).bwContrastColor.hexString
-        let dark = (VColor(hexString: darkHex) ?? .black).bwContrastColor.hexString
-        return SemanticColor(id: "\(id).bwContrast", lightHex: light, darkHex: dark)
+        deriving("bwContrast") { $0.bwContrastColor }
+    }
+
+    /// The same change made to both themes' colours.
+    private func deriving(_ derivation: String, _ change: (VColor) -> VColor) -> SemanticColor {
+        SemanticColor(
+            id: "\(id).\(derivation)",
+            lightHex: change(resolve(darkMode: false)).hexString,
+            darkHex: change(resolve(darkMode: true)).hexString)
     }
 }
 
@@ -83,22 +85,14 @@ extension SemanticColor {
     /// the edge it belongs to, so it cannot contradict the notation (ADR-0021).
     public static let edgeEndFill = SemanticColor(id: "edge.end.fill", lightHex: page.lightHex, darkHex: page.darkHex)
 
-    // Headings, axis labels, generic text inside SVGs
-    public static let ink = SemanticColor(id: "ink", lightHex: "#1a1816", darkHex: "#ecebe5")
+    // Text inside SVGs
     public static let ink2 = SemanticColor(id: "ink.2", lightHex: "#5a564e", darkHex: "#a8a49a")
-    public static let ink3 = SemanticColor(id: "ink.3", lightHex: "#9a9690", darkHex: "#6e6a62")
 
     public static let groupFill = SemanticColor(id: "group.fill", lightHex: "#f4f3f0", darkHex: "#1c1a16")
     public static let groupBorder = SemanticColor(id: "group.border", lightHex: "#909088", darkHex: "#7a766e")
     public static let groupText = SemanticColor(id: "group.text", lightHex: "#505048", darkHex: "#c8c4bc")
-    public static let groupNestedFill = SemanticColor(id: "group.nested.fill", lightHex: "#efefef", darkHex: "#22201c")
-    public static let groupStack = SemanticColor(id: "group.stack", lightHex: "#e8e7e4", darkHex: "#1a1814")
 
-    // Ghost / count badges
-    public static let pillBg = SemanticColor(id: "pill.bg", lightHex: "#eeece8", darkHex: "#262420")
-    public static let pillText = SemanticColor(id: "pill.text", lightHex: "#807870", darkHex: "#a8a49a")
-
-    public static let loopIndicator = SemanticColor(id: "loop.indicator", lightHex: "#808078", darkHex: "#a8a49a")
+    public static let loopMarker = SemanticColor(id: "loop.marker", lightHex: "#808078", darkHex: "#a8a49a")
 
     /// An icon on a node type badge's coloured background. Dark mode brightens that
     /// background, and white on it falls below 3:1 for most types.
@@ -124,13 +118,19 @@ extension SemanticColor {
     /// The link badge, in the same grey as the folded-group badge — it is the same
     /// visual language (a small chip clipped to a corner), for a different fact.
     public static let linkBadgeFill = SemanticColor(id: "link.badge.fill", lightHex: "#909088", darkHex: "#7a766e")
+
+    /// The guide's `CHROME_DARK`. Junctor, page, watermark and the black/white
+    /// tokens are not in it: the guide resolves them by token, not by hex.
+    static let chrome: [SemanticColor] = [
+        edge, edgeBold, ink2, groupFill, groupBorder, groupText, loopMarker, ghostPillFill, ghostPillText,
+    ]
 }
 
 // MARK: - Serialisation
 //
 // Only the light hex goes on the wire, so a round-tripped colour comes back as a
 // literal: it loses its semantic identity but keeps visual fidelity in both themes,
-// the dark side re-derived by `ColorMath.darkOf`.
+// the dark side re-derived by `literal(lightHex:)`.
 
 extension SemanticColor {
     public var asString: String {

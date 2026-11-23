@@ -50,17 +50,17 @@ struct ViewManagementTests {
     func relabel() throws {
         let doc = try graph()
         let key = ItemKey(.node, "web")
-        let relabelled = try doc.relabelling(view: "containers", as: "Container View")
-        #expect(relabelled.views.map { $0.name } == ["context", "containers"])
-        #expect(relabelled.views.map { $0.label } == ["System Context", "Container View"])
-        #expect(try relabelled.attributes(inView: "containers", of: key) == doc.attributes(inView: "containers", of: key))
+        let relabeled = try doc.relabeling(view: "containers", as: "Container View")
+        #expect(relabeled.views.map { $0.name } == ["context", "containers"])
+        #expect(relabeled.views.map { $0.label } == ["System Context", "Container View"])
+        #expect(try relabeled.attributes(inView: "containers", of: key) == doc.attributes(inView: "containers", of: key))
     }
 
     @Test("Given two views, when an unknown view is relabelled, then it is refused")
     func relabelUnknown() throws {
         let doc = try graph()
         #expect(throws: VError.unknownView("nope", available: ["context", "containers"])) {
-            try doc.relabelling(view: "nope", as: "X")
+            try doc.relabeling(view: "nope", as: "X")
         }
     }
 }

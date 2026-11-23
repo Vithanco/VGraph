@@ -19,29 +19,29 @@ struct ArithmeticEvaluationTests {
     // MARK: - Fixtures
 
     private func blank() throws(VError) -> VGraph {
-        var graph = try VGraph().defineStandardAttributes()
-        graph = try A.addNotation(addTo: graph)
+        var graph = VGraph()
+        graph = try A.addNotation(to: graph)
         return graph.using(notation: "Arithmetic")
     }
 
     private func number(_ id: String, _ value: String?, in graph: VGraph) throws(VError) -> VGraph {
-        let node = Node(string: id)
-        var result = try graph.add(node: node, type: A.NodeTypes.number)
+        let node = Node(rawValue: id)
+        var result = try graph.adding(node: node, type: A.NodeTypes.number)
         if let value {
-            result = try result.set(node: node, attribute: Attributes.Node.label.attribute(value))
+            result = try result.setting(node: node, attribute: Attributes.Node.label.attribute(value))
         }
         return result
     }
 
     private func operatorNode(_ id: String, _ type: NodeType, in graph: VGraph) throws(VError) -> VGraph {
-        try graph.add(node: Node(string: id), type: type)
+        try graph.adding(node: Node(rawValue: id), type: type)
     }
 
     private func equalsNode(_ id: String, _ expected: String?, in graph: VGraph) throws(VError) -> VGraph {
-        let node = Node(string: id)
-        var result = try graph.add(node: node, type: A.NodeTypes.equals)
+        let node = Node(rawValue: id)
+        var result = try graph.adding(node: node, type: A.NodeTypes.equals)
         if let expected {
-            result = try result.set(node: node, attribute: Attributes.Node.label.attribute(expected))
+            result = try result.setting(node: node, attribute: Attributes.Node.label.attribute(expected))
         }
         return result
     }
@@ -49,7 +49,7 @@ struct ArithmeticEvaluationTests {
     private func edge(_ id: String, _ from: String, _ to: String, _ type: EdgeType, in graph: VGraph)
         throws(VError) -> VGraph
     {
-        try graph.add(edge: Edge(string: id, from: from, to: to), edgeType: type)
+        try graph.adding(edge: Edge(string: id, from: from, to: to), edgeType: type)
     }
 
     /// `7 − x = 3`, typed directly onto `Equals`, with `x` filled by `secondValue`:
@@ -72,14 +72,14 @@ struct ArithmeticEvaluationTests {
     func correctAnswerEvaluatesCorrect() throws {
         let graph = try minusPuzzle(secondValue: "4")
         let outcomes = ArithmeticEvaluation.evaluate(graph)
-        #expect(outcomes[Node(string: "eq")] == .correct(value: 3))
+        #expect(outcomes[Node(rawValue: "eq")] == .correct(value: 3))
     }
 
     @Test("7 − 5 = 3 evaluates incorrect: computed 2, expected 3")
     func wrongAnswerEvaluatesIncorrect() throws {
         let graph = try minusPuzzle(secondValue: "5")
         let outcomes = ArithmeticEvaluation.evaluate(graph)
-        #expect(outcomes[Node(string: "eq")] == .incorrect(computed: [2], expected: 3))
+        #expect(outcomes[Node(rawValue: "eq")] == .incorrect(computed: [2], expected: 3))
     }
 
     @Test("A puzzle missing its second operand is absent from the outcome, not incorrect")
@@ -92,7 +92,7 @@ struct ArithmeticEvaluationTests {
         graph = try edge("e3", "op", "eq", A.EdgeTypes.minusResult, in: graph)
 
         let outcomes = ArithmeticEvaluation.evaluate(graph)
-        #expect(outcomes[Node(string: "eq")] == nil)
+        #expect(outcomes[Node(rawValue: "eq")] == nil)
     }
 
     // MARK: - Both-sides-equal (two operator results into one Equals, no typed label)
@@ -115,7 +115,7 @@ struct ArithmeticEvaluationTests {
         graph = try edge("e6", "plusOp", "eq", A.EdgeTypes.plusResult, in: graph)
 
         let outcomes = ArithmeticEvaluation.evaluate(graph)
-        #expect(outcomes[Node(string: "eq")] == .correct(value: 3))
+        #expect(outcomes[Node(rawValue: "eq")] == .correct(value: 3))
     }
 
     /// The painter sorts before it shows anything, but `Outcome` is public and
@@ -138,7 +138,7 @@ struct ArithmeticEvaluationTests {
         graph = try edge("e3", "minusOp", "eq", A.EdgeTypes.minusResult, in: graph)
 
         let outcomes = ArithmeticEvaluation.evaluate(graph)
-        #expect(outcomes[Node(string: "eq")] == .incorrect(computed: [3, 6], expected: nil))
+        #expect(outcomes[Node(rawValue: "eq")] == .incorrect(computed: [3, 6], expected: nil))
     }
 
     // MARK: - Multiplication
@@ -155,7 +155,7 @@ struct ArithmeticEvaluationTests {
         graph = try edge("e3", "op", "eq", A.EdgeTypes.timesResult, in: graph)
 
         let outcomes = ArithmeticEvaluation.evaluate(graph)
-        #expect(outcomes[Node(string: "eq")] == .correct(value: 42))
+        #expect(outcomes[Node(rawValue: "eq")] == .correct(value: 42))
     }
 
     // MARK: - Division
@@ -172,7 +172,7 @@ struct ArithmeticEvaluationTests {
         graph = try edge("e3", "op", "eq", A.EdgeTypes.divideResult, in: graph)
 
         let outcomes = ArithmeticEvaluation.evaluate(graph)
-        #expect(outcomes[Node(string: "eq")] == .correct(value: 3.5))
+        #expect(outcomes[Node(rawValue: "eq")] == .correct(value: 3.5))
     }
 
     @Test("Division by zero reports a warning and produces no outcome")
@@ -187,7 +187,7 @@ struct ArithmeticEvaluationTests {
         graph = try edge("e3", "op", "eq", A.EdgeTypes.divideResult, in: graph)
 
         let outcomes = ArithmeticEvaluation.evaluate(graph)
-        #expect(outcomes[Node(string: "eq")] == nil)
+        #expect(outcomes[Node(rawValue: "eq")] == nil)
 
         let messages = ArithmeticEvaluation.notEvaluableCheck(graph: graph)
         #expect(messages.count == 1)
@@ -201,7 +201,7 @@ struct ArithmeticEvaluationTests {
         let graph = try minusPuzzle(secondValue: "4")
         let painted = try ArithmeticEvaluation.paintEqualsStep(graph)
 
-        let style: NodeStyleLayout = try painted.get(node: Node(string: "eq"), attribute: Attributes.Node.style)
+        let style: NodeStyleLayout = try painted.get(node: Node(rawValue: "eq"), attribute: Attributes.Node.style)
         let expected = Notations.Arithmetic.circleNodeStyle(
             fill: Notations.Arithmetic.equalsCorrectFill, border: Notations.Arithmetic.equalsCorrectBorder, content: .text("= 3"))
         #expect(style.asString == expected.asString)
@@ -212,7 +212,7 @@ struct ArithmeticEvaluationTests {
         let graph = try minusPuzzle(secondValue: "5")
         let painted = try ArithmeticEvaluation.paintEqualsStep(graph)
 
-        let style: NodeStyleLayout = try painted.get(node: Node(string: "eq"), attribute: Attributes.Node.style)
+        let style: NodeStyleLayout = try painted.get(node: Node(rawValue: "eq"), attribute: Attributes.Node.style)
         #expect(style.extractIcons() == ["not-equal"])
     }
 
@@ -226,13 +226,13 @@ struct ArithmeticEvaluationTests {
         graph = try edge("e3", "op", "eq", A.EdgeTypes.minusResult, in: graph)
 
         let painted = try ArithmeticEvaluation.paintEqualsStep(graph)
-        let style: NodeStyleLayout = try painted.get(node: Node(string: "eq"), attribute: Attributes.Node.style)
+        let style: NodeStyleLayout = try painted.get(node: Node(rawValue: "eq"), attribute: Attributes.Node.style)
         let expected = Notations.Arithmetic.circleNodeStyle(
             fill: Notations.Arithmetic.equalsNeutralFill, border: Notations.Arithmetic.equalsNeutralBorder, content: .text("= 3"))
         #expect(style.asString == expected.asString)
 
         // Painting must not have mutated the graph passed in.
-        let originalStyle: NodeStyleLayout = try graph.get(node: Node(string: "eq"), attribute: Attributes.Node.style)
+        let originalStyle: NodeStyleLayout = try graph.get(node: Node(rawValue: "eq"), attribute: Attributes.Node.style)
         #expect(originalStyle.asString == Notations.Arithmetic.equalsNeutralStyle.asString)
     }
 
@@ -242,7 +242,7 @@ struct ArithmeticEvaluationTests {
         graph = try equalsNode("eq", nil, in: graph)
 
         let painted = try ArithmeticEvaluation.paintEqualsStep(graph)
-        let style: NodeStyleLayout = try painted.get(node: Node(string: "eq"), attribute: Attributes.Node.style)
+        let style: NodeStyleLayout = try painted.get(node: Node(rawValue: "eq"), attribute: Attributes.Node.style)
         #expect(style.asString == Notations.Arithmetic.equalsNeutralStyle.asString)
     }
 
@@ -270,7 +270,7 @@ struct ArithmeticEvaluationTests {
 
         // minus = 3, plus = 3, times = 6 — not all agree.
         let painted = try ArithmeticEvaluation.paintEqualsStep(graph)
-        let style: NodeStyleLayout = try painted.get(node: Node(string: "eq"), attribute: Attributes.Node.style)
+        let style: NodeStyleLayout = try painted.get(node: Node(rawValue: "eq"), attribute: Attributes.Node.style)
         #expect(style.extractIcons() == ["not-equal"])
     }
 
@@ -293,7 +293,7 @@ struct ArithmeticEvaluationTests {
 
         // minus = 3, plus = 3, expected = 9 — both computed values are 3.
         let painted = try ArithmeticEvaluation.paintEqualsStep(graph)
-        let style: NodeStyleLayout = try painted.get(node: Node(string: "eq"), attribute: Attributes.Node.style)
+        let style: NodeStyleLayout = try painted.get(node: Node(rawValue: "eq"), attribute: Attributes.Node.style)
         #expect(style.extractIcons() == ["not-equal"])
     }
 
@@ -333,9 +333,9 @@ struct ArithmeticEvaluationTests {
         graph = try edge("e2", "b", "op", A.EdgeTypes.plusFirstOperand, in: graph)
         graph = try edge("e3", "c", "op", A.EdgeTypes.plusSecondOperand, in: graph)
         graph = try edge("e4", "op", "eq", A.EdgeTypes.plusResult, in: graph)
-        graph = try graph.set(node: Node(string: "eq"), attribute: Attributes.Node.label.attribute("11"))
+        graph = try graph.setting(node: Node(rawValue: "eq"), attribute: Attributes.Node.label.attribute("11"))
 
         let outcomes = ArithmeticEvaluation.evaluate(graph)
-        #expect(outcomes[Node(string: "eq")] == .correct(value: 11))
+        #expect(outcomes[Node(rawValue: "eq")] == .correct(value: 11))
     }
 }

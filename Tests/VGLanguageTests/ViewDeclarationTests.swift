@@ -47,7 +47,7 @@ private func parseFails(_ source: String, mentioning fragment: String) {
 
 /// The way the parser builds a value, so the stored strings are comparable.
 private func fontsize(_ value: String, in graph: VGraph) throws -> Attribute {
-    try graph.attributeDefinitions[Attributes.Node.fontsize.id]!.attribute(fromString: value)
+    graph.attributeDefinitions[Attributes.Node.fontsize.id]!.attribute(fromString: value)
 }
 
 private func viewBlock(_ name: String, in exported: String) -> String {
@@ -137,13 +137,13 @@ struct ViewDeclarationTests {
         let graph = try parse(banking + "\nvview v {\n node db [fontsize: 20];\n}\n")
         let key = ItemKey(.node, "db")
         #expect(try graph.attributes(inView: "v", of: key)[Attributes.Node.fontsize.id] == "20")
-        let matched = try graph.update(node: Node(string: "db"), attribute: fontsize("20", in: graph))
+        let matched = try graph.setting(node: Node(rawValue: "db"), attribute: fontsize("20", in: graph))
         #expect(try matched.attributes(inView: "v", of: key).isEmpty)
     }
 
     /// The notation colours Database, the model recolours db, and the view
     /// asks for the notation's colour back on the type.
-    private let recolouredDatabase =
+    private let recoloredDatabase =
         banking
         .replacingOccurrences(
             of: "group type: Zone", with: "group type: Zone\n    node type: Database [backgroundColor: \"#ffd27f\"]"
@@ -156,8 +156,8 @@ struct ViewDeclarationTests {
         "Given a model value on an element, when a view sets its type back to the notation's value, then the view keeps it and wins (ADR-0030: the layer comes first)"
     )
     func viewTypeValueBeatsModelElementValue() throws {
-        let graph = try parse(recolouredDatabase)
-        let db = Node(string: "db")
+        let graph = try parse(recoloredDatabase)
+        let db = Node(rawValue: "db")
         #expect(try graph.get(node: db, attribute: Attributes.Node.backgroundColor).hexString == "#aaaaaa")
         #expect(try graph.displaying(view: "v").get(node: db, attribute: Attributes.Node.backgroundColor).hexString == "#ffd27f")
         let exported = try VGLExporter().export(graph: graph)
@@ -170,12 +170,12 @@ struct ViewDeclarationTests {
             "node db [backgroundColor: \"#aaaaaa\"];\n node type: Database [backgroundColor: \"#00ff00\"];",
             "node type: Database [backgroundColor: \"#00ff00\"];\n node db [backgroundColor: \"#aaaaaa\"];",
         ])
-    func anElementOverrideSurvivesItsTypesRecolouring(_ statements: String) throws {
+    func anElementOverrideSurvivesItsTypesRecoloring(_ statements: String) throws {
         let source =
             banking.replacingOccurrences(
                 of: "node db: Database \"Database\"", with: "node db: Database \"Database\" [backgroundColor: \"#aaaaaa\"]")
             + "\nvview v {\n \(statements)\n}\n"
-        let db = Node(string: "db")
+        let db = Node(rawValue: "db")
         let parsed = try parse(source)
         let reparsed = try parse(VGLExporter().export(graph: parsed))
         for graph in [parsed, reparsed] {
@@ -185,10 +185,11 @@ struct ViewDeclarationTests {
 
     @Test("Given a view type value that only beats a model value, when the model value goes, then the view value goes too")
     func viewTypeValueFollowsTheModel() throws {
-        let graph = try parse(recolouredDatabase)
+        let graph = try parse(recoloredDatabase)
         #expect(!(try graph.attributes(inView: "v", of: ItemKey(.nodeType, "Database"))).isEmpty)
-        let matched = graph.erasing(Attributes.Node.backgroundColor.id, for: ItemKey(.node, "db"))
-        #expect(try matched.attributes(inView: "v", of: ItemKey(.nodeType, "Database")).isEmpty)
+        let erased = try graph.attributeStore.remove(
+            Attributes.Node.backgroundColor.id, for: ItemKey(.node, "db"), in: .model, chains: graph)
+        #expect(try erased.values(in: VGraph.layer(ofView: "v"), for: ItemKey(.nodeType, "Database")).isEmpty)
     }
 
     @Test("Given an element a view styles, when it is deleted, then every layer forgets it")
@@ -196,7 +197,7 @@ struct ViewDeclarationTests {
         let graph = try parse(banking + views)
         let key = ItemKey(.node, "db")
         #expect(!(try graph.attributes(inView: "containers", of: key)).isEmpty)
-        let deleted = try graph.delete(node: Node(string: "db"))
+        let deleted = try graph.deleting(node: Node(rawValue: "db"))
         #expect(try deleted.attributes(inView: "containers", of: key).isEmpty)
     }
 
@@ -274,7 +275,7 @@ struct ViewDisplayTests {
         let shown = try graph.displaying(view: nil)
         #expect(try !isFolded(shown))
         #expect(
-            try shown.getAttributes(node: Node(string: "db")) == graph.getAttributes(node: Node(string: "db")))
+            try shown.attributes(node: Node(rawValue: "db")) == graph.attributes(node: Node(rawValue: "db")))
     }
 
     @Test("Given a group the model folds, when a view unfolds it, then it is unfolded there")
@@ -289,12 +290,12 @@ struct ViewDisplayTests {
         #expect(viewBlock("open", in: exported).contains("group bankingSystem [isfolded: false]"))
     }
 
-    @Test("Given a view, when displayed, then its element and type values are what the display graph resolves")
+    @Test("Given a view, when displayed, then its element and type values are what the view graph resolves")
     func viewValuesResolve() throws {
         let shown = try parse(banking + views).displaying(view: "containers")
-        let db = try shown.getAttributes(node: Node(string: "db"))
+        let db = try shown.attributes(node: Node(rawValue: "db"))
         #expect(db[Attributes.Node.backgroundColor.id]?.lowercased() == "#ffd27f")
-        #expect(try shown.getGraphAttributes()[Attributes.Group.layoutDirection.id] == "LR")
+        #expect(try shown.graphAttributes()[Attributes.Group.layoutDirection.id] == "LR")
     }
 
     @Test("Given a view the document lacks, when displayed, then the error lists the views it has")

@@ -15,23 +15,23 @@ struct AssembleNodeStyleStepTests {
         iconInfo: IconInfo? = nil,
         category: String? = nil
     ) throws -> VGraph {
-        var graph = try VGraph().defineStandardAttributes()
-        let nodeType = NodeType(string: nodeTypeName)
-        graph = try graph.add(nodeType: nodeType)
-        graph = try graph.set(nodeType: nodeType, attribute: Attributes.Node.nodeStyle.attribute(nodeStyle))
-        graph = try graph.set(nodeType: nodeType, attribute: Attributes.Node.backgroundColor.attribute(backgroundColor))
+        var graph = VGraph()
+        let nodeType = NodeType(rawValue: nodeTypeName)
+        graph = try graph.adding(nodeType: nodeType)
+        graph = try graph.setting(nodeType: nodeType, attribute: Attributes.Node.nodeStyle.attribute(nodeStyle))
+        graph = try graph.setting(nodeType: nodeType, attribute: Attributes.Node.backgroundColor.attribute(backgroundColor))
         if let icon = iconInfo {
-            graph = try graph.set(nodeType: nodeType, attribute: Attributes.Node.iconInfo.attribute(icon))
+            graph = try graph.setting(nodeType: nodeType, attribute: Attributes.Node.iconInfo.attribute(icon))
         }
         if let cat = category {
-            graph = try graph.set(nodeType: nodeType, attribute: Attributes.Node.category.attribute(cat))
+            graph = try graph.setting(nodeType: nodeType, attribute: Attributes.Node.category.attribute(cat))
         }
         return graph
     }
 
     private func assembledStyle(from graph: VGraph, nodeTypeName: String = "TestNode") throws -> NodeStyleLayout {
         let assembled = try DisplayPipeline.assembleNodeStyles(graph)
-        return try assembled.get(nodeType: NodeType(string: nodeTypeName), attribute: Attributes.Node.style)
+        return try assembled.get(nodeType: NodeType(rawValue: nodeTypeName), attribute: Attributes.Node.style)
     }
 
     // MARK: - Style Assembly Tests
@@ -58,22 +58,22 @@ struct AssembleNodeStyleStepTests {
         return [
             Row(
                 style: .iconWithText, color: lavender, icon: iconWithText, category: nil,
-                expected: NodeStyleLayout.iconWithText(backgroundColor: lavender, icon: iconWithText).asString),
+                expected: NodeStyleLayout.iconWithText(backgroundColor: .literal(lavender), icon: iconWithText).asString),
             Row(
                 style: .simpleRoundedText, color: blue, icon: nil, category: nil,
-                expected: NodeStyleLayout.simpleRoundedText(color: blue).asString),
+                expected: NodeStyleLayout.simpleRoundedText(color: .literal(blue)).asString),
             Row(
                 style: .simpleRoundedBox, color: .red, icon: nil, category: nil,
-                expected: NodeStyleLayout.simpleRoundedBox(color: .red).asString),
+                expected: NodeStyleLayout.simpleRoundedBox(color: .literal(.red)).asString),
             Row(
                 style: .withCategoryAndIcon, color: red, icon: star, category: "Attack",
-                expected: NodeStyleLayout.withCategoryAndIcon(category: "Attack", categoryColor: red, icon: star).asString),
+                expected: NodeStyleLayout.withCategoryAndIcon(category: "Attack", categoryColor: .literal(red), icon: star).asString),
             Row(
                 style: .iconOnly, color: .white, icon: plus, category: nil,
                 expected: NodeStyleLayout.iconOnly(icon: plus).asString),
             Row(
                 style: .circle, color: steel, icon: nil, category: nil,
-                expected: NodeStyleLayout.circle(color: steel).asString),
+                expected: NodeStyleLayout.circle(color: .literal(steel)).asString),
             Row(style: .bareText, color: .white, icon: nil, category: nil, expected: NodeStyleLayout.bareText.asString),
             Row(style: .hidden, color: .white, icon: nil, category: nil, expected: NodeStyleLayout.hidden.asString),
         ]
@@ -96,7 +96,7 @@ struct AssembleNodeStyleStepTests {
         )
 
         let assembled = try assembledStyle(from: graph)
-        let expected = NodeStyleLayout.withCategory(category: "Critical Success Factor", categoryColor: color)
+        let expected = NodeStyleLayout.withCategory(category: "Critical Success Factor", categoryColor: .literal(color))
 
         #expect(assembled.asString == expected.asString)
     }
@@ -111,15 +111,15 @@ struct AssembleNodeStyleStepTests {
         )
 
         let assembled = try assembledStyle(from: graph, nodeTypeName: "Goal")
-        let expected = NodeStyleLayout.withCategory(category: "Goal", categoryColor: color)
+        let expected = NodeStyleLayout.withCategory(category: "Goal", categoryColor: .literal(color))
 
         #expect(assembled.asString == expected.asString)
     }
 
     @Test func assembleDefaultsToBaretextWhenNoStyleSet() throws {
-        var graph = try VGraph().defineStandardAttributes()
-        let nodeType = NodeType(string: "Plain")
-        graph = try graph.add(nodeType: nodeType)
+        var graph = VGraph()
+        let nodeType = NodeType(rawValue: "Plain")
+        graph = try graph.adding(nodeType: nodeType)
 
         let assembled = try DisplayPipeline.assembleNodeStyles(graph)
         let style = try assembled.get(nodeType: nodeType, attribute: Attributes.Node.style)

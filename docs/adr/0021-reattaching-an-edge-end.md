@@ -16,7 +16,7 @@ the new pair — see [0032](./0032-hierarchical-notations-via-detailing.md).
 
 ## Context
 
-`VGraph.reattach(edge:from:to:edgeType:)` has existed since edges did. It moves
+`VGraph.reattaching(edge:from:to:edgeType:)` has existed since edges did. It moves
 an end and carries the label, the comments and `itemOrder` across, which is the
 whole reason it is not `delete` plus `connect` — those reach the same shape and
 lose what the user wrote. Nothing has ever called it from the UI.
@@ -36,7 +36,7 @@ Three facts found while designing this, each of which moved the answer:
   counts the graph as it stands, including the edge in the user's hand. Under
   `samePairMax: 1`, moving `A→B`'s head would be refused because `A→B` still
   occupies the budget it is about to vacate. Since maxima are advisory —
-  `add(edge:)` does not enforce them, only the candidate queries read them — the
+  `adding(edge:)` does not enforce them, only the candidate queries read them — the
   query is the only place this can be got right.
 - **A class inside the SVG is already permitted.** 0012 said the whole gesture
   lives in the overlay; 0019's `paintDropTarget` then stamped `vg-drop-target` on
@@ -103,9 +103,9 @@ missing **affordance** and not a missing event, and it wants the same answer.
 ```swift
 public enum VEdgeEnd { case from, to }
 
-func reattachTargets(edge: String, end: VEdgeEnd,
+func reattachTargets(for edgeId: String, end: VEdgeEnd,
                      notationBreak: VNotationBreak) -> [String]
-func reattachCandidates(edge: String, end: VEdgeEnd, to nodeId: String) -> [EdgeType]
+func reattachCandidates(for edgeId: String, end: VEdgeEnd, to nodeId: String) -> [EdgeType]
 func reattach(_ edgeId: String, end: VEdgeEnd, to nodeId: String,
               using edge: EdgeType.Id?, notationBreak: VNotationBreak) throws(VError)
 
@@ -129,7 +129,7 @@ func node(atEdge edgeId: String, end: VEdgeEnd) -> String?
 - **They cannot disagree with the command**, because `reattach` deletes before it
   adds — the command validates against the same reduced graph the query counted.
   0011's guarantee holding, for bounds as ever and, of the
-  [[Graph criterion]]s, for `noParallelEdges` only.
+  [[Quality check]]s, for `noParallelEdges` only.
 - **One end at a time.** The domain's form takes two optionals and can express a
   flip; the gesture never moves two, and `changeDirection` already owns flipping.
   Two named commands would have been two availability rules and two sets of tests
@@ -150,7 +150,7 @@ func node(atEdge edgeId: String, end: VEdgeEnd) -> String?
   type even over a pair the notation would have joined. The stakes differ — here
   it discards a type the edge already carried — and the symmetry is still worth
   more than the protection, an undo step away. It could not have worked otherwise:
-  `add(edge:type:)` throws `edgeTypeNodeTypeMismatch` when a type's declared ends
+  `adding(edge:edgeType:)` throws `edgeTypeDoesNotFit` when a type's declared ends
   do not match the actual node types, so an old type cannot survive an
   unsanctioned pair. The graph refuses to hold it.
 - **A drop resolves as `connect`'s does.** No candidate: nothing happens. One:
@@ -169,7 +169,7 @@ func node(atEdge edgeId: String, end: VEdgeEnd) -> String?
 ### An end drawn on a folded group gets no handle
 
 Folding redirects an edge onto the folded group's box and **keeps its id**
-(`FoldingLayoutStep`), so `#edge-e1`'s visible end may be a stand-in for a node
+(`FoldStep`), so `#edge-e1`'s visible end may be a stand-in for a node
 inside. Dragging it off is well defined and does the useful thing — you get
 `A→X`, and the box did stand for the hidden node. But a folded group is not a
 legal drop target (`edgeEndpointIsGroup`, the rule `connect` already has), so the

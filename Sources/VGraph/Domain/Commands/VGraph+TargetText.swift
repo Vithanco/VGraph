@@ -1,11 +1,6 @@
-//
-//  VGraph+TargetText.swift
-//  VGraph
-//
-//  Reading and writing an element's label or link regardless of its kind, so
-//  an inline editor is seeded from the graph rather than from what was
-//  rendered (ADR-0009).
-//
+// Reading and writing an element's label or link regardless of its kind, so
+// an inline editor is seeded from the graph rather than from what was
+// rendered (ADR-0009).
 
 extension VGraph {
     /// The authority for an inline edit — the rendered text is not always the
@@ -14,7 +9,7 @@ extension VGraph {
         text(.label, of: target)
     }
 
-    public func set(label: String, on target: VCommandTarget) throws(VError) -> VGraph {
+    public func setting(label: String, on target: VCommandTarget) throws(VError) -> VGraph {
         try setting(.label, to: label, on: target)
     }
 
@@ -26,7 +21,7 @@ extension VGraph {
     }
 
     /// Attach `url` to an element, or detach it by passing "".
-    public func set(url: String, on target: VCommandTarget) throws(VError) -> VGraph {
+    public func setting(url: String, on target: VCommandTarget) throws(VError) -> VGraph {
         try setting(.url, to: url, on: target)
     }
 
@@ -40,9 +35,9 @@ extension VGraph {
 
     private func setting(_ field: ElementText, to value: String, on target: VCommandTarget) throws(VError) -> VGraph {
         switch target {
-        case .node(let node): return try set(node: node, attribute: field.node.attribute(value))
-        case .edge(let edge): return try set(edge: edge, attribute: field.edge.attribute(value))
-        case .group(let group): return try set(group: group, attribute: definition(of: field, for: group).attribute(value))
+        case .node(let node): return try setting(node: node, attribute: field.node.attribute(value))
+        case .edge(let edge): return try setting(edge: edge, attribute: field.edge.attribute(value))
+        case .group(let group): return try setting(group: group, attribute: definition(of: field, for: group).attribute(value))
         }
     }
 
@@ -53,13 +48,19 @@ extension VGraph {
 }
 
 extension VGraph {
-    /// How to name an edge to the user — "A → B", by label where there is one.
+    /// How to name an element to the user: by its label, or its id where it has none.
+    /// An edge is "A → B".
     func name(of edge: Edge) -> String {
         "\(name(of: edge.from)) → \(name(of: edge.to))"
     }
 
     func name(of node: Node) -> String {
         guard let label = label(of: .node(node)), !label.isEmpty else { return node.id }
+        return label
+    }
+
+    func name(of group: Group) -> String {
+        guard let label = label(of: .group(group)), !label.isEmpty else { return group.id.id }
         return label
     }
 }

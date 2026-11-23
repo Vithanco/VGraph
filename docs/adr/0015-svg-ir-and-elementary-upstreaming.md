@@ -78,7 +78,7 @@ list of SVG tags in the domain every notation is written against.
 type is [0013](./0013-driving-ports-and-named-commands.md)'s one amendment.
 
 The renderer port speaks in two steps so that a drawing which is both mounted
-and saved is drawn once: `draw` returns the drawing and `serialise` turns one
+and saved is drawn once: `draw` returns the drawing and `serialize` turns one
 into the artefact. `render` is their composition.
 
 **`VGraphSVG` must not gain an Elementary dependency.** `VSVGNode`, `VSVGTag`

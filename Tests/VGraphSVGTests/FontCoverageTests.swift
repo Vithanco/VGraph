@@ -96,7 +96,7 @@ struct FontCoverageTests {
         let app = VGraphTestApp()
         var missing: [String: Set<Character>] = [:]
         for (name, entry) in NotationRegistry.entries {
-            let graph = try VGraph().defineStandardAttributes().placing(entry.content, in: .builtin)
+            let graph = try VGraph().placing(entry.content, in: .builtin)
             let nodes = graph.nodeTypes.enumerated().map { "node n\($0.offset): \($0.element.description) \"A\";" }
             let svg = try app.renderGraph("vgraph g: \(name) \"T\" {\n\(nodes.joined(separator: "\n"))\n}").svg
             for (text, weight) in writtenText(in: svg) {

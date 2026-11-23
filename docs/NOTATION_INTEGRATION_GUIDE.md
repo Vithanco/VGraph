@@ -66,7 +66,7 @@ Most notations only register types and styles. If yours must *rewrite* the graph
 before layout — merging nodes, synthesising edges — declare a step:
 
 ```swift
-// In Sources/VGraph/Domain/Layout/<YourStep>.swift
+// In Sources/VGraph/Domain/Transforms/<YourStep>.swift
 extension TransformStep.Id {
     public static var yourStep: Self { "yourStep" }
 }
@@ -99,7 +99,7 @@ Two constraints:
   in `TransformRegistry.resolveStep(name:)` too.
 
 Working example: `Notations.ConceptMap.step` → `mergeStep`
-(`Sources/VGraph/Domain/Layout/MergeRelationsStep.swift`), which merges duplicate
+(`Sources/VGraph/Domain/Transforms/MergeRelationsStep.swift`), which merges duplicate
 `Relation` nodes sharing a label and target set.
 
 ### Register it

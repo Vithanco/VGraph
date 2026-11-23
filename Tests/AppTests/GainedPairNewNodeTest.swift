@@ -36,7 +36,7 @@ struct GainedPairNewNodeTest {
 
         #expect(s.successorCandidates(from: "spa").map { $0.edgeType.id.id } == ["delivers"])
 
-        try s.addSuccessor(from: "spa", using: EdgeType.Id(string: "delivers"))
+        try s.addSuccessor(from: "spa", using: EdgeType.Id(rawValue: "delivers"))
         #expect(try s.origin.nodeType(for: try added(in: s)).id == "Person")
         #expect(try s.origin.edgeType(for: s.origin.edges[0]).id.id == "delivers")
     }
@@ -47,7 +47,7 @@ struct GainedPairNewNodeTest {
 
         #expect(s.predecessorCandidates(to: "spa").map { $0.edgeType.id.id } == ["uses"])
 
-        try s.addPredecessor(to: "spa", using: EdgeType.Id(string: "uses"))
+        try s.addPredecessor(to: "spa", using: EdgeType.Id(rawValue: "uses"))
         #expect(try s.origin.nodeType(for: try added(in: s)).id == "Person")
         #expect(try s.origin.edgeType(for: s.origin.edges[0]).id.id == "uses")
     }
@@ -58,7 +58,7 @@ struct GainedPairNewNodeTest {
     func theNewNodeStandsWhereTheRelationshipIsDeclared() throws {
         let s = try session()
 
-        try s.addSuccessor(from: "spa", using: EdgeType.Id(string: "delivers"))
+        try s.addSuccessor(from: "spa", using: EdgeType.Id(rawValue: "delivers"))
 
         let person = try added(in: s)
         #expect(s.origin.detailedNode(holding: s.origin.group(of: person)) == nil)

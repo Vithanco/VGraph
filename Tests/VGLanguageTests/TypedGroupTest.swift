@@ -33,7 +33,7 @@ private let typedGroupInput =
         }
         """
 
-private let team = GroupType(string: "Team")
+private let team = GroupType(rawValue: "Team")
 
 @Suite("Typed groups")
 struct TypedGroupTest {
@@ -91,7 +91,7 @@ struct TypedGroupTest {
     }
 
     /// The typo is coloured where it was typed, as an unknown *node* type already is.
-    @Test func unknownGroupTypeIsColouredInTheSource() throws {
+    @Test func unknownGroupTypeIsColoredInTheSource() throws {
         let parser = VGraphParser(logger: NoOpLogger())
         let html = parser.semanticHighlightHTML(source: Self.misspelled)
 

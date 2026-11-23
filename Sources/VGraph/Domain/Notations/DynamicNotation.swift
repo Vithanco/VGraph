@@ -1,27 +1,16 @@
-/// Maps old VGL attribute names to canonical names for backward compatibility
-/// in `vnotation` blocks. Mirrors the resolver in `VGLanguage.VGraphParser`.
-private func resolveLegacyVnotationAttributeName(_ name: String) -> String {
-    switch name.lowercased() {
-    case "rankdir", "layout": return Attributes.Group.layoutDirection.name
-    case "labelloc": return Attributes.Group.labelocation.name
-    case "diagramlogic": return Attributes.Group.diagramLogic.name
-    default: return name
-    }
-}
-
 /// `nodeStyle` is required for new types but optional for overrides of inherited types.
 public struct NodeTypeSpec {
     public let name: String
     /// `nil` when the user omitted `nodeStyle:` (valid only for overrides).
     public let nodeStyle: String?
-    public let rawAttrs: [String: String]  // color, icon, iconColor, iconSize, fontsize, category, …
+    public let rawAttributes: [String: String]  // color, icon, iconColor, iconSize, fontsize, category, …
     /// Added to whatever the base notation already details this type by.
     public let detailedBy: [String]
 
-    public init(name: String, nodeStyle: String?, rawAttrs: [String: String], detailedBy: [String] = []) {
+    public init(name: String, nodeStyle: String?, rawAttributes: [String: String], detailedBy: [String] = []) {
         self.name = name
         self.nodeStyle = nodeStyle
-        self.rawAttrs = rawAttrs
+        self.rawAttributes = OlderVGLSpellings.current(typeDeclaration: rawAttributes)
         self.detailedBy = detailedBy
     }
 }
@@ -30,13 +19,13 @@ public struct EdgeTypeSpec {
     public let id: String
     public let from: String  // node type name
     public let to: String  // node type name
-    public let rawAttrs: [String: String]
+    public let rawAttributes: [String: String]
 
-    public init(id: String, from: String, to: String, rawAttrs: [String: String]) {
+    public init(id: String, from: String, to: String, rawAttributes: [String: String]) {
         self.id = id
         self.from = from
         self.to = to
-        self.rawAttrs = rawAttrs
+        self.rawAttributes = rawAttributes
     }
 }
 
@@ -45,8 +34,8 @@ public struct DynamicNotation {
     public let nodeTypeSpecs: [NodeTypeSpec]
     public let edgeTypeSpecs: [EdgeTypeSpec]
     public let groupTypes: [GroupType]
-    public let groupTypeAttrs: [GroupType: [String: String]]
-    public let graphAttrs: [(key: String, value: String)]
+    public let groupTypeAttributes: [GroupType: [String: String]]
+    public let graphAttributes: [(key: String, value: String)]
     /// Pre-resolved base notation entry from the `extends` clause; nil when not extending.
     /// Stored as a concrete `NotationEntry` value (not `any NotationProvider`) to keep
     /// the runtime dispatch path free of existentials.
@@ -69,8 +58,8 @@ public struct DynamicNotation {
         nodeTypeSpecs: [NodeTypeSpec],
         edgeTypeSpecs: [EdgeTypeSpec],
         groupTypes: [GroupType] = [],
-        groupTypeAttrs: [GroupType: [String: String]] = [:],
-        graphAttrs: [(key: String, value: String)],
+        groupTypeAttributes: [GroupType: [String: String]] = [:],
+        graphAttributes: [(key: String, value: String)],
         baseEntry: NotationEntry?,
         baseVglName: String? = nil,
         icons: [(name: String, artwork: IconArtwork)] = [],
@@ -81,8 +70,8 @@ public struct DynamicNotation {
         self.nodeTypeSpecs = nodeTypeSpecs
         self.edgeTypeSpecs = edgeTypeSpecs
         self.groupTypes = groupTypes
-        self.groupTypeAttrs = groupTypeAttrs
-        self.graphAttrs = graphAttrs
+        self.groupTypeAttributes = groupTypeAttributes.mapValues { OlderVGLSpellings.current(typeDeclaration: $0) }
+        self.graphAttributes = graphAttributes
         self.baseEntry = baseEntry
         self.baseVglName = baseVglName
         self.icons = icons
@@ -92,35 +81,24 @@ public struct DynamicNotation {
 
     /// The base notation goes into the built-in layer, the block into the
     /// document's `vnotation` layer (ADR-0030).
-    public func addNotation(addTo graph: VGraph) throws(VError) -> VGraph {
-        var result = graph
+    public func addNotation(to graph: VGraph) throws(VError) -> VGraph {
         let base = baseEntry?.content
-        if let base {
-            result = try result.placing(base, in: .builtin)
-        }
-        for icon in icons {
-            result = try result.add(icon: icon.name, artwork: icon.artwork)
-        }
-        result = try result.placing(try content(over: base, vocabulary: result), in: .vnotation)
-        if !qualityCheckSpecs.isEmpty {
-            result = result.declaring(qualityChecks: qualityCheckSpecs)
-        }
-        if !transformNames.isEmpty {
-            result = result.declaring(transforms: transformNames)
-        }
-        let boundaryKeys = declaredBoundaryKeys()
-        if !boundaryKeys.isEmpty {
-            result = result.declaring(boundaryKeys: boundaryKeys)
-        }
-        return result
+        let withBase = try base.map { (content) throws(VError) in try graph.placing(content, in: .builtin) } ?? graph
+        let withIcons = icons.reduce(withBase) { result, icon in result.adding(icon: icon.name, artwork: icon.artwork) }
+        let withBlock = try withIcons.placing(try content(over: base, vocabulary: withIcons), in: .vnotation)
+        // Empty lists leave the built-in notation's own in force.
+        let withChecks = qualityCheckSpecs.isEmpty ? withBlock : withBlock.declaring(qualityChecks: qualityCheckSpecs)
+        let withTransforms = transformNames.isEmpty ? withChecks : withChecks.declaring(transforms: transformNames)
+        let frameKeys = declaredFrameKeys()
+        return frameKeys.isEmpty ? withTransforms : withTransforms.declaring(frameKeys: frameKeys)
     }
 
-    private func declaredBoundaryKeys() -> [ItemKey: [String]] {
+    private func declaredFrameKeys() -> [ItemKey: [String]] {
         let nodeTypes = nodeTypeSpecs.map { spec in
-            (key: ItemKey(.nodeType, NodeType(string: spec.name).description), keys: BoundaryChrome.declaredKeys(in: spec.rawAttrs))
+            (key: ItemKey(NodeType(rawValue: spec.name)), keys: GroupFrame.declaredKeys(in: spec.rawAttributes))
         }
-        let groupTypes = groupTypeAttrs.map { entry in
-            (key: ItemKey(.groupType, entry.key.description), keys: BoundaryChrome.declaredKeys(in: entry.value))
+        let groupTypes = groupTypeAttributes.map { entry in
+            (key: ItemKey(entry.key), keys: GroupFrame.declaredKeys(in: entry.value))
         }
         return Dictionary(
             (nodeTypes + groupTypes).filter { !$0.keys.isEmpty }.map { ($0.key, $0.keys) },
@@ -130,167 +108,172 @@ public struct DynamicNotation {
     /// What the block says. A type the base already has is overridden rather
     /// than added. `vocabulary` only names the diagram attributes a block may set.
     func content(over base: NotationContent?, vocabulary: VGraph) throws(VError) -> NotationContent {
-        var content = NotationContent()
+        let withNodeTypes = try nodeTypeSpecs.folding(NotationContent()) { (content, spec) throws(VError) in
+            try declaring(spec, in: content)
+        }
+        let withEdgeTypes = try edgeTypeSpecs.folding(withNodeTypes) { (content, spec) throws(VError) in
+            try declaring(spec, in: content)
+        }
+        let withGroupTypes = try groupTypes.folding(withEdgeTypes) { (content, groupType) throws(VError) in
+            try declaring(groupType, in: content)
+        }
+        return withGroupTypes.appending(.diagram(try diagramValues(vocabulary)))
 
-        for spec in nodeTypeSpecs {
-            let nodeType = NodeType(string: spec.name)
+        func declaring(_ spec: NodeTypeSpec, in content: NotationContent) throws(VError)
+            -> NotationContent
+        {
+            let nodeType = NodeType(rawValue: spec.name)
+            let key = ItemKey(nodeType)
             let isOverride = base != nil && ((base?.nodeTypes ?? []) + content.nodeTypes).contains(nodeType)
+            let declared: NotationContent
             if isOverride {
-                let current =
-                    content.value(of: Attributes.Node.nodeStyle.id, for: ItemKey(.nodeType, nodeType.description))
-                    ?? base?.value(of: Attributes.Node.nodeStyle.id, for: ItemKey(.nodeType, nodeType.description))
-                let boundary = currentBoundary(at: ItemKey(.nodeType, nodeType.description), in: content, over: base)
-                content.values.append(
-                    .nodeType(nodeType, try overrideValues(spec, nodeType, currentStyle: current, currentBoundary: boundary)))
+                let currentStyle =
+                    content.value(of: Attributes.Node.nodeStyle.id, for: key)
+                    ?? base?.value(of: Attributes.Node.nodeStyle.id, for: key)
+                let values = try overrideValues(
+                    spec, nodeType, currentStyle: currentStyle, currentFrame: currentFrame(at: key, in: content, over: base))
+                declared = content.appending(.nodeType(nodeType, values))
             } else {
-                content.nodeTypes.append(nodeType)
-                content.values.append(.nodeType(nodeType, try newTypeValues(spec, nodeType)))
+                declared = content.adding(nodeType: nodeType).appending(.nodeType(nodeType, try newTypeValues(spec, nodeType)))
             }
-            if !spec.detailedBy.isEmpty {
-                content.detailings.append(
-                    Detailing(nodeType: nodeType, detailTypes: spec.detailedBy.map { NodeType(string: $0) }))
-            }
+            guard !spec.detailedBy.isEmpty else { return declared }
+            return declared.adding(Detailing(nodeType: nodeType, detailTypes: spec.detailedBy.map { NodeType(rawValue: $0) }))
         }
 
-        for spec in edgeTypeSpecs {
-            let edgeType = EdgeType(id: spec.id, from: NodeType(string: spec.from), to: NodeType(string: spec.to))
+        func declaring(_ spec: EdgeTypeSpec, in content: NotationContent) throws(VError)
+            -> NotationContent
+        {
+            let edgeType = EdgeType(id: spec.id, from: NodeType(rawValue: spec.from), to: NodeType(rawValue: spec.to))
             let isOverride = base != nil && ((base?.edgeTypes ?? []) + content.edgeTypes).contains { $0.id == edgeType.id }
-            if !isOverride {
-                content.edgeTypes.append(edgeType)
-            }
-            if !spec.rawAttrs.isEmpty {
-                content.values.append(.edgeType(edgeType.id, try edgeValues(spec)))
-            }
+            let declared = isOverride ? content : content.adding(edgeType: edgeType)
+            guard !spec.rawAttributes.isEmpty else { return declared }
+            return declared.appending(.edgeType(edgeType.id, try edgeValues(spec)))
         }
 
-        for groupType in groupTypes {
-            if !((base?.groupTypes ?? []) + content.groupTypes).contains(groupType) {
-                content.groupTypes.append(groupType)
-            }
-            let key = ItemKey(.groupType, groupType.description)
-            let attrs = groupTypeAttrs[groupType] ?? [:]
-            if let unknown = attrs.keys.sorted().first(where: { !BoundaryChrome.vnotationKeys.contains($0) }) {
+        func declaring(_ groupType: GroupType, in content: NotationContent) throws(VError)
+            -> NotationContent
+        {
+            let isNew = !((base?.groupTypes ?? []) + content.groupTypes).contains(groupType)
+            let declared = isNew ? content.adding(groupType: groupType) : content
+            let attributes = groupTypeAttributes[groupType] ?? [:]
+            if let unknown = attributes.keys.sorted().first(where: { !GroupFrame.vnotationKeys.contains($0) }) {
                 throw VError.parsingError("Unknown attribute '\(unknown)' on group type '\(groupType.description)'")
             }
-            if let boundary = try BoundaryChrome.declared(in: attrs, over: currentBoundary(at: key, in: content, over: base)) {
-                content.values.append(.groupType(groupType, [Attributes.Group.boundaryChrome(boundary)]))
-            }
+            let key = ItemKey(groupType)
+            guard let frame = try GroupFrame.declared(in: attributes, over: currentFrame(at: key, in: content, over: base))
+            else { return declared }
+            return declared.appending(.groupType(groupType, [Attributes.Group.frame(frame)]))
         }
-
-        content.values.append(.diagram(try diagramValues(vocabulary)))
-        return content
     }
 
     // MARK: - Private helpers
 
-    /// What a type's boundary already is, so a block naming one key keeps the rest.
-    private func currentBoundary(at key: ItemKey, in content: NotationContent, over base: NotationContent?)
-        -> BoundaryChrome
+    /// What a type's frame already is, so a block naming one key keeps the rest.
+    private func currentFrame(at key: ItemKey, in content: NotationContent, over base: NotationContent?)
+        -> GroupFrame
     {
         func raw(_ id: Attribute.Id) -> String? { content.value(of: id, for: key) ?? base?.value(of: id, for: key) }
-        return BoundaryChrome.inherited(
-            boundary: raw(Attributes.Group.boundaryChrome.id).flatMap { try? BoundaryChrome.fromString($0) },
+        return GroupFrame.inherited(
+            own: raw(Attributes.Group.frame.id).flatMap { try? GroupFrame.fromString($0) },
             style: raw(Attributes.Group.groupStyle.id).flatMap { try? GroupStyle.fromString($0) })
             ?? .default
     }
 
     private func diagramValues(_ vocabulary: VGraph) throws(VError) -> [Attribute] {
-        var result: [Attribute] = []
-        for (key, value) in graphAttrs {
-            let resolvedKey = resolveLegacyVnotationAttributeName(key)
-            guard let def = vocabulary.find(attributeByName: resolvedKey, for: .graph) else {
+        let declared = try graphAttributes.map { (key, value) throws(VError) -> Attribute in
+            guard let definition = vocabulary.find(attributeByName: OlderVGLSpellings.current(key, in: .attribute(.group)), for: .group) else {
                 throw VError.parsingError("Unknown graph attribute '\(key)' in vnotation '\(id)'")
             }
-            // Use typed definitions for enum attributes to normalize stored values
-            // (e.g., "topToBottom" → "Top to Bottom" for consistent round-trips)
-            if def.id == Attributes.Group.layoutDirection.id {
-                result.append(Attributes.Group.layoutDirection(try LayoutDirection.fromString(value)))
-            } else if def.id == Attributes.Group.diagramLogic.id {
-                result.append(Attributes.Group.diagramLogic(try DiagramLogic.fromString(value)))
-            } else {
-                result.append(try def.attribute(fromString: value))
+            // Enum values go through their type, so a stored value reads back the
+            // same however the author spelled it.
+            if definition.id == Attributes.Group.layoutDirection.id {
+                return Attributes.Group.layoutDirection(try LayoutDirection.fromString(value))
             }
+            if definition.id == Attributes.Group.diagramLogic.id {
+                return Attributes.Group.diagramLogic(try DiagramLogic.fromString(value))
+            }
+            return definition.attribute(fromString: value)
         }
-        if baseEntry == nil && !graphAttrs.contains(where: { $0.key.lowercased() == "diagramlogic" }) {
-            result.append(Attributes.Group.diagramLogic(.noLogic))
-        }
-        return result
+        let namesLogic = graphAttributes.contains { $0.key.lowercased() == "diagramlogic" }
+        return baseEntry == nil && !namesLogic ? declared + [Attributes.Group.diagramLogic(.noLogic)] : declared
     }
 
     /// `nodeStyle` is required — throws if missing.
     private func newTypeValues(_ spec: NodeTypeSpec, _ nodeType: NodeType) throws(VError) -> [Attribute] {
-        guard let nodeStyleStr = spec.nodeStyle else {
+        guard let styleName = spec.nodeStyle else {
             throw VError.parsingError("node type '\(spec.name)' is missing required attribute 'nodeStyle'")
         }
-        let ns = try NodeStyle.fromString(nodeStyleStr)
+        let style = try NodeStyle.fromString(styleName)
         var result = [
-            Attributes.Node.nodeStyle(ns),
-            Attributes.Node.backgroundColor(StyleFactories.color(from: spec.rawAttrs).resolve(darkMode: false)),
+            Attributes.Node.nodeStyle(style),
+            Attributes.Node.backgroundColor(VNotationTypeAttributes.color(from: spec.rawAttributes).resolve(darkMode: false)),
         ]
-        if ns.needsIcon {
-            let defaultIconColorHex = (ns == .iconOnly) ? "#000000" : "#ffffff"
-            result.append(Attributes.Node.iconInfo(StyleFactories.makeIcon(from: spec.rawAttrs, defaultIconColorHex: defaultIconColorHex)))
+        if style.needsIcon {
+            result.append(
+                Attributes.Node.iconInfo(
+                    VNotationTypeAttributes.makeIcon(from: spec.rawAttributes, defaultIconColorHex: Self.defaultIconColorHex(for: style))))
         }
-        if ns.needsCategory {
-            result.append(Attributes.Node.category(spec.rawAttrs["category"] ?? spec.name))
+        if style.needsCategory {
+            result.append(Attributes.Node.category(spec.rawAttributes["category"] ?? spec.name))
         }
-        if let fontsizeStr = spec.rawAttrs["fontsize"], let fontsize = Double(fontsizeStr) {
-            result.append(Attributes.Node.fontsize(fontsize))
-        }
-        if let boundary = try BoundaryChrome.declared(in: spec.rawAttrs, over: .default) {
-            result.append(Attributes.Group.boundaryChrome(boundary))
-        }
-        return result + (try boundValues(spec.rawAttrs, nodeType)) + (try neighborhoodValues(spec.rawAttrs))
+        return result + (try sharedValues(spec, nodeType, frameOver: .default))
     }
 
     /// `currentStyle` is what the type's `nodeStyle` resolves to before this
     /// override, if anything sets it; it picks the icon's default colour.
     private func overrideValues(
-        _ spec: NodeTypeSpec, _ nodeType: NodeType, currentStyle: String?, currentBoundary: BoundaryChrome
+        _ spec: NodeTypeSpec, _ nodeType: NodeType, currentStyle: String?, currentFrame: GroupFrame
     ) throws(VError) -> [Attribute] {
         var result: [Attribute] = []
-        var style =
-            try currentStyle.map { (s: String) throws(VError) in try NodeStyle.fromString(s) }
-            ?? Attributes.Node.nodeStyle.defaultValue
-        if let nodeStyleStr = spec.nodeStyle {
-            style = try NodeStyle.fromString(nodeStyleStr)
-            result.append(Attributes.Node.nodeStyle(style))
+        let declaredStyle = try spec.nodeStyle.map { (name) throws(VError) in try NodeStyle.fromString(name) }
+        let inheritedStyle = try currentStyle.map { (name) throws(VError) in try NodeStyle.fromString(name) }
+        let style = declaredStyle ?? inheritedStyle ?? Attributes.Node.nodeStyle.defaultValue
+        if let declaredStyle {
+            result.append(Attributes.Node.nodeStyle(declaredStyle))
         }
-        if StyleFactories.value(of: "backgroundColor", in: spec.rawAttrs) != nil
-            || StyleFactories.value(of: "color", in: spec.rawAttrs) != nil
+        if VNotationTypeAttributes.value(of: "backgroundColor", in: spec.rawAttributes) != nil
+            || VNotationTypeAttributes.value(of: "color", in: spec.rawAttributes) != nil
         {
-            result.append(Attributes.Node.backgroundColor(StyleFactories.color(from: spec.rawAttrs).resolve(darkMode: false)))
+            result.append(Attributes.Node.backgroundColor(VNotationTypeAttributes.color(from: spec.rawAttributes).resolve(darkMode: false)))
         }
-        if spec.rawAttrs["icon"] != nil {
-            let defaultIconColorHex = (style == .iconOnly) ? "#000000" : "#ffffff"
-            result.append(Attributes.Node.iconInfo(StyleFactories.makeIcon(from: spec.rawAttrs, defaultIconColorHex: defaultIconColorHex)))
+        if spec.rawAttributes["icon"] != nil {
+            result.append(
+                Attributes.Node.iconInfo(
+                    VNotationTypeAttributes.makeIcon(from: spec.rawAttributes, defaultIconColorHex: Self.defaultIconColorHex(for: style))))
         }
-        if let cat = spec.rawAttrs["category"] {
-            result.append(Attributes.Node.category(cat))
+        if let category = spec.rawAttributes["category"] {
+            result.append(Attributes.Node.category(category))
         }
-        if let fontsizeStr = spec.rawAttrs["fontsize"], let fontsize = Double(fontsizeStr) {
-            result.append(Attributes.Node.fontsize(fontsize))
-        }
-        if let boundary = try BoundaryChrome.declared(in: spec.rawAttrs, over: currentBoundary) {
-            result.append(Attributes.Group.boundaryChrome(boundary))
-        }
-        return result + (try boundValues(spec.rawAttrs, nodeType)) + (try neighborhoodValues(spec.rawAttrs))
+        return result + (try sharedValues(spec, nodeType, frameOver: currentFrame))
+    }
+
+    /// What a new type and an override read the same way: font size, frame, bounds, neighbourhood.
+    private func sharedValues(_ spec: NodeTypeSpec, _ nodeType: NodeType, frameOver inherited: GroupFrame) throws(VError)
+        -> [Attribute]
+    {
+        let fontsize = spec.rawAttributes["fontsize"].flatMap { Double($0) }.map { [Attributes.Node.fontsize($0)] } ?? []
+        let frame = try GroupFrame.declared(in: spec.rawAttributes, over: inherited).map { [Attributes.Group.frame($0)] } ?? []
+        return fontsize + frame + (try boundValues(spec.rawAttributes, nodeType)) + (try neighborhoodValues(spec.rawAttributes))
+    }
+
+    private static func defaultIconColorHex(for style: NodeStyle) -> String {
+        style == .iconOnly ? "#000000" : "#ffffff"
     }
 
     private func edgeValues(_ spec: EdgeTypeSpec) throws(VError) -> [Attribute] {
-        try ensureEachBoundOnce(spec.rawAttrs, spec.id) { Bound.edgeBound(named: $0) }
+        try ensureEachBoundOnce(spec.rawAttributes, spec.id) { Bound.edgeBound(named: $0) }
         var result: [Attribute] = []
-        for (key, value) in spec.rawAttrs {
+        for (key, value) in spec.rawAttributes {
             switch key {
             case "arrowHead": result.append(Attributes.Edge.arrowHead(value))
             case "arrowTail": result.append(Attributes.Edge.arrowTail(value))
             case "style": result.append(Attributes.Edge.style(try Attributes.Edge.StyleType.fromString(value)))
             case "color": result.append(Attributes.Edge.color(try VColor.fromString(value)))
             case "penwidth":
-                guard let pw = Double(value) else {
+                guard let penwidth = Double(value) else {
                     throw VError.parsingError("Invalid penwidth value '\(value)' for edge type '\(spec.id)'")
                 }
-                result.append(Attributes.Edge.penwidth(pw))
+                result.append(Attributes.Edge.penwidth(penwidth))
             case "constraint": result.append(Attributes.Edge.constraint(value.lowercased() == "true"))
             case "dir": result.append(Attributes.Edge.dir(value))
             case "headLabel": result.append(Attributes.Edge.headLabel(value))
@@ -302,7 +285,7 @@ public struct DynamicNotation {
                 // Bounds come from one shared table (ADR-0011), so the
                 // parser and the exporter cannot drift apart on their spellings.
                 if let bound = Bound.edgeBound(named: key) {
-                    result.append(try bound.definition.attribute(try boundValue(value, key, spec.id)))
+                    result.append(bound.definition.attribute(try boundValue(value, key, spec.id)))
                 }
             // Anything else is still ignored, as it always has been.
             }
@@ -311,29 +294,29 @@ public struct DynamicNotation {
     }
 
     /// Matched case-insensitively: the exporter writes every key lowercased.
-    private func neighborhoodValues(_ rawAttrs: [String: String]) throws(VError) -> [Attribute] {
-        guard let raw = StyleFactories.value(of: Attributes.Node.addsToNeighborhood.name, in: rawAttrs) else { return [] }
+    private func neighborhoodValues(_ rawAttributes: [String: String]) throws(VError) -> [Attribute] {
+        guard let raw = VNotationTypeAttributes.value(of: Attributes.Node.addsToNeighborhood.name, in: rawAttributes) else { return [] }
         return [Attributes.Node.addsToNeighborhood(try AddsToNeighborhood.fromString(raw))]
     }
 
-    private func boundValues(_ rawAttrs: [String: String], _ nodeType: NodeType) throws(VError) -> [Attribute] {
-        try ensureEachBoundOnce(rawAttrs, nodeType.id) { Bound.nodeBound(named: $0) }
+    private func boundValues(_ rawAttributes: [String: String], _ nodeType: NodeType) throws(VError) -> [Attribute] {
+        try ensureEachBoundOnce(rawAttributes, nodeType.id) { Bound.nodeBound(named: $0) }
         var result: [Attribute] = []
-        for (key, value) in rawAttrs {
+        for (key, value) in rawAttributes {
             guard let bound = Bound.nodeBound(named: key) else { continue }
-            result.append(try bound.definition.attribute(try boundValue(value, key, nodeType.id)))
+            result.append(bound.definition.attribute(try boundValue(value, key, nodeType.id)))
         }
         return result
     }
 
     /// A bound under both its former and its new name contradicts itself, even with
-    /// equal values (ADR-0011). Checked before applying: `rawAttrs` is a dictionary,
+    /// equal values (ADR-0011). Checked before applying: `rawAttributes` is a dictionary,
     /// so applying first would let whichever key came last win.
     private func ensureEachBoundOnce(
-        _ rawAttrs: [String: String], _ owner: String, lookup: (String) -> Bound.Name?
+        _ rawAttributes: [String: String], _ owner: String, lookup: (String) -> Bound.Name?
     ) throws(VError) {
         var keysByBound: [String: [String]] = [:]
-        for key in rawAttrs.keys {
+        for key in rawAttributes.keys {
             guard let bound = lookup(key) else { continue }
             keysByBound[bound.name, default: []].append(key)
         }

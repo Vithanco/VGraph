@@ -10,7 +10,7 @@ extension Notations {
     /// to achieve the parent. Only the explicit AND junctor is needed.
     public struct ADTree: NotationDeclaration {
 
-        public static var criteria: [QualityCheckSpec] { [.noParallelEdges] }
+        public static var namedQualityChecks: [QualityCheckSpec] { [.noParallelEdges] }
         public static let id: Identifier<Notation> = .init(rawValue: "ADTree")
         public static let description =
             "Models security scenarios as a game between attacker and defender, with refinement and countermeasure edges at every level."
@@ -92,9 +92,9 @@ extension Notations {
             private static let defenseId = "Defense"
             private static let andJunctorId = "AndJunctor"
 
-            public static let attack: NodeType = NodeType(string: attackId)
-            public static let defense: NodeType = NodeType(string: defenseId)
-            public static let andJunctor: NodeType = NodeType(string: andJunctorId)
+            public static let attack: NodeType = NodeType(rawValue: attackId)
+            public static let defense: NodeType = NodeType(rawValue: defenseId)
+            public static let andJunctor: NodeType = NodeType(rawValue: andJunctorId)
         }
 
         public struct EdgeTypes: NotationEdgeTypes {

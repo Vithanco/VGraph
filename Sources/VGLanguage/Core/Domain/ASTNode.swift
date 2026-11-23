@@ -59,7 +59,7 @@ public indirect enum ASTNode {
     case vnotationDecl(
         name: String,
         extendsNotation: String?,
-        graphAttrs: [(key: String, value: String)],
+        graphAttributes: [(key: String, value: String)],
         nodeTypes: [VNotationNodeTypeDecl],
         edgeTypes: [VNotationEdgeTypeDecl],
         groupTypes: [VNotationGroupTypeDecl],

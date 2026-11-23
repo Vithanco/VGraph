@@ -1,44 +1,23 @@
-////  Factories all take `SemanticColor` parameters; what used to be inline hex
-////  literals (annotation, warning, ghost-pill, folded-group badge) now uses
-////  the structural tokens defined in `SemanticColor.swift`. The renderer
-////  resolves `SemanticColor → VColor` at SVG emit time based on `darkMode`.
-////
-
-import MathUtils
+// Colours are `SemanticColor` tokens, resolved only when the SVG is written,
+// because only then is `darkMode` known.
 
 extension NodeStyleLayout {
 
     public static func withCategory(category: String, categoryColor: SemanticColor) -> NodeStyleLayout {
-        return .background(
-            .appearance(shape: .box, color: .white),
-            .padded(
-                NodeStyleConstants.frameStrokePadding,
-                .overlay(
-                    base: .frame(
-                        cornerRadius: NodeStyleConstants.cornerRadius,
-                        borderWidth: NodeStyleConstants.borderWidth,
-                        borderColor: .black
+        return framedBox(
+            fill: .white, border: .black,
+            content: .vertical(
+                [
+                    categoryBar(category, color: categoryColor),
+                    .padded(
+                        NodeStyleConstants.belowCategoryInsets,
+
+                        .nodeText(color: .labelText)
                     ),
-                    overlay: .vertical(
-                        [
-                            .categoryHeader(
-                                text: category,
-                                font: NodeStyleConstants.categoryFont,
-                                backgroundColor: categoryColor,
-                                textColor: categoryColor.bwContrastColor
-                            ),
-                            .padded(
-                                NodeStyleConstants.belowCategoryInsets,
 
-                                .nodeText(color: .labelText)
-                            ),
-
-                        ],
-                        spacing: 0
-                    )
-                )
-            )
-        )
+                ],
+                spacing: 0
+            ))
     }
 
     public static func simpleRoundedBox(color: SemanticColor) -> NodeStyleLayout {
@@ -49,7 +28,7 @@ extension NodeStyleLayout {
                 .frame(
                     cornerRadius: NodeStyleConstants.cornerRadius,
                     borderWidth: NodeStyleConstants.borderWidth,
-                    borderColor: color.darken(to: 0.3)
+                    borderColor: borderShade(of: color)
                 )
             )
         )
@@ -63,90 +42,52 @@ extension NodeStyleLayout {
     }
 
     public static func simpleRoundedText(color: SemanticColor) -> NodeStyleLayout {
-        return .background(
-            .appearance(shape: .box, color: color),
-            .padded(
-                NodeStyleConstants.frameStrokePadding,
-                .overlay(
-                    base: .frame(
-                        cornerRadius: NodeStyleConstants.cornerRadius,
-                        borderWidth: NodeStyleConstants.borderWidth,
-                        borderColor: color.darken(to: 0.3)
-                    ),
-                    overlay: .padded(
-                        NodeStyleConstants.roundedBoxInsets,
-                        .nodeText(color: .black)
-                    )
-                )
-            )
-        )
+        return framedBox(
+            fill: color, border: borderShade(of: color),
+            content: .padded(
+                NodeStyleConstants.roundedBoxInsets,
+                .nodeText(color: .black)
+            ))
     }
 
     public static func iconWithText(backgroundColor: SemanticColor, icon: IconInfo)
         -> NodeStyleLayout
     {
-        return .background(
-            .appearance(shape: .box, color: backgroundColor),
-            .padded(
-                NodeStyleConstants.frameStrokePadding,
-                .overlay(
-                    base: .frame(
-                        cornerRadius: NodeStyleConstants.cornerRadius,
-                        borderWidth: NodeStyleConstants.borderWidth,
-                        borderColor: backgroundColor.darken(to: 0.3)
-                    ),
-                    overlay: .padded(
-                        VEdgeInsets(regular: 3),
-                        .horizontal(
-                            [
-                                .icon(icon),
-                                .nodeText(color: backgroundColor.bwContrastColor),
-                            ],
-                            spacing: NodeStyleConstants.separation
-                        )
-                    )
+        return framedBox(
+            fill: backgroundColor, border: borderShade(of: backgroundColor),
+            content: .padded(
+                VEdgeInsets(regular: 3),
+                .horizontal(
+                    [
+                        .icon(icon),
+                        .nodeText(color: backgroundColor.bwContrastColor),
+                    ],
+                    spacing: NodeStyleConstants.separation
                 )
-            )
-        )
+            ))
     }
 
     public static func withCategoryAndIcon(category: String, categoryColor: SemanticColor, icon: IconInfo)
         -> NodeStyleLayout
     {
-        return .background(
-            .appearance(shape: .box, color: .white),
-            .padded(
-                NodeStyleConstants.frameStrokePadding,
-                .overlay(
-                    base: .frame(
-                        cornerRadius: NodeStyleConstants.cornerRadius,
-                        borderWidth: NodeStyleConstants.borderWidth,
-                        borderColor: .black
+        return framedBox(
+            fill: .white, border: .black,
+            content: .vertical(
+                [
+                    categoryBar(category, color: categoryColor),
+                    .padded(
+                        NodeStyleConstants.belowCategoryInsets,
+                        .horizontal(
+                            [
+                                .icon(icon),
+                                .nodeText(color: .labelText),
+                            ],
+                            spacing: NodeStyleConstants.separation
+                        )
                     ),
-                    overlay: .vertical(
-                        [
-                            .categoryHeader(
-                                text: category,
-                                font: NodeStyleConstants.categoryFont,
-                                backgroundColor: categoryColor,
-                                textColor: categoryColor.bwContrastColor
-                            ),
-                            .padded(
-                                NodeStyleConstants.belowCategoryInsets,
-                                .horizontal(
-                                    [
-                                        .icon(icon),
-                                        .nodeText(color: .labelText),
-                                    ],
-                                    spacing: NodeStyleConstants.separation
-                                )
-                            ),
-                        ],
-                        spacing: 0
-                    )
-                )
-            )
-        )
+                ],
+                spacing: 0
+            ))
     }
 
     public static func iconOnly(icon: IconInfo) -> NodeStyleLayout {
@@ -165,7 +106,7 @@ extension NodeStyleLayout {
                 .overlay(
                     base: .circleBorder(
                         borderWidth: NodeStyleConstants.borderWidth,
-                        borderColor: color.darken(to: 0.3)
+                        borderColor: borderShade(of: color)
                     ),
                     overlay: .padded(
                         NodeStyleConstants.roundedBoxInsets,
@@ -210,32 +151,21 @@ extension NodeStyleLayout {
         icon: String,
         typeName: String
     ) -> NodeStyleLayout {
-        return .background(
-            .appearance(shape: .box, color: backgroundColor),
-            .padded(
-                NodeStyleConstants.frameStrokePadding,
-                .overlay(
-                    base: .frame(
-                        cornerRadius: NodeStyleConstants.cornerRadius,
-                        borderWidth: NodeStyleConstants.borderWidth,
-                        borderColor: borderColor
-                    ),
-                    overlay: .overlay(
-                        base: .accentBar(width: NodeStyleConstants.accentBarWidth, color: borderColor),
-                        overlay: .padded(
-                            VEdgeInsets(top: 4, left: 12, bottom: 6, right: 8),
-                            .vertical(
-                                [
-                                    .typeBadge(icon: icon, typeLabel: typeName, color: borderColor),
-                                    .nodeText(color: textColor),
-                                ],
-                                spacing: 4
-                            )
-                        )
+        return framedBox(
+            fill: backgroundColor, border: borderColor,
+            content: .overlay(
+                base: .accentBar(width: NodeStyleConstants.accentBarWidth, color: borderColor),
+                overlay: .padded(
+                    NodeStyleConstants.accentStripInsets,
+                    .vertical(
+                        [
+                            .typeBadge(icon: icon, typeLabel: typeName, color: borderColor),
+                            .nodeText(color: textColor),
+                        ],
+                        spacing: 4
                     )
                 )
-            )
-        )
+            ))
     }
 
     /// `iconAccentStrip` without the badge, for a notation with a single node type:
@@ -245,23 +175,12 @@ extension NodeStyleLayout {
         borderColor: SemanticColor,
         textColor: SemanticColor
     ) -> NodeStyleLayout {
-        .background(
-            .appearance(shape: .box, color: backgroundColor),
-            .padded(
-                NodeStyleConstants.frameStrokePadding,
-                .overlay(
-                    base: .frame(
-                        cornerRadius: NodeStyleConstants.cornerRadius,
-                        borderWidth: NodeStyleConstants.borderWidth,
-                        borderColor: borderColor
-                    ),
-                    overlay: .overlay(
-                        base: .accentBar(width: NodeStyleConstants.accentBarWidth, color: borderColor),
-                        overlay: .padded(NodeStyleConstants.roundedBoxInsets, .nodeText(color: textColor))
-                    )
-                )
-            )
-        )
+        framedBox(
+            fill: backgroundColor, border: borderColor,
+            content: .overlay(
+                base: .accentBar(width: NodeStyleConstants.accentBarWidth, color: borderColor),
+                overlay: .padded(NodeStyleConstants.roundedBoxInsets, .nodeText(color: textColor))
+            ))
     }
 
     /// Ghost pill for concept map relation nodes (Option C from design guide):
@@ -284,28 +203,17 @@ extension NodeStyleLayout {
         border: SemanticColor,
         textColor: SemanticColor
     ) -> NodeStyleLayout {
-        return .background(
-            .appearance(shape: .box, color: fill),
-            .padded(
-                NodeStyleConstants.frameStrokePadding,
-                .overlay(
-                    base: .frame(
-                        cornerRadius: NodeStyleConstants.cornerRadius,
-                        borderWidth: NodeStyleConstants.borderWidth,
-                        borderColor: border
-                    ),
-                    overlay: .padded(
-                        NodeStyleConstants.roundedBoxInsets,
-                        .nodeText(color: textColor)
-                    )
-                )
-            )
-        )
+        return framedBox(
+            fill: fill, border: border,
+            content: .padded(
+                NodeStyleConstants.roundedBoxInsets,
+                .nodeText(color: textColor)
+            ))
     }
 
     /// C4 element card: a solid rounded box with a `«stereotype»` line above the element
     /// name. In-scope elements pass a saturated fill; external elements pass a grey fill.
-    /// Also used as the folded face of a C4 boundary group (fold-as-zoom).
+    /// Also used as the folded face of a C4 group (fold-as-zoom).
     public static func c4Element(
         stereotype: String, fill: SemanticColor, textColor: SemanticColor, shape: NodeShape = .box
     )
@@ -341,51 +249,25 @@ extension NodeStyleLayout {
                     textStack))
 
         default:
-            return .background(
-                .appearance(shape: .box, color: fill),
-                .padded(
-                    NodeStyleConstants.frameStrokePadding,
-                    .overlay(
-                        base: .frame(
-                            cornerRadius: NodeStyleConstants.cornerRadius,
-                            borderWidth: NodeStyleConstants.borderWidth,
-                            borderColor: fill
-                        ),
-                        overlay: .padded(
-                            VEdgeInsets(top: 6, left: 12, bottom: 8, right: 12),
-                            textStack
-                        )
-                    )
-                )
-            )
+            return framedBox(
+                fill: fill, border: fill,
+                content: .padded(
+                    VEdgeInsets(top: 6, left: 12, bottom: 8, right: 12),
+                    textStack
+                ))
         }
     }
 
     /// Annotation meta-node (design guide §11):
     /// Cream fill, amber dashed border, italic text. Signals meta-information, not content.
     public static var annotationNode: NodeStyleLayout {
-        return .background(
-            .appearance(shape: .box, color: .annotationFill),
-            .padded(
-                NodeStyleConstants.frameStrokePadding,
-                .overlay(
-                    base: .dashedFrame(
-                        cornerRadius: NodeStyleConstants.cornerRadius,
-                        borderWidth: 1.0,
-                        borderColor: .annotationBorder,
-                        dashPattern: "5,3"
-                    ),
-                    overlay: .padded(
-                        VEdgeInsets(top: 4, left: 12, bottom: 6, right: 8),
-                        .vertical(
-                            [
-                                .typeBadge(icon: "annotation", typeLabel: "Annotation", color: .annotationBorder),
-                                .italicNodeText(color: .annotationText),
-                            ], spacing: 4)
-                    )
-                )
-            )
-        )
+        metaNode(icon: "annotation", typeLabel: "Annotation", fill: .annotationFill, border: .annotationBorder, text: .annotationText)
+    }
+
+    /// Warning meta-node (design guide §11):
+    /// Blush fill, red dashed border, italic text. Same shape as annotationNode; color signals urgency.
+    public static var warningNode: NodeStyleLayout {
+        metaNode(icon: "warning", typeLabel: "Warning", fill: .warningFill, border: .warningBorder, text: .warningText)
     }
 
     /// Folded-group proxy node (design guide §08):
@@ -413,84 +295,54 @@ extension NodeStyleLayout {
             )
         )
     }
+}
 
-    // MARK: - VColor overloads (for callers that haven't migrated to SemanticColor)
-    //
-    // These wrap raw VColor inputs in `.literal(...)` so existing test code and
-    // ad-hoc graph construction continues to compile. Semantic identity is
-    // unknown for these colours, but the algorithmic dark variant via
-    // `ColorMath.darkOf` keeps them theme-aware.
+// MARK: - Shared shapes
 
-    public static func iconWithText(backgroundColor: VColor, icon: IconInfo) -> NodeStyleLayout {
-        iconWithText(backgroundColor: .literal(backgroundColor), icon: icon)
+extension NodeStyleLayout {
+    /// The rounded box most styles are drawn in: a fill, a solid border inset so
+    /// its stroke is not clipped, and the content on top.
+    private static func framedBox(fill: SemanticColor, border: SemanticColor, content: NodeStyleLayout) -> NodeStyleLayout {
+        .background(
+            .appearance(shape: .box, color: fill),
+            .padded(
+                NodeStyleConstants.frameStrokePadding,
+                .overlay(
+                    base: .frame(
+                        cornerRadius: NodeStyleConstants.cornerRadius,
+                        borderWidth: NodeStyleConstants.borderWidth,
+                        borderColor: border),
+                    overlay: content)))
     }
 
-    public static func simpleRoundedBox(color: VColor) -> NodeStyleLayout {
-        simpleRoundedBox(color: .literal(color))
-    }
-
-    public static func simpleRoundedText(color: VColor) -> NodeStyleLayout {
-        simpleRoundedText(color: .literal(color))
-    }
-
-    public static func withCategory(category: String, categoryColor: VColor) -> NodeStyleLayout {
-        withCategory(category: category, categoryColor: .literal(categoryColor))
-    }
-
-    public static func withCategoryAndIcon(category: String, categoryColor: VColor, icon: IconInfo) -> NodeStyleLayout {
-        withCategoryAndIcon(category: category, categoryColor: .literal(categoryColor), icon: icon)
-    }
-
-    public static func circle(color: VColor) -> NodeStyleLayout {
-        circle(color: .literal(color))
-    }
-
-    public static func contentNode(fill: VColor, border: VColor, textColor: VColor) -> NodeStyleLayout {
-        contentNode(fill: .literal(fill), border: .literal(border), textColor: .literal(textColor))
-    }
-
-    public static func iconAccentStrip(
-        backgroundColor: VColor, borderColor: VColor, textColor: VColor,
-        icon: String, typeName: String
+    /// Annotation and Warning: meta-information rather than content, so a dashed
+    /// border and italic text, with the badge saying which.
+    private static func metaNode(
+        icon: String, typeLabel: String, fill: SemanticColor, border: SemanticColor, text: SemanticColor
     ) -> NodeStyleLayout {
-        iconAccentStrip(
-            backgroundColor: .literal(backgroundColor),
-            borderColor: .literal(borderColor),
-            textColor: .literal(textColor),
-            icon: icon, typeName: typeName
-        )
-    }
-
-    public static func foldedGroupNode(label: String, count: Int, fill: VColor, border: VColor, textColor: VColor) -> NodeStyleLayout {
-        foldedGroupNode(
-            label: label, count: count,
-            fill: .literal(fill), border: .literal(border), textColor: .literal(textColor))
-    }
-
-    /// Warning meta-node (design guide §11):
-    /// Blush fill, red dashed border, italic text. Same shape as annotationNode; color signals urgency.
-    public static var warningNode: NodeStyleLayout {
-        return .background(
-            .appearance(shape: .box, color: .warningFill),
+        .background(
+            .appearance(shape: .box, color: fill),
             .padded(
                 NodeStyleConstants.frameStrokePadding,
                 .overlay(
                     base: .dashedFrame(
-                        cornerRadius: NodeStyleConstants.cornerRadius,
-                        borderWidth: 1.0,
-                        borderColor: .warningBorder,
-                        dashPattern: "5,3"
-                    ),
+                        cornerRadius: NodeStyleConstants.cornerRadius, borderWidth: 1.0, borderColor: border,
+                        dashPattern: "5,3"),
                     overlay: .padded(
-                        VEdgeInsets(top: 4, left: 12, bottom: 6, right: 8),
-                        .vertical(
-                            [
-                                .typeBadge(icon: "warning", typeLabel: "Warning", color: .warningBorder),
-                                .italicNodeText(color: .warningText),
-                            ], spacing: 4)
-                    )
-                )
-            )
-        )
+                        NodeStyleConstants.accentStripInsets,
+                        .vertical([.typeBadge(icon: icon, typeLabel: typeLabel, color: border), .italicNodeText(color: text)], spacing: 4)
+                    ))))
+    }
+
+    /// A category style's header: the category name on its colour.
+    private static func categoryBar(_ category: String, color: SemanticColor) -> NodeStyleLayout {
+        .categoryHeader(
+            text: category, font: NodeStyleConstants.categoryFont, backgroundColor: color,
+            textColor: color.bwContrastColor)
+    }
+
+    /// The border a style draws around its own fill colour.
+    private static func borderShade(of fill: SemanticColor) -> SemanticColor {
+        fill.darken(to: 0.3)
     }
 }

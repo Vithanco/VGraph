@@ -6,8 +6,8 @@ extension Notations {
     /// existing node type to `Annotation` and `Warning`, allowing any node to be annotated.
     public struct Annotation: NotationExtension {
 
-        public static let annotation: NodeType = NodeType(string: "Annotation")
-        public static let warning: NodeType = NodeType(string: "Warning")
+        public static let annotation: NodeType = NodeType(rawValue: "Annotation")
+        public static let warning: NodeType = NodeType(rawValue: "Warning")
 
         public struct NodeTypes: NotationNodeTypes {
             public static var all: [NodeType] { [Notations.Annotation.annotation, Notations.Annotation.warning] }
@@ -26,7 +26,7 @@ extension Notations {
         }
 
         public static func edgeContent(given nodeTypes: [NodeType]) -> NotationContent {
-            let sources = nodeTypes.filter { !$0.id.hasPrefix("__UNKNOWN") && $0 != annotation && $0 != warning }
+            let sources = nodeTypes.filter { !$0.isUnknown && $0 != annotation && $0 != warning }
             return NotationContent(
                 edgeTypes: sources.flatMap { source in
                     [

@@ -43,7 +43,7 @@ group type" has no answer in it.
 ## Decision
 
 **The registry is a computed graph attribute**, `graph.groupTypes`, held on the
-[[Root group]] and appended to by `add(groupType:)`.
+[[Root group]] and appended to by `adding(groupType:)`.
 
 Considered and rejected:
 

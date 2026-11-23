@@ -55,7 +55,7 @@ struct VGLExporterQuotingTest {
         let exported = try VGLExporter().export(graph: graph)
 
         let reparsed = try VGraphParser(logger: NoOpLogger()).parse(source: exported)
-        let tooltip: String = try reparsed.get(node: Node(string: "q"), attribute: Attributes.Node.tooltip)
+        let tooltip: String = try reparsed.get(node: Node(rawValue: "q"), attribute: Attributes.Node.tooltip)
         #expect(tooltip == value)
 
         #expect(try VGLExporter().export(graph: reparsed) == exported)

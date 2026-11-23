@@ -10,7 +10,7 @@ extension Attributes {
         Edge.dir.id, Edge.len.id, Edge.weight.id, Edge.constraint.id, Edge.labelangle.id, Edge.labeldistance.id,
         Group.backgroundColor.id, Group.border.id, Group.borderColor.id, Group.borderDash.id, Group.borderWidth.id,
         Group.cornerRadius.id, Group.fontcolor.id, Group.fontsize.id, Group.fontname.id,
-        Group.groupStyle.id, Group.boundaryChrome.id, Group.isFolded.id, Group.labelocation.id, Group.labeljust.id,
+        Group.groupStyle.id, Group.frame.id, Group.isFolded.id, Group.labelLocation.id, Group.labeljust.id,
         Group.layoutDirection.id, Group.ratio.id, Group.splines.id, Group.style.id, Group.watermark.id,
         Group.layoutEngine.id, Group.overlap.id, Group.sep.id, Group.maxNodeWidth.id, Group.loopMarkers.id,
         Group.derivedEdges.id,

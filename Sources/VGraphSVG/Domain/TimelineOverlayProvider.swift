@@ -184,7 +184,7 @@ public struct TimelineOverlayProvider: NotationOverlayProvider {
         let sortedYs = rawPoints.map { $0.cy }.sorted()
         let axisY = sortedYs[sortedYs.count / 2]
 
-        let rootGrp = Group(rawValue: rootGroup)
+        let rootGrp = Group.root
         let bbBottom: Double =
             (try? graph.get(group: rootGrp, attribute: Attributes.Group.layoutedBounds))?.maxY
             ?? axisY

@@ -21,14 +21,38 @@ struct AttributeTests {
         #expect(!Attributes.Node.label.asDefinition.isEqual("20", "20.0"))
     }
 
-    @Test
-    func cannotDefineTwice() throws(VError) {
-        var ads = AttributeStore()
-        ads = try ads.define(nodeLabel)
-        #expect(ads.definitions.count == 1)
-        ads = try ads.define(nodeLabel)
-        #expect(ads.definitions.count == 1)
-        let newNodeName = AttributeDefinition(
+    @Test("Attributes of different definitions are different, whatever their value")
+    func equalityIncludesTheDefinition() {
+        let label = Attributes.Node.label("x")
+        let tooltip = Attributes.Node.tooltip("x")
+        #expect(label != tooltip)
+        #expect(Set([label, tooltip]).count == 2)
+        #expect(label == Attributes.Node.label("x"))
+    }
+
+    @Test("An empty string is no number")
+    func emptyStringIsNoDouble() {
+        #expect(Double("") == nil)
+        #expect(throws: VError.self) { try Double.fromString("") }
+    }
+
+    @Test("A number written with an exponent is a number: Swift writes very small and very large ones that way")
+    func exponentNotationIsANumber() {
+        #expect(Double("1e-05") == 0.00001)
+        #expect(Double("3.5E+2") == 350)
+        #expect(Double("-2.5e3") == -2500)
+        #expect(Double("0.25") == 0.25)
+        #expect(Double("1e") == nil)
+        #expect(Double("e5") == nil)
+        #expect(Double("0-5") == nil)
+    }
+
+    @Test("Defining an attribute again is a no-op where it matches, and an error where it differs")
+    func aDefinitionMayRepeatButNotContradict() throws(VError) {
+        let store = try AttributeStore().define(nodeLabel)
+        #expect(store.definitions.count == 1)
+        #expect(try store.define(nodeLabel) == store)
+        let renamed = AttributeDefinition(
             id: nodeLabel.id,
             name: "another name",
             description: nodeLabel.description,
@@ -37,7 +61,30 @@ struct AttributeTests {
             typeAsString: String.typeName
         )
         #expect(throws: VError.definitionAlreadyExists(nodeLabel.id)) {
-            ads = try ads.define(newNodeName)
+            try store.define(renamed)
+        }
+    }
+
+    @Test("A new graph defines every node, edge and group attribute, none hiding another")
+    func theStandardAttributesShareNoId() {
+        let sets = [Attributes.Node.definitions, Attributes.Edge.definitions, Attributes.Group.definitions]
+        #expect(VGraph().attributeDefinitions.count == sets.map { $0.count }.reduce(0, +))
+    }
+
+    @Test("Defining a set again is a no-op where it matches, and an error where it differs")
+    func aSetOfDefinitionsMayRepeatButNotContradict() throws(VError) {
+        let store = try AttributeStore().define(nodeLabel)
+        #expect(try store.define(AttributeDefContainer([nodeLabel.asDefinition])) == store)
+        let renamed = AttributeDefinition(
+            id: nodeLabel.id,
+            name: "another name",
+            description: nodeLabel.description,
+            defaultValue: nodeLabel.defaultValue,
+            target: nodeLabel.target,
+            typeAsString: String.typeName
+        )
+        #expect(throws: VError.definitionAlreadyExists(nodeLabel.id)) {
+            try store.define(AttributeDefContainer([renamed]))
         }
     }
 
@@ -48,16 +95,16 @@ struct AttributeTests {
         let edgeType = EdgeType(id: "testEdgeType", from: nodeType, to: nodeType)
         let edge = Edge(id: "testEdge", from: node, to: node)
         let graph = try VGraph()
-            .add(nodeType: nodeType)
-            .add(node: node, type: nodeType)
-            .add(edgeType: edgeType)
-            .add(edge: edge, edgeType: edgeType)
+            .adding(nodeType: nodeType)
+            .adding(node: node, type: nodeType)
+            .adding(edgeType: edgeType)
+            .adding(edge: edge, edgeType: edgeType)
 
-        #expect(throws: VError.wrongTarget(is: .graph, insteadOf: .node)) {
-            try graph.set(node: node, attribute: Attributes.Group.label.attribute("a Label"))
+        #expect(throws: VError.wrongTarget(is: .group, insteadOf: .node)) {
+            try graph.setting(node: node, attribute: Attributes.Group.label.attribute("a Label"))
         }
-        #expect(throws: VError.wrongTarget(is: .graph, insteadOf: .edge)) {
-            try graph.set(edge: edge, attribute: Attributes.Group.label.attribute("a Label"))
+        #expect(throws: VError.wrongTarget(is: .group, insteadOf: .edge)) {
+            try graph.setting(edge: edge, attribute: Attributes.Group.label.attribute("a Label"))
         }
         // all is allowed for groups, as that is a way to defined shared attributes
     }
@@ -81,10 +128,10 @@ struct AttributeTests {
         let nodeType = NodeType("testNodeType")
 
         var graph = try VGraph()
-            .add(nodeType: nodeType)
-            .add(node: node, type: nodeType)
-            .define(stringArrayDef)
-            .set(node: node, attribute: attribute)
+            .adding(nodeType: nodeType)
+            .adding(node: node, type: nodeType)
+            .defining(stringArrayDef)
+            .setting(node: node, attribute: attribute)
 
         // Retrieve and verify we get an array of individual strings
         let retrieved: [String] = try graph.get(node: node, attribute: stringArrayDef)
@@ -98,14 +145,14 @@ struct AttributeTests {
         let testStringWithSpaces = "[ first , second , third ]"
         let attribute2 = try stringArrayDef.attribute(fromString: testStringWithSpaces)
         #expect(attribute2.stringValue == "[first,second,third]")
-        graph = try graph.set(node: node, attribute: attribute2)
+        graph = try graph.setting(node: node, attribute: attribute2)
 
         let retrieved2: [String] = try graph.get(node: node, attribute: stringArrayDef)
         #expect(retrieved2 == ["first", "second", "third"])
 
         let emptyArrayString = "[]"
         let attribute3 = try stringArrayDef.attribute(fromString: emptyArrayString)
-        graph = try graph.set(node: node, attribute: attribute3)
+        graph = try graph.setting(node: node, attribute: attribute3)
 
         let retrieved3: [String] = try graph.get(node: node, attribute: stringArrayDef)
         #expect(retrieved3.isEmpty, "\(retrieved3)")
@@ -113,7 +160,7 @@ struct AttributeTests {
 
         let singleElementString = "[single]"
         let attribute4 = try stringArrayDef.attribute(fromString: singleElementString)
-        graph = try graph.set(node: node, attribute: attribute4)
+        graph = try graph.setting(node: node, attribute: attribute4)
 
         let retrieved4: [String] = try graph.get(node: node, attribute: stringArrayDef)
         #expect(retrieved4 == ["single"])
@@ -123,7 +170,7 @@ struct AttributeTests {
     @Test("A wrapped line that contains a comma stays one line")
     func arrayElementsKeepTheirCommas() throws(VError) {
         let lines = ["Yes, soon", "a\\b", "x,", ",y", "\\,"]
-        let stored = try Attributes.Node.wrappedText.attribute(lines)
+        let stored = Attributes.Node.wrappedText.attribute(lines)
         #expect(try Attributes.Node.wrappedText.value(fromString: stored.stringValue) == lines)
     }
 
@@ -142,8 +189,8 @@ struct AttributeTests {
 
         let group = Group(rawValue: "testGroup")
         let graph = try VGraph()
-            .add(group: group)
-            .set(group: group, attribute: attribute)
+            .adding(group: group)
+            .setting(group: group, attribute: attribute)
 
         #expect(try graph.get(group: group, attribute: bounds) == VRect(x: 10, y: 20, width: 100, height: 50))
 

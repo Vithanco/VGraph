@@ -68,8 +68,8 @@ struct GainedPairCandidatesTest {
         let s = try session(nodes: "  node shop: System \"Shop\";", edges: "  edge customer -> shop;")
         let edge = s.origin.edges[0].id.id
 
-        #expect(s.reattachCandidates(edge: edge, end: .to, to: "spa").map { $0.id.id } == ["uses"])
-        #expect(s.reattachTargets(edge: edge, end: .to) == ["spa"])
+        #expect(s.reattachCandidates(for: edge, end: .to, to: "spa").map { $0.id.id } == ["uses"])
+        #expect(s.reattachTargets(for: edge, end: .to) == ["spa"])
 
         try s.reattach(edge, end: .to, to: "spa")
         #expect(try s.origin.edgeType(for: s.origin.edges[0]).id.id == "uses")
@@ -81,9 +81,9 @@ struct GainedPairCandidatesTest {
             edgeTypes: "  edge type: calls from: Person to: System", edges: "  edge customer -> spa: uses;")
         let edge = s.origin.edges[0].id.id
 
-        #expect(s.retypeCandidates(edge: edge).map { $0.id.id } == ["calls"])
+        #expect(s.retypeCandidates(forEdge: edge).map { $0.id.id } == ["calls"])
 
-        try s.changeType(of: edge, using: EdgeType.Id(string: "calls"))
+        try s.changeType(of: edge, using: EdgeType.Id(rawValue: "calls"))
         #expect(try s.exportVGL().contains("edge customer -> spa: calls"))
     }
 }

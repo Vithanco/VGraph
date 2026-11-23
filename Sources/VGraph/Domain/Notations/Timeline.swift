@@ -2,7 +2,7 @@ extension Notations {
 
     public struct Timeline: NotationDeclaration {
 
-        public static var criteria: [QualityCheckSpec] { [.noParallelEdges] }
+        public static var namedQualityChecks: [QualityCheckSpec] { [.noParallelEdges] }
         public static let id: Identifier<Notation> = .init(rawValue: "Timeline")
         public static let description =
             "Visualises events across parallel tracks aligned to a shared time axis, with optional influence connections between events."
@@ -75,8 +75,8 @@ extension Notations {
             private static let timePointId = "TimePoint"
             private static let eventId = "Event"
 
-            public static let timePoint: NodeType = NodeType(string: timePointId)
-            public static let event: NodeType = NodeType(string: eventId)
+            public static let timePoint: NodeType = NodeType(rawValue: timePointId)
+            public static let event: NodeType = NodeType(rawValue: eventId)
         }
 
         public struct EdgeTypes: NotationEdgeTypes {

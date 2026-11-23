@@ -5,7 +5,7 @@ extension VGraph {
     public func marking(_ steps: [TransformStep.Id]) throws(VError) -> VGraph {
         var result = self
         for step in steps {
-            result = try result.recordCompletion(of: step)
+            result = try result.recordingCompletion(of: step)
         }
         return result
     }

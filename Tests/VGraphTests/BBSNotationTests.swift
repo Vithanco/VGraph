@@ -8,7 +8,7 @@ struct BBSNotationTests {
 
     @Test func testBBSLayoutDirectionIsLeftToRight() throws {
         var graph = VGraph()
-        graph = try Notations.Bbs.addNotation(addTo: graph)
+        graph = try Notations.Bbs.addNotation(to: graph)
 
         let layoutDirectionString: String = try graph.get(
             graphAttribute: Attributes.Group.layoutDirection

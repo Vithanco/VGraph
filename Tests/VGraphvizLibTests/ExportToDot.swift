@@ -23,30 +23,22 @@ struct ExportToDotTests {
         var graph = try app.parseGraph(vgraphInput)
 
         // Manually set the node styles with shapes (simulating what would come from notation)
-        let node1 = Node(string: "node1")
-        let node2 = Node(string: "node2")
+        let node1 = Node(rawValue: "node1")
+        let node2 = Node(rawValue: "node2")
 
         let circleStyle = NodeStyleLayout.background(
             .solid(shape: .circle, color: .literal(VColor.blue)),
             .nodeText(color: .literal(VColor.white))
         )
         let nodeType1 = try graph.nodeType(for: node1)
-        graph = try graph.set(
-            nodeType: nodeType1,
-            def: Attributes.Node.style,
-            value: circleStyle
-        )
+        graph = try graph.setting(nodeType: nodeType1, attribute: Attributes.Node.style.attribute(circleStyle))
 
         let pointStyle = NodeStyleLayout.background(
             .clear(shape: .point),
             .empty
         )
         let nodeType2 = try graph.nodeType(for: node2)
-        graph = try graph.set(
-            nodeType: nodeType2,
-            def: Attributes.Node.style,
-            value: pointStyle
-        )
+        graph = try graph.setting(nodeType: nodeType2, attribute: Attributes.Node.style.attribute(pointStyle))
 
         // Styles are set directly above, so mark assembleNodeStyles satisfied
         // rather than running it, then extract shapes.
@@ -83,12 +75,12 @@ struct ExportToDotTests {
         let app = VGraphTestApp()
         var graph = try app.parseGraph(vgraphInput)
 
-        let node = Node(string: "testNode")
+        let node = Node(rawValue: "testNode")
 
         let testStrings = ["First line", "Second line", "Third line"]
         graph =
             try graph
-            .set(node: node, attribute: try Attributes.Node.wrappedText.attribute(testStrings))
+            .setting(node: node, attribute: Attributes.Node.wrappedText.attribute(testStrings))
 
         let exporter = DotExporter()
         let dotOutput = try exporter.export(graph: graph)
@@ -112,11 +104,11 @@ struct ExportToDotTests {
         let app = VGraphTestApp()
         var graph = try app.parseGraph(vgraphInput)
 
-        let node = Node(string: "testNode")
+        let node = Node(rawValue: "testNode")
 
         graph =
             try graph
-            .set(node: node, attribute: try Attributes.Node.wrappedText.attribute([]))
+            .setting(node: node, attribute: Attributes.Node.wrappedText.attribute([]))
 
         let exporter = DotExporter()
         let dotOutput = try exporter.export(graph: graph)
@@ -145,7 +137,7 @@ struct ExportToDotTests {
         ]
 
         for (direction, expectedRankdir) in testCases {
-            graph = try graph.set(graphAttribute: Attributes.Group.layoutDirection.attribute(direction))
+            graph = try graph.setting(graphAttribute: Attributes.Group.layoutDirection.attribute(direction))
 
             let exporter = DotExporter()
             let dotOutput = try exporter.export(graph: graph)
@@ -179,14 +171,14 @@ struct ExportToDotTests {
         let app = VGraphTestApp()
         var graph = try app.parseGraph(vgraphInput)
 
-        let node = Node(string: "testNode")
+        let node = Node(rawValue: "testNode")
 
         // Add custom attribute and set tooltip (which IS in the translation table)
         graph =
             try graph
-            .define(customAttr)
-            .set(node: node, attribute: try customAttr.attribute("not_exported_value"))
-            .set(node: node, attribute: try Attributes.Node.tooltip.attribute("exported_tooltip"))
+            .defining(customAttr)
+            .setting(node: node, attribute: customAttr.attribute("not_exported_value"))
+            .setting(node: node, attribute: Attributes.Node.tooltip.attribute("exported_tooltip"))
 
         let exporter = DotExporter()
         let dotOutput = try exporter.export(graph: graph)
@@ -257,7 +249,7 @@ struct ExportToDotTests {
             Issue.record("subgraph groupA not found")
             return
         }
-        guard let groupAEnd = lines[groupAStart...].firstIndex(where: { $0.trimmed() == "}" }) else {
+        guard let groupAEnd = lines[groupAStart...].firstIndex(where: { $0.trimmingWhitespace() == "}" }) else {
             Issue.record("groupA closing brace not found")
             return
         }
@@ -272,7 +264,7 @@ struct ExportToDotTests {
             Issue.record("subgraph groupB not found")
             return
         }
-        guard let groupBEnd = lines[groupBStart...].lastIndex(where: { $0.trimmed() == "}" }) else {
+        guard let groupBEnd = lines[groupBStart...].lastIndex(where: { $0.trimmingWhitespace() == "}" }) else {
             Issue.record("groupB closing brace not found")
             return
         }
@@ -324,7 +316,7 @@ struct ExportToDotTests {
             return
         }
 
-        guard let outerEnd = lines[outerStart...].lastIndex(where: { $0.trimmed() == "}" }) else {
+        guard let outerEnd = lines[outerStart...].lastIndex(where: { $0.trimmingWhitespace() == "}" }) else {
             Issue.record("outer group closing brace not found")
             return
         }
@@ -488,7 +480,7 @@ struct ExportToDotTests {
         #expect(childAttrLines.contains("fontcolor=\"blue\""), "Child should have fontcolor=blue (overriding parent's red)")
         #expect(childAttrLines.contains("label=\"Child Group\""), "Child should have correct label")
 
-        guard let grandchildEnd = lines[grandchildStart...].firstIndex(where: { $0.trimmed() == "}" }) else {
+        guard let grandchildEnd = lines[grandchildStart...].firstIndex(where: { $0.trimmingWhitespace() == "}" }) else {
             Issue.record("grandchild closing brace not found")
             return
         }
@@ -501,7 +493,7 @@ struct ExportToDotTests {
         #expect(grandchildAttrLines.contains("fontcolor=\"green\""), "Grandchild should have fontcolor=green")
         #expect(grandchildAttrLines.contains("label=\"Grandchild Group\""), "Grandchild should have correct label")
 
-        let parentEnd = lines[parentStart...].lastIndex(where: { $0.trimmed() == "}" })!
+        let parentEnd = lines[parentStart...].lastIndex(where: { $0.trimmingWhitespace() == "}" })!
         let parentBlock = lines[parentStart...parentEnd].joined(separator: "\n")
         #expect(parentBlock.contains("subgraph cluster_child"), "Child group should be nested inside parent")
         #expect(parentBlock.contains("subgraph cluster_grandchild"), "Grandchild group should be nested inside parent (transitively)")
@@ -509,7 +501,7 @@ struct ExportToDotTests {
         let childEnd = lines[childStart...].lastIndex(where: { line in
             // Find the closing brace that matches the child block
             // This is tricky because grandchild is nested - we need the second-to-last closing brace
-            line.trimmed() == "}"
+            line.trimmingWhitespace() == "}"
         })!
         let childBlock = lines[childStart...childEnd].joined(separator: "\n")
         #expect(childBlock.contains("subgraph cluster_grandchild"), "Grandchild group should be nested inside child")
@@ -560,7 +552,7 @@ struct ExportToDotTests {
             return
         }
 
-        guard let childEnd = lines[childStart...].firstIndex(where: { $0.trimmed() == "}" }) else {
+        guard let childEnd = lines[childStart...].firstIndex(where: { $0.trimmingWhitespace() == "}" }) else {
             Issue.record("child closing brace not found")
             return
         }
@@ -627,7 +619,7 @@ struct ExportToDotTests {
             guard let start = lines.firstIndex(where: { $0.contains("subgraph \(groupName)") }) else {
                 return nil
             }
-            guard let end = lines[start...].firstIndex(where: { $0.trimmed() == "}" }) else {
+            guard let end = lines[start...].firstIndex(where: { $0.trimmingWhitespace() == "}" }) else {
                 return nil
             }
             return lines[start...end].joined(separator: "\n")
@@ -757,10 +749,10 @@ struct DotResolvedValuesTests {
 
     private func graph() throws(VError) -> VGraph {
         try VGraph()
-            .add(nodeType: type).add(edgeType: link)
-            .add(node: n1, type: type, group: Group(rawValue: rootGroup))
-            .add(node: n2, type: type, group: Group(rawValue: rootGroup))
-            .add(edge: Edge(string: "e1", from: "n1", to: "n2"), edgeType: link)
+            .adding(nodeType: type).adding(edgeType: link)
+            .adding(node: n1, type: type, group: Group.root)
+            .adding(node: n2, type: type, group: Group.root)
+            .adding(edge: Edge(string: "e1", from: "n1", to: "n2"), edgeType: link)
     }
 
     private func line(_ id: String, in dot: String) -> String {
@@ -776,13 +768,13 @@ struct DotResolvedValuesTests {
 
     @Test("Given a type that sets the default font, when its node is laid out, then the font still reaches Graphviz")
     func aFontEqualToTheDefaultStillReachesGraphviz() throws {
-        let typed = try graph().set(nodeType: type, attribute: Attributes.Node.fontname.attribute(.dmSans))
+        let typed = try graph().setting(nodeType: type, attribute: Attributes.Node.fontname.attribute(.dmSans))
         #expect(line("n1", in: try DotExporter().export(graph: typed)).contains("fontname=\"Helvetica\""))
     }
 
     @Test("Given a C4 person, when it is laid out, then Graphviz is asked for a box")
     func aPersonIsLaidOutAsABox() throws {
-        let shaped = try graph().set(node: n1, attribute: Attributes.Node.shape.attribute(.person))
+        let shaped = try graph().setting(node: n1, attribute: Attributes.Node.shape.attribute(.person))
         let dot = try DotExporter().export(graph: shaped)
         #expect(line("n1", in: dot).contains("shape=\"box\""))
         #expect(!dot.contains("person"))
@@ -791,8 +783,8 @@ struct DotResolvedValuesTests {
     @Test("Given a node of fixed size, when it is laid out, then Graphviz is not asked to measure its text")
     func aFixedSizeNodeHasNoTextForGraphviz() throws {
         let sized = try graph()
-            .set(node: n1, attribute: Attributes.Node.wrappedText.attribute(["a long label"]))
-            .set(node: n1, attribute: Attributes.Node.fixedsize.attribute(true))
+            .setting(node: n1, attribute: Attributes.Node.wrappedText.attribute(["a long label"]))
+            .setting(node: n1, attribute: Attributes.Node.fixedsize.attribute(true))
         let dot = try DotExporter().export(graph: sized)
         #expect(line("n1", in: dot).contains("label=\"\""))
         #expect(!dot.contains("a long label"))
@@ -800,7 +792,7 @@ struct DotResolvedValuesTests {
 
     @Test("Given an edge that is not to constrain ranks, when it is laid out, then Graphviz is told")
     func anUnconstrainingEdgeSaysSo() throws {
-        let loose = try graph().set(edge: Edge.Id(string: "e1"), attribute: Attributes.Edge.constraint.attribute(false))
+        let loose = try graph().setting(edge: Edge.Id(rawValue: "e1"), attribute: Attributes.Edge.constraint.attribute(false))
         #expect(try DotExporter().export(graph: loose).contains("constraint=\"false\""))
     }
 

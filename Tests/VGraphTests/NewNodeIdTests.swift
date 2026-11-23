@@ -13,11 +13,11 @@ import Testing
 struct NewNodeIdTests {
     /// A graph with `count` Concepts, named `c0…`, plus the ConceptMap notation.
     private func conceptMap(concepts count: Int) throws -> VGraph {
-        var graph = try VGraph().defineStandardAttributes()
-        graph = try Notations.ConceptMap.addNotation(addTo: graph)
+        var graph = VGraph()
+        graph = try Notations.ConceptMap.addNotation(to: graph)
         for index in 0..<count {
-            graph = try graph.add(
-                node: Node(string: "c\(index)"), type: Notations.ConceptMap.NodeTypes.concept)
+            graph = try graph.adding(
+                node: Node(rawValue: "c\(index)"), type: Notations.ConceptMap.NodeTypes.concept)
         }
         return graph
     }
@@ -29,14 +29,14 @@ struct NewNodeIdTests {
     @Test func startsCountingFromHowManyOfThatTypeExist() throws {
         let graph = try conceptMap(concepts: 12)
 
-        #expect(graph.newNodeId(for: Notations.ConceptMap.NodeTypes.concept) == Node(string: "concept_13"))
+        #expect(graph.newNodeId(for: Notations.ConceptMap.NodeTypes.concept) == Node(rawValue: "concept_13"))
     }
 
     /// An empty map still starts at 1.
     @Test func theFirstOfATypeIsAlwaysOne() throws {
         let graph = try conceptMap(concepts: 0)
 
-        #expect(graph.newNodeId(for: Notations.ConceptMap.NodeTypes.concept) == Node(string: "concept_1"))
+        #expect(graph.newNodeId(for: Notations.ConceptMap.NodeTypes.concept) == Node(rawValue: "concept_1"))
     }
 
     /// Counting is only where the search *starts* — it cannot stand in for the
@@ -47,19 +47,19 @@ struct NewNodeIdTests {
         var graph = try conceptMap(concepts: 2)
         // Two Concepts, so the search starts at 3 — and something else already
         // holds that id, in a different element kind.
-        graph = try graph.add(node: Node(string: "concept_3"), type: Notations.ConceptMap.NodeTypes.relation)
+        graph = try graph.adding(node: Node(rawValue: "concept_3"), type: Notations.ConceptMap.NodeTypes.relation)
 
-        #expect(graph.newNodeId(for: Notations.ConceptMap.NodeTypes.concept) == Node(string: "concept_4"))
+        #expect(graph.newNodeId(for: Notations.ConceptMap.NodeTypes.concept) == Node(rawValue: "concept_4"))
     }
 
     /// The count is per node type, not per graph: Relations do not push Concepts
     /// along.
     @Test func eachTypeCountsOnlyItsOwn() throws {
         var graph = try conceptMap(concepts: 1)
-        graph = try graph.add(node: Node(string: "r0"), type: Notations.ConceptMap.NodeTypes.relation)
-        graph = try graph.add(node: Node(string: "r1"), type: Notations.ConceptMap.NodeTypes.relation)
+        graph = try graph.adding(node: Node(rawValue: "r0"), type: Notations.ConceptMap.NodeTypes.relation)
+        graph = try graph.adding(node: Node(rawValue: "r1"), type: Notations.ConceptMap.NodeTypes.relation)
 
-        #expect(graph.newNodeId(for: Notations.ConceptMap.NodeTypes.concept) == Node(string: "concept_2"))
-        #expect(graph.newNodeId(for: Notations.ConceptMap.NodeTypes.relation) == Node(string: "relation_3"))
+        #expect(graph.newNodeId(for: Notations.ConceptMap.NodeTypes.concept) == Node(rawValue: "concept_2"))
+        #expect(graph.newNodeId(for: Notations.ConceptMap.NodeTypes.relation) == Node(rawValue: "relation_3"))
     }
 }

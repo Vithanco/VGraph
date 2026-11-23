@@ -44,7 +44,7 @@ struct MintedTypesRoundTripTest {
                 """)
     }
 
-    private let step = NodeType(string: "Step")
+    private let step = NodeType(rawValue: "Step")
 
     /// Run a minting command, then put its own export back through the parser.
     private func survivesAReparse(
@@ -77,7 +77,7 @@ struct MintedTypesRoundTripTest {
                     _ = try s.addSuccessor(from: "s1", ofType: self.step)
                 },
                 try survivesAReparse("addPredecessor(ofType:)") { s in
-                    _ = try s.addPredecessor(to: "g1", ofType: NodeType(string: "Gate"))
+                    _ = try s.addPredecessor(to: "g1", ofType: NodeType(rawValue: "Gate"))
                 },
                 try survivesAReparse("split(_:ofType:)") { s in
                     _ = try s.split(s.origin.edges.first!.id.id, ofType: self.step)

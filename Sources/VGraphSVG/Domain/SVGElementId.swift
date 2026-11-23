@@ -56,9 +56,9 @@ public enum SVGElementId {
     public static func edge(_ id: String) -> String { edgePrefix + id }
     public static func group(_ id: String) -> String { groupPrefix + id }
 
-    /// The element a display-graph node is drawn as. A folded group's stand-in is
+    /// The element a view-graph node is drawn as. A folded group's stand-in is
     /// drawn as that group: the SVG is stamped with what an element represents, not
-    /// with what the display graph needed in order to draw it (ADR-0027).
+    /// with what the view graph needed in order to draw it (ADR-0027).
     public static func displayNode(_ node: Node, in graph: VGraph) -> String {
         isFoldedGroup(node, in: graph) ? group(node.id) : SVGElementId.node(node.id)
     }
@@ -74,7 +74,7 @@ public enum SVGElementId {
     /// The kind and the id are all a dom id needs, so an adapter holding those
     /// two — rather than a resolved `VCommandTarget` — can still find the
     /// element. `ForEditAGraphVisually.kind(of:)` is where the kind comes from.
-    public static func domId(kind: VElementKind, elementId: String) -> String {
+    public static func domId(kind: VItemKind, elementId: String) -> String {
         switch kind {
         case .node: return node(elementId)
         case .edge: return edge(elementId)

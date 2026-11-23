@@ -68,7 +68,7 @@ When a notation does state one, it is a warning criterion beside
 `noParallelEdges` (guidance, and real diagrams need exceptions), not a change to
 the widening.
 
-C4's checklist does give one: every arrow has a label (`unlabelledRelationship`,
+C4's checklist does give one: every arrow has a label (`unlabeledRelationship`,
 a warning; code-level `references` are exempt, being UML arrows). Its other items
 (technology on elements and relationships, a description on every element) wait
 for those attributes (0032, *Still open*).

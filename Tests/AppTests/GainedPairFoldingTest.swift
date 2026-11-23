@@ -33,10 +33,10 @@ struct GainedPairFoldingTest {
                 }
                 """)
 
-        let folded = try applyFoldingLayoutStep(to: s.origin)
+        let folded = try applyFoldStep(to: s.origin)
 
         let edge = try #require(folded.edges.first)
-        #expect(edge.to == Node(string: "spa"))
+        #expect(edge.to == Node(rawValue: "spa"))
         #expect(try folded.edgeType(for: edge).id.id == "uses")
     }
 }

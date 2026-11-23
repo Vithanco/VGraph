@@ -44,10 +44,6 @@ public struct OneToManyLookup<One: VProtocol, Many: VProtocol>: VProtocol {
         return manyToOne[many]
     }
 
-    var getAllOnes: [One] {
-        return Array(oneToMany.keys)
-    }
-
     public init() {
         self.oneToMany = [:]
         self.manyToOne = [:]
@@ -56,14 +52,5 @@ public struct OneToManyLookup<One: VProtocol, Many: VProtocol>: VProtocol {
     private init(oneToMany: [One: Set<Many>], manyToOne: [Many: One]) {
         self.oneToMany = oneToMany
         self.manyToOne = manyToOne
-    }
-
-    public static func == (lhs: OneToManyLookup<One, Many>, rhs: OneToManyLookup<One, Many>) -> Bool {
-        return lhs.oneToMany == rhs.oneToMany && lhs.manyToOne == rhs.manyToOne
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(oneToMany)
-        hasher.combine(manyToOne)
     }
 }

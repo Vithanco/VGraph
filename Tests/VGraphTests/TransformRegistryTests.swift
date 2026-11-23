@@ -31,7 +31,7 @@ struct TransformRegistryTests {
     /// another step could depend on, and it would bar `transform: identity` graphs
     /// from being saved.
     @Test func declaredTransformNamesReplaceTheNotationsOwnStep() throws {
-        var graph = try VGraph().defineStandardAttributes()
+        var graph = VGraph()
         graph = graph.using(notation: "ConceptMap")
         #expect(try Notations.resolveSteps(for: graph).map { $0.id } == [.mergeRelations])
 

@@ -25,13 +25,13 @@ struct URLBadgeTests {
         var layouted = graph
         var x = 50.0
         for node in graph.nodes {
-            layouted = try layouted.set(node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: x, y: 50)))
-            layouted = try layouted.set(
+            layouted = try layouted.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: x, y: 50)))
+            layouted = try layouted.setting(
                 node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
             x += 120
         }
-        for group in graph.groups where group.id.id != rootGroup {
-            layouted = try layouted.set(
+        for group in graph.groups where group.id.id != Group.rootId {
+            layouted = try layouted.setting(
                 group: group,
                 attribute: Attributes.Group.layoutedBounds.attribute(
                     VRect(origin: VPoint(x: 0, y: 0), size: VSize(width: 300, height: 120))))

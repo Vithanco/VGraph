@@ -13,8 +13,8 @@ enum CMKind {
 private func conceptMap(
     _ nodes: [(id: String, kind: CMKind, label: String)], links: [(String, String)] = []
 ) throws(VError) -> VGraph {
-    var graph = try VGraph().defineStandardAttributes()
-    graph = try CM.addNotation(addTo: graph)
+    var graph = VGraph()
+    graph = try CM.addNotation(to: graph)
     graph = graph.using(notation: "ConceptMap")
     var kinds: [String: CMKind] = [:]
     for (id, kind, label) in nodes {
@@ -25,9 +25,9 @@ private func conceptMap(
             case .emphasized: CM.NodeTypes.emphasizedConcept
             case .relation: CM.NodeTypes.relation
             }
-        let node = Node(string: id)
-        graph = try graph.add(node: node, type: type)
-        graph = try graph.set(node: node, attribute: Attributes.Node.label.attribute(label))
+        let node = Node(rawValue: id)
+        graph = try graph.adding(node: node, type: type)
+        graph = try graph.setting(node: node, attribute: Attributes.Node.label.attribute(label))
     }
     for (index, (from, to)) in links.enumerated() {
         let type =
@@ -38,7 +38,7 @@ private func conceptMap(
             case (.relation, .emphasized): CM.EdgeTypes.relationToEmphasizedConcept
             default: preconditionFailure("ConceptMap links join a concept and a relation")
             }
-        graph = try graph.add(edge: Edge(string: "e\(index + 1)", from: from, to: to), edgeType: type)
+        graph = try graph.adding(edge: Edge(string: "e\(index + 1)", from: from, to: to), edgeType: type)
     }
     return graph
 }
@@ -72,10 +72,10 @@ struct GenericQualityChecksTests {
     @Test("Unknown node type produces error")
     func testUnknownNodeTypeError() throws {
         var graph = try conceptMap([])
-        graph = try graph.ensureUnknownNodeType()
-        let node = Node(string: "bad_node")
-        graph = try graph.add(node: node, type: NodeType.unknown)
-        graph = try graph.set(node: node, attribute: Attributes.Node.label.attribute("Mystery"))
+        graph = try graph.ensuringUnknownNodeType()
+        let node = Node(rawValue: "bad_node")
+        graph = try graph.adding(node: node, type: NodeType.unknown)
+        graph = try graph.setting(node: node, attribute: Attributes.Node.label.attribute("Mystery"))
 
         let messages = GenericQualityChecks.unknownNodeTypes(graph: graph)
         #expect(!messages.isEmpty)
@@ -89,8 +89,8 @@ struct GenericQualityChecksTests {
 
         // Concept to concept is not an edge type ConceptMap declares.
         let unknownEdgeType = EdgeType.unknown(from: CM.NodeTypes.concept, to: CM.NodeTypes.concept)
-        graph = try graph.add(edgeType: unknownEdgeType)
-        graph = try graph.add(edge: Edge(string: "bad_edge", from: "a", to: "b"), edgeType: unknownEdgeType)
+        graph = try graph.adding(edgeType: unknownEdgeType)
+        graph = try graph.adding(edge: Edge(string: "bad_edge", from: "a", to: "b"), edgeType: unknownEdgeType)
 
         let messages = GenericQualityChecks.unknownEdgeTypes(graph: graph)
         #expect(!messages.isEmpty)
@@ -102,13 +102,13 @@ struct GenericQualityChecksTests {
     func testRedundantOrJunctorUnderSufficientCause() throws {
         // PrerequisiteTree is necessary-condition by default and registers OrJunctor;
         // override the diagram logic to sufficient-cause to provoke the redundancy warning.
-        var graph = try VGraph().defineStandardAttributes()
-        graph = try Notations.PrerequisiteTree.addNotation(addTo: graph)
-        graph = try graph.set(graphAttribute: Attributes.Group.diagramLogic.attribute(.sufficientCause))
+        var graph = VGraph()
+        graph = try Notations.PrerequisiteTree.addNotation(to: graph)
+        graph = try graph.setting(graphAttribute: Attributes.Group.diagramLogic.attribute(.sufficientCause))
 
-        let or = Node(string: "or1")
-        graph = try graph.add(node: or, type: Notations.PrerequisiteTree.NodeTypes.orJunctor)
-        graph = try graph.set(node: or, attribute: Attributes.Node.label.attribute("alt"))
+        let or = Node(rawValue: "or1")
+        graph = try graph.adding(node: or, type: Notations.PrerequisiteTree.NodeTypes.orJunctor)
+        graph = try graph.setting(node: or, attribute: Attributes.Node.label.attribute("alt"))
 
         let messages = GenericQualityChecks.redundantJunctor(graph: graph)
         #expect(messages.count == 1)
@@ -122,13 +122,13 @@ struct GenericQualityChecksTests {
     func testRedundantAndJunctorUnderNecessaryCondition() throws {
         // CRT is sufficient-cause by default and registers AndJunctor;
         // override the diagram logic to necessary-condition to provoke the redundancy warning.
-        var graph = try VGraph().defineStandardAttributes()
-        graph = try Notations.CurrentRealityTree.addNotation(addTo: graph)
-        graph = try graph.set(graphAttribute: Attributes.Group.diagramLogic.attribute(.necessaryCondition))
+        var graph = VGraph()
+        graph = try Notations.CurrentRealityTree.addNotation(to: graph)
+        graph = try graph.setting(graphAttribute: Attributes.Group.diagramLogic.attribute(.necessaryCondition))
 
-        let and = Node(string: "and1")
-        graph = try graph.add(node: and, type: Notations.CurrentRealityTree.NodeTypes.andJunctor)
-        graph = try graph.set(node: and, attribute: Attributes.Node.label.attribute("combo"))
+        let and = Node(rawValue: "and1")
+        graph = try graph.adding(node: and, type: Notations.CurrentRealityTree.NodeTypes.andJunctor)
+        graph = try graph.setting(node: and, attribute: Attributes.Node.label.attribute("combo"))
 
         let messages = GenericQualityChecks.redundantJunctor(graph: graph)
         #expect(messages.count == 1)
@@ -139,11 +139,11 @@ struct GenericQualityChecksTests {
 
     @Test("AndJunctor under sufficient-cause logic is fine (no warning)")
     func testAndJunctorUnderSufficientCauseIsFine() throws {
-        var graph = try VGraph().defineStandardAttributes()
-        graph = try Notations.CurrentRealityTree.addNotation(addTo: graph)
+        var graph = VGraph()
+        graph = try Notations.CurrentRealityTree.addNotation(to: graph)
 
-        let and = Node(string: "and1")
-        graph = try graph.add(node: and, type: Notations.CurrentRealityTree.NodeTypes.andJunctor)
+        let and = Node(rawValue: "and1")
+        graph = try graph.adding(node: and, type: Notations.CurrentRealityTree.NodeTypes.andJunctor)
 
         let messages = GenericQualityChecks.redundantJunctor(graph: graph)
         #expect(messages.isEmpty)
@@ -151,16 +151,16 @@ struct GenericQualityChecksTests {
 
     @Test("noLogic notation skips the junctor redundancy check", arguments: [true, false])
     func testNoLogicSkipsCheck(orJunctor: Bool) throws {
-        var graph = try VGraph().defineStandardAttributes()
-        let node = Node(string: "j1")
+        var graph = VGraph()
+        let node = Node(rawValue: "j1")
         if orJunctor {
-            graph = try Notations.PrerequisiteTree.addNotation(addTo: graph)
-            graph = try graph.add(node: node, type: Notations.PrerequisiteTree.NodeTypes.orJunctor)
+            graph = try Notations.PrerequisiteTree.addNotation(to: graph)
+            graph = try graph.adding(node: node, type: Notations.PrerequisiteTree.NodeTypes.orJunctor)
         } else {
-            graph = try Notations.CurrentRealityTree.addNotation(addTo: graph)
-            graph = try graph.add(node: node, type: Notations.CurrentRealityTree.NodeTypes.andJunctor)
+            graph = try Notations.CurrentRealityTree.addNotation(to: graph)
+            graph = try graph.adding(node: node, type: Notations.CurrentRealityTree.NodeTypes.andJunctor)
         }
-        graph = try graph.set(graphAttribute: Attributes.Group.diagramLogic.attribute(.noLogic))
+        graph = try graph.setting(graphAttribute: Attributes.Group.diagramLogic.attribute(.noLogic))
 
         #expect(GenericQualityChecks.redundantJunctor(graph: graph).isEmpty)
     }
@@ -221,7 +221,7 @@ struct ConceptMapQualityChecksTests {
         #expect(
             CM.labelLengthCheck(graph) == [
                 MessageWithSeverity(
-                    message: "Concept \"A Very Long Name\" has 4 words (prefer 1-3 words)", severity: .warning,
+                    message: "Node \"A Very Long Name\" has 4 words (recommended: 3 or fewer)", severity: .warning,
                     target: .node("long"))
             ])
     }
@@ -306,6 +306,52 @@ struct ConceptMapQualityChecksTests {
         #expect(CM.redundantPropositions(oneWay, topology: topology(oneWay)).isEmpty)
     }
 
+    @Test("Two-way links are reported in document order, each named the way it was first drawn")
+    func redundantPropositionsInDocumentOrder() throws {
+        let pairs = ["Dog", "Cat", "Fish", "Bird", "Cow", "Hen"]
+        let concepts: [(id: String, kind: CMKind, label: String)] = pairs.map { (id: $0, kind: .concept, label: $0) }
+        let relations: [(id: String, kind: CMKind, label: String)] = pairs.indices.map {
+            (id: "r\($0)", kind: .relation, label: "rel\($0)")
+        }
+        let nodes = concepts + relations
+        let links: [(String, String)] = stride(from: 0, to: pairs.count, by: 2).flatMap { (i: Int) -> [(String, String)] in
+            let forward = "r\(i)"
+            let backward = "r\(i + 1)"
+            return [(pairs[i], forward), (forward, pairs[i + 1]), (pairs[i + 1], backward), (backward, pairs[i])]
+        }
+        let graph = try conceptMap(nodes, links: links)
+
+        let messages = CM.redundantPropositions(graph, topology: topology(graph)).map { $0.message }
+
+        let expected = stride(from: 0, to: pairs.count, by: 2).map { (i: Int) -> String in
+            let names = "\"\(pairs[i])\" and \"\(pairs[i + 1])\""
+            return "\(names) are linked in both directions (rel\(i) / rel\(i + 1)) — keep only the more meaningful direction"
+        }
+        #expect(messages == expected)
+    }
+
+    @Test("Relations sharing a label and targets are reported in label order")
+    func unreusedRelationsInLabelOrder() throws {
+        let labels = ["is a", "has", "eats", "likes", "owns", "needs"]
+        let nodes: [(id: String, kind: CMKind, label: String)] =
+            [(id: "a", kind: .concept, label: "Dog"), (id: "b", kind: .concept, label: "Cat")]
+            + labels.indices.flatMap { (i: Int) -> [(id: String, kind: CMKind, label: String)] in
+                [(id: "r\(i)x", kind: .relation, label: labels[i]), (id: "r\(i)y", kind: .relation, label: labels[i])]
+            }
+        let links: [(String, String)] = labels.indices.flatMap { (i: Int) -> [(String, String)] in
+            [("r\(i)x", "b"), ("r\(i)y", "b")]
+        }
+        let graph = try conceptMap(nodes, links: links)
+
+        let messages = CM.unreusedRelations(graph, topology: topology(graph)).map { $0.message }
+
+        #expect(
+            messages
+                == labels.sorted().map {
+                    "Relations with label \"\($0)\" appear 2 times with same targets -- consider reusing a single relation node"
+                })
+    }
+
     struct IncompleteRow: Sendable {
         let links: [(String, String)]
         let expected: String?
@@ -361,24 +407,23 @@ struct IBISQualityChecksTests {
     typealias IB = Notations.Ibis
 
     private func createIBISGraph() throws(VError) -> VGraph {
-        var graph = try VGraph()
-            .defineStandardAttributes()
-        graph = try IB.addNotation(addTo: graph)
+        var graph = VGraph()
+        graph = try IB.addNotation(to: graph)
         graph = graph.using(notation: "IBIS")
         return graph
     }
 
     private func addQuestion(_ id: String, label: String, to graph: VGraph) throws(VError) -> VGraph {
-        let node = Node(string: id)
-        var result = try graph.add(node: node, type: IB.NodeTypes.question)
-        result = try result.set(node: node, attribute: Attributes.Node.label.attribute(label))
+        let node = Node(rawValue: id)
+        var result = try graph.adding(node: node, type: IB.NodeTypes.question)
+        result = try result.setting(node: node, attribute: Attributes.Node.label.attribute(label))
         return result
     }
 
     private func addAnswer(_ id: String, label: String, to graph: VGraph) throws(VError) -> VGraph {
-        let node = Node(string: id)
-        var result = try graph.add(node: node, type: IB.NodeTypes.answer)
-        result = try result.set(node: node, attribute: Attributes.Node.label.attribute(label))
+        let node = Node(rawValue: id)
+        var result = try graph.adding(node: node, type: IB.NodeTypes.answer)
+        result = try result.setting(node: node, attribute: Attributes.Node.label.attribute(label))
         return result
     }
 
@@ -390,11 +435,11 @@ struct IBISQualityChecksTests {
         graph = try addQuestion("q3", label: "Lonely Question", to: graph)
         graph = try addAnswer("a1", label: "Answer", to: graph)
         // Both questions point to the same answer (2 parents)
-        graph = try graph.add(
+        graph = try graph.adding(
             edge: Edge(string: "e1", from: "q1", to: "a1"),
             edgeType: IB.EdgeTypes.questionToAnswer
         )
-        graph = try graph.add(
+        graph = try graph.adding(
             edge: Edge(string: "e2", from: "q2", to: "a1"),
             edgeType: IB.EdgeTypes.questionToAnswer
         )
@@ -414,7 +459,7 @@ struct IBISQualityChecksTests {
         graph = try addQuestion("q1", label: "Has Answer", to: graph)
         graph = try addQuestion("q2", label: "No Answer", to: graph)
         graph = try addAnswer("a1", label: "Answer 1", to: graph)
-        graph = try graph.add(
+        graph = try graph.adding(
             edge: Edge(string: "e1", from: "q1", to: "a1"),
             edgeType: IB.EdgeTypes.questionToAnswer
         )
@@ -430,7 +475,7 @@ struct IBISQualityChecksTests {
         var graph = try createIBISGraph()
         graph = try addQuestion("q1", label: "Parent", to: graph)
         graph = try addQuestion("q2", label: "Child", to: graph)
-        graph = try graph.add(
+        graph = try graph.adding(
             edge: Edge(string: "e1", from: "q1", to: "q2"),
             edgeType: IB.EdgeTypes.questionToQuestion
         )
@@ -444,7 +489,7 @@ struct IBISQualityChecksTests {
         var graph = try createIBISGraph()
         graph = try addQuestion("q1", label: "Raised by an Answer", to: graph)
         graph = try addAnswer("a1", label: "Answer 1", to: graph)
-        graph = try graph.add(
+        graph = try graph.adding(
             edge: Edge(string: "e1", from: "a1", to: "q1"),
             edgeType: IB.EdgeTypes.answerToQuestion
         )
@@ -462,14 +507,14 @@ struct GoalTreeQualityChecksTests {
     typealias GT = Notations.GoalTree
 
     private func goalTree(goals: Int, csfs: Int) throws(VError) -> VGraph {
-        var graph = try VGraph().defineStandardAttributes()
-        graph = try GT.addNotation(addTo: graph)
+        var graph = VGraph()
+        graph = try GT.addNotation(to: graph)
         graph = graph.using(notation: "GoalTree")
         for (prefix, count, type) in [("g", goals, GT.NodeTypes.goal), ("csf", csfs, GT.NodeTypes.criticalSuccessFactor)] {
             for index in 0..<count {
-                let node = Node(string: "\(prefix)\(index)")
-                graph = try graph.add(node: node, type: type)
-                graph = try graph.set(node: node, attribute: Attributes.Node.label.attribute("\(prefix) \(index)"))
+                let node = Node(rawValue: "\(prefix)\(index)")
+                graph = try graph.adding(node: node, type: type)
+                graph = try graph.setting(node: node, attribute: Attributes.Node.label.attribute("\(prefix) \(index)"))
             }
         }
         return graph
@@ -478,13 +523,13 @@ struct GoalTreeQualityChecksTests {
     @Test(
         "A Goal Tree needs exactly one Goal",
         arguments: [
-            (0, ["Goal Tree has no Goal node (exactly 1 required)"]),
+            (0, ["Expected exactly 1 Goal node but found none"]),
             (1, []),
-            (2, ["Goal Tree has 2 Goal nodes (exactly 1 required)"]),
+            (2, ["Expected exactly 1 Goal node but found 2"]),
         ] as [(Int, [String])])
     func testExactlyOneGoal(goals: Int, expected: [String]) throws {
         let errors = Notations.analyzeQuality(graph: try goalTree(goals: goals, csfs: 3)).errors
-        #expect(errors.map { $0.message }.filter { $0.hasPrefix("Goal Tree has") } == expected)
+        #expect(errors.map { $0.message }.filter { $0.contains("Goal node") } == expected)
     }
 
     @Test(
@@ -518,8 +563,8 @@ struct GraphTopologyTests {
         let edge = Edge(string: "e1", from: "a", to: "b")
         let topology = GraphTopology(edges: [edge])
 
-        let nodeA = Node(string: "a")
-        let nodeB = Node(string: "b")
+        let nodeA = Node(rawValue: "a")
+        let nodeB = Node(rawValue: "b")
 
         #expect(topology.outgoingTargets[nodeA] == [nodeB])
         #expect(topology.incomingSources[nodeB] == [nodeA])
@@ -537,9 +582,9 @@ struct GraphTopologyTests {
         ]
         let topology = GraphTopology(edges: edges)
 
-        let nodeA = Node(string: "a")
-        let nodeB = Node(string: "b")
-        let nodeC = Node(string: "c")
+        let nodeA = Node(rawValue: "a")
+        let nodeB = Node(rawValue: "b")
+        let nodeC = Node(rawValue: "c")
 
         #expect(topology.outgoingTargets[nodeA] == [nodeB, nodeC])
         #expect(topology.outgoingTargets[nodeB] == [nodeC])
@@ -557,7 +602,7 @@ struct GraphTopologyTests {
         let unrelated = Edge(string: "e4", from: "c", to: "d")
         let topology = GraphTopology(edges: [e1, unrelated, e2, e3])
 
-        let nodeA = Node(string: "a")
+        let nodeA = Node(rawValue: "a")
         #expect(topology.incidentEdges(of: nodeA) == [e1, e2, e3])
         #expect(topology.incomingEdges(of: nodeA) == [e1, e3])
         #expect(topology.outgoingEdges(of: nodeA) == [e2])
@@ -569,8 +614,8 @@ struct GraphTopologyTests {
         let e2 = Edge(string: "e2", from: "a", to: "b")
         let topology = GraphTopology(edges: [e1, e2])
 
-        let nodeA = Node(string: "a")
-        let nodeB = Node(string: "b")
+        let nodeA = Node(rawValue: "a")
+        let nodeB = Node(rawValue: "b")
         #expect(topology.outgoingEdges(of: nodeA) == [e1, e2])
         #expect(topology.incomingEdges(of: nodeB) == [e1, e2])
         #expect(topology.outgoingTargets[nodeA] == [nodeB])
@@ -581,7 +626,7 @@ struct GraphTopologyTests {
         let loop = Edge(string: "e1", from: "a", to: "a")
         let topology = GraphTopology(edges: [loop])
 
-        let nodeA = Node(string: "a")
+        let nodeA = Node(rawValue: "a")
         #expect(topology.incidentEdges(of: nodeA) == [loop])
         #expect(topology.incomingEdges(of: nodeA) == [loop])
         #expect(topology.outgoingEdges(of: nodeA) == [loop])
@@ -590,7 +635,7 @@ struct GraphTopologyTests {
     @Test("A node without edges has none")
     func testUnknownNode() {
         let topology = GraphTopology(edges: [Edge(string: "e1", from: "a", to: "b")])
-        let nodeZ = Node(string: "z")
+        let nodeZ = Node(rawValue: "z")
         #expect(topology.incidentEdges(of: nodeZ).isEmpty)
         #expect(topology.incomingEdges(of: nodeZ).isEmpty)
         #expect(topology.outgoingEdges(of: nodeZ).isEmpty)
@@ -740,22 +785,22 @@ struct MappedRelationsTests {
 // MARK: - Loop Direction Tests
 
 /// Layout positions are screen coordinates: y grows downward, as the overlay draws them.
-@Suite("TLoop Direction")
-struct TLoopDirectionTests {
+@Suite("FeedbackLoop Direction")
+struct FeedbackLoopDirectionTests {
 
     typealias CLD = Notations.CausalLoopDiagram
 
     private func cld(_ ids: [String], _ links: [(String, String)]) throws(VError) -> VGraph {
-        var graph = try VGraph().defineStandardAttributes()
-        graph = try CLD.addNotation(addTo: graph)
+        var graph = VGraph()
+        graph = try CLD.addNotation(to: graph)
         graph = graph.using(notation: "CLD")
         for id in ids {
-            let node = Node(string: id)
-            graph = try graph.add(node: node, type: CLD.NodeTypes.stock)
-            graph = try graph.set(node: node, attribute: Attributes.Node.label.attribute(id.uppercased()))
+            let node = Node(rawValue: id)
+            graph = try graph.adding(node: node, type: CLD.NodeTypes.stock)
+            graph = try graph.setting(node: node, attribute: Attributes.Node.label.attribute(id.uppercased()))
         }
         for (index, (from, to)) in links.enumerated() {
-            graph = try graph.add(edge: Edge(string: "e\(index + 1)", from: from, to: to), edgeType: CLD.EdgeTypes.same)
+            graph = try graph.adding(edge: Edge(string: "e\(index + 1)", from: from, to: to), edgeType: CLD.EdgeTypes.same)
         }
         return graph
     }
@@ -763,8 +808,8 @@ struct TLoopDirectionTests {
     private func place(_ positions: [String: (Double, Double)], in graph: VGraph) throws(VError) -> VGraph {
         var graph = graph
         for (id, position) in positions {
-            graph = try graph.set(
-                node: Node(string: id),
+            graph = try graph.setting(
+                node: Node(rawValue: id),
                 attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: position.0, y: position.1)))
         }
         return graph
@@ -799,8 +844,8 @@ struct TLoopDirectionTests {
         for (id, start, end) in [
             ("e1", VPoint(x: 1, y: 0.5), VPoint(x: 3, y: 0.5)), ("e2", VPoint(x: 3, y: -0.5), VPoint(x: 1, y: -0.5)),
         ] {
-            graph = try graph.set(
-                edge: Edge.Id(string: id),
+            graph = try graph.setting(
+                edge: Edge.Id(rawValue: id),
                 attribute: Attributes.Edge.layoutData.attribute(EdgeLayoutData(splinePoints: [start, end])))
         }
         #expect(direction(of: graph) == .counterClockwise)

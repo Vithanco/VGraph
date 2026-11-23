@@ -31,17 +31,16 @@ struct GraphvizLayoutTransformEdgeRoutingTests {
     /// outgoing edges are deliberately non-contiguous in that order.
     private func nonContiguousEdgeGraph() throws(VError) -> VGraph {
         var graph = try VGraph()
-            .defineStandardAttributes()
-            .add(nodeType: nodeType)
-            .add(edgeType: edgeType)
-            .add(node: nodeA, type: nodeType)
-            .add(node: nodeB, type: nodeType)
-            .add(node: nodeC, type: nodeType)
-            .add(node: nodeD, type: nodeType)
+            .adding(nodeType: nodeType)
+            .adding(edgeType: edgeType)
+            .adding(node: nodeA, type: nodeType)
+            .adding(node: nodeB, type: nodeType)
+            .adding(node: nodeC, type: nodeType)
+            .adding(node: nodeD, type: nodeType)
 
-        graph = try graph.add(edge: Edge(string: "e_ab", from: nodeA.id, to: nodeB.id), edgeType: edgeType)
-        graph = try graph.add(edge: Edge(string: "e_bc", from: nodeB.id, to: nodeC.id), edgeType: edgeType)
-        graph = try graph.add(edge: Edge(string: "e_ad", from: nodeA.id, to: nodeD.id), edgeType: edgeType)
+        graph = try graph.adding(edge: Edge(string: "e_ab", from: nodeA.id, to: nodeB.id), edgeType: edgeType)
+        graph = try graph.adding(edge: Edge(string: "e_bc", from: nodeB.id, to: nodeC.id), edgeType: edgeType)
+        graph = try graph.adding(edge: Edge(string: "e_ad", from: nodeA.id, to: nodeD.id), edgeType: edgeType)
         return graph
     }
 
@@ -76,9 +75,9 @@ struct GraphvizLayoutTransformEdgeRoutingTests {
 
         let updated = try applyLayoutData(layoutData, to: graph, logger: SilentLogger())
 
-        let ab: EdgeLayoutData = try updated.get(edge: Edge.Id(string: "e_ab"), attribute: Attributes.Edge.layoutData)
-        let bc: EdgeLayoutData = try updated.get(edge: Edge.Id(string: "e_bc"), attribute: Attributes.Edge.layoutData)
-        let ad: EdgeLayoutData = try updated.get(edge: Edge.Id(string: "e_ad"), attribute: Attributes.Edge.layoutData)
+        let ab: EdgeLayoutData = try updated.get(edge: Edge.Id(rawValue: "e_ab"), attribute: Attributes.Edge.layoutData)
+        let bc: EdgeLayoutData = try updated.get(edge: Edge.Id(rawValue: "e_bc"), attribute: Attributes.Edge.layoutData)
+        let ad: EdgeLayoutData = try updated.get(edge: Edge.Id(rawValue: "e_ad"), attribute: Attributes.Edge.layoutData)
 
         #expect(ab.splinePoints.first == VPoint(x: 1, y: 1))
         #expect(bc.splinePoints.first == VPoint(x: 10, y: 10))

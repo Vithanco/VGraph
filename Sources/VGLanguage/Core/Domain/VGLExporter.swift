@@ -40,7 +40,7 @@ public struct VGLExporter: ForExportAGraph {
         try graph.requirePristineForDocumentExport()
         var output = ""
 
-        let graphId: String = try graph.get(graphAttribute: Attributes.Group.Id)
+        let graphId: String = try graph.get(graphAttribute: Attributes.Group.id)
         let graphLabel: String = try graph.get(graphAttribute: Attributes.Group.label)
 
         let notation = graph.notationName
@@ -52,7 +52,7 @@ public struct VGLExporter: ForExportAGraph {
 
         let typeDecl = ([notation] + graph.notationDefinition.extensions).joined(separator: ", ")
 
-        let graphAttrs = try graph.getGraphAttributes()
+        let graphAttrs = graph.graphAttributes()
 
         // The file's own comments sit above the declaration, below any vnotation block.
         output += leadingComment(graphAttrs, Attributes.Group.comment.id, indentation: "")
@@ -64,7 +64,7 @@ public struct VGLExporter: ForExportAGraph {
         // The model's own values; the id and label are in the declaration.
         let authoredGraphAttrs = authored(
             try graph.attributes(in: .model, of: .root), in: graph,
-            except: CommentAttributes.group.union([Attributes.Group.Id.id, Attributes.Group.label.id]))
+            except: CommentAttributes.group.union([Attributes.Group.id.id, Attributes.Group.label.id]))
 
         for (key, value) in sortedForOutput(authoredGraphAttrs, in: graph) {
             let def = graph.attributeDefinitions[key]!
@@ -182,7 +182,7 @@ public struct VGLExporter: ForExportAGraph {
 
         let nodeType = try graph.nodeType(for: node)
         // Only get label if explicitly set on this node (not inherited default)
-        let ownAttributes = graph.getOwnAttributes(node: node)
+        let ownAttributes = graph.ownAttributes(node: node)
         let label = ownAttributes[Attributes.Node.label.id]
 
         output += leadingComment(ownAttributes, Attributes.Node.comment.id, indentation: indentation)
@@ -228,7 +228,7 @@ public struct VGLExporter: ForExportAGraph {
             : (Attributes.Group.comment.id, Attributes.Group.trailingComment.id, Attributes.Group.label.id)
         // The group's own values, not its type's: a type that starts folded is not
         // a `folded` group, and a `false` against it is written as `isfolded`.
-        let attributes = try graph.getAttributes(group: group)
+        let attributes = graph.attributes(group: group)
         let isFolded = attributes[Attributes.Group.isFolded.id] == "true"
 
         let groupType = graph.nodeType(of: group)?.description ?? graph.groupType(of: group)?.description ?? ""
@@ -244,7 +244,7 @@ public struct VGLExporter: ForExportAGraph {
         output += trailingComment(attributes, slots.trailing)
         output += "\n"
 
-        var excluded: Set<Attribute.Id> = [slots.leading, slots.trailing, slots.label, Attributes.Group.Id.id]
+        var excluded: Set<Attribute.Id> = [slots.leading, slots.trailing, slots.label, Attributes.Group.id.id]
         if isFolded { excluded.insert(Attributes.Group.isFolded.id) }
         let nonDefaultAttrs = authored(attributes, in: graph, except: excluded)
 
@@ -263,7 +263,7 @@ public struct VGLExporter: ForExportAGraph {
         var output = ""
 
         let edgeType = try graph.edgeType(for: edge.id)
-        let ownAttributes = graph.getOwnAttributes(edge: edge.id)
+        let ownAttributes = graph.ownAttributes(edge: edge.id)
 
         output += leadingComment(ownAttributes, Attributes.Edge.comment.id, indentation: indentation)
         output += "\(indentation)edge \(edge.from.id) -> \(edge.to.id)"
@@ -276,7 +276,7 @@ public struct VGLExporter: ForExportAGraph {
         }
         // If exactly 1 edge type is possible, omit it (parser will infer)
 
-        let attributes = try graph.getAttributes(edge: edge.id)
+        let attributes = try graph.attributes(edge: edge.id)
         if let labelValue = attributes[Attributes.Edge.label.id] {
             output += " \"\(StringEscaping.escape(labelValue))\""
         }
@@ -335,7 +335,7 @@ public struct VGLExporter: ForExportAGraph {
         // The comments belong to the document, which emits them itself as `//`
         // lines; a graph attribute is only where they are stored.
         let vnotationExcludedAttrs: Set<Attribute.Id> = CommentAttributes.group.union([
-            Attributes.Group.Id.id,
+            Attributes.Group.id.id,
             Attributes.Group.label.id,
         ])
         let ownGraphAttrs = authored(
@@ -384,7 +384,7 @@ public struct VGLExporter: ForExportAGraph {
 
         let groupTypeLines = graph.groupTypes.compactMap { type -> String? in
             guard !type.isUnknown else { return nil }
-            let keys = ownBoundaryKeys(at: ItemKey(.groupType, type.description), in: graph)
+            let keys = ownFrameKeys(at: ItemKey(type), in: graph)
             guard !(base?.has(groupType: type) ?? false) || !keys.isEmpty else { return nil }
             let attrsStr = keys.isEmpty ? "" : " [" + keys.map { "\($0.key): \($0.value)" }.joined(separator: ", ") + "]"
             return "group type: \(type.description)\(attrsStr)"
@@ -416,13 +416,13 @@ public struct VGLExporter: ForExportAGraph {
         return output
     }
 
-    private func ownBoundaryKeys(at key: ItemKey, in graph: VGraph) -> [(key: String, value: String)] {
-        graph.declaredBoundary(of: key).map { (key: $0.key, value: quoteIfNeeded($0.value)) }
+    private func ownFrameKeys(at key: ItemKey, in graph: VGraph) -> [(key: String, value: String)] {
+        graph.declaredFrame(of: key).map { (key: $0.key, value: quoteIfNeeded($0.value)) }
     }
 
     private func reconstructNodeTypeSpec(nodeType: NodeType, graph: VGraph, base: Base?) throws(VError) -> String? {
         let isInBase = base?.has(nodeType: nodeType) ?? false
-        let key = ItemKey(.nodeType, nodeType.description)
+        let key = ItemKey(nodeType)
 
         // For types not in the base, emit a full declaration.
         // For types in the base, emit only changed attributes (override mode).
@@ -488,7 +488,7 @@ public struct VGLExporter: ForExportAGraph {
         if !ownDetailTypes.isEmpty {
             attrs.append(("detailedBy", "(\(ownDetailTypes.map { $0.id }.joined(separator: ", ")))"))
         }
-        attrs.append(contentsOf: ownBoundaryKeys(at: key, in: graph))
+        attrs.append(contentsOf: ownFrameKeys(at: key, in: graph))
 
         // Must stay below the appends: a bound can be the only difference from the
         // base, and deciding "nothing changed" first would drop the declaration.
@@ -500,7 +500,7 @@ public struct VGLExporter: ForExportAGraph {
 
     /// Emit every bound that differs from the base notation (or from its default
     /// when there is no base). Driven by `Bound`'s own table so the exporter
-    /// and `applyEdgeTypeAttributes` cannot disagree about the spellings.
+    /// and `DynamicNotation`, which reads them, cannot disagree about the spellings.
     private func boundAttrs(
         _ bounds: [Bound.Name],
         read: (TypedAttributeDefinition<Int>) -> Int?,
@@ -518,7 +518,7 @@ public struct VGLExporter: ForExportAGraph {
 
     private func reconstructEdgeTypeSpec(edgeType: EdgeType, graph: VGraph, base: Base?) throws(VError) -> String? {
         let isInBase = base?.has(edgeType: edgeType.id) ?? false
-        let key = ItemKey(.edgeType, edgeType.id.description)
+        let key = ItemKey(edgeType.id)
         var attrs: [(key: String, value: String)] = []
 
         // Read current attribute values (fall back to defaults on missing).

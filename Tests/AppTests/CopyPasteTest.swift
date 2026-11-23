@@ -163,7 +163,7 @@ struct CopyPasteTest {
 
         let pasted = try s.paste(fragment: try s.vglFragment(of: ["c1", "c2"]), into: "s")
 
-        #expect(pasted.map { s.origin.group(of: Node(string: $0)) } == [Group(rawValue: "s"), Group(rawValue: "s")])
+        #expect(pasted.map { s.origin.group(of: Node(rawValue: $0)) } == [Group(rawValue: "s"), Group(rawValue: "s")])
     }
 
     @Test("Given a System holding a Person pasted at the top level, then the paste is refused by the containment check")
@@ -182,7 +182,7 @@ struct CopyPasteTest {
         try s.paste(fragment: try s.vglFragment(of: ["s"]), into: nil)
 
         #expect(
-            ["c1_2", "c2_2", "c3_2"].map { s.origin.group(of: Node(string: $0)) }
+            ["c1_2", "c2_2", "c3_2"].map { s.origin.group(of: Node(rawValue: $0)) }
                 == Array(repeating: Group(rawValue: "s_2"), count: 3))
     }
 

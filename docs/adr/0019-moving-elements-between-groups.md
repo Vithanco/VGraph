@@ -109,7 +109,7 @@ no-ops.
 All structural, none a [[Notation break]]:
 
 - **A group into itself or its own descendant.** `GroupStructure.addTo(group:childGroup:)`
-  has no cycle check today and `isParent` recurses, so this is a new guard and a
+  has no cycle check today and `isAncestor(_:of:)` recurses, so this is a new guard and a
   test that the recursion is gone. Grouping never met it, a new group having no
   descendants; moving meets it immediately.
 - **Into the group it already occupies** — unavailable rather than a no-op, so it

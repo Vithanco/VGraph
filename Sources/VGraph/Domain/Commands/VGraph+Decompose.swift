@@ -46,7 +46,7 @@ extension VGraph {
             let (withFrom, from) = try addingDetail(landing.from)
             let (withTo, to) = try withFrom.addingDetail(landing.to)
             return Decomposition(
-                graph: try withTo.graph.reattachRetyping(edge: edge.id, from: from, to: to),
+                graph: try withTo.graph.reattachingAndRetyping(edge: edge.id, from: from, to: to),
                 details: withTo.details, parent: parent)
         }
 
@@ -54,14 +54,14 @@ extension VGraph {
         /// node's, because a group may not share an id with a node.
         func becomingGroup(_ node: Node, typed type: NodeType) throws(VError) -> VGraph {
             let group = Group(rawValue: node.id)
-            let regrouped = try graph.movingValues(from: VGraph.key(node), to: VGraph.key(group))
-                .delete(node: node)
-                .add(group: group, childOf: parent)
+            let regrouped = try graph.movingValues(from: ItemKey(node), to: ItemKey(group))
+                .deleting(node: node)
+                .adding(group: group, childOf: parent)
                 .typing(group: group, as: type)
                 .placing(group: group, at: graph.declarationPosition(of: node))
                 .renamingInViews(node.id, from: .node, to: .group)
             return try details.folding(regrouped) { (result, detail) throws(VError) in
-                try result.addTo(group: group, node: detail)
+                try result.addingTo(group: group, node: detail)
             }
         }
     }
@@ -98,7 +98,7 @@ extension VGraph {
     }
 
     private func movingValues(from old: ItemKey, to new: ItemKey) -> VGraph {
-        updatedSelfWith(ads: ads.rekeying(from: old, to: new))
+        updatedSelfWith(attributeStore: attributeStore.rekeying(from: old, to: new))
     }
 }
 
@@ -108,19 +108,18 @@ extension VGraph {
     /// declared views inherit, so a view whose fold state that would change
     /// keeps the one it had.
     public func unfolding(_ group: Group, onlyIn view: String?) throws(VError) -> VGraph {
-        let isFolded = Attributes.Group.isFolded
         if let view {
-            return try settingInView(view, isFolded.attribute(false), for: Self.key(group))
+            return try settingInView(view, Attributes.Group.isFolded.attribute(false), for: ItemKey(group))
         }
-        let unfolded = try set(group: group, attribute: isFolded.attribute(false))
+        let unfolded = try setting(group: group, attribute: Attributes.Group.isFolded.attribute(false))
         return try views.folding(unfolded) { (result, declared) throws(VError) in
-            let before = try foldState(in: self, declared.name)
-            guard try foldState(in: result, declared.name) != before else { return result }
-            return try result.settingInView(declared.name, isFolded.attribute(before), for: Self.key(group))
+            let wasFolded = try isFolded(in: self, view: declared.name)
+            guard try isFolded(in: result, view: declared.name) != wasFolded else { return result }
+            return try result.settingInView(declared.name, Attributes.Group.isFolded.attribute(wasFolded), for: ItemKey(group))
         }
 
-        func foldState(in graph: VGraph, _ view: String) throws(VError) -> Bool {
-            try VGraph(base: graph, readLayer: Self.layer(ofView: view)).get(group: group, attribute: isFolded)
+        func isFolded(in graph: VGraph, view: String) throws(VError) -> Bool {
+            try VGraph(base: graph, readLayer: Self.layer(ofView: view)).get(group: group, attribute: Attributes.Group.isFolded)
         }
     }
 }

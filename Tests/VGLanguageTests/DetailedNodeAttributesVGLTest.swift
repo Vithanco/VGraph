@@ -32,7 +32,7 @@ struct DetailedNodeAttributesVGLTest {
     }
 
     /// As for a node, an absent label means the id.
-    @Test func anUnlabelledDetailedNodeIsLabelledWithItsId() throws {
+    @Test func anUnlabeledDetailedNodeIsLabeledWithItsId() throws {
         let graph = try parse(
             """
             vgraph arch: C4 "Architecture" {
@@ -116,8 +116,8 @@ struct DetailedNodeAttributesVGLTest {
         let mainframe = Group(rawValue: "mainframe")
         let system = Notations.C4.NodeTypes.softwareSystem
         let graph = try parse(Self.typed)
-            .set(nodeType: system, attribute: Attributes.Node.category("Host"))
-            .set(nodeType: system, attribute: Attributes.Node.category("Platform"))
+            .setting(nodeType: system, attribute: Attributes.Node.category("Host"))
+            .setting(nodeType: system, attribute: Attributes.Node.category("Platform"))
 
         #expect(try graph.get(group: mainframe, attribute: Attributes.Node.category) == "Platform")
     }
@@ -189,22 +189,22 @@ struct GroupAttributeTargetTest {
     @Test func aDetailedNodeRefusesAGroupAttributeANodeAttributeShadows() throws {
         let graph = try graph()
 
-        #expect(throws: VError.wrongTarget(is: .graph, insteadOf: .node)) {
-            try graph.set(group: ibs, attribute: Attributes.Group.label("Shadowed"))
+        #expect(throws: VError.wrongTarget(is: .group, insteadOf: .node)) {
+            try graph.setting(group: ibs, attribute: Attributes.Group.label("Shadowed"))
         }
-        #expect(throws: VError.wrongTarget(is: .graph, insteadOf: .node)) {
-            try graph.set(group: ibs, attribute: Attributes.Group.url("https://bank.example"))
+        #expect(throws: VError.wrongTarget(is: .group, insteadOf: .node)) {
+            try graph.setting(group: ibs, attribute: Attributes.Group.url("https://bank.example"))
         }
     }
 
     @Test func aDetailedNodeRefusesAnEdgeAttribute() throws {
         #expect(throws: VError.wrongTarget(is: .edge, insteadOf: .node)) {
-            try graph().set(group: ibs, attribute: Attributes.Edge.label("uses"))
+            try graph().setting(group: ibs, attribute: Attributes.Edge.label("uses"))
         }
     }
 
     @Test func aDetailedNodeTakesItsFoldState() throws {
-        let graph = try graph().set(group: ibs, attribute: Attributes.Group.isFolded(true))
+        let graph = try graph().setting(group: ibs, attribute: Attributes.Group.isFolded(true))
 
         #expect(try graph.get(group: ibs, attribute: Attributes.Group.isFolded))
     }
@@ -212,11 +212,11 @@ struct GroupAttributeTargetTest {
     @Test func aPlainGroupRefusesNodeAndEdgeAttributes() throws {
         let graph = try graph()
 
-        #expect(throws: VError.wrongTarget(is: .node, insteadOf: .graph)) {
-            try graph.set(group: bank, attribute: Attributes.Node.label("Bank"))
+        #expect(throws: VError.wrongTarget(is: .node, insteadOf: .group)) {
+            try graph.setting(group: bank, attribute: Attributes.Node.label("Bank"))
         }
-        #expect(throws: VError.wrongTarget(is: .edge, insteadOf: .graph)) {
-            try graph.set(group: bank, attribute: Attributes.Edge.label("Bank"))
+        #expect(throws: VError.wrongTarget(is: .edge, insteadOf: .group)) {
+            try graph.setting(group: bank, attribute: Attributes.Edge.label("Bank"))
         }
     }
 }

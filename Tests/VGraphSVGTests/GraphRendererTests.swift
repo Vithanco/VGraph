@@ -38,11 +38,11 @@ struct SVGRendererTests {
         var layoutedGraph = graph
         for (index, node) in graph.nodes.enumerated() {
             let pos = VPoint(x: Double(index) * 100 + 50, y: 50)
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node,
                 attribute: Attributes.Node.layoutedPos.attribute(pos)
             )
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node,
                 attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40))
             )
@@ -92,22 +92,22 @@ struct SVGRendererTests {
         var layoutedGraph = graph
         for (index, node) in graph.nodes.enumerated() {
             let pos = VPoint(x: Double(index) * 100 + 50, y: 50)
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node,
                 attribute: Attributes.Node.layoutedPos.attribute(pos)
             )
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node,
                 attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40))
             )
         }
 
         let group = graph.groups[0]
-        layoutedGraph = try layoutedGraph.set(
+        layoutedGraph = try layoutedGraph.setting(
             group: group,
             attribute: Attributes.Group.layoutedBounds.attribute(VRect(x: 80, y: 10, width: 200, height: 100))
         )
-        layoutedGraph = try layoutedGraph.set(
+        layoutedGraph = try layoutedGraph.setting(
             group: group,
             attribute: Attributes.Group.labelLayoutedPos.attribute(VPoint(x: 180, y: 20))
         )
@@ -152,9 +152,9 @@ struct SVGRendererTests {
         var layoutedGraph = graph
         for (index, node) in graph.nodes.enumerated() {
             let pos = VPoint(x: Double(index) * 100 + 50, y: 50)
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node, attribute: Attributes.Node.layoutedPos.attribute(pos))
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
         }
 
@@ -193,9 +193,9 @@ struct SVGRendererTests {
         var layoutedGraph = graph
         for (index, node) in graph.nodes.enumerated() {
             let pos = VPoint(x: Double(index) * 100 + 50, y: 50)
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node, attribute: Attributes.Node.layoutedPos.attribute(pos))
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
         }
 
@@ -217,7 +217,7 @@ struct SVGRendererTests {
     }
 
     // Each notation marks its own junctor; PRT's OR uses a different id from CRT's AndJunctor.
-    @Test func testOrJunctorNeighbourhoodJumpsThrough() throws {
+    @Test func testOrJunctorNeighborhoodJumpsThrough() throws {
         let input = """
             vgraph prt: PRT "OR junctor test" {
                 node o: Objective "Goal"
@@ -236,9 +236,9 @@ struct SVGRendererTests {
         var layoutedGraph = graph
         for (index, node) in graph.nodes.enumerated() {
             let pos = VPoint(x: Double(index) * 100 + 50, y: 50)
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node, attribute: Attributes.Node.layoutedPos.attribute(pos))
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
         }
 
@@ -250,12 +250,12 @@ struct SVGRendererTests {
         #expect(svg.contains("svg:has(#node-a:hover) #node-b"))
     }
 
-    /// In a CLD, hovering the loop *indicator* highlights the whole loop. Loop
+    /// In a CLD, hovering the loop *marker* highlights the whole loop. Loop
     /// nodes/edges keep the generic neighbour rules — a node does NOT pull in the
     /// far side of its loop.
-    @Test func testCLDLoopIndicatorHighlightsLoop() throws {
+    @Test func testCLDLoopMarkerHighlightsLoop() throws {
         // a→b→c→d→a reinforcing loop. `a`'s direct neighbours are b and d; `c` is
-        // on the far side (reachable only through the indicator, not by hovering a).
+        // on the far side (reachable only through the marker, not by hovering a).
         let input = """
             vgraph cld: CLD "Loop test" {
                 node a: Stock "A"
@@ -281,9 +281,9 @@ struct SVGRendererTests {
         var layoutedGraph = graph
         for node in graph.nodes {
             let pos = square[node.id] ?? VPoint(x: 0, y: 0)
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node, attribute: Attributes.Node.layoutedPos.attribute(pos))
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 60, height: 40)))
         }
 
@@ -295,7 +295,7 @@ struct SVGRendererTests {
         #expect(svg.contains("svg:has(#node-a:hover) #node-b"))
         #expect(!svg.contains("svg:has(#node-a:hover) #node-c"))
 
-        // The loop indicator is a hoverable element (id + transparent hit disc)…
+        // The loop marker is a hoverable element (id + transparent hit disc)…
         #expect(svg.contains("<g id=\"loop-"))
         #expect(svg.contains("pointer-events=\"all\""))
         // …and hovering it lights up the whole loop, including the far node `c`.
@@ -321,11 +321,11 @@ struct SVGRendererTests {
         var layoutedGraph = graph
         for (index, node) in graph.nodes.enumerated() {
             let pos = VPoint(x: Double(index) * 100 + 50, y: 50)
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node,
                 attribute: Attributes.Node.layoutedPos.attribute(pos)
             )
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node,
                 attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40))
             )
@@ -354,17 +354,17 @@ struct SVGRendererTests {
         var layoutedGraph = graph
         for (index, node) in graph.nodes.enumerated() {
             let pos = VPoint(x: Double(index) * 100 + 50, y: 50)
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node,
                 attribute: Attributes.Node.layoutedPos.attribute(pos)
             )
-            layoutedGraph = try layoutedGraph.set(
+            layoutedGraph = try layoutedGraph.setting(
                 node: node,
                 attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40))
             )
         }
 
-        layoutedGraph = try layoutedGraph.set(
+        layoutedGraph = try layoutedGraph.setting(
             graphAttribute: Attributes.Group.watermark.attribute(false)
         )
 

@@ -31,7 +31,7 @@ struct DiagnosticsHTMLTest {
         #expect(!html.contains("No warnings or errors."))
     }
 
-    @Test func eachRowIsLabelledBySeverity() {
+    @Test func eachRowIsLabeledBySeverity() {
         let html = EditorCore.diagnosticsHTML(
             [
                 MessageWithSeverity(message: "w", severity: .warning),

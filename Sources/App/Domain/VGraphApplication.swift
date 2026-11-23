@@ -83,7 +83,7 @@ public struct VGraphApplication<Ports: AppPorts> {
         let drawing = try ports.renderer.draw(
             graph: layoutedGraph, darkMode: darkMode, interactive: interactive)
         return RenderResult(
-            svg: ports.renderer.serialise(drawing, sourceVGL: sourceVGL), drawing: drawing,
+            svg: ports.renderer.serialize(drawing, sourceVGL: sourceVGL), drawing: drawing,
             qualityReport: qualityReport)
     }
 

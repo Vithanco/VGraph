@@ -64,15 +64,16 @@ struct EdgeLayoutDataTests {
 
         #expect(deserializedArrowHead.color == "#000000")
 
-        #expect(deserializedArrowHead.polygonPoints.count == 3)
-
         #expect(deserialized.color == "#ff0000")
         #expect(deserialized.style == "dashed")
         #expect(deserialized.penwidth == 3.0)
 
-        // Verify polygon points are approximately equal (allowing for floating point precision)
-        for (i, point) in deserializedArrowHead.polygonPoints.enumerated() {
-            let originalPoint = polygonPoints[i]
+        guard case .polygon(let points) = deserializedArrowHead.shape else {
+            Issue.record("Arrow head is no longer a polygon")
+            return
+        }
+        #expect(points.count == polygonPoints.count)
+        for (point, originalPoint) in zip(points, polygonPoints) {
             #expect(abs(point.x - originalPoint.x) < 0.01)
             #expect(abs(point.y - originalPoint.y) < 0.01)
         }
@@ -103,5 +104,30 @@ struct EdgeLayoutDataTests {
             #expect(abs(point.y - splinePoints[i].y) < 0.01)
         }
         #expect(deserialized.arrowHead == nil)
+    }
+
+    @Test("Label text survives the round trip whatever characters it holds")
+    func labelTextWithNewlineQuoteAndBraceRoundTrips() throws {
+        let text = "first line\nsecond {\"quoted\"}"
+        let original = EdgeLayoutData(
+            splinePoints: [VPoint(x: 1, y: 2), VPoint(x: 3, y: 4)],
+            label: LabelData(text: text, position: VPoint(x: 5, y: 6)),
+            headLabel: LabelData(text: "head}", position: VPoint(x: 7, y: 8), fontSize: 9))
+
+        let restored = try EdgeLayoutData.fromString(original.asString)
+
+        #expect(restored.label == original.label)
+        #expect(restored.headLabel == original.headLabel)
+    }
+
+    @Test("Numbers Swift writes with an exponent survive the round trip")
+    func exponentNumbersRoundTrip() throws {
+        let original = EdgeLayoutData(
+            splinePoints: [VPoint(x: 1e-15, y: 2), VPoint(x: 3, y: 4.5e20)], penwidth: 0.00001)
+
+        let restored = try EdgeLayoutData.fromString(original.asString)
+
+        #expect(restored.splinePoints == original.splinePoints)
+        #expect(restored.penwidth == original.penwidth)
     }
 }

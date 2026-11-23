@@ -3,22 +3,22 @@ public struct _GroupType: VProtocol, Sendable {}
 
 /// A typed identifier for plain groups (e.g. C4's "Organisation").
 /// A group's type is structure, held by `GroupStructure` and optional; a type's
-/// default `GroupStyle` is registered with `set(groupType:attribute:)`.
+/// default `GroupStyle` is registered with `setting(groupType:attribute:)`.
 public typealias GroupType = Identifier<_GroupType>
 
 extension Identifier where Value == _GroupType {
 
-    /// What the parser stamps when the document names a boundary kind the notation
+    /// What the parser stamps when the document names a group type the notation
     /// never registered — the group-level `NodeType.unknown`.
     public static var unknownPrefix: String { "__UNKNOWN_GROUP_TYPE__" }
-    public static var unknown: GroupType { GroupType(string: unknownPrefix) }
+    public static var unknown: GroupType { GroupType(rawValue: unknownPrefix) }
     public var isUnknown: Bool { id.hasPrefix(Self.unknownPrefix) }
 
-    /// Drawn in the error colour rather than as an ordinary cluster: a boundary is
+    /// Drawn in the error colour rather than as a plain group: a group is
     /// a large visual claim, and a mistyped one that renders normally hides the
     /// mistake in the place the author is looking.
-    public static var unknownChrome: BoundaryChrome {
-        BoundaryChrome(
+    public static var unknownFrame: GroupFrame {
+        GroupFrame(
             cornerRadius: 8,
             borderDash: "8,4",
             borderColor: SemanticColor(id: "group.unknown.border", lightHex: "#d32f2f", darkHex: "#ef5350"),
@@ -42,6 +42,6 @@ extension Identifier: AttributeType where Value == _GroupType {
     public var asString: String { id }
 
     public static func fromString(_ string: String) throws(VError) -> GroupType {
-        return GroupType(string: string)
+        return GroupType(rawValue: string)
     }
 }

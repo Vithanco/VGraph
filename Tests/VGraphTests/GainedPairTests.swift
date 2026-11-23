@@ -5,11 +5,11 @@ import Testing
 /// The pairs an edge type holds once detailings widen it (ADR-0032).
 @Suite("Gained pairs")
 struct GainedPairTests {
-    static let person = NodeType(string: "Person")
-    static let system = NodeType(string: "System")
-    static let container = NodeType(string: "Container")
-    static let database = NodeType(string: "Database")
-    static let component = NodeType(string: "Component")
+    static let person = NodeType(rawValue: "Person")
+    static let system = NodeType(rawValue: "System")
+    static let container = NodeType(rawValue: "Container")
+    static let database = NodeType(rawValue: "Database")
+    static let component = NodeType(rawValue: "Component")
 
     static let uses = EdgeType(id: "uses", from: person, to: system)
 
@@ -22,7 +22,7 @@ struct GainedPairTests {
         ])
 
     func installed(_ content: NotationContent = Self.content) throws(VError) -> VGraph {
-        try VGraph().defineStandardAttributes().placing(content, in: .builtin)
+        try VGraph().placing(content, in: .builtin)
     }
 
     @Test("Given a relationship to a detailed type, then it also holds to every detail type at any depth")
@@ -88,7 +88,7 @@ struct GainedPairTests {
     @Test("Given CLD, then same and opposite both hold Stock to Stock")
     func cldStaysAmbiguous() throws(VError) {
         let cld = Notations.CausalLoopDiagram.self
-        let graph = try cld.addNotation(addTo: VGraph().defineStandardAttributes())
+        let graph = try cld.addNotation(to: VGraph())
         let stock = cld.NodeTypes.stock
         #expect(graph.edgeTypes(holdingFrom: stock, to: stock).map { $0.id } == [cld.EdgeTypes.same.id, cld.EdgeTypes.opposite.id])
     }

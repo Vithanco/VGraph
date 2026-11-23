@@ -4,12 +4,12 @@
 ////
 ////  Plug-in point for notation-specific visual layers that draw outside the
 ////  standard groups/edges/nodes pipeline. Used today by Timeline (axis + guides)
-////  and CLD (loop indicators — migrated in a follow-up commit).
+////  and CLD (loop markers — migrated in a follow-up commit).
 ////
 ////  The protocol is a pure presentation contract: every method has a default
 ////  no-op implementation, so a provider only overrides what it actually
 ////  contributes. Pre-render analysis lives in the layout pipeline (e.g.,
-////  `Notations.notationTransform(for:)`) and stamps its results onto the graph
+////  `Notations.notationTransformsStep`) and stamps its results onto the graph
 ////  as attributes — the provider reads what it needs at render time.
 ////
 
@@ -45,14 +45,14 @@ public protocol NotationOverlayProvider: Sendable {
     func renderBetweenEdgesAndNodes(ctx: RenderContext) throws(VError) -> VSVGNode
 
     /// SVG drawn above nodes, beneath the graph label.
-    /// Used (after the CLD migration) for loop indicators.
+    /// Used (after the CLD migration) for loop markers.
     func renderBetweenNodesAndLabel(ctx: RenderContext) throws(VError) -> VSVGNode
 
     // MARK: - Bounds contribution
 
     /// Rectangles to fold into the SVG viewbox so overlay drawings extending
     /// past the natural graph bbox don't clip. Used by CLD for the 40-px
-    /// footprint around loop-indicator centroids; Timeline returns empty (its
+    /// footprint around loop-marker centroids; Timeline returns empty (its
     /// drawings stay inside the bbox).
     func boundsContributions(graph: VGraph) -> [VRect]
 

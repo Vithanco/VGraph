@@ -77,7 +77,7 @@ struct NodeTypeBadgeRenderTests {
         let badge = NodeStyleLayout.iconAccentStrip(
             backgroundColor: .literal(lightHex: "#eeeeee"), borderColor: .literal(lightHex: "#336699"),
             textColor: .literal(lightHex: "#222222"), icon: "no.such.icon", typeName: "Question")
-        graph = try graph.set(node: Node(string: "q1"), attribute: Attributes.Node.style.attribute(badge))
+        graph = try graph.setting(node: Node(rawValue: "q1"), attribute: Attributes.Node.style.attribute(badge))
 
         let svg = try app.renderGraph(graph: graph, sourceVGL: "").svg
 

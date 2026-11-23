@@ -19,13 +19,13 @@ extension GenericQualityChecks {
             // `unknownNodeTypes` already reports it; where it stands is moot.
             guard let type = try? graph.nodeType(for: node), type != NodeType.unknown else { return nil }
             return Member(
-                id: node.description, type: type, label: label(of: node, in: graph),
+                id: node.description, type: type, label: graph.name(of: node),
                 enclosing: graph.group(of: node))
         }
         let detailedNodes = graph.groups.compactMap { group -> Member? in
             guard let type = graph.nodeType(of: group) else { return nil }
             return Member(
-                id: group.id.id, type: type, label: label(of: group, in: graph),
+                id: group.id.id, type: type, label: graph.name(of: group),
                 enclosing: graph.parentGroup(of: group))
         }
         return nodes + detailedNodes
@@ -43,7 +43,7 @@ extension GenericQualityChecks {
         let allowed = graph.detailTypes(of: holderType)
         let details = allowed.isEmpty ? "which has no details" : "which is detailed by \(listed(allowed, joinedBy: "and"))"
         return warning(
-            "\(name) is inside \(holderType.description) \"\(label(of: holder, in: graph))\", \(details)",
+            "\(name) is inside \(holderType.description) \"\(graph.name(of: holder))\", \(details)",
             about: member)
     }
 

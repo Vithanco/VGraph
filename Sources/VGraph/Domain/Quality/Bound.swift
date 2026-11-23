@@ -1,10 +1,5 @@
-//
-//  Bound.swift
-//  VGraph
-//
-//  How many edges of a type a notation allows, and the check that reports a
-//  document that says otherwise. See ADR-0011.
-//
+// How many edges of a type a notation allows, and the check that reports a
+// document that says otherwise. See ADR-0011.
 
 public enum Bound {
     /// The notation is silent. Not `0`, which on a minimum means the same in
@@ -28,9 +23,9 @@ public enum Bound {
 
     /// The bounds a `vnotation` may write on an `edge type:` line.
     ///
-    /// One table rather than six more cases in `applyEdgeTypeAttributes` and six
-    /// more hand-written diffs in `reconstructEdgeTypeSpec`: those two lists have
-    /// to agree exactly, and the only way to keep them in step is to have one.
+    /// One table for both reading a `vnotation` and writing one back: the two
+    /// lists of spellings have to agree exactly, and the only way to keep them in
+    /// step is to have one.
     public static let edgeBounds: [Name] = [
         Name(name: "outDegreeMin", formerly: "perSourceMin", definition: Attributes.Edge.outDegreeMin),
         Name(name: "outDegreeMax", formerly: "perSourceMax", definition: Attributes.Edge.outDegreeMax),
@@ -59,6 +54,170 @@ public enum Bound {
     }
 }
 
+extension GenericQualityChecks {
+
+    /// Report every declared [[Bound]] the graph breaks.
+    ///
+    /// Advisory rather than enforced in `adding(edge:)`, because a minimum cannot be
+    /// judged while a graph is still being built — a cloud passes through one Need
+    /// on its way to two (ADR-0011).
+    public static func brokenBounds(graph: VGraph) -> [MessageWithSeverity] {
+        let topology = GraphTopology(edges: graph.edges)
+        return graph.edgeTypes.flatMap { check(edgeType: $0, in: graph) }
+            + graph.nodeTypes.flatMap { check(nodeType: $0, in: graph, topology: topology) }
+    }
+
+    // MARK: - Per edge type
+
+    private static func check(edgeType: EdgeType, in graph: VGraph) -> [MessageWithSeverity] {
+        let bounds = EdgeTypeBounds(of: edgeType, in: graph)
+        guard bounds.statesAny else { return [] }
+
+        let ofThisType = graph.counted(edgesOf: edgeType)
+        let name = edgeType.id.description
+
+        let excess =
+            excessMessages(
+                over: bounds.outDegreeMax, in: ofThisType, keyedBy: { $0.from.id },
+                reason: { "leaving \(quoted(graph.name(of: $0.from)))" }, named: name)
+            + excessMessages(
+                over: bounds.inDegreeMax, in: ofThisType, keyedBy: { $0.to.id },
+                reason: { "entering \(quoted(graph.name(of: $0.to)))" }, named: name)
+            + excessMessages(
+                over: bounds.samePairMax, in: ofThisType, keyedBy: { $0.pair },
+                reason: { "between \(quoted(graph.name(of: $0.from))) and \(quoted(graph.name(of: $0.to)))" },
+                named: name)
+        let shortfall =
+            shortfallMessages(
+                under: bounds.outDegreeMin, of: edgeType.from, counting: ofThisType, at: .from, named: name, in: graph)
+            + shortfallMessages(
+                under: bounds.inDegreeMin, of: edgeType.to, counting: ofThisType, at: .to, named: name, in: graph)
+            + pairShortfallMessages(under: bounds.samePairMin, in: ofThisType, named: name, in: graph)
+        return excess + shortfall
+    }
+
+    private static func excessMessages(
+        over max: Int, in edges: [CountedEdge], keyedBy key: (CountedEdge) -> String,
+        reason: (CountedEdge) -> String, named name: String
+    ) -> [MessageWithSeverity] {
+        guard Bound.isStated(max) else { return [] }
+        var seen: [String: Int] = [:]
+        var messages: [MessageWithSeverity] = []
+        for counted in edges {
+            let bucket = key(counted)
+            let position = (seen[bucket] ?? 0) + 1
+            seen[bucket] = position
+            guard position > max else { continue }
+            messages.append(
+                MessageWithSeverity(
+                    message: "Too many \"\(name)\" edges \(reason(counted)) — at most \(max) allowed",
+                    severity: .error,
+                    target: .edge(from: counted.edge.from.description, to: counted.edge.to.description)))
+        }
+        return messages
+    }
+
+    /// The node, because there is no missing edge to point at; a warning, because
+    /// every unfinished document is short of its minima (ADR-0011).
+    private static func shortfallMessages(
+        under min: Int, of nodeType: NodeType, counting edges: [CountedEdge], at end: VEdgeEnd,
+        named name: String, in graph: VGraph
+    ) -> [MessageWithSeverity] {
+        guard Bound.isStated(min), min > 0 else { return [] }
+        return graph.boundElements(of: nodeType).compactMap { element in
+            let count = edges.filter { (end == .from ? $0.from : $0.to) == element }.count
+            guard count < min else { return nil }
+            return MessageWithSeverity(
+                message:
+                    "\(quoted(graph.name(of: element))) needs at least \(min) \"\(name)\" "
+                    + "\(edgeDirection(at: end)) edge\(min == 1 ? "" : "s") — has \(count)",
+                severity: .warning,
+                target: .node(element.id))
+        }
+    }
+
+    /// A pair with no edge of this type at all is `outDegreeMin` / `inDegreeMin`'s
+    /// business, not this one's.
+    private static func pairShortfallMessages(
+        under min: Int, in edges: [CountedEdge], named name: String, in graph: VGraph
+    ) -> [MessageWithSeverity] {
+        guard Bound.isStated(min), min > 0 else { return [] }
+        var counts: [String: Int] = [:]
+        var firstOfPair: [String: Edge] = [:]
+        for counted in edges {
+            counts[counted.pair] = (counts[counted.pair] ?? 0) + 1
+            if firstOfPair[counted.pair] == nil { firstOfPair[counted.pair] = counted.edge }
+        }
+        var messages: [MessageWithSeverity] = []
+        for counted in edges {
+            guard let count = counts[counted.pair], count < min, let first = firstOfPair[counted.pair],
+                first.id == counted.edge.id
+            else { continue }
+            messages.append(
+                MessageWithSeverity(
+                    message:
+                        "\(quoted(graph.name(of: counted.from))) → \(quoted(graph.name(of: counted.to))) "
+                        + "needs at least \(min) \"\(name)\" edges — has \(count)",
+                    severity: .warning,
+                    target: .edge(from: counted.edge.from.description, to: counted.edge.to.description)))
+        }
+        return messages
+    }
+
+    // MARK: - Per node type
+
+    private static func check(nodeType: NodeType, in graph: VGraph, topology: GraphTopology)
+        -> [MessageWithSeverity]
+    {
+        let bounds = NodeTypeBounds(of: nodeType, in: graph)
+        guard bounds.statesAny else { return [] }
+
+        return graph.nodes(ofType: nodeType).flatMap { node in
+            totalMessages(
+                node: node, edges: topology.outgoingEdges(of: node), min: bounds.outDegreeMin, max: bounds.outDegreeMax,
+                at: .from, in: graph)
+                + totalMessages(
+                    node: node, edges: topology.incomingEdges(of: node), min: bounds.inDegreeMin,
+                    max: bounds.inDegreeMax, at: .to, in: graph)
+        }
+    }
+
+    private static func totalMessages(
+        node: Node, edges: [Edge], min: Int, max: Int, at end: VEdgeEnd, in graph: VGraph
+    ) -> [MessageWithSeverity] {
+        let direction = edgeDirection(at: end)
+        // Same rule as an edge-type maximum, so the two read alike in the
+        // diagnostics box: every edge past the allowed ones is flagged.
+        let pastMaximum = Bound.isStated(max) ? Array(edges.dropFirst(max)) : []
+        let excess = pastMaximum.map { edge in
+            MessageWithSeverity(
+                message: "\(quoted(graph.name(of: node))) has too many \(direction) edges — at most \(max) allowed",
+                severity: .error,
+                target: .edge(from: edge.from.description, to: edge.to.description))
+        }
+        guard Bound.isStated(min), min > 0, edges.count < min else { return excess }
+        return excess + [
+            MessageWithSeverity(
+                message:
+                    "\(quoted(graph.name(of: node))) needs at least \(min) \(direction) "
+                    + "edge\(min == 1 ? "" : "s") — has \(edges.count)",
+                severity: .warning,
+                target: .node(node.description))
+        ]
+    }
+
+    // MARK: - Naming
+
+    private static func quoted(_ text: String) -> String { "\"\(text)\"" }
+}
+
+private func edgeDirection(at end: VEdgeEnd) -> String {
+    switch end {
+    case .from: return "outgoing"
+    case .to: return "incoming"
+    }
+}
+
 /// Read once, so the check can skip a type that declares nothing without touching
 /// the graph's edges at all.
 private struct EdgeTypeBounds {
@@ -81,240 +240,29 @@ private struct EdgeTypeBounds {
         self.samePairMax = read(Attributes.Edge.samePairMax)
     }
 
-    var statesNothing: Bool {
-        !Bound.isStated(outDegreeMin) && !Bound.isStated(outDegreeMax)
-            && !Bound.isStated(inDegreeMin) && !Bound.isStated(inDegreeMax)
-            && !Bound.isStated(samePairMin) && !Bound.isStated(samePairMax)
+    var statesAny: Bool {
+        [outDegreeMin, outDegreeMax, inDegreeMin, inDegreeMax, samePairMin, samePairMax].contains { Bound.isStated($0) }
     }
 }
 
-extension GenericQualityChecks {
+/// The node type's totals, read once for the same reason.
+private struct NodeTypeBounds {
+    let outDegreeMin: Int
+    let outDegreeMax: Int
+    let inDegreeMin: Int
+    let inDegreeMax: Int
 
-    /// Report every declared [[Bound]] bound the graph breaks.
-    ///
-    /// Advisory rather than enforced in `add(edge:)`, because a minimum cannot be
-    /// judged while a graph is still being built — a cloud passes through one Need
-    /// on its way to two (ADR-0011).
-    public static func brokenBounds(graph: VGraph) -> [MessageWithSeverity] {
-        var messages: [MessageWithSeverity] = []
-        for edgeType in graph.edgeTypes {
-            messages.append(contentsOf: check(edgeType: edgeType, in: graph))
-        }
-        let topology = GraphTopology(edges: graph.edges)
-        for nodeType in graph.nodeTypes {
-            messages.append(contentsOf: check(nodeType: nodeType, in: graph, topology: topology))
-        }
-        return messages
-    }
-
-    // MARK: - Per edge type
-
-    /// An edge with the elements its ends count for (ADR-0032).
-    private struct Counted {
-        let edge: Edge
-        let from: BoundElement
-        let to: BoundElement
-
-        var pair: String { "\(from.id)\u{1}\(to.id)" }
-    }
-
-    private static func check(edgeType: EdgeType, in graph: VGraph) -> [MessageWithSeverity] {
-        let bounds = EdgeTypeBounds(of: edgeType, in: graph)
-        guard !bounds.statesNothing else { return [] }
-
-        var ofThisType: [Counted] = []
-        for edge in graph.edges {
-            guard let actual = try? graph.edgeType(for: edge.id), actual.id == edgeType.id else { continue }
-            let ends = graph.boundEnds(of: edge, typed: edgeType)
-            ofThisType.append(Counted(edge: edge, from: ends.from, to: ends.to))
-        }
-
-        var messages: [MessageWithSeverity] = []
-        let name = edgeType.id.description
-
-        messages.append(
-            contentsOf: excessMessages(
-                over: bounds.outDegreeMax, in: ofThisType, keyedBy: { $0.from.id },
-                reason: { "leaving \(quoted(label(of: $0.from, in: graph)))" }, named: name))
-        messages.append(
-            contentsOf: excessMessages(
-                over: bounds.inDegreeMax, in: ofThisType, keyedBy: { $0.to.id },
-                reason: { "entering \(quoted(label(of: $0.to, in: graph)))" }, named: name))
-        messages.append(
-            contentsOf: excessMessages(
-                over: bounds.samePairMax, in: ofThisType, keyedBy: { $0.pair },
-                reason: {
-                    "between \(quoted(label(of: $0.from, in: graph))) and \(quoted(label(of: $0.to, in: graph)))"
-                }, named: name))
-
-        messages.append(
-            contentsOf: shortfallMessages(
-                under: bounds.outDegreeMin, of: edgeType.from, counting: ofThisType, at: .from,
-                named: name, in: graph))
-        messages.append(
-            contentsOf: shortfallMessages(
-                under: bounds.inDegreeMin, of: edgeType.to, counting: ofThisType, at: .to,
-                named: name, in: graph))
-        messages.append(
-            contentsOf: pairShortfallMessages(under: bounds.samePairMin, in: ofThisType, named: name, in: graph))
-
-        return messages
-    }
-
-    private static func excessMessages(
-        over max: Int, in edges: [Counted], keyedBy key: (Counted) -> String,
-        reason: (Counted) -> String, named name: String
-    ) -> [MessageWithSeverity] {
-        guard Bound.isStated(max) else { return [] }
-        var seen: [String: Int] = [:]
-        var messages: [MessageWithSeverity] = []
-        for counted in edges {
-            let bucket = key(counted)
-            let position = (seen[bucket] ?? 0) + 1
-            seen[bucket] = position
-            guard position > max else { continue }
-            messages.append(
-                MessageWithSeverity(
-                    message: "Too many \"\(name)\" edges \(reason(counted)) — at most \(max) allowed",
-                    severity: .error,
-                    target: .edge(from: counted.edge.from.description, to: counted.edge.to.description)))
-        }
-        return messages
-    }
-
-    /// The node, because there is no missing edge to point at; a warning, because
-    /// every unfinished document is short of its minima (ADR-0011).
-    private static func shortfallMessages(
-        under min: Int, of nodeType: NodeType, counting edges: [Counted], at end: VEdgeEnd,
-        named name: String, in graph: VGraph
-    ) -> [MessageWithSeverity] {
-        guard Bound.isStated(min), min > 0 else { return [] }
-        var messages: [MessageWithSeverity] = []
-        for element in graph.boundElements(of: nodeType) {
-            var count = 0
-            for counted in edges where (end == .from ? counted.from : counted.to) == element {
-                count += 1
-            }
-            guard count < min else { continue }
-            messages.append(
-                MessageWithSeverity(
-                    message:
-                        "\(quoted(label(of: element, in: graph))) needs at least \(min) \"\(name)\" "
-                        + "\(edgeDirection(at: end)) edge\(min == 1 ? "" : "s") — has \(count)",
-                    severity: .warning,
-                    target: .node(element.id)))
-        }
-        return messages
-    }
-
-    /// A pair with no edge of this type at all is `outDegreeMin` / `inDegreeMin`'s
-    /// business, not this one's.
-    private static func pairShortfallMessages(
-        under min: Int, in edges: [Counted], named name: String, in graph: VGraph
-    ) -> [MessageWithSeverity] {
-        guard Bound.isStated(min), min > 0 else { return [] }
-        var counts: [String: Int] = [:]
-        var firstOfPair: [String: Edge] = [:]
-        for counted in edges {
-            counts[counted.pair] = (counts[counted.pair] ?? 0) + 1
-            if firstOfPair[counted.pair] == nil { firstOfPair[counted.pair] = counted.edge }
-        }
-        var messages: [MessageWithSeverity] = []
-        for counted in edges {
-            guard let count = counts[counted.pair], count < min, let first = firstOfPair[counted.pair],
-                first.id == counted.edge.id
-            else { continue }
-            messages.append(
-                MessageWithSeverity(
-                    message:
-                        "\(quoted(label(of: counted.from, in: graph))) → \(quoted(label(of: counted.to, in: graph))) "
-                        + "needs at least \(min) \"\(name)\" edges — has \(count)",
-                    severity: .warning,
-                    target: .edge(from: counted.edge.from.description, to: counted.edge.to.description)))
-        }
-        return messages
-    }
-
-    // MARK: - Per node type
-
-    private static func check(nodeType: NodeType, in graph: VGraph, topology: GraphTopology)
-        -> [MessageWithSeverity]
-    {
+    init(of nodeType: NodeType, in graph: VGraph) {
         func read(_ definition: TypedAttributeDefinition<Int>) -> Int {
             (try? graph.get(nodeType: nodeType, attribute: definition)) ?? Bound.unbounded
         }
-        let outDegreeMin = read(Attributes.Node.totalOutDegreeMin)
-        let outDegreeMax = read(Attributes.Node.totalOutDegreeMax)
-        let inDegreeMin = read(Attributes.Node.totalInDegreeMin)
-        let inDegreeMax = read(Attributes.Node.totalInDegreeMax)
-        guard
-            Bound.isStated(outDegreeMin) || Bound.isStated(outDegreeMax)
-                || Bound.isStated(inDegreeMin) || Bound.isStated(inDegreeMax)
-        else { return [] }
-
-        var messages: [MessageWithSeverity] = []
-        for node in graph.nodes {
-            guard let actual = try? graph.nodeType(for: node), actual == nodeType else { continue }
-            messages.append(
-                contentsOf: totalMessages(
-                    node: node, edges: topology.outgoingEdges(of: node), min: outDegreeMin, max: outDegreeMax, at: .from, in: graph))
-            messages.append(
-                contentsOf: totalMessages(
-                    node: node, edges: topology.incomingEdges(of: node), min: inDegreeMin, max: inDegreeMax, at: .to, in: graph))
-        }
-        return messages
+        self.outDegreeMin = read(Attributes.Node.totalOutDegreeMin)
+        self.outDegreeMax = read(Attributes.Node.totalOutDegreeMax)
+        self.inDegreeMin = read(Attributes.Node.totalInDegreeMin)
+        self.inDegreeMax = read(Attributes.Node.totalInDegreeMax)
     }
 
-    private static func totalMessages(
-        node: Node, edges: [Edge], min: Int, max: Int, at end: VEdgeEnd, in graph: VGraph
-    ) -> [MessageWithSeverity] {
-        let direction = edgeDirection(at: end)
-        var messages: [MessageWithSeverity] = []
-
-        if Bound.isStated(max), edges.count > max {
-            // Same rule as an edge-type maximum, so the two read alike in the
-            // diagnostics box.
-            var index = 0
-            for edge in edges {
-                index += 1
-                guard index > max else { continue }
-                messages.append(
-                    MessageWithSeverity(
-                        message:
-                            "\(quoted(label(of: node, in: graph))) has too many \(direction) edges "
-                            + "— at most \(max) allowed",
-                        severity: .error,
-                        target: .edge(from: edge.from.description, to: edge.to.description)))
-            }
-        }
-
-        if Bound.isStated(min), min > 0, edges.count < min {
-            messages.append(
-                MessageWithSeverity(
-                    message:
-                        "\(quoted(label(of: node, in: graph))) needs at least \(min) \(direction) "
-                        + "edge\(min == 1 ? "" : "s") — has \(edges.count)",
-                    severity: .warning,
-                    target: .node(node.description)))
-        }
-        return messages
-    }
-
-    // MARK: - Naming
-
-    private static func quoted(_ text: String) -> String { "\"\(text)\"" }
-
-    private static func label(of element: BoundElement, in graph: VGraph) -> String {
-        switch element {
-        case .node(let node): return label(of: node, in: graph)
-        case .detailedNode(let group): return label(of: group, in: graph)
-        }
-    }
-}
-
-private func edgeDirection(at end: VEdgeEnd) -> String {
-    switch end {
-    case .from: return "outgoing"
-    case .to: return "incoming"
+    var statesAny: Bool {
+        [outDegreeMin, outDegreeMax, inDegreeMin, inDegreeMax].contains { Bound.isStated($0) }
     }
 }

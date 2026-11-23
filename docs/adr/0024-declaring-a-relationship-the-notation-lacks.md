@@ -14,7 +14,7 @@ extends the edge retype of [0023](./0023-retyping-an-edge.md). Uses the
 ## Context
 
 A [[Notation break]] on a [[Gesture]] mints an edge type named after the pair it
-joins — `ensureUnknownEdgeType` — registers it in *this graph's* type registry,
+joins — `ensuringUnknownEdgeType` — registers it in *this graph's* type registry,
 and colours it red at penwidth 3. The notation still does not declare it, which
 is why `QualityAnalysis.unknownEdgeTypes` reports every edge wearing one.
 
@@ -139,7 +139,7 @@ the field on what was typed, the path `setURL` already walks.
 - **⌥ still costs nothing**, on both drags. `connect` and `reattach` keep their
   `notationBreak`, and `connectTargets`/`reattachTargets` still widen under it.
 - **Minting is visible at its call site.** `connecting` and `reattaching` take a
-  non-optional `EdgeType`; the session calls `ensureUnknownEdgeType` itself. The
+  non-optional `EdgeType`; the session calls `ensuringUnknownEdgeType` itself. The
   signature says whether a path can mint, instead of a `nil` that also serves
   the ordinary path.
 - **A guard-rail test holds the property that broke.** One loop over every

@@ -46,12 +46,12 @@ struct AddingGroupTests {
 
         let target = g.groupingTarget(for: ["a", "b"])
 
-        #expect(target?.parentId == rootGroup)
+        #expect(target?.parentId == Group.rootId)
         #expect(target?.detachedCount == 0)
     }
 
-    @Test("Elements inside a boundary group inside it")
-    func siblingsInsideABoundaryStayThere() throws {
+    @Test("Elements inside a group are grouped inside it")
+    func siblingsInsideAGroupStayThere() throws {
         let g = try graph()
 
         let target = g.groupingTarget(for: ["c"])
@@ -61,12 +61,12 @@ struct AddingGroupTests {
     }
 
     @Test("Elements from different parents report what would have to move")
-    func crossingBoundariesCountsTheDetachments() throws {
+    func crossingGroupsCountsTheDetachments() throws {
         let g = try graph()
 
         let target = g.groupingTarget(for: ["a", "c"])
 
-        #expect(target?.parentId == rootGroup)
+        #expect(target?.parentId == Group.rootId)
         #expect(target?.detachedCount == 1)
     }
 
@@ -85,10 +85,10 @@ struct AddingGroupTests {
     func groupingEverythingWrapsTheContents() throws {
         let g = try graph()
 
-        #expect(g.groupingTarget(for: ["a", "b", "g1", "g2"]) == VGroupingTarget(parentId: rootGroup, detachedCount: 0))
-        let (changed, created) = try g.addingGroup(of: ["a", "b", "g1", "g2"], detaching: false)
+        #expect(g.groupingTarget(for: ["a", "b", "g1", "g2"]) == VGroupingTarget(parentId: Group.rootId, detachedCount: 0))
+        let (changed, created) = try g.addingGroup(containing: ["a", "b", "g1", "g2"])
 
-        #expect(changed.parentGroup(of: created) == Group(rawValue: rootGroup))
+        #expect(changed.parentGroup(of: created) == Group.root)
         #expect(changed.group(of: Node("a")) == created)
         #expect(changed.parentGroup(of: Group(rawValue: "g1")) == created)
         // One level of nesting, not two: the members are the root's children.
@@ -103,7 +103,7 @@ struct AddingGroupTests {
             """
         let g = try VGraphParser(logger: NoOpLogger()).parse(source: vgl)
 
-        #expect(g.groupingTarget(for: [rootGroup]) == nil)
+        #expect(g.groupingTarget(for: [Group.rootId]) == nil)
     }
 
     /// Grouping can never empty a group, and the reason is a proof rather than a
@@ -133,7 +133,7 @@ struct AddingGroupTests {
         let g = try graph()
 
         for ids in [["a", "f"], ["a", "e", "f"], ["a", "c"], ["c", "e"], ["b", "d", "f"]] {
-            let (changed, _) = try g.addingGroup(of: ids, detaching: true)
+            let (changed, _) = try g.addingGroup(moving: ids)
             for group in changed.groups {
                 #expect(!changed.directChildIds(of: group).isEmpty, "\(group.id.id) emptied by \(ids)")
             }
@@ -146,19 +146,19 @@ struct AddingGroupTests {
     func createsTheGroupWithItsMembers() throws {
         let g = try graph()
 
-        let (changed, created) = try g.addingGroup(of: ["a", "b"], detaching: false)
+        let (changed, created) = try g.addingGroup(containing: ["a", "b"])
 
         #expect(created.id.id == "group_4")
         #expect(changed.group(of: Node("a")) == created)
         #expect(changed.group(of: Node("b")) == created)
-        #expect(created.getName(in: changed) == "Change Me")
+        #expect(changed.label(of: .group(created)) == "Change Me")
     }
 
     @Test("The new group is a child of the parent the elements shared")
     func sitsInsideTheSharedParent() throws {
         let g = try graph()
 
-        let (changed, created) = try g.addingGroup(of: ["c"], detaching: false)
+        let (changed, created) = try g.addingGroup(containing: ["c"])
 
         #expect(changed.parentGroup(of: created) == Group(rawValue: "g1"))
     }
@@ -170,7 +170,7 @@ struct AddingGroupTests {
         let g = try graph()
 
         #expect(throws: VError.self) {
-            _ = try g.addingGroup(of: ["a", "c"], detaching: false)
+            _ = try g.addingGroup(containing: ["a", "c"])
         }
     }
 
@@ -178,7 +178,7 @@ struct AddingGroupTests {
     func detachingMovesAndLeavesTheOldGroup() throws {
         let g = try graph()
 
-        let (changed, created) = try g.addingGroup(of: ["a", "c"], detaching: true)
+        let (changed, created) = try g.addingGroup(moving: ["a", "c"])
 
         #expect(changed.group(of: Node("c")) == created)
         #expect(changed.has(group: Group(rawValue: "g1")))
@@ -193,7 +193,7 @@ struct AddingGroupTests {
     func roundTripsThroughVGL() throws {
         let g = try graph()
 
-        let (changed, created) = try g.addingGroup(of: ["a", "b"], detaching: false)
+        let (changed, created) = try g.addingGroup(containing: ["a", "b"])
         let vgl = try VGLExporter().export(graph: changed)
         let reparsed = try VGraphParser(logger: NoOpLogger()).parse(source: vgl)
 

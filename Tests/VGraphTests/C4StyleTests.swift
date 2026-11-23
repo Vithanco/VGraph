@@ -7,7 +7,7 @@ import Testing
 struct C4StyleTests {
 
     private func c4Graph() throws(VError) -> VGraph {
-        return try Notations.C4.addNotation(addTo: VGraph().defineStandardAttributes())
+        return try Notations.C4.addNotation(to: VGraph())
     }
 
     // MARK: - Element cards

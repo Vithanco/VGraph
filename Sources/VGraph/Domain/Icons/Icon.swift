@@ -4,22 +4,14 @@ public enum IconPosition: Int, VProtocol {
     case center = 2
     case top = 3
 
-    static var readableNames: [String] {
-        return ["No Icon", "Left", "Center", "Top"]
-    }
 }
 
 public struct IconInfo: CustomStringConvertible, VProtocol {
-    public var iconPosition: IconPosition
-    public var iconName: String
-    public var iconColor: VColor
-    public var iconSize: Double
+    public let iconPosition: IconPosition
+    public let iconName: String
+    public let iconColor: VColor
+    public let iconSize: Double
 
-    func padding(_ by: Double) -> IconInfo {
-        return IconInfo(
-            iconPosition: self.iconPosition, iconName: self.iconName, iconColor: self.iconColor,
-            iconSize: self.iconSize - by * 2)
-    }
     public init(iconPosition: IconPosition, iconName: String, iconColor: VColor, iconSize: Double) {
         self.iconPosition = iconPosition
         self.iconName = iconName
@@ -29,7 +21,7 @@ public struct IconInfo: CustomStringConvertible, VProtocol {
 
     public var description: String {
         return
-            "IconInfo(iconPosition: \(iconPosition), iconName: \(iconName), iconColor: \(iconColor), iconSize: \(iconSize))"
+            "IconInfo(iconPosition: \(iconPosition.rawValue), iconName: \(iconName), iconColor: \(iconColor), iconSize: \(iconSize))"
     }
 
 }

@@ -13,14 +13,14 @@ public struct BaseEdge<V: Sendable>: VProtocol {
     }
 
     public init(id: String, from: BaseNode, to: BaseNode) {
-        self.id = Id(string: id)
+        self.id = Id(rawValue: id)
         self.from = from
         self.to = to
     }
 
     public init(string: String, from: String, to: String) {
         self.init(
-            id: Id(string: string),
+            id: Id(rawValue: string),
             from: Identifier<V>(rawValue: from),
             to: Identifier<V>(rawValue: to)
         )

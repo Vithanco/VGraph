@@ -11,31 +11,30 @@ struct MergeRelationsTests {
     typealias CM = Notations.ConceptMap
 
     private func createConceptMapGraph() throws(VError) -> VGraph {
-        var graph = try VGraph()
-            .defineStandardAttributes()
-        graph = try CM.addNotation(addTo: graph)
+        var graph = VGraph()
+        graph = try CM.addNotation(to: graph)
         graph = graph.using(notation: "ConceptMap")
         return graph
     }
 
     private func addConcept(_ id: String, label: String, to graph: VGraph) throws(VError) -> VGraph {
-        let node = Node(string: id)
-        var result = try graph.add(node: node, type: CM.NodeTypes.concept)
-        result = try result.set(node: node, attribute: Attributes.Node.label.attribute(label))
+        let node = Node(rawValue: id)
+        var result = try graph.adding(node: node, type: CM.NodeTypes.concept)
+        result = try result.setting(node: node, attribute: Attributes.Node.label.attribute(label))
         return result
     }
 
     private func addEmphasizedConcept(_ id: String, label: String, to graph: VGraph) throws(VError) -> VGraph {
-        let node = Node(string: id)
-        var result = try graph.add(node: node, type: CM.NodeTypes.emphasizedConcept)
-        result = try result.set(node: node, attribute: Attributes.Node.label.attribute(label))
+        let node = Node(rawValue: id)
+        var result = try graph.adding(node: node, type: CM.NodeTypes.emphasizedConcept)
+        result = try result.setting(node: node, attribute: Attributes.Node.label.attribute(label))
         return result
     }
 
     private func addRelation(_ id: String, label: String, to graph: VGraph) throws(VError) -> VGraph {
-        let node = Node(string: id)
-        var result = try graph.add(node: node, type: CM.NodeTypes.relation)
-        result = try result.set(node: node, attribute: Attributes.Node.label.attribute(label))
+        let node = Node(rawValue: id)
+        var result = try graph.adding(node: node, type: CM.NodeTypes.relation)
+        result = try result.setting(node: node, attribute: Attributes.Node.label.attribute(label))
         return result
     }
 
@@ -43,28 +42,28 @@ struct MergeRelationsTests {
         -> VGraph
     {
         let edge = Edge(string: id, from: from, to: to)
-        return try graph.add(edge: edge, edgeType: CM.EdgeTypes.conceptToRelation)
+        return try graph.adding(edge: edge, edgeType: CM.EdgeTypes.conceptToRelation)
     }
 
     private func addEdgeRelationToConcept(id: String, from: String, to: String, in graph: VGraph) throws(VError)
         -> VGraph
     {
         let edge = Edge(string: id, from: from, to: to)
-        return try graph.add(edge: edge, edgeType: CM.EdgeTypes.relationToConcept)
+        return try graph.adding(edge: edge, edgeType: CM.EdgeTypes.relationToConcept)
     }
 
     private func addEdgeEmphasizedConceptToRelation(id: String, from: String, to: String, in graph: VGraph)
         throws(VError) -> VGraph
     {
         let edge = Edge(string: id, from: from, to: to)
-        return try graph.add(edge: edge, edgeType: CM.EdgeTypes.emphasizedConceptToRelation)
+        return try graph.adding(edge: edge, edgeType: CM.EdgeTypes.emphasizedConceptToRelation)
     }
 
     private func addEdgeRelationToEmphasizedConcept(id: String, from: String, to: String, in graph: VGraph)
         throws(VError) -> VGraph
     {
         let edge = Edge(string: id, from: from, to: to)
-        return try graph.add(edge: edge, edgeType: CM.EdgeTypes.relationToEmphasizedConcept)
+        return try graph.adding(edge: edge, edgeType: CM.EdgeTypes.relationToEmphasizedConcept)
     }
 
     // MARK: - findMergeableRelations — Identification
@@ -174,7 +173,7 @@ struct MergeRelationsTests {
         #expect(groups.count == 1)
         #expect(groups[0].label == "is a")
         #expect(groups[0].nodes.count == 2)
-        #expect(groups[0].targets == Set([Node(string: "mammal")]))
+        #expect(groups[0].targets == Set([Node(rawValue: "mammal")]))
     }
 
     @Test
@@ -242,7 +241,7 @@ struct MergeRelationsTests {
 
         let groups = findMergeableRelations(in: graph)
         #expect(groups.count == 1)
-        #expect(groups[0].targets == Set([Node(string: "weight"), Node(string: "style")]))
+        #expect(groups[0].targets == Set([Node(rawValue: "weight"), Node(rawValue: "style")]))
     }
 
     // MARK: - applyMergeRelations — Transform
@@ -285,7 +284,7 @@ struct MergeRelationsTests {
         let result = try applyMergeRelations(to: graph)
 
         // e3 redirected — should still be emphasizedConceptToRelation
-        let e3EdgeType = try result.edgeType(for: Edge.Id(string: "e3"))
+        let e3EdgeType = try result.edgeType(for: Edge.Id(rawValue: "e3"))
         #expect(e3EdgeType.id == CM.EdgeTypes.emphasizedConceptToRelation.id)
     }
 
@@ -339,13 +338,13 @@ struct MergeRelationsTests {
 
         let result = try applyMergeRelations(to: graph)
 
-        #expect(result.has(node: Node(string: "r3")))
-        let e5 = result.get(edge: Edge.Id(string: "e5"))!
-        #expect(e5.from == Node(string: "bird"))
-        #expect(e5.to == Node(string: "r3"))
-        let e6 = result.get(edge: Edge.Id(string: "e6"))!
-        #expect(e6.from == Node(string: "r3"))
-        #expect(e6.to == Node(string: "animal"))
+        #expect(result.has(node: Node(rawValue: "r3")))
+        let e5 = result.get(edge: Edge.Id(rawValue: "e5"))!
+        #expect(e5.from == Node(rawValue: "bird"))
+        #expect(e5.to == Node(rawValue: "r3"))
+        let e6 = result.get(edge: Edge.Id(rawValue: "e6"))!
+        #expect(e6.from == Node(rawValue: "r3"))
+        #expect(e6.to == Node(rawValue: "animal"))
     }
 
     @Test
@@ -373,7 +372,7 @@ struct MergeRelationsTests {
         let outgoing = result.edges.filter { $0.from == survivor }
         #expect(outgoing.count == 2)
         let outgoingTargets = Set(outgoing.map { $0.to })
-        #expect(outgoingTargets == Set([Node(string: "weight"), Node(string: "style")]))
+        #expect(outgoingTargets == Set([Node(rawValue: "weight"), Node(rawValue: "style")]))
 
         let incoming = result.edges.filter { $0.to == survivor }
         #expect(incoming.count == 2)
@@ -434,13 +433,13 @@ struct MergeRelationsTests {
 
         let incoming = result.edges.filter { $0.to == relation }
         let incomingSources = Set(incoming.map { $0.from })
-        #expect(incomingSources == Set([Node(string: "dog"), Node(string: "cat")]))
+        #expect(incomingSources == Set([Node(rawValue: "dog"), Node(rawValue: "cat")]))
 
         let outgoing = result.edges.filter { $0.from == relation }
         #expect(outgoing.count == 1)
-        #expect(outgoing[0].to == Node(string: "mammal"))
-        #expect(result.has(edge: Edge.Id(string: "e2")))
-        #expect(!result.has(edge: Edge.Id(string: "e4")))
+        #expect(outgoing[0].to == Node(rawValue: "mammal"))
+        #expect(result.has(edge: Edge.Id(rawValue: "e2")))
+        #expect(!result.has(edge: Edge.Id(rawValue: "e4")))
 
         for edge in incoming {
             let edgeType = try result.edgeType(for: edge)

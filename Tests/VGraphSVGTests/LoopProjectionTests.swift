@@ -139,9 +139,9 @@ struct LoopProjectionTests {
     func ambiguousMarker() throws {
         var graph = try displayed(contradictory)
         for (index, node) in graph.nodes.enumerated() {
-            graph = try graph.set(
+            graph = try graph.setting(
                 node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 100 + 200 * Double(index), y: 100)))
-            graph = try graph.set(
+            graph = try graph.setting(
                 node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 60, height: 30)))
         }
         // Edge splines offset apart, as Graphviz draws them, so the loop has an area.
@@ -149,7 +149,7 @@ struct LoopProjectionTests {
             let forward = edge.from.id == "a"
             let y = forward ? 90.0 : 110.0
             let points = forward ? [VPoint(x: 130, y: y), VPoint(x: 270, y: y)] : [VPoint(x: 270, y: y), VPoint(x: 130, y: y)]
-            graph = try graph.set(
+            graph = try graph.setting(
                 edge: edge.id,
                 attribute: Attributes.Edge.layoutData.attribute(
                     EdgeLayoutData(splinePoints: points, color: "#000000", penwidth: 1.0)))

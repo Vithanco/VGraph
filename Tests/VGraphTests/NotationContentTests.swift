@@ -8,7 +8,7 @@ import Testing
 struct NotationContentTests {
     let question = ItemKey(.nodeType, Notations.Ibis.NodeTypes.question.description)
 
-    func blank() throws(VError) -> VGraph { try VGraph().defineStandardAttributes() }
+    func blank() throws(VError) -> VGraph { VGraph() }
 
     @Test
     func placedContentLandsInTheLayerItIsPlacedIn() throws(VError) {
@@ -21,7 +21,7 @@ struct NotationContentTests {
     @Test(arguments: NotationRegistry.entries.map { $0.id })
     func aNotationLeavesTheModelAlone(_ notation: String) throws(VError) {
         let graph = try blank().placing(NotationRegistry.entry(for: notation)!.content, in: .builtin)
-        #expect(graph.ads.keys(in: .model).isEmpty, "\(graph.ads.keys(in: .model))")
+        #expect(graph.attributeStore.keys(in: .model).isEmpty, "\(graph.attributeStore.keys(in: .model))")
     }
 
     @Test

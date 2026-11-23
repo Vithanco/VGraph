@@ -77,7 +77,7 @@ struct ConversationTest {
                 == .perform(
                     .addRelated(
                         to: "a", newNodeAt: .to,
-                        using: EdgeType.Id(string: "concept_to_relation"))))
+                        using: EdgeType.Id(rawValue: "concept_to_relation"))))
     }
 
     /// Two candidates is a real question. Asserted by candidate id — the edge
@@ -116,7 +116,7 @@ struct ConversationTest {
                 == .perform(
                     .addRelated(
                         to: "a", newNodeAt: .from,
-                        using: EdgeType.Id(string: "relation_to_concept"))))
+                        using: EdgeType.Id(rawValue: "relation_to_concept"))))
     }
 
     /// A notation declaring one node type is not asked which one to make
@@ -130,7 +130,7 @@ struct ConversationTest {
         let (step, _) = EditorCore.begin(
             .addNode, on: root, forcingChoice: false, in: session)
 
-        #expect(step == .perform(.addNode(in: root, ofType: NodeType(string: "Stock"), notationBreak: .forbidden)))
+        #expect(step == .perform(.addNode(in: root, ofType: NodeType(rawValue: "Stock"), notationBreak: .forbidden)))
     }
 
     /// Reversing is a question only where more than one edge type could carry
@@ -165,7 +165,7 @@ struct ConversationTest {
             step
                 == .perform(
                     .changeType(
-                        node: "a", to: NodeType(string: "EmphasizedConcept"),
+                        node: "a", to: NodeType(rawValue: "EmphasizedConcept"),
                         edgeTypes: [], notationBreak: .forbidden)))
     }
 
@@ -521,7 +521,7 @@ struct ConversationTest {
             step
                 == .perform(
                     .addRelatedBreaking(
-                        to: "a", newNodeAt: .to, ofType: NodeType(string: "Concept"))))
+                        to: "a", newNodeAt: .to, ofType: NodeType(rawValue: "Concept"))))
     }
 
     /// The node-type list from `addNode` carries no escape hatch, so its answer
@@ -537,7 +537,7 @@ struct ConversationTest {
             after: VCommandOption(id: "Relation", title: "Relation"),
             in: opened, session: session)
 
-        #expect(step == .perform(.addNode(in: root, ofType: NodeType(string: "Relation"), notationBreak: .forbidden)))
+        #expect(step == .perform(.addNode(in: root, ofType: NodeType(rawValue: "Relation"), notationBreak: .forbidden)))
     }
 
     /// CLD joins Stock to Stock two ways, so reversing is a real question and
@@ -557,7 +557,7 @@ struct ConversationTest {
             step
                 == .perform(
                     .changeDirection(
-                        edge: edgeId, to: EdgeType.Id(string: "opposite"),
+                        edge: edgeId, to: EdgeType.Id(rawValue: "opposite"),
                         notationBreak: .forbidden)))
     }
 
@@ -592,7 +592,7 @@ struct ConversationTest {
             step
                 == .perform(
                     .connect(
-                        from: "s1", to: "s2", using: EdgeType.Id(string: "same"),
+                        from: "s1", to: "s2", using: EdgeType.Id(rawValue: "same"),
                         notationBreak: .forbidden)))
     }
 
@@ -678,10 +678,10 @@ struct ConversationTest {
             step
                 == .perform(
                     .changeType(
-                        node: "i1", to: NodeType(string: "Risk"),
+                        node: "i1", to: NodeType(rawValue: "Risk"),
                         edgeTypes: [
-                            EdgeType.Id(string: "mitigated_by"),
-                            EdgeType.Id(string: "monitored_by"),
+                            EdgeType.Id(rawValue: "mitigated_by"),
+                            EdgeType.Id(rawValue: "monitored_by"),
                         ],
                         notationBreak: .forbidden)))
     }
@@ -703,6 +703,6 @@ struct ConversationTest {
                 == .perform(
                     .addRelated(
                         to: "r", newNodeAt: .to,
-                        using: EdgeType.Id(string: "relation_to_concept"))))
+                        using: EdgeType.Id(rawValue: "relation_to_concept"))))
     }
 }

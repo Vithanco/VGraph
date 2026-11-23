@@ -4,7 +4,7 @@ extension VGraph {
     /// An unused id of the form `concept_1`. Synthetic rather than slugged from
     /// the label — see ADR-0013.
     func newNodeId(for nodeType: NodeType) -> Node {
-        return Node(string: firstFreeId(prefix: nodeType.id.lowercased(), countingFrom: count(ofNodeType: nodeType) + 1))
+        return Node(rawValue: firstFreeId(prefix: nodeType.id.lowercased(), countingFrom: count(ofNodeType: nodeType) + 1))
 
         func count(ofNodeType nodeType: NodeType) -> Int {
             typedGraph.nodeTypeMapping.getMany(one: nodeType)?.count ?? 0
@@ -22,7 +22,7 @@ extension VGraph {
     /// An unused id of the form `a_b`, or `a_b_2` when that is taken. Edge ids
     /// never reach the VGL, but they share the node/edge/group keyspace.
     private func newEdgeId(from: Node, to: Node) -> Edge.Id {
-        Edge.Id(string: Self.freeId(near: "\(from.id)_\(to.id)") { isTaken($0) })
+        Edge.Id(rawValue: Self.freeId(near: "\(from.id)_\(to.id)") { isTaken($0) })
     }
 
     public static func freeId(near base: String, isTaken: (String) -> Bool) -> String {

@@ -13,9 +13,9 @@ import Testing
 /// No shipped notation declares detailings yet.
 private enum Architecture: NotationDeclaration {
     static let id: Identifier<Notation> = .init(rawValue: "Architecture")
-    static let system = NodeType(string: "System")
-    static let container = NodeType(string: "Container")
-    static let database = NodeType(string: "Database")
+    static let system = NodeType(rawValue: "System")
+    static let container = NodeType(rawValue: "Container")
+    static let database = NodeType(rawValue: "Database")
 
     struct NodeTypes: NotationNodeTypes {
         static var all: [NodeType] { [system, container, database] }
@@ -50,7 +50,7 @@ struct MetadescriptionTest {
         let label: String = try graph.get(graphAttribute: Attributes.Group.label)
         #expect(label == "IBIS Meta Model")
 
-        let id: String = try graph.get(graphAttribute: Attributes.Group.Id)
+        let id: String = try graph.get(graphAttribute: Attributes.Group.id)
         #expect(id == "IBIS")
 
         // Structural part: IBIS has 4 node types (Question, Answer, Pro, Con).

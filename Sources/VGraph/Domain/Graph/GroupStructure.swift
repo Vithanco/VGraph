@@ -9,7 +9,7 @@ public struct GroupStructure: VProtocol {
 
     private typealias SubGroupMapping = OneToManyLookup<Group, GroupEntry>
 
-    let subGroups: [Group]
+    let allGroups: [Group]
     private let groupSet: Set<Group>
     private let mapping: SubGroupMapping
     /// ADR-0032: a group is plain, its group type optional (ADR-0030), or a
@@ -23,14 +23,14 @@ public struct GroupStructure: VProtocol {
 
     init() {
         let root = Group.root
-        subGroups = [root]
+        allGroups = [root]
         groupSet = [root]
         mapping = OneToManyLookup()
         types = [:]
     }
 
-    private init(subgraphs: [Group], groupSet: Set<Group>, mapping: SubGroupMapping, types: [Group: Typing]) {
-        self.subGroups = subgraphs
+    private init(groups: [Group], groupSet: Set<Group>, mapping: SubGroupMapping, types: [Group: Typing]) {
+        self.allGroups = groups
         self.groupSet = groupSet
         self.mapping = mapping
         self.types = types
@@ -55,47 +55,36 @@ public struct GroupStructure: VProtocol {
     }
 
     private func retyping(_ group: Group, as typing: Typing?) throws(VError) -> GroupStructure {
-        try assertGroupExists(group)
+        try ensureExists(group: group)
         var newTypes = types
         newTypes[group] = typing
-        return GroupStructure(subgraphs: subGroups, groupSet: groupSet, mapping: mapping, types: newTypes)
+        return GroupStructure(groups: allGroups, groupSet: groupSet, mapping: mapping, types: newTypes)
     }
 
-    func add(group: Group) throws(VError) -> GroupStructure {
+    func add(group: Group) -> GroupStructure {
         if groupSet.contains(group) {
             return self
         }
-        let newSubgraphs = subGroups + [group]
-        let newGroupSet = groupSet.union([group])
-        return GroupStructure(subgraphs: newSubgraphs, groupSet: newGroupSet, mapping: mapping, types: types)
+        return GroupStructure(groups: allGroups + [group], groupSet: groupSet.union([group]), mapping: mapping, types: types)
     }
 
     func remove(group: Group) throws(VError) -> GroupStructure {
-        if let index = subGroups.firstIndex(of: group) {
-            var newGroups = subGroups
-            newGroups.remove(at: index)
-            let newGroupSet = groupSet.subtracting([group])
-            var newMapping = mapping
-            newMapping = newMapping.remove(one: group)
-            newMapping = newMapping.remove(many: .subGroup(group))
-            var newTypes = types
-            newTypes[group] = nil
-            return GroupStructure(subgraphs: newGroups, groupSet: newGroupSet, mapping: newMapping, types: newTypes)
-        }
-        throw VError.groupNotFound(group)
+        try ensureExists(group: group)
+        var newTypes = types
+        newTypes[group] = nil
+        return GroupStructure(
+            groups: allGroups.filter { $0 != group }, groupSet: groupSet.subtracting([group]),
+            mapping: mapping.remove(one: group).remove(many: .subGroup(group)), types: newTypes)
     }
 
     private func removeGroupEntry(_ manyEntry: GroupStructure.GroupEntry) -> GroupStructure {
-        if mapping.getOne(many: manyEntry) != nil {
-            var newMapping = mapping
-            newMapping = newMapping.remove(many: manyEntry)
-            return GroupStructure(subgraphs: subGroups, groupSet: groupSet, mapping: newMapping, types: types)
-        }
-        return self
+        guard mapping.getOne(many: manyEntry) != nil else { return self }
+        return GroupStructure(groups: allGroups, groupSet: groupSet, mapping: mapping.remove(many: manyEntry), types: types)
     }
-    private func addEntry(manyEntry: GroupStructure.GroupEntry, subgraph: Group) -> GroupStructure {
+
+    private func addEntry(manyEntry: GroupStructure.GroupEntry, group: Group) -> GroupStructure {
         return GroupStructure(
-            subgraphs: subGroups, groupSet: groupSet, mapping: mapping.add(many: manyEntry, one: subgraph),
+            groups: allGroups, groupSet: groupSet, mapping: mapping.add(many: manyEntry, one: group),
             types: types)
     }
 
@@ -104,40 +93,24 @@ public struct GroupStructure: VProtocol {
         return removeGroupEntry(manyEntry)
     }
 
-    func removeFromGroup(subGroup: Group) -> GroupStructure {
-        let manyEntry = GroupEntry.subGroup(subGroup)
-        return removeGroupEntry(manyEntry)
+    /// Moves the node out of any group it was in; adding it where it is changes nothing.
+    func addTo(group: Group, node: Node) throws(VError) -> GroupStructure {
+        try ensureExists(group: group)
+        return addEntry(manyEntry: GroupEntry.node(node), group: group)
     }
 
-    func addTo(group: Group?, node: Node) throws(VError) -> GroupStructure {
-        guard let group = group else {
-            return removeFromGroup(node: node)
-        }
-        try assertGroupExists(group)
-        if mapping.getOne(many: GroupEntry.node(node)) == group {
-            throw VError.nodeAlreadyInGroup(group: group, node: node)
-        }
-        return addEntry(manyEntry: GroupEntry.node(node), subgraph: group)
-    }
-
-    fileprivate func assertGroupExists(_ group: Group) throws(VError) {
-        if !groupSet.contains(group) {
+    private func ensureExists(group: Group) throws(VError) {
+        guard groupSet.contains(group) else {
             throw VError.groupNotFound(group)
         }
     }
 
     func addTo(group: Group, childGroup: Group) throws(VError) -> GroupStructure {
-        try assertGroupExists(group)
-
-        let manyEntry = GroupEntry.subGroup(childGroup)
-        if mapping.getOne(many: manyEntry) == group {
-            return self
-        }
-
-        return addEntry(manyEntry: manyEntry, subgraph: group)
+        try ensureExists(group: group)
+        return addEntry(manyEntry: GroupEntry.subGroup(childGroup), group: group)
     }
 
-    private func splitEntries(_ content: Set<GroupStructure.GroupEntry>) -> ([Group], [Node]) {
+    private func splitEntries(_ content: Set<GroupStructure.GroupEntry>) -> (groups: [Group], nodes: [Node]) {
         let groups: [Group] = content.compactMap { element in
             guard case .subGroup(let group) = element else {
                 return nil
@@ -153,23 +126,16 @@ public struct GroupStructure: VProtocol {
         return (groups.sorted(), nodes.sorted())
     }
 
-    public func getDirectContent(group: Group) throws(VError) -> ([Group], [Node]) {
-        try assertGroupExists(group)
+    public func directContent(of group: Group) throws(VError) -> (groups: [Group], nodes: [Node]) {
+        try ensureExists(group: group)
         let content = mapping.getMany(one: group) ?? Set<GroupStructure.GroupEntry>()
         return splitEntries(content)
     }
 
-    public func getAllContent(group: Group) throws(VError) -> ([Group], [Node]) {
-        try assertGroupExists(group)
-        let (directGroups, directNodes) = try getDirectContent(group: group)
-        var resultGroups = directGroups
-        var resultNodes = directNodes
-        for childGroup in directGroups {
-            let (nestedGroups, nestedNodes) = try getAllContent(group: childGroup)
-            resultGroups.append(contentsOf: nestedGroups)
-            resultNodes.append(contentsOf: nestedNodes)
-        }
-        return (resultGroups, resultNodes)
+    public func allContent(of group: Group) throws(VError) -> (groups: [Group], nodes: [Node]) {
+        let (directGroups, directNodes) = try directContent(of: group)
+        let nested = try directGroups.map { (child) throws(VError) in try allContent(of: child) }
+        return (directGroups + nested.flatMap { $0.groups }, directNodes + nested.flatMap { $0.nodes })
     }
 
     public func has(group: Group) -> Bool {
@@ -184,13 +150,9 @@ public struct GroupStructure: VProtocol {
         return mapping.getOne(many: GroupEntry.subGroup(group))
     }
 
-    public func isParent(parent: Group, child: Group) -> Bool {
-        if let childParent = parentGroup(of: child) {
-            if childParent == parent {
-                return true
-            }
-            return isParent(parent: parent, child: childParent)
-        }
-        return false
+    /// At any depth: a group's parent, its parent's parent, and so on.
+    public func isAncestor(_ ancestor: Group, of descendant: Group) -> Bool {
+        guard let parent = parentGroup(of: descendant) else { return false }
+        return parent == ancestor || isAncestor(ancestor, of: parent)
     }
 }

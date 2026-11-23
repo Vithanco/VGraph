@@ -148,7 +148,7 @@ struct SplitEdgeTest {
         // Behind it, the full type list.
         #expect(EditorCore.breakTypeOptions(in: s).contains { $0.id == "Concept" })
 
-        #expect(try s.split(target, ofType: NodeType(string: "Concept")) == "concept_2")
+        #expect(try s.split(target, ofType: NodeType(rawValue: "Concept")) == "concept_2")
 
         let exported = try s.exportVGL()
         #expect(exported.contains("edge a -> concept_2"))
@@ -176,7 +176,7 @@ struct SplitEdgeTest {
             try s.split(target, with: s.splitCandidates(for: target).first!)
                 == "necessarycondition_2")
 
-        #expect(s.origin.group(of: Node(string: "necessarycondition_2"))?.id.id == "g1")
+        #expect(s.origin.group(of: Node(rawValue: "necessarycondition_2"))?.id.id == "g1")
 
         // And emitted within the group's braces. The exporter writes top-level
         // nodes before groups, so "before the first }" alone also holds for a

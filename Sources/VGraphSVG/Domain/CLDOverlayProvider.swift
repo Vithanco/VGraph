@@ -3,7 +3,7 @@
 ////  VGraphSVG
 ////
 ////  Overlay for the Causal Loop Diagram notation. Renders the reinforcing/
-////  balancing loop indicators (R/B arcs with arrowheads) that mark each
+////  balancing loop markers (R/B arcs with arrowheads) that mark each
 ////  detected cycle's rotation direction.
 ////
 
@@ -15,15 +15,15 @@ public struct CLDOverlayProvider: NotationOverlayProvider {
 
     public var notationName: String { Notations.CausalLoopDiagram.id.id }
 
-    private static let indicatorSize: Double = 40.0
+    private static let markerSize: Double = 40.0
 
     // MARK: - Render slot (above nodes, beneath label)
 
     public func renderBetweenNodesAndLabel(ctx: RenderContext) throws(VError) -> VSVGNode {
-        let indicators = computeIndicators(graph: ctx.graph)
-        guard !indicators.isEmpty else { return .empty }
+        let markers = computeMarkers(graph: ctx.graph)
+        guard !markers.isEmpty else { return .empty }
 
-        let size = Self.indicatorSize
+        let size = Self.markerSize
         let r = size * 0.43
         let sw = size * 0.055
         let ah = sw * 4.2
@@ -31,16 +31,16 @@ public struct CLDOverlayProvider: NotationOverlayProvider {
         let fontSize = size * 0.44
         let textOffsetY = size * 0.16
 
-        let color = SemanticColor.loopIndicator.resolve(darkMode: ctx.darkMode).hexString
+        let color = SemanticColor.loopMarker.resolve(darkMode: ctx.darkMode).hexString
 
         let cos30 = 0.8660254037844387
         let sin30 = 0.5
 
         var children: [VSVGNode] = []
-        for indicator in indicators {
-            let cx = indicator.center.x
-            let cy = indicator.center.y
-            let clockwise = indicator.clockwise
+        for marker in markers {
+            let cx = marker.center.x
+            let cy = marker.center.y
+            let clockwise = marker.clockwise
 
             let sx = clockwise ? cx + r * cos30 : cx - r * cos30
             let sy = cy + r * sin30
@@ -79,7 +79,7 @@ public struct CLDOverlayProvider: NotationOverlayProvider {
                             VSVGAttribute("fill", color),
                         ])
                 ])
-            // Its own font-family, not `VFont.svgName`: the indicator letter asks
+            // Its own font-family, not `VFont.svgName`: the marker letter asks
             // for bare "DM Sans, sans-serif" where node labels quote the family.
             let letter: VSVGNode = .element(
                 .text,
@@ -90,13 +90,13 @@ public struct CLDOverlayProvider: NotationOverlayProvider {
                     VSVGAttribute("font-size", "\(fontSize)"), VSVGAttribute("font-weight", "800"),
                     VSVGAttribute("fill", color),
                 ],
-                [.text(indicator.letter)])
+                [.text(marker.letter)])
 
             children.append(
                 .element(
                     .g,
-                    [VSVGAttribute("id", indicator.id), VSVGAttribute("class", "loop-indicator")],
-                    (indicator.note.map { [VSVGNode.element(.title, [], [.text($0)])] } ?? [])
+                    [VSVGAttribute("id", marker.id), VSVGAttribute("class", "loop-indicator")],
+                    (marker.note.map { [VSVGNode.element(.title, [], [.text($0)])] } ?? [])
                         + [hitDisc, arc, arrow, letter]))
         }
         return .fragment(children)
@@ -108,43 +108,43 @@ public struct CLDOverlayProvider: NotationOverlayProvider {
         var rules = ""
         for loop in graph.loopsToMark where loop.loopStyle != .none {
             guard loop.loopDirection(in: graph) != .error else { continue }
-            let indicatorId = Self.loopId(loop)
+            let markerId = Self.loopId(loop)
             rules += SVGBuilder.neighborGlowRule(
-                scope: "svg:has(#\(SVGBuilder.cssEscapeIdent(indicatorId)):hover) ",
+                scope: "svg:has(#\(SVGBuilder.cssEscapeIdent(markerId)):hover) ",
                 edgeIds: loop.edges.map { $0.id.id },
                 nodeElementIds: loop.nodes.map { SVGElementId.displayNode($0, in: graph) },
-                rawIds: [indicatorId])
+                rawIds: [markerId])
         }
         return rules
     }
 
-    /// Content-derived so the drawn indicator's `id` and its generated `:has(#…)`
+    /// Content-derived so the drawn marker's `id` and its generated `:has(#…)`
     /// rule agree without depending on iteration order.
-    private static func loopId(_ loop: TLoop) -> String {
+    private static func loopId(_ loop: FeedbackLoop) -> String {
         "loop-" + loop.edges.map { $0.id.id }.sorted().joined(separator: "-")
     }
 
     // MARK: - Bounds contribution
 
-    /// Each indicator gets a 40×40 box around its centroid folded into the
+    /// Each marker gets a 40×40 box around its centroid folded into the
     /// viewbox so near-edge cycles aren't clipped (matches the pre-migration
     /// SVGRenderer behavior).
     public func boundsContributions(graph: VGraph) -> [VRect] {
-        let indicators = computeIndicators(graph: graph)
-        let size = Self.indicatorSize
-        return indicators.map { indicator in
+        let markers = computeMarkers(graph: graph)
+        let size = Self.markerSize
+        return markers.map { marker in
             VRect(
-                x: indicator.center.x - size / 2,
-                y: indicator.center.y - size / 2,
+                x: marker.center.x - size / 2,
+                y: marker.center.y - size / 2,
                 width: size,
                 height: size
             )
         }
     }
 
-    // MARK: - Private indicator model + computation
+    // MARK: - Private marker model + computation
 
-    private struct LoopIndicator {
+    private struct LoopMarker {
         let clockwise: Bool
         let letter: String
         let center: VPoint
@@ -153,12 +153,12 @@ public struct CLDOverlayProvider: NotationOverlayProvider {
         let note: String?
     }
 
-    /// Compute loop indicators for the graph's cycles. Returns empty for
+    /// Compute loop markers for the graph's cycles. Returns empty for
     /// graphs with no cycles (or no styled cycles). Verbatim port of the
     /// pre-migration `computeLoopIndicators` from SVGRenderer.
-    private func computeIndicators(graph: VGraph) -> [LoopIndicator] {
+    private func computeMarkers(graph: VGraph) -> [LoopMarker] {
         let loops = graph.loopsToMark
-        var indicators: [LoopIndicator] = []
+        var markers: [LoopMarker] = []
 
         for loop in loops {
             let direction = loop.loopDirection(in: graph)
@@ -194,14 +194,14 @@ public struct CLDOverlayProvider: NotationOverlayProvider {
             case .none: continue
             }
 
-            indicators.append(
-                LoopIndicator(
+            markers.append(
+                LoopMarker(
                     clockwise: clockwise, letter: letter, center: centroid, id: Self.loopId(loop),
                     note: loop.ambiguousLinks.isEmpty
                         ? nil
                         : "Polarity unknown: \(loop.ambiguousLinks.joined(separator: ", ")) is drawn with both polarities"
                 ))
         }
-        return indicators
+        return markers
     }
 }

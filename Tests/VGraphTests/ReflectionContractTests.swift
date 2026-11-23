@@ -32,7 +32,7 @@ struct ReflectionContractTests_HasReadableNames {
         let cases: [(c: AttributeTarget, value: String, readableName: String, alias: String, asString: String)] = [
             (.node, "node", "Node", "Node", "Node"),
             (.edge, "edge", "Edge", "Edge", "Edge"),
-            (.graph, "graph", "Graph", "Graph", "Graph"),
+            (.group, "group", "Group", "Group", "Group"),
         ]
         for e in cases {
             #expect(e.c.value == e.value, "AttributeTarget.\(e.c).value")
@@ -78,19 +78,19 @@ struct ReflectionContractTests_EnumAttributeType_Simple {
         }
     }
 
-    // MARK: FoldingState
+    // MARK: FoldState
 
-    @Test func foldingState_cases() {
-        let cases: [(c: FoldingState, name: String)] = [
-            (.normal, "normal"),
+    @Test func foldState_cases() {
+        let cases: [(c: FoldState, name: String)] = [
+            (.unfolded, "unfolded"),
             (.folded, "folded"),
             (.hidden, "hidden"),
         ]
         for e in cases {
-            #expect(e.c.value == e.name, "FoldingState.\(e.c).value")
-            #expect(e.c.readableName == e.name, "FoldingState.\(e.c).readableName")
-            #expect(e.c.alias == e.name, "FoldingState.\(e.c).alias")
-            #expect(e.c.asString == e.name, "FoldingState.\(e.c).asString")
+            #expect(e.c.value == e.name, "FoldState.\(e.c).value")
+            #expect(e.c.readableName == e.name, "FoldState.\(e.c).readableName")
+            #expect(e.c.alias == e.name, "FoldState.\(e.c).alias")
+            #expect(e.c.asString == e.name, "FoldState.\(e.c).asString")
         }
     }
 
@@ -108,23 +108,6 @@ struct ReflectionContractTests_EnumAttributeType_Simple {
             #expect(e.c.readableName == e.readableName, "LayoutDirection.\(e.c).readableName")
             #expect(e.c.alias == e.alias, "LayoutDirection.\(e.c).alias")
             #expect(e.c.asString == e.asString, "LayoutDirection.\(e.c).asString")
-        }
-    }
-
-    // MARK: GraphStyleType  (no overrides anywhere)
-
-    @Test func graphStyleType_cases() {
-        let cases: [(c: GraphStyleType, name: String)] = [
-            (.none, "none"),
-            (.filled, "filled"),
-            (.striped, "striped"),
-            (.rounded, "rounded"),
-        ]
-        for e in cases {
-            #expect(e.c.value == e.name, "GraphStyleType.\(e.c).value")
-            #expect(e.c.readableName == e.name, "GraphStyleType.\(e.c).readableName")
-            #expect(e.c.alias == e.name, "GraphStyleType.\(e.c).alias")
-            #expect(e.c.asString == e.name, "GraphStyleType.\(e.c).asString")
         }
     }
 }

@@ -1,7 +1,5 @@
 public enum TraversalOrder {
-    /// Visit groups before nodes (used by DotExporter)
     case groupsFirst
-    /// Visit nodes before groups (used by VGLExporter)
     case nodesFirst
 }
 
@@ -44,17 +42,10 @@ public struct GraphStructureTraverser<Result> {
     }
 
     public func traverse(_ graph: VGraph) throws(VError) -> Result {
-        var results: [Result] = []
-
-        let (rootGroups, rootNodes) = try graph.getRootContent()
-        results.append(contentsOf: try traverseStructure(graph, groups: rootGroups, nodes: rootNodes, depth: 0))
-
-        let sortedEdges = try GraphExportOrderPreservation.sortByItemOrder(graph.edges, in: graph)
-        for edge in sortedEdges {
-            results.append(try onEdge(edge, graph))
-        }
-
-        return combine(results)
+        let (rootGroups, rootNodes) = try graph.directContent(of: Group.root)
+        let structure = try traverseStructure(graph, groups: rootGroups, nodes: rootNodes, depth: 0)
+        let edges = try graph.inDeclarationOrder(graph.edges).map { (edge) throws(VError) in try onEdge(edge, graph) }
+        return combine(structure + edges)
     }
 
     private func traverseStructure(
@@ -63,43 +54,28 @@ public struct GraphStructureTraverser<Result> {
         nodes: [Node],
         depth: Int
     ) throws(VError) -> [Result] {
-        var results: [Result] = []
-
-        let sortedGroups = try GraphExportOrderPreservation.sortByItemOrder(groups, in: graph)
-        let sortedNodes = try GraphExportOrderPreservation.sortByItemOrder(nodes, in: graph)
-
+        // Handlers are called in the order their results appear: a handler may keep state.
         switch order {
-        case .groupsFirst:
-            for group in sortedGroups {
-                results.append(contentsOf: try traverseGroup(group, in: graph, depth: depth))
-            }
-            for node in sortedNodes {
-                results.append(try onNode(node, graph, depth))
-            }
-
-        case .nodesFirst:
-            for node in sortedNodes {
-                results.append(try onNode(node, graph, depth))
-            }
-            for group in sortedGroups {
-                results.append(contentsOf: try traverseGroup(group, in: graph, depth: depth))
-            }
+        case .groupsFirst: return try visitGroups() + visitNodes()
+        case .nodesFirst: return try visitNodes() + visitGroups()
         }
 
-        return results
+        func visitGroups() throws(VError) -> [Result] {
+            try graph.inDeclarationOrder(groups).map { (group) throws(VError) in
+                try traverseGroup(group, in: graph, depth: depth)
+            }.flatMap { $0 }
+        }
+
+        func visitNodes() throws(VError) -> [Result] {
+            try graph.inDeclarationOrder(nodes).map { (node) throws(VError) in try onNode(node, graph, depth) }
+        }
     }
 
     private func traverseGroup(_ group: Group, in graph: VGraph, depth: Int) throws(VError) -> [Result] {
-        var results: [Result] = []
-
-        results.append(try onEnterGroup(group, graph, depth))
-
-        let (subGroups, subNodes) = try graph.getDirectContent(group: group)
-        results.append(contentsOf: try traverseStructure(graph, groups: subGroups, nodes: subNodes, depth: depth + 1))
-
-        results.append(try onExitGroup(group, graph, depth))
-
-        return results
+        let entered = try onEnterGroup(group, graph, depth)
+        let (subGroups, subNodes) = try graph.directContent(of: group)
+        let inside = try traverseStructure(graph, groups: subGroups, nodes: subNodes, depth: depth + 1)
+        return [entered] + inside + [try onExitGroup(group, graph, depth)]
     }
 }
 

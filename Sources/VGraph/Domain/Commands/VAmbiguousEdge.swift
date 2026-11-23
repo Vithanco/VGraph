@@ -1,10 +1,3 @@
-//
-//  VAmbiguousEdge.swift
-//  VGraph
-//
-//  What retyping a node leaves undecided about the edges around it.
-//
-
 /// One edge whose type stops being determined when its node is retyped, with
 /// what it could become.
 ///

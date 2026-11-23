@@ -26,13 +26,13 @@ private func calculateNodeSize(node: Node, in graph: VGraph) throws(VError) -> V
 
     // Read the style via the full inheritance chain (node → group → nodeType → default).
     // The node-level override matters for per-instance layouts whose dimensions depend on
-    // instance data — e.g. FoldingLayoutStep stamps a per-node `foldedGroupNode` layout
+    // instance data — e.g. FoldStep stamps a per-node `foldedGroupNode` layout
     // whose size includes the count badge, subtitle, and stack-shadow padding.
     // try? form — untyped catch `error: any Error` is restricted under Embedded Swift.
     let style: NodeStyleLayout =
         (try? graph.get(node: node, attribute: Attributes.Node.style)) ?? NodeStyleLayout.bareText
 
-    var nodeSize = style.calculateSizeWithText(nodeTextSize)
+    var nodeSize = style.size(aroundText: nodeTextSize)
 
     if let nodeType = try? graph.nodeType(for: node),
         let minWidth = try? graph.get(nodeType: nodeType, attribute: Attributes.Node.minWidth),
@@ -50,19 +50,19 @@ private func calculateNodeSize(node: Node, in graph: VGraph) throws(VError) -> V
         nodeSize = VSize(width: diameter, height: diameter)
     }
 
-    var result = try graph.set(
+    var result = try graph.setting(
         node: node,
         attribute: Attributes.Node.width.attribute(nodeSize.width)
     )
-    result = try result.set(
+    result = try result.setting(
         node: node,
         attribute: Attributes.Node.height.attribute(nodeSize.height)
     )
-    result = try result.set(
+    result = try result.setting(
         node: node,
         attribute: Attributes.Node.layoutedSize.attribute(nodeSize)
     )
-    result = try result.set(node: node, attribute: Attributes.Node.fixedsize.attribute(true))
+    result = try result.setting(node: node, attribute: Attributes.Node.fixedsize.attribute(true))
 
     return result
 }

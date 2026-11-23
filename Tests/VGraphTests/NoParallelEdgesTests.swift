@@ -2,7 +2,7 @@
 //  NoParallelEdgesTests.swift
 //  VGraph
 //
-//  A graph criterion rather than a bound: it counts across every
+//  A quality check rather than a bound: it counts across every
 //  edge type at once, which a bound declared on one edge type cannot. See
 //  ADR-0011.
 //
@@ -18,21 +18,21 @@ struct NoParallelEdgesTests {
     typealias CLD = Notations.CausalLoopDiagram
 
     private func causalLoopDiagram() throws(VError) -> VGraph {
-        var graph = try VGraph().defineStandardAttributes()
-        graph = try CLD.addNotation(addTo: graph)
+        var graph = VGraph()
+        graph = try CLD.addNotation(to: graph)
         return graph.using(notation: "CausalLoopDiagram")
     }
 
     private func stock(_ id: String, _ label: String, in graph: VGraph) throws(VError) -> VGraph {
-        let node = Node(string: id)
-        let result = try graph.add(node: node, type: CLD.NodeTypes.stock)
-        return try result.set(node: node, attribute: Attributes.Node.label.attribute(label))
+        let node = Node(rawValue: id)
+        let result = try graph.adding(node: node, type: CLD.NodeTypes.stock)
+        return try result.setting(node: node, attribute: Attributes.Node.label.attribute(label))
     }
 
     private func link(_ id: String, _ from: String, _ to: String, _ type: EdgeType, in graph: VGraph)
         throws(VError) -> VGraph
     {
-        try graph.add(edge: Edge(string: id, from: from, to: to), edgeType: type)
+        try graph.adding(edge: Edge(string: id, from: from, to: to), edgeType: type)
     }
 
     private func check(_ graph: VGraph) -> [MessageWithSeverity] {
@@ -51,7 +51,7 @@ struct NoParallelEdgesTests {
 
     /// The case no [[Bound]] bound can express: `samePairMax: 1` on each of
     /// `same` and `opposite` still permits one of each, because each counts only
-    /// its own type. This is the whole reason the criterion exists.
+    /// its own type. This is the whole reason the check exists.
     @Test("Two links of different types between the same pair are caught")
     func differentTypesSamePairAreCaught() throws {
         var graph = try causalLoopDiagram()
@@ -127,7 +127,7 @@ struct NoParallelEdgesTests {
     @Test("Exactly the notations where a parallel link means nothing declare it")
     func adopters() {
         let declaring = NotationRegistry.entries
-            .filter { entry in entry.entry.criteria.contains { $0.name == "noParallelEdges" } }
+            .filter { entry in entry.entry.namedQualityChecks.contains { $0.name == "noParallelEdges" } }
             .map { $0.id }
         #expect(Set(declaring) == expectedAdopters)
     }
@@ -150,13 +150,13 @@ struct NoParallelEdgesTests {
     @Test("Arithmetic's x + x is not reported")
     func arithmeticMayFeedOneNumberTwice() throws {
         typealias A = Notations.Arithmetic
-        var graph = try VGraph().defineStandardAttributes()
-        graph = try A.addNotation(addTo: graph)
+        var graph = VGraph()
+        graph = try A.addNotation(to: graph)
         graph = graph.using(notation: "Arithmetic")
-        graph = try graph.add(node: Node(string: "x"), type: A.NodeTypes.number)
-        graph = try graph.add(node: Node(string: "op"), type: A.NodeTypes.plus)
-        graph = try graph.add(edge: Edge(string: "e1", from: "x", to: "op"), edgeType: A.EdgeTypes.plusFirstOperand)
-        graph = try graph.add(edge: Edge(string: "e2", from: "x", to: "op"), edgeType: A.EdgeTypes.plusSecondOperand)
+        graph = try graph.adding(node: Node(rawValue: "x"), type: A.NodeTypes.number)
+        graph = try graph.adding(node: Node(rawValue: "op"), type: A.NodeTypes.plus)
+        graph = try graph.adding(edge: Edge(string: "e1", from: "x", to: "op"), edgeType: A.EdgeTypes.plusFirstOperand)
+        graph = try graph.adding(edge: Edge(string: "e2", from: "x", to: "op"), edgeType: A.EdgeTypes.plusSecondOperand)
 
         #expect(!Notations.analyzeQuality(graph: graph).messages.contains { $0.message.contains("more than once") })
     }

@@ -25,11 +25,11 @@ enum SVGRenderQueries {
 
     /// Reads the root graph's bounding box, populated by the layout step from
     /// Graphviz's top-level `bb` (which already encloses every drawn element:
-    /// nodes, edge splines, arrowheads, labels, clusters). Loop indicators,
+    /// nodes, edge splines, arrowheads, labels, clusters). Loop markers,
     /// which the renderer adds itself, are folded in by the caller.
     static func calculateBounds(graph: VGraph) -> Bounds {
         var bounds = Bounds()
-        let rootGrp = Group(rawValue: rootGroup)
+        let rootGrp = Group.root
         if let rootBounds = try? graph.get(group: rootGrp, attribute: Attributes.Group.layoutedBounds),
             rootBounds != VRect.zero
         {
@@ -91,7 +91,7 @@ enum SVGRenderQueries {
     // The diagram's label is drawn at Graphviz's label position (renderGraphLabel);
     // `graph.groups` leaves the root out, so it is collected on its own.
     private static func graphLabelRect(graph: VGraph) -> VRect? {
-        let root = Group(rawValue: rootGroup)
+        let root = Group.root
         guard let labelPos = try? graph.get(group: root, attribute: Attributes.Group.labelLayoutedPos),
             labelPos != VPoint.zero,
             let labelSize = try? graph.get(group: root, attribute: Attributes.Group.labelLayoutedSize),

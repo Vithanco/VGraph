@@ -23,36 +23,14 @@ public struct QualityReport {
 
     /// Human-readable formatted output. Returns nil if no messages.
     public func formatted() -> String? {
+        let sections = [
+            section("Quality metrics:", infos), section("Warnings:", warnings), section("Errors:", errors),
+        ].compactMap { $0 }
+        return sections.isEmpty ? nil : sections.joined(separator: "\n\n")
+    }
+
+    private func section(_ heading: String, _ messages: [MessageWithSeverity]) -> String? {
         guard !messages.isEmpty else { return nil }
-
-        var lines: [String] = []
-
-        let infoMessages = infos
-        if !infoMessages.isEmpty {
-            lines.append("Quality metrics:")
-            for msg in infoMessages {
-                lines.append("- \(msg.message)")
-            }
-        }
-
-        let warningMessages = warnings
-        if !warningMessages.isEmpty {
-            if !lines.isEmpty { lines.append("") }
-            lines.append("Warnings:")
-            for msg in warningMessages {
-                lines.append("- \(msg.message)")
-            }
-        }
-
-        let errorMessages = errors
-        if !errorMessages.isEmpty {
-            if !lines.isEmpty { lines.append("") }
-            lines.append("Errors:")
-            for msg in errorMessages {
-                lines.append("- \(msg.message)")
-            }
-        }
-
-        return lines.isEmpty ? nil : lines.joined(separator: "\n")
+        return ([heading] + messages.map { "- \($0.message)" }).joined(separator: "\n")
     }
 }

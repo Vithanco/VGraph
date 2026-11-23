@@ -51,7 +51,7 @@ private var scrollIntoViewOptions: JSValue {
 /// Seeded from the *graph*, never the rendered text — see `label(of:)`. Edges
 /// anchor on their path midpoint because an unlabelled edge, which is the
 /// normal case, has no text element to measure.
-func beginInlineEdit(elementId: String, kind: VElementKind) {
+func beginInlineEdit(elementId: String, kind: VItemKind) {
     guard let session = graphSession,
         let element = JSObject.global.document.getElementById(
             SVGElementId.domId(kind: kind, elementId: elementId)
@@ -75,7 +75,7 @@ func beginInlineEdit(elementId: String, kind: VElementKind) {
         targetId: elementId, x: anchor.x, y: anchor.y, width: anchor.width)
 }
 
-private func inlineEditAnchor(of element: JSObject, kind: VElementKind) -> (x: Double, y: Double, width: Double)? {
+private func inlineEditAnchor(of element: JSObject, kind: VItemKind) -> (x: Double, y: Double, width: Double)? {
     if kind == .edge {
         guard let midpoint = edgeMidpoint(in: element) else { return nil }
         return (midpoint.x - 70, midpoint.y - 12, 140)

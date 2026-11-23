@@ -1,9 +1,4 @@
-//
-//  VCommandID.swift
-//  VGraph
-//
-//  A [[VCommand]]'s identity, as a type rather than a string.
-//
+// A [[VCommand]]'s identity, as a type rather than a string.
 
 /// Names one command. An **open set**, not an enum: `init(_:)` is public, so a
 /// command this build has never heard of is still representable — which lets a

@@ -2,8 +2,6 @@ public enum VError: Error & Equatable & Sendable {
     case conversionError(from: String, to: String)
     case stringToEnumFailure(attributeValue: String, attributeType: String)
     case groupNotFound(Group)
-    case nodeAlreadyInGroup(group: Group, node: Node)
-    case subgraphAlreadyInGroup(group: Group, childGroup: Group)
     case nodeNotFound(Node)
     case edgeTypeNotFound(EdgeType.Id)
     case nodeTypeNotFound(NodeType)
@@ -11,7 +9,6 @@ public enum VError: Error & Equatable & Sendable {
     case nodeTypeStillInUse(NodeType)
     case nodeWithoutNodeType(Node)
     case edgeTypeStillInUse(Edge.Id)
-    case edgeWithoutEdgeType(Edge.Id)
     case nodeAlreadyExists(Node)
     case nodeTypeAlreadyExists(NodeType)
     case edgeTypeAlreadyExists(EdgeType.Id)
@@ -20,15 +17,12 @@ public enum VError: Error & Equatable & Sendable {
     case edgeTypeNotFoundForEdge(Edge.Id)
     case attributeNotFound(Attribute.Id)
     case definitionAlreadyExists(Attribute.Id)
-    case unknownItem(String)
     case invalidHexString(String)
-    case EdgeTypeWrong(EdgeType.Id, from: NodeType, to: NodeType)
+    case edgeTypeDoesNotFit(EdgeType.Id, from: NodeType, to: NodeType)
     case parsingError(String)
-    case other(String)
     case wrongTarget(is: AttributeTarget, insteadOf: AttributeTarget)
     case notImplemented(String)
     case externalError(String)
-    case attributeTypeNotComparable(String)
     case idCollision(id: String)
     case edgeEndpointIsGroup(edge: Edge.Id, endpoint: Group)
     case pipelineContractViolated(step: String, missing: [String])
@@ -129,10 +123,6 @@ extension VError: CustomStringConvertible {
             return "String to enum failure: '\(value)' is not a valid \(type)"
         case .groupNotFound(let group):
             return "Group not found: \(group.id.id)"
-        case .nodeAlreadyInGroup(let group, let node):
-            return "Node '\(node.id)' already in group '\(group.id.id)'"
-        case .subgraphAlreadyInGroup(let group, let childGroup):
-            return "Subgraph '\(childGroup.id.id)' already in group '\(group.id.id)'"
         case .nodeNotFound(let node):
             return "Node not found: \(node.id)"
         case .edgeTypeNotFound(let edgeType):
@@ -147,8 +137,6 @@ extension VError: CustomStringConvertible {
             return "Node without node type: \(node.id)"
         case .edgeTypeStillInUse(let edge):
             return "Edge type still in use: \(edge.id)"
-        case .edgeWithoutEdgeType(let edge):
-            return "Edge without edge type: \(edge.id)"
         case .nodeAlreadyExists(let node):
             return "Node already exists: \(node.id)"
         case .nodeTypeAlreadyExists(let nodeType):
@@ -165,24 +153,18 @@ extension VError: CustomStringConvertible {
             return "Attribute not found: \(attr.id)"
         case .definitionAlreadyExists(let attr):
             return "Definition already exists: \(attr.id)"
-        case .unknownItem(let item):
-            return "Unknown item: \(item)"
         case .invalidHexString(let hex):
             return "Invalid hex string: \(hex)"
-        case .EdgeTypeWrong(let edgeType, let from, let to):
+        case .edgeTypeDoesNotFit(let edgeType, let from, let to):
             return "Edge type '\(edgeType.id)' wrong for nodes from '\(from.id)' to '\(to.id)'"
         case .parsingError(let msg):
             return "Parsing error: \(msg)"
-        case .other(let msg):
-            return "Error: \(msg)"
         case .wrongTarget(let actual, let expected):
             return "Wrong target: is \(actual), expected \(expected)"
         case .notImplemented(let feature):
             return "Not implemented: \(feature)"
         case .externalError(let msg):
             return "External error: \(msg)"
-        case .attributeTypeNotComparable(let type):
-            return "Attribute type not comparable: \(type)"
         case .idCollision(let id):
             return
                 "ID collision: '\(id)' is already used by a different kind of entity (node/nodeType/edge/edgeType/group share an attribute keyspace)"

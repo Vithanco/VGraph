@@ -20,7 +20,7 @@ extension NotationGroupTypes {
     }
 }
 
-/// The associated type's default, so the notations with no boundaries — all of
+/// The associated type's default, so the notations with no group types — all of
 /// them but C4 — do not have to say "none".
 public struct NoGroupTypes: NotationGroupTypes {
     public static var all: [GroupType] { [] }
@@ -67,10 +67,6 @@ extension AddNotationBase {
 public struct Notation: VProtocol, UseIdentifier {
     public let id: Identifier<Notation>
 
-    public init(rawValue: String) {
-        id = Identifier(rawValue: rawValue)
-    }
-
     public init(id: Identifier<Notation>) {
         self.id = id
     }
@@ -103,7 +99,7 @@ public struct NotationEntry: @unchecked Sendable {
     public let nodeTypeDefinitions: [NodeTypeDefinition]
     /// Empty for dynamic notations.
     public let edgeTypeDefinitions: [EdgeTypeDefinition]
-    /// Empty for dynamic notations, and for every notation without boundaries.
+    /// Empty for dynamic notations, and for every notation without group types.
     public let groupTypeDefinitions: [GroupTypeDefinition]
     public let content: NotationContent
     public let step: TransformStep?
@@ -113,8 +109,10 @@ public struct NotationEntry: @unchecked Sendable {
     /// Synthesised from a `vnotation` block rather than a compiled `NotationDeclaration`.
     /// Drives `metadescription`: dynamic notations carry no Markdown today (see VGraphParser.swift).
     public let isDynamic: Bool
-    /// The [[Graph criterion]]s the notation declares by name.
-    public let criteria: [QualityCheckSpec]
+    /// The [[Quality check]]s the notation declares by name.
+    public let namedQualityChecks: [QualityCheckSpec]
+    /// Empty for dynamic notations: a `vnotation` names its checks, as `namedQualityChecks`.
+    public let qualityChecks: [QualityCheck]
 }
 
 public struct ExtensionEntry: @unchecked Sendable {
@@ -138,8 +136,8 @@ public protocol NotationDeclaration: AddNotationBase {
     static var references: [NotationReference] { get }
 
     /// Named, unlike `qualityChecks`, so a command can ask whether one is in force
-    /// before it offers something the criterion would then report (ADR-0011).
-    static var criteria: [QualityCheckSpec] { get }
+    /// before it offers something the check would then report (ADR-0011).
+    static var namedQualityChecks: [QualityCheckSpec] { get }
 }
 
 extension NotationDeclaration {
@@ -161,7 +159,8 @@ extension NotationDeclaration {
             step: Self.step,
             baseId: nil,
             isDynamic: false,
-            criteria: criteria
+            namedQualityChecks: namedQualityChecks,
+            qualityChecks: qualityChecks
         )
     }
 
@@ -173,10 +172,6 @@ extension NotationDeclaration {
     public static var whenToUse: [String] { [] }
     public static var history: String { "" }
     public static var references: [NotationReference] { [] }
-
-    public static func renderMarkdown(displayTitle: String?) -> String {
-        NotationMarkdown.render(entry: Self.entry, displayTitle: displayTitle)
-    }
 
     public static var content: NotationContent {
         NotationContent(
@@ -195,7 +190,7 @@ extension NotationDeclaration {
 
     public static var qualityChecks: [QualityCheck] { [] }
 
-    public static var criteria: [QualityCheckSpec] { [] }
+    public static var namedQualityChecks: [QualityCheckSpec] { [] }
 }
 
 /// Supplements an existing notation for infrastructure purposes (group folding,
@@ -236,23 +231,17 @@ public enum Notations {}
 
 extension Notations {
 
-    public static func notationStep(for notationName: String) -> TransformStep? {
+    static func notationStep(for notationName: String) -> TransformStep? {
         NotationRegistry.entry(for: notationName)?.step
     }
 
     public static func resolveSteps(for graph: VGraph) throws(VError) -> [TransformStep] {
         let declared = graph.notationDefinition.declaredTransforms
-        if !declared.isEmpty {
-            var resolved: [TransformStep] = []
-            for name in declared {
-                if let step = try TransformRegistry.resolveStep(name: name) {
-                    resolved.append(step)
-                }
-            }
-            return resolved
+        guard declared.isEmpty else {
+            return try declared.map { (name) throws(VError) in try TransformRegistry.resolveStep(name: name) }
+                .compactMap { $0 }
         }
-        if let step = notationStep(for: graph.notationName) { return [step] }
-        return []
+        return notationStep(for: graph.notationName).map { [$0] } ?? []
     }
 
     /// Only the *phase* is named here; a notation's own step records itself in addition.
@@ -265,63 +254,47 @@ extension Notations {
     }
 
     public static var extensionSteps: [TransformStep] {
-        [notationTransformsStep, FoldGroups.foldStep, FoldGroups.bundleStep, boundaryChromeStep]
+        [notationTransformsStep, FoldGroups.foldStep, FoldGroups.bundleStep, groupFrameStep]
     }
 
     public static func notationQualityChecks(for notationName: String) -> [QualityCheck] {
-        switch notationName {
-        case "ConceptMap": return ConceptMap.qualityChecks
-        case "IBIS": return Ibis.qualityChecks
-        case "GoalTree": return GoalTree.qualityChecks
-        case "C4": return C4.qualityChecks
-        case "Arithmetic": return Arithmetic.qualityChecks
-        case "CLD": return CausalLoopDiagram.qualityChecks
-        default: return []
-        }
+        NotationRegistry.entry(for: notationName)?.qualityChecks ?? []
     }
 
-    public static var extensionQualityChecks: [QualityCheck] {
-        FoldGroups.qualityChecks
-    }
-
-    /// The named criteria in force for `graph`: a `vnotation`'s own list when it
+    /// The named quality checks in force for `graph`: a `vnotation`'s own list when it
     /// declares one, the compiled notation's otherwise. Quality analysis and the
     /// commands both read this, so what is offered and what is reported agree.
-    public static func criteria(of graph: VGraph) -> [QualityCheckSpec] {
+    public static func namedQualityChecks(of graph: VGraph) -> [QualityCheckSpec] {
         let declared = graph.notationDefinition.declaredQualityChecks
         if !declared.isEmpty { return declared }
-        return NotationRegistry.entry(for: graph.notationName)?.criteria ?? []
+        return NotationRegistry.entry(for: graph.notationName)?.namedQualityChecks ?? []
     }
 
     public static func analyzeQuality(graph: VGraph) -> QualityReport {
         // A metagraph draws the notation's types, not a diagram made with it. The
-        // criteria judge diagrams: Stock → Stock twice is two edge types, not a
+        // checks judge diagrams: Stock → Stock twice is two edge types, not a
         // parallel edge, and one Goal Tree node of each type is not one CSF.
         guard !graph.isMetagraph else {
             return QualityReport(messages: [])
         }
-        var messages: [MessageWithSeverity] = []
+        let namedChecks = namedQualityChecks(of: graph).map(resolvedOrReported)
+        // A `vnotation` that names its own checks replaces the compiled notation's.
+        let notationChecks =
+            graph.notationDefinition.declaredQualityChecks.isEmpty ? notationQualityChecks(for: graph.notationName) : []
+        let checks = namedChecks + notationChecks
+        return QualityReport(messages: GenericQualityChecks.analyze(graph) + checks.flatMap { $0(graph) })
+    }
 
-        messages.append(contentsOf: GenericQualityChecks.analyze(graph))
-
-        let notationName = graph.notationName
-
-        for spec in criteria(of: graph) {
-            if let check = try? QualityCheckRegistry.resolve(spec) {
-                messages.append(contentsOf: check(graph))
-            }
+    /// A name that resolves to nothing is the author's mistake, not the diagram's:
+    /// it is reported beside the other findings and the diagram still renders.
+    private static func resolvedOrReported(_ spec: QualityCheckSpec) -> QualityCheck {
+        do {
+            return try QualityCheckRegistry.resolve(spec)
+        } catch {
+            let message: String
+            if case .parsingError(let text) = error { message = text } else { message = error.description }
+            return { _ in [MessageWithSeverity(message: message, severity: .warning, target: .graph)] }
         }
-        if graph.notationDefinition.declaredQualityChecks.isEmpty {
-            for check in notationQualityChecks(for: notationName) {
-                messages.append(contentsOf: check(graph))
-            }
-        }
-
-        for check in extensionQualityChecks {
-            messages.append(contentsOf: check(graph))
-        }
-
-        return QualityReport(messages: messages)
     }
 }
 

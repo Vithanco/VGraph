@@ -1,6 +1,6 @@
 // The element a VCommand acts on, resolved against the OriginGraph.
 
-public enum VElementKind: Hashable, Sendable {
+public enum VItemKind: Hashable, Sendable {
     case node
     case edge
     case group
@@ -11,7 +11,7 @@ public enum VCommandTarget: Sendable, Equatable {
     case edge(Edge.Id)
     case group(Group)
 
-    public var kind: VElementKind {
+    public var kind: VItemKind {
         switch self {
         case .node: return .node
         case .edge: return .edge
@@ -36,11 +36,11 @@ extension VGraph {
     /// matches; a folded group renders as a node with the group's id and
     /// resolves to `.group`.
     public func resolveCommandTarget(id: String) -> VCommandTarget? {
-        let node = Node(string: id)
+        let node = Node(rawValue: id)
         if has(node: node) { return .node(node) }
         let group = Group(rawValue: id)
         if has(group: group) { return .group(group) }
-        let edge = Edge.Id(string: id)
+        let edge = Edge.Id(rawValue: id)
         if has(edge: edge) { return .edge(edge) }
         return nil
     }

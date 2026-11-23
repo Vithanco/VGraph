@@ -1,7 +1,7 @@
 /// This allows us to tell Graphviz the correct node size including icons, padding, etc.
 extension NodeStyleLayout {
 
-    public func calculateSizeWithText(_ nodeTextSize: VSize) -> VSize {
+    public func size(aroundText nodeTextSize: VSize) -> VSize {
         switch self {
 
         case .categoryHeader(let text, let font, _, _):
@@ -27,51 +27,37 @@ extension NodeStyleLayout {
             return VSize.zero
 
         case .padded(let insets, let innerLayout):
-            let innerSize = innerLayout.calculateSizeWithText(nodeTextSize)
+            let innerSize = innerLayout.size(aroundText: nodeTextSize)
             return VSize(
                 width: innerSize.width + insets.left + insets.right,
                 height: innerSize.height + insets.top + insets.bottom
             )
 
         case .background(_, let innerLayout):
-            return innerLayout.calculateSizeWithText(nodeTextSize)
+            return innerLayout.size(aroundText: nodeTextSize)
 
         case .sized(let multiplier, let innerLayout):
-            let innerSize = innerLayout.calculateSizeWithText(nodeTextSize)
+            let innerSize = innerLayout.size(aroundText: nodeTextSize)
             return VSize(
                 width: innerSize.width * multiplier,
                 height: innerSize.height * multiplier
             )
 
         case .vertical(let layouts, let spacing):
-            var totalWidth: Double = 0
-            var totalHeight: Double = 0
-
-            for layout in layouts {
-                let size = layout.calculateSizeWithText(nodeTextSize)
-                totalWidth = max(totalWidth, size.width)
-                totalHeight += size.height
-            }
-
-            totalHeight += spacing * Double(max(0, layouts.count - 1))
-            return VSize(width: totalWidth, height: totalHeight)
+            let sizes = layouts.map { $0.size(aroundText: nodeTextSize) }
+            return VSize(
+                width: sizes.map { $0.width }.max() ?? 0,
+                height: sizes.reduce(0) { $0 + $1.height } + Self.gaps(spacing, between: layouts))
 
         case .horizontal(let layouts, let spacing):
-            var totalWidth: Double = 0
-            var totalHeight: Double = 0
-
-            for layout in layouts {
-                let size = layout.calculateSizeWithText(nodeTextSize)
-                totalWidth += size.width
-                totalHeight = max(totalHeight, size.height)
-            }
-
-            totalWidth += spacing * Double(max(0, layouts.count - 1))
-            return VSize(width: totalWidth, height: totalHeight)
+            let sizes = layouts.map { $0.size(aroundText: nodeTextSize) }
+            return VSize(
+                width: sizes.reduce(0) { $0 + $1.width } + Self.gaps(spacing, between: layouts),
+                height: sizes.map { $0.height }.max() ?? 0)
 
         case .overlay(let base, let overlay):
-            let baseSize = base.calculateSizeWithText(nodeTextSize)
-            let overlaySize = overlay.calculateSizeWithText(nodeTextSize)
+            let baseSize = base.size(aroundText: nodeTextSize)
+            let overlaySize = overlay.size(aroundText: nodeTextSize)
             return VSize(
                 width: max(baseSize.width, overlaySize.width),
                 height: max(baseSize.height, overlaySize.height)
@@ -82,24 +68,17 @@ extension NodeStyleLayout {
             return .zero
 
         case .typeLabel(let text, let font, _):
-            // Renderer draws the text uppercased, font-weight 600, with letter-spacing 0.07em.
-            // The simple char-count × avg-width estimate underestimates that by ~25% — without
-            // the correction, sibling layout slots (e.g. a pill badge to the right) end up
-            // underneath the last few letters. Mirrors NodeStyleConstants.iconBadgeMinWidth.
-            let upper = text.uppercased()
-            let baseWidth = TextSizeEstimator.estimateWidth(text: upper, font: font)
-            let uppercaseFactor = 1.2
-            let letterSpacing = Double(upper.count) * font.size * 0.07
+            // Underestimated, a sibling slot (a pill badge to the right) ends up
+            // underneath the last few letters.
             return VSize(
-                width: baseWidth * uppercaseFactor + letterSpacing,
+                width: NodeStyleConstants.uppercaseLabelWidth(text, font: font, letterSpacing: 0.07),
                 height: NodeStyleConstants.typeLabelRowHeight)
 
         case .typeBadge(_, let label, _):
-            let font = NodeStyleConstants.typeLabelFont
-            let labelWidth = TextSizeEstimator.estimateWidth(text: label.uppercased(), font: font)
-            let badgeDiameter = 18.0
+            let labelWidth = NodeStyleConstants.uppercaseLabelWidth(
+                label, font: NodeStyleConstants.typeLabelFont, letterSpacing: 0.06)
             return VSize(
-                width: badgeDiameter + 6 + labelWidth,
+                width: NodeStyleConstants.typeBadgeDiameter + NodeStyleConstants.typeBadgeGap + labelWidth,
                 height: NodeStyleConstants.typeLabelRowHeight)
 
         case .dashedFrame:
@@ -127,5 +106,9 @@ extension NodeStyleLayout {
                 return VSize(width: max(width, font.size), height: font.size * 1.3)
             }
         }
+    }
+
+    private static func gaps(_ spacing: Double, between layouts: [NodeStyleLayout]) -> Double {
+        spacing * Double(max(0, layouts.count - 1))
     }
 }

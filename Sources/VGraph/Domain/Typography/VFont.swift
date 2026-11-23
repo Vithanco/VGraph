@@ -36,25 +36,16 @@ public enum FontFamily: String, CaseIterable, VProtocol {
         }
     }
 
-    public var isMonospace: Bool {
-        switch self {
-        case .courier, .courierNew:
-            return true
-        default:
-            return false
-        }
-    }
-
 }
 
 public struct VFont: VProtocol, Identifiable, CustomStringConvertible {
 
     public var id: String {
-        return "\(family.rawValue)-\(size)"
+        description
     }
 
-    public var family: FontFamily
-    public var size: Double
+    public let family: FontFamily
+    public let size: Double
 
     public init(family: FontFamily = .default, size: Double) {
         self.family = family
@@ -73,9 +64,6 @@ public struct VFont: VProtocol, Identifiable, CustomStringConvertible {
         return family.charWidthRatio
     }
 
-    static public func systemFont(ofSize: Double) -> VFont {
-        return VFont(family: .default, size: ofSize)
-    }
     public static let defaultSize: Double = 11
     public static let `default` = VFont(family: .default, size: defaultSize)
 }

@@ -8,7 +8,7 @@ struct ADTreeNotationTests {
 
     @Test func testADTreeLayoutDirectionIsBottomToTop() throws {
         var graph = VGraph()
-        graph = try Notations.ADTree.addNotation(addTo: graph)
+        graph = try Notations.ADTree.addNotation(to: graph)
 
         let layoutDirectionString: String = try graph.get(
             graphAttribute: Attributes.Group.layoutDirection
@@ -19,7 +19,7 @@ struct ADTreeNotationTests {
 
     @Test func testCountermeasureEdgesAreDotted() throws {
         var graph = VGraph()
-        graph = try Notations.ADTree.addNotation(addTo: graph)
+        graph = try Notations.ADTree.addNotation(to: graph)
 
         let defenseCountersStyle: Attributes.Edge.StyleType = try graph.get(
             edgeType: Notations.ADTree.EdgeTypes.defenseCountersAttack.id,

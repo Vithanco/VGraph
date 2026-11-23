@@ -89,12 +89,12 @@ extension Notations {
             private static let timesId = "Times"
             private static let divideId = "Divide"
 
-            public static let number: NodeType = NodeType(string: numberId)
-            public static let equals: NodeType = NodeType(string: equalsId)
-            public static let plus: NodeType = NodeType(string: plusId)
-            public static let minus: NodeType = NodeType(string: minusId)
-            public static let times: NodeType = NodeType(string: timesId)
-            public static let divide: NodeType = NodeType(string: divideId)
+            public static let number: NodeType = NodeType(rawValue: numberId)
+            public static let equals: NodeType = NodeType(rawValue: equalsId)
+            public static let plus: NodeType = NodeType(rawValue: plusId)
+            public static let minus: NodeType = NodeType(rawValue: minusId)
+            public static let times: NodeType = NodeType(rawValue: timesId)
+            public static let divide: NodeType = NodeType(rawValue: divideId)
         }
 
         public struct EdgeTypes: NotationEdgeTypes {

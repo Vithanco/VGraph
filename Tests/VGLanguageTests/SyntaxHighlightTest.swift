@@ -104,7 +104,7 @@ private let sample = """
 
         // Exactly one marker, whose single tooltip lists both findings.
         #expect(html.components(separatedBy: "class=\"vg-diag-warn\"").count - 1 == 1)
-        #expect(html.contains("disconnected (no edges)"))
+        #expect(html.contains("has no relationships"))
         #expect(html.contains("not connected to any relation"))
     }
 
@@ -165,7 +165,7 @@ private let sample = """
         """
     }
 
-    @Test func aNameNobodyHasIsColouredAsAnError() {
+    @Test func aNameNobodyHasIsColoredAsAnError() {
         let html = VGraphParser(logger: NoOpLogger())
             .semanticHighlightHTML(source: source(icons: "", iconName: "no.such.mark"))
 

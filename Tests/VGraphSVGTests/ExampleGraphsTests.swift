@@ -70,7 +70,7 @@ struct ExampleGraphsTests {
         let graph = try app.parseGraph(try #require(lateProject).vgl)
         let edge = try #require(graph.edges.first { $0.from.id == "hiring" && $0.to.id == "onboarding" })
 
-        let styles = loopStyles(try graph.delete(edge: edge.id))
+        let styles = loopStyles(try graph.deleting(edge: edge.id))
         #expect(styles.filter { $0 == .reinforcing }.count == 2)
         #expect(styles.filter { $0 == .balancing }.count == 2)
     }
@@ -179,13 +179,13 @@ struct ExampleGraphsTests {
     }
 
     @Test("Given the C4 banking example, then each system outside the Internet Banking System has a colour of its own")
-    func bankingExternalsColouredPerNode() throws {
+    func bankingExternalsColoredPerNode() throws {
         let example = try #require(banking)
         let graph = try app.parseGraph(example.vgl)
-        let colours = try Self.externalSystems.map { id in
+        let colors = try Self.externalSystems.map { id in
             let node = try #require(graph.nodes.first { $0.id == id })
             return try graph.get(node: node, attribute: Attributes.Node.backgroundColor)
         }
-        #expect(Set(colours).count == Self.externalSystems.count)
+        #expect(Set(colors).count == Self.externalSystems.count)
     }
 }

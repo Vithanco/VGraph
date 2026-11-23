@@ -32,11 +32,11 @@ Facts that shape what is buildable:
 - **The editor cannot use a JavaScriptKit `JSClosure`** — a dependency's
   `@_expose` exports are dead-stripped, so a Swift-authored `addEventListener`
   never fires. All events ride ElementaryUI's `_DOMEventHandlerConfig` seam.
-- **An edge cannot end on a group.** `add(edge:edgeType:group:)` throws
+- **An edge cannot end on a group.** `adding(edge:edgeType:)` throws
   `edgeEndpointIsGroup`. A folded group renders as a node but resolves to
   `.group`, so the same throw excludes it.
 - **Moving an edge end is already possible in the domain**
-  (`reattach(edge:from:to:edgeType:)`), but is blocked on *addressing*: "the head
+  (`reattaching(edge:from:to:edgeType:)`), but is blocked on *addressing*: "the head
   of this edge" is a position on an element, not an element.
 
 ## Decision

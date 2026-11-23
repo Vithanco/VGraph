@@ -36,20 +36,15 @@ extension VGraph {
     /// Unlike a move, what is inside counts too: a paste brings it all, and
     /// none of it was placed under the check before.
     public func misplacement(among ids: [String], in group: Group?) -> (type: NodeType, holder: Group?)? {
-        for id in ids {
-            guard let element = resolveCommandTarget(id: id) else { continue }
-            if let found = misplacement(of: element, in: group) { return found }
-        }
-        return nil
+        ids.lazy.compactMap { resolveCommandTarget(id: $0) }.compactMap { misplacement(of: $0, in: group) }.first
     }
 
     private func misplacement(of element: VCommandTarget, in group: Group?) -> (type: NodeType, holder: Group?)? {
         if let type = misplacedType(of: element, in: group) { return (type, group) }
-        guard case .group(let inner) = element, let (groups, nodes) = try? groupStructure.getDirectContent(group: inner)
+        guard case .group(let inner) = element, let (groups, nodes) = try? groupStructure.directContent(of: inner)
         else { return nil }
-        for child in groups { if let found = misplacement(of: .group(child), in: inner) { return found } }
-        for node in nodes { if let found = misplacement(of: .node(node), in: inner) { return found } }
-        return nil
+        let children = groups.map { VCommandTarget.group($0) } + nodes.map { VCommandTarget.node($0) }
+        return children.lazy.compactMap { misplacement(of: $0, in: inner) }.first
     }
 
     func misplacedType(of element: VCommandTarget, in group: Group?) -> NodeType? {
@@ -67,8 +62,8 @@ extension VGraph {
             return [type]
         case .group(let group):
             if let type = nodeType(of: group) { return [type] }
-            guard let content = try? groupStructure.getDirectContent(group: group) else { return [] }
-            return content.0.flatMap { placedTypes(of: .group($0)) } + content.1.flatMap { placedTypes(of: .node($0)) }
+            guard let (childGroups, childNodes) = try? groupStructure.directContent(of: group) else { return [] }
+            return childGroups.flatMap { placedTypes(of: .group($0)) } + childNodes.flatMap { placedTypes(of: .node($0)) }
         }
     }
 
@@ -124,15 +119,15 @@ extension VGraph {
 }
 
 extension VGraph {
-    /// Group values (fold state, layout, boundary chrome) mean nothing on a node
+    /// Group values (fold state, layout, frame) mean nothing on a node
     /// and go; node values move across in every layer.
     func replacing(detailed group: Group, withNodeOfType type: NodeType, in parent: Group?) throws(VError) -> VGraph {
         let node = Node(group)
-        let store = ads.rekeying(from: Self.key(group), to: Self.key(node))
-            .removing(for: Self.key(node)) { $0.target == .graph }
-        return try updatedSelfWith(ads: store)
-            .delete(group: group)
-            .add(node: node, type: type, group: parent)
-            .repruning(Self.key(node))
+        let store = attributeStore.rekeying(from: ItemKey(group), to: ItemKey(node))
+            .removing(for: ItemKey(node)) { $0.target == .group }
+        return try updatedSelfWith(attributeStore: store)
+            .deleting(group: group)
+            .adding(node: node, type: type, group: parent)
+            .repruning(ItemKey(node))
     }
 }

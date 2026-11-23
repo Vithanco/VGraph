@@ -35,18 +35,12 @@ public struct IconArtwork: VProtocol {
             viewBox
             .split(whereSeparator: { $0 == " " || $0 == "," || $0 == "\t" || $0 == "\n" })
             .map(String.init)
-        guard numbers.count == 4 else { return nil }
-
-        var values: [Double] = []
-        for number in numbers {
-            guard let value = Double(number) else { return nil }
-            values.append(value)
-        }
-        guard values[2] > 0, values[3] > 0 else { return nil }
+        let values = numbers.compactMap { Double($0) }
+        guard numbers.count == 4, values.count == 4, values[2] > 0, values[3] > 0 else { return nil }
 
         let trimmed = path.trimmingCharacters(in: " \t\n\r")
-        guard !trimmed.isEmpty, trimmed.count <= maxPathLength else { return nil }
-        for character in trimmed where !pathCharacters.contains(character) { return nil }
+        guard !trimmed.isEmpty, trimmed.count <= maxPathLength, trimmed.allSatisfy({ pathCharacters.contains($0) })
+        else { return nil }
 
         return IconArtwork(
             minX: values[0], minY: values[1], width: values[2], height: values[3], path: trimmed)

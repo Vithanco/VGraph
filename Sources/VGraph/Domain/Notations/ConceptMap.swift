@@ -2,7 +2,7 @@ extension Notations {
 
     public struct ConceptMap: NotationDeclaration {
 
-        public static var criteria: [QualityCheckSpec] { [.noParallelEdges] }
+        public static var namedQualityChecks: [QualityCheckSpec] { [.noParallelEdges] }
 
         public static let id: Identifier<Notation> = .init(rawValue: "ConceptMap")
         public static let description =
@@ -80,9 +80,9 @@ extension Notations {
             private static let emphasizedConceptId = "EmphasizedConcept"
             private static let relationId = "Relation"
 
-            public static let concept: NodeType = NodeType(string: conceptId)
-            public static let emphasizedConcept: NodeType = NodeType(string: emphasizedConceptId)
-            public static let relation: NodeType = NodeType(string: relationId)
+            public static let concept: NodeType = NodeType(rawValue: conceptId)
+            public static let emphasizedConcept: NodeType = NodeType(rawValue: emphasizedConceptId)
+            public static let relation: NodeType = NodeType(rawValue: relationId)
         }
 
         public struct EdgeTypes: NotationEdgeTypes {
@@ -160,6 +160,9 @@ extension Notations {
 
         // MARK: - Quality Checks
 
+        /// Relations are verb phrases and may run longer; the word limit is for concepts.
+        static var labelLengthCheck: QualityCheck { QualityCheckRegistry.labelLengthCheck(maxWords: 3, among: concepts(in:)) }
+
         public static var qualityChecks: [QualityCheck] {
             [
                 conceptRelationRatio,
@@ -170,40 +173,36 @@ extension Notations {
             ]
         }
 
-        static func conceptRelationRatio(_ graph: VGraph) -> [MessageWithSeverity] {
-            var conceptCount = 0
-            var relationCount = 0
-            for node in graph.nodes {
-                guard let nt = try? graph.nodeType(for: node) else { continue }
-                if nt == NodeTypes.concept || nt == NodeTypes.emphasizedConcept {
-                    conceptCount += 1
-                } else if nt == NodeTypes.relation {
-                    relationCount += 1
-                }
+        /// Concept and Emphasized Concept: both are what a proposition is about.
+        private static func concepts(in graph: VGraph) -> [Node] {
+            graph.nodes.filter { node in
+                (try? graph.nodeType(for: node)).map { $0 == NodeTypes.concept || $0 == NodeTypes.emphasizedConcept }
+                    ?? false
             }
+        }
+
+        static func conceptRelationRatio(_ graph: VGraph) -> [MessageWithSeverity] {
+            let conceptCount = concepts(in: graph).count
+            let relationCount = graph.nodes(ofType: NodeTypes.relation).count
             guard conceptCount > 0 else { return [] }
-            let ratio = Double(relationCount) / Double(conceptCount)
-            // Format ratio to 2 decimal places without Foundation
-            let hundredths = Int((ratio * 100).rounded())
-            let whole = hundredths / 100
-            let frac = hundredths % 100
-            let ratioStr = "\(whole).\(frac < 10 ? "0" : "")\(frac)"
             return [
                 MessageWithSeverity(
-                    message: "Concepts: \(conceptCount), Relations: \(relationCount), Ratio: \(ratioStr)",
+                    message:
+                        "Concepts: \(conceptCount), Relations: \(relationCount), Ratio: \(twoDecimals(Double(relationCount) / Double(conceptCount)))",
                     severity: .info
                 )
             ]
+
+            /// Without Foundation's formatter, and always two digits after the point.
+            func twoDecimals(_ ratio: Double) -> String {
+                let hundredths = Int((ratio * 100).rounded())
+                let fraction = hundredths % 100
+                return "\(hundredths / 100).\(fraction < 10 ? "0" : "")\(fraction)"
+            }
         }
 
         static func conceptCountCheck(_ graph: VGraph) -> [MessageWithSeverity] {
-            var conceptCount = 0
-            for node in graph.nodes {
-                guard let nt = try? graph.nodeType(for: node) else { continue }
-                if nt == NodeTypes.concept || nt == NodeTypes.emphasizedConcept {
-                    conceptCount += 1
-                }
-            }
+            let conceptCount = concepts(in: graph).count
             if conceptCount > 0, conceptCount < 5 {
                 return [
                     MessageWithSeverity(
@@ -223,25 +222,6 @@ extension Notations {
             return []
         }
 
-        static func labelLengthCheck(_ graph: VGraph) -> [MessageWithSeverity] {
-            var messages: [MessageWithSeverity] = []
-            for node in graph.nodes {
-                guard let nt = try? graph.nodeType(for: node) else { continue }
-                guard nt == NodeTypes.concept || nt == NodeTypes.emphasizedConcept else { continue }
-                guard let label = try? graph.get(node: node, attribute: Attributes.Node.label) else { continue }
-                let wordCount = label.split(separator: " ").count
-                if wordCount >= 4 {
-                    messages.append(
-                        MessageWithSeverity(
-                            message: "Concept \"\(label)\" has \(wordCount) words (prefer 1-3 words)",
-                            severity: .warning,
-                            target: .node(node.description)
-                        ))
-                }
-            }
-            return messages
-        }
-
         /// Blocklist of vague relation labels that produce unfalsifiable propositions.
         private static let vagueRelationLabels: Set<String> = [
             "relates to", "is related to", "is connected to",
@@ -251,53 +231,38 @@ extension Notations {
         ]
 
         static func vagueRelationsCheck(_ graph: VGraph) -> [MessageWithSeverity] {
-            var messages: [MessageWithSeverity] = []
-            for node in graph.nodes {
-                guard let nt = try? graph.nodeType(for: node), nt == NodeTypes.relation else { continue }
-                guard let label = try? graph.get(node: node, attribute: Attributes.Node.label) else { continue }
-                let normalized = label.lowercased()
-                if vagueRelationLabels.contains(normalized) {
-                    messages.append(
-                        MessageWithSeverity(
-                            message: "Relation \"\(label)\" is too vague — use a specific verb that forms a falsifiable proposition",
-                            severity: .warning,
-                            target: .node(node.description)
-                        ))
-                }
+            graph.nodes(ofType: NodeTypes.relation).compactMap { node in
+                guard let label = try? graph.get(node: node, attribute: Attributes.Node.label),
+                    vagueRelationLabels.contains(label.lowercased())
+                else { return nil }
+                return MessageWithSeverity(
+                    message: "Relation \"\(label)\" is too vague — use a specific verb that forms a falsifiable proposition",
+                    severity: .warning,
+                    target: .node(node.description)
+                )
             }
-            return messages
         }
 
         // MARK: - Topology-Dependent Checks (Composite)
 
         static func relationTopologyChecks(_ graph: VGraph) -> [MessageWithSeverity] {
             let topology = GraphTopology(edges: graph.edges)
-            var messages: [MessageWithSeverity] = []
-            messages.append(contentsOf: unconnectedConcepts(graph, topology: topology))
-            messages.append(contentsOf: orphanClusters(graph, topology: topology))
-            messages.append(contentsOf: redundantPropositions(graph, topology: topology))
-            messages.append(contentsOf: unreusedRelations(graph, topology: topology))
-            messages.append(contentsOf: mappedRelations(graph, topology: topology))
-            messages.append(contentsOf: incompleteRelations(graph, topology: topology))
-            return messages
+            return unconnectedConcepts(graph, topology: topology)
+                + orphanClusters(graph, topology: topology)
+                + redundantPropositions(graph, topology: topology)
+                + unreusedRelations(graph, topology: topology)
+                + mappedRelations(graph, topology: topology)
+                + incompleteRelations(graph, topology: topology)
         }
 
         static func unconnectedConcepts(_ graph: VGraph, topology: GraphTopology) -> [MessageWithSeverity] {
-            var messages: [MessageWithSeverity] = []
-            for node in graph.nodes {
-                guard let nt = try? graph.nodeType(for: node) else { continue }
-                guard nt == NodeTypes.concept || nt == NodeTypes.emphasizedConcept else { continue }
-                if !topology.connectedNodes.contains(node) {
-                    let label = (try? graph.get(node: node, attribute: Attributes.Node.label)) ?? node.description
-                    messages.append(
-                        MessageWithSeverity(
-                            message: "Concept \"\(label)\" is not connected to any relation",
-                            severity: .warning,
-                            target: .node(node.description)
-                        ))
-                }
+            concepts(in: graph).filter { !topology.connectedNodes.contains($0) }.map { node in
+                MessageWithSeverity(
+                    message: "Concept \"\(graph.name(of: node))\" is not connected to any relation",
+                    severity: .warning,
+                    target: .node(node.description)
+                )
             }
-            return messages
         }
 
         /// Ignores singleton components (already caught by unconnectedConcepts/disconnectedNodes).
@@ -313,144 +278,109 @@ extension Notations {
             ]
         }
 
-        /// in opposite directions that express the same fact (e.g. "A causes B" + "B is caused by A").
+        /// Two relations in opposite directions that express the same fact (e.g. "A causes B" +
+        /// "B is caused by A").
         static func redundantPropositions(_ graph: VGraph, topology: GraphTopology) -> [MessageWithSeverity] {
             struct Proposition: Hashable {
-                let from: Node  // source concept
-                let to: Node  // target concept
+                let from: Node
+                let to: Node
+
+                var reversed: Proposition { Proposition(from: to, to: from) }
             }
 
-            var propositionsByPair: [Proposition: [String]] = [:]  // pair → relation labels
-
-            for node in graph.nodes {
-                guard let nt = try? graph.nodeType(for: node), nt == NodeTypes.relation else { continue }
-                let sources = topology.incomingSources[node] ?? []
-                let targets = topology.outgoingTargets[node] ?? []
-                let label = (try? graph.get(node: node, attribute: Attributes.Node.label)) ?? node.description
-                for source in sources {
-                    for target in targets {
-                        let prop = Proposition(from: source, to: target)
-                        propositionsByPair[prop, default: []].append(label)
+            // Relations in document order, their ends by id: each pair is named the way it was first drawn, every run.
+            let stated = graph.nodes(ofType: NodeTypes.relation).flatMap { relation in
+                let label = graph.name(of: relation)
+                return (topology.incomingSources[relation] ?? []).sorted().flatMap { source in
+                    (topology.outgoingTargets[relation] ?? []).sorted().map { target in
+                        (proposition: Proposition(from: source, to: target), label: label)
                     }
                 }
             }
+            let labelsByProposition = Dictionary(stated.map { ($0.proposition, [$0.label]) }, uniquingKeysWith: +)
 
-            var messages: [MessageWithSeverity] = []
             var reported: Set<Set<Node>> = []
-            for (prop, forwardLabels) in propositionsByPair {
-                let reverseProp = Proposition(from: prop.to, to: prop.from)
-                guard let reverseLabels = propositionsByPair[reverseProp] else { continue }
-                let pairKey: Set<Node> = [prop.from, prop.to]
-                guard !reported.contains(pairKey) else { continue }
-                reported.insert(pairKey)
-
-                let fromLabel = (try? graph.get(node: prop.from, attribute: Attributes.Node.label)) ?? prop.from.description
-                let toLabel = (try? graph.get(node: prop.to, attribute: Attributes.Node.label)) ?? prop.to.description
-                messages.append(
-                    MessageWithSeverity(
-                        message:
-                            "\"\(fromLabel)\" and \"\(toLabel)\" are linked in both directions (\(forwardLabels.joined(separator: ", ")) / \(reverseLabels.joined(separator: ", "))) — keep only the more meaningful direction",
-                        severity: .warning
-                    ))
+            return stated.compactMap { statement in
+                let proposition = statement.proposition
+                guard let forwardLabels = labelsByProposition[proposition],
+                    let reverseLabels = labelsByProposition[proposition.reversed],
+                    reported.insert([proposition.from, proposition.to]).inserted
+                else { return nil }
+                return MessageWithSeverity(
+                    message:
+                        "\"\(graph.name(of: proposition.from))\" and \"\(graph.name(of: proposition.to))\" are linked in both directions (\(forwardLabels.joined(separator: ", ")) / \(reverseLabels.joined(separator: ", "))) — keep only the more meaningful direction",
+                    severity: .warning)
             }
-            return messages
         }
 
         /// If two Relation nodes have the same label and same outgoing targets, they can be merged.
         static func unreusedRelations(_ graph: VGraph, topology: GraphTopology) -> [MessageWithSeverity] {
-            var relationsByLabel: [String: [Node]] = [:]
-            for node in graph.nodes {
-                guard let nt = try? graph.nodeType(for: node), nt == NodeTypes.relation else { continue }
-                guard let label = try? graph.get(node: node, attribute: Attributes.Node.label) else { continue }
-                relationsByLabel[label, default: []].append(node)
-            }
+            let relationsByLabel = Dictionary(
+                graph.nodes(ofType: NodeTypes.relation).compactMap { relation in
+                    (try? graph.get(node: relation, attribute: Attributes.Node.label)).map { ($0, [relation]) }
+                },
+                uniquingKeysWith: +)
 
-            var messages: [MessageWithSeverity] = []
-            for (label, nodes) in relationsByLabel where nodes.count > 1 {
-                let outgoingSets = nodes.map { topology.outgoingTargets[$0] ?? [] }
-                if Set(outgoingSets).count == 1 {
-                    messages.append(
-                        MessageWithSeverity(
-                            message:
-                                "Relations with label \"\(label)\" appear \(nodes.count) times with same targets -- consider reusing a single relation node",
-                            severity: .warning
-                        ))
-                }
+            return relationsByLabel.sorted { $0.key < $1.key }.compactMap { label, relations in
+                guard relations.count > 1, Set(relations.map { topology.outgoingTargets[$0] ?? [] }).count == 1
+                else { return nil }
+                return MessageWithSeverity(
+                    message:
+                        "Relations with label \"\(label)\" appear \(relations.count) times with same targets -- consider reusing a single relation node",
+                    severity: .warning
+                )
             }
-            return messages
         }
 
-        /// This creates n * m propositions that all must be valid.
-        /// Flags circular propositions (same concept on both sides) as errors.
+        /// A relation with several concepts on each side makes n * m propositions that all
+        /// must be valid. Flags circular propositions (same concept on both sides) as errors.
         static func mappedRelations(_ graph: VGraph, topology: GraphTopology) -> [MessageWithSeverity] {
-            var messages: [MessageWithSeverity] = []
+            graph.nodes(ofType: NodeTypes.relation).compactMap { relation in
+                let sources = topology.incomingSources[relation] ?? []
+                let targets = topology.outgoingTargets[relation] ?? []
+                guard sources.count >= 2, targets.count >= 2 else { return nil }
 
-            for node in graph.nodes {
-                guard let nt = try? graph.nodeType(for: node), nt == NodeTypes.relation else { continue }
-
-                let sources = topology.incomingSources[node] ?? []
-                let targets = topology.outgoingTargets[node] ?? []
-
-                guard sources.count >= 2, targets.count >= 2 else { continue }
-
-                let label = (try? graph.get(node: node, attribute: Attributes.Node.label)) ?? node.description
+                let label = graph.name(of: relation)
                 let overlap = sources.intersection(targets)
-
-                if !overlap.isEmpty {
-                    let overlapLabels = overlap.compactMap { n -> String? in
-                        (try? graph.get(node: n, attribute: Attributes.Node.label)) ?? n.description
-                    }.sorted()
-                    messages.append(
-                        MessageWithSeverity(
-                            message:
-                                "Relation \"\(label)\" has \(sources.count) inbound and \(targets.count) outbound concepts with circular propositions: \(overlapLabels.joined(separator: ", ")) appear(s) on both sides",
-                            severity: .error,
-                            target: .node(node.description)
-                        ))
-                } else {
-                    messages.append(
-                        MessageWithSeverity(
-                            message:
-                                "Relation \"\(label)\" has \(sources.count) inbound and \(targets.count) outbound concepts, creating \(sources.count * targets.count) propositions -- verify all are valid",
-                            severity: .warning,
-                            target: .node(node.description)
-                        ))
+                guard overlap.isEmpty else {
+                    let overlapLabels = overlap.map { graph.name(of: $0) }.sorted()
+                    return MessageWithSeverity(
+                        message:
+                            "Relation \"\(label)\" has \(sources.count) inbound and \(targets.count) outbound concepts with circular propositions: \(overlapLabels.joined(separator: ", ")) appear(s) on both sides",
+                        severity: .error,
+                        target: .node(relation.description)
+                    )
                 }
+                return MessageWithSeverity(
+                    message:
+                        "Relation \"\(label)\" has \(sources.count) inbound and \(targets.count) outbound concepts, creating \(sources.count * targets.count) propositions -- verify all are valid",
+                    severity: .warning,
+                    target: .node(relation.description)
+                )
             }
-            return messages
         }
+
         /// A complete proposition requires at least one source concept and one target concept.
         static func incompleteRelations(_ graph: VGraph, topology: GraphTopology) -> [MessageWithSeverity] {
-            var messages: [MessageWithSeverity] = []
-            for node in graph.nodes {
-                guard let nt = try? graph.nodeType(for: node), nt == NodeTypes.relation else { continue }
-                let label = (try? graph.get(node: node, attribute: Attributes.Node.label)) ?? node.description
-                let hasIncoming = !(topology.incomingSources[node] ?? []).isEmpty
-                let hasOutgoing = !(topology.outgoingTargets[node] ?? []).isEmpty
-                if !hasIncoming && !hasOutgoing {
-                    messages.append(
-                        MessageWithSeverity(
-                            message: "Relation \"\(label)\" has no incoming or outgoing concepts — it forms no proposition",
-                            severity: .error,
-                            target: .node(node.description)
-                        ))
-                } else if !hasIncoming {
-                    messages.append(
-                        MessageWithSeverity(
-                            message: "Relation \"\(label)\" has no incoming concept — proposition has no source",
-                            severity: .error,
-                            target: .node(node.description)
-                        ))
-                } else if !hasOutgoing {
-                    messages.append(
-                        MessageWithSeverity(
-                            message: "Relation \"\(label)\" has no outgoing concept — proposition has no target",
-                            severity: .error,
-                            target: .node(node.description)
-                        ))
+            return graph.nodes(ofType: NodeTypes.relation).compactMap { relation in
+                guard let missing = missingEnd(of: relation) else { return nil }
+                return MessageWithSeverity(
+                    message: "Relation \"\(graph.name(of: relation))\" \(missing)",
+                    severity: .error,
+                    target: .node(relation.description)
+                )
+            }
+
+            func missingEnd(of relation: Node) -> String? {
+                let hasIncoming = !(topology.incomingSources[relation] ?? []).isEmpty
+                let hasOutgoing = !(topology.outgoingTargets[relation] ?? []).isEmpty
+                switch (hasIncoming, hasOutgoing) {
+                case (false, false): return "has no incoming or outgoing concepts — it forms no proposition"
+                case (false, true): return "has no incoming concept — proposition has no source"
+                case (true, false): return "has no outgoing concept — proposition has no target"
+                case (true, true): return nil
                 }
             }
-            return messages
         }
     }
 

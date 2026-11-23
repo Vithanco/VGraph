@@ -21,14 +21,14 @@ public struct NodeTypeDefinition: Sendable {
 
 extension NodeType {
     public static let unknownPrefix = "__UNKNOWN_NODE_TYPE__"
-    public static let unknown = NodeType(string: unknownPrefix)
+    public static let unknown = NodeType(rawValue: unknownPrefix)
 
     public var isUnknown: Bool { id.hasPrefix(Self.unknownPrefix) }
 }
 
 extension Identifier where Value == _Node {
     public init(_ group: Group) {
-        self.init(string: group.id.description)
+        self.init(rawValue: group.id.description)
     }
 }
 
@@ -151,16 +151,16 @@ extension Attributes {
         public static let width = TypedAttributeDefinition<Double>(
             id: "node.width",
             name: "Width of the node",
-            description: "The width of a node, in pixels",
-            defaultValue: 0.75,
+            description: "The width of a node, in points",
+            defaultValue: 54,
             target: .node
         )
 
         public static let height = TypedAttributeDefinition<Double>(
             id: "node.height",
             name: "Height of the node",
-            description: "The height of a node, in pixels",
-            defaultValue: 0.5,
+            description: "The height of a node, in points",
+            defaultValue: 36,
             target: .node
         )
 
@@ -185,14 +185,6 @@ extension Attributes {
             name: "Fontsize",
             description: "The size of a node text",
             defaultValue: 11.0,
-            target: .node
-        )
-
-        public static let orderNumber: TypedAttributeDefinition<Int> = .init(
-            id: "vithanco.node.orderNumber",
-            name: "Node Order Number",
-            description: "The order number of a node",
-            defaultValue: 0,
             target: .node
         )
 
@@ -355,20 +347,10 @@ extension Attributes {
 }
 
 extension VGraph {
-    public func getFont(forNode node: Node) -> VFont {
-
-        var font: VFont = .default
-        if let fontSize = try? get(node: node, attribute: Attributes.Node.fontsize),
+    public func font(of node: Node) -> VFont {
+        guard let fontSize = try? get(node: node, attribute: Attributes.Node.fontsize),
             let fontFamily = try? get(node: node, attribute: Attributes.Node.fontname)
-        {
-            font = VFont(family: fontFamily, size: fontSize)
-        }
-
-        return font
-    }
-
-    public func setFont(_ font: VFont, forNode node: Node) throws(VError) -> Self {
-        let result = try set(node: node, attribute: Attributes.Node.fontname.attribute(font.family))
-        return try result.set(node: node, attribute: Attributes.Node.fontsize.attribute(font.size))
+        else { return .default }
+        return VFont(family: fontFamily, size: fontSize)
     }
 }

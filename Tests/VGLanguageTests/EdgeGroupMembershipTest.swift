@@ -23,7 +23,7 @@ struct EdgeGroupMembershipTest {
         try #require(graph.edges.first).id
     }
 
-    private let root = Group(rawValue: rootGroup)
+    private let root = Group.root
 
     // MARK: - The round trip
 
@@ -145,7 +145,7 @@ struct EdgeGroupMembershipTest {
         let g2 = try #require(graph.groups.first { $0.id.description == "g2" })
         let edge = try onlyEdge(in: graph)
 
-        graph = try graph.addTo(group: g2, node: Node(string: "q1"))
+        graph = try graph.addingTo(group: g2, node: Node(rawValue: "q1"))
 
         #expect(graph.group(of: edge) == root, "the edge stayed in a group only one end is still in")
     }

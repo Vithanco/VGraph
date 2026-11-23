@@ -125,14 +125,14 @@ struct C4NotationTests {
             ])
     }
 
-    @Test("Given an element with no relationships, then it is reported as an orphan")
-    func anOrphanIsReported() throws {
+    @Test("Given an element with no relationships, then it is warned about once")
+    func anOrphanIsWarnedAboutOnce() throws {
         let result = try report(#"node lonely: SoftwareSystem "Lonely System";"#)
 
         #expect(
-            result.messages.contains {
-                $0.target == .node("lonely") && $0.message.contains("\"Lonely System\" has no relationships")
-            })
+            result.messages.filter { $0.target == .node("lonely") }.map { $0.message } == [
+                "Node \"Lonely System\" has no relationships — every node should collaborate with at least one other"
+            ])
     }
 
     // MARK: - Removed types
@@ -179,14 +179,14 @@ struct C4RelationshipLabelTests {
     }
 
     @Test("Given a relationship without a label, then it is reported as a warning on that edge")
-    func anUnlabelledRelationshipIsReported() throws {
+    func anUnlabeledRelationshipIsReported() throws {
         let found = try findings("edge customer -> bank;")
         #expect(found.map { $0.severity } == [.warning])
         #expect(found.first?.target == .edge(from: "customer", to: "bank"))
     }
 
     @Test("Given labelled relationships, then nothing is reported")
-    func aLabelledRelationshipIsNotReported() throws {
+    func aLabeledRelationshipIsNotReported() throws {
         #expect(try findings("edge customer -> bank \"Views balances using\"; edge bank -> mail \"Sends e-mail using\";").isEmpty)
     }
 }

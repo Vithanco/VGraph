@@ -1,7 +1,7 @@
 extension VGraph: CustomDebugStringConvertible {
     public var debugDescription: String {
         let graphName: String = (try? get(graphAttribute: Attributes.Group.label)) ?? "none"
-        var output = """
+        let summary = """
             VGraph Debug Info:
             ==================
             Name: \(graphName)
@@ -12,64 +12,43 @@ extension VGraph: CustomDebugStringConvertible {
             Groups: \(groups.count)
 
             """
-
-        if !nodeTypes.isEmpty {
-            output += "Node Types:\n"
-            for nt in nodeTypes {
-                let nodeCount = typedGraph.nodeTypeMapping.getMany(one: nt)?.count ?? 0
-                output += "  - \(nt.id) (\(nodeCount) nodes)\n"
-            }
-            output += "\n"
+        let nodeTypeLines = nodeTypes.map { type in
+            "\(type.id) (\(typedGraph.nodeTypeMapping.getMany(one: type)?.count ?? 0) nodes)"
         }
-
-        if !edgeTypes.isEmpty {
-            output += "Edge Types:\n"
-            for et in edgeTypes {
-                let edgeCount = typedGraph.edgeTypeMapping.getMany(one: et.id)?.count ?? 0
-                output += "  - \(et.id): \(et.from.id) -> \(et.to.id) (\(edgeCount) edges)\n"
-            }
-            output += "\n"
+        let edgeTypeLines = edgeTypes.map { type in
+            "\(type.id): \(type.from.id) -> \(type.to.id) (\(typedGraph.edgeTypeMapping.getMany(one: type.id)?.count ?? 0) edges)"
         }
-
-        if !groups.isEmpty {
-            output += "Groups:\n"
-            for group in groups.prefix(10) {
-                output += "  - \(group.id)\n"
-            }
-            if groups.count > 10 {
-                output += "  ... and \(groups.count - 10) more groups\n"
-            }
-            output += "\n"
+        let nodeLines = nodes.map { node in "\(node.id) [type: \((try? nodeType(for: node))?.id ?? "unknown")]" }
+        let edgeLines = edges.map { edge in
+            "\(edge.id): \(edge.from.id) -> \(edge.to.id) [type: \((try? edgeType(for: edge.id))?.id ?? "unknown")]"
         }
+        let lists = [
+            DebugList(title: "Node Types", lines: nodeTypeLines),
+            DebugList(title: "Edge Types", lines: edgeTypeLines),
+            DebugList(title: "Groups", lines: groups.map { "\($0.id)" }, limit: 10),
+            DebugList(title: "Nodes", lines: nodeLines, limit: 20),
+        ]
+        return summary + lists.map { $0.text.isEmpty ? "" : $0.text + "\n" }.joined()
+            + DebugList(title: "Edges", lines: edgeLines, limit: 20).text
+    }
+}
 
-        if !nodes.isEmpty {
-            output += "Nodes:\n"
-            for node in nodes.prefix(20) {
-                let typeId = (try? nodeType(for: node))?.id ?? "unknown"
-                output += "  - \(node.id) [type: \(typeId)]\n"
-            }
-            if nodes.count > 20 {
-                output += "  ... and \(nodes.count - 20) more nodes\n"
-            }
-            output += "\n"
-        }
+/// Long lists are cut short, so a debugger's console stays readable.
+private struct DebugList {
+    let title: String
+    let lines: [String]
+    let limit: Int
 
-        if !edges.isEmpty {
-            output += "Edges:\n"
-            for edge in edges.prefix(20) {
-                let typeId = (try? edgeType(for: edge.id))?.id ?? "unknown"
-                output += "  - \(edge.id): \(edge.from.id) -> \(edge.to.id) [type: \(typeId)]\n"
-            }
-            if edges.count > 20 {
-                output += "  ... and \(edges.count - 20) more edges\n"
-            }
-        }
-
-        return output
+    init(title: String, lines: [String], limit: Int = .max) {
+        self.title = title
+        self.lines = lines
+        self.limit = limit
     }
 
-    public var debugSummary: String {
-        return
-            "VGraph(nodes: \(nodes.count), edges: \(edges.count), nodeTypes: \(nodeTypes.count), edgeTypes: \(edgeTypes.count), groups: \(groups.count))"
+    var text: String {
+        guard !lines.isEmpty else { return "" }
+        let listed = lines.prefix(limit).map { "  - \($0)\n" }.joined()
+        let more = lines.count > limit ? "  ... and \(lines.count - limit) more \(title.lowercased())\n" : ""
+        return "\(title):\n" + listed + more
     }
 }

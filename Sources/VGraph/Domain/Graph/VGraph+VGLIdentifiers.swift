@@ -1,10 +1,5 @@
-//
-//  VGraph+VGLIdentifiers.swift
-//  VGraph
-//
-//  What VGL reads back as a name. A name the graph mints — a declared edge
-//  type, a view — must pass, or the reopened document cannot refer to it.
-//
+// What VGL reads back as a name. A name the graph mints — a declared edge
+// type, a view — must pass, or the reopened document cannot refer to it.
 
 extension VGraph {
     static func isVGLKeyword(_ name: String) -> Bool {

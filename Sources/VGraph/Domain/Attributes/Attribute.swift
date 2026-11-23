@@ -16,10 +16,6 @@ public struct Attribute: VProtocol, CustomDebugStringConvertible {
         return definition.typeAsString
     }
 
-    public static func == (lhs: Attribute, rhs: Attribute) -> Bool {
-        return lhs.stringValue == rhs.stringValue
-    }
-
     public var debugDescription: String {
         return stringValue
     }
@@ -74,11 +70,10 @@ extension Int: AttributeType {
     public static let typeName = "Int"
 
     public static func fromString(_ string: String) throws(VError) -> Self {
-        let result = Int(string)
-        if result == nil {
+        guard let result = Int(string) else {
             throw .conversionError(from: string, to: "Int")
         }
-        return result!
+        return result
     }
 }
 

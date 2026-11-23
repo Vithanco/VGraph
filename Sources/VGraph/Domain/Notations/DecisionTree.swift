@@ -2,7 +2,7 @@ extension Notations {
 
     public struct DecisionTree: NotationDeclaration {
 
-        public static var criteria: [QualityCheckSpec] { [.noParallelEdges] }
+        public static var namedQualityChecks: [QualityCheckSpec] { [.noParallelEdges] }
         public static let id: Identifier<Notation> = .init(rawValue: "DecisionTree")
         public static let description =
             "Models a decision process as a tree of questions, choices, and outcomes — executable to interactively guide users through a decision."
@@ -74,9 +74,9 @@ extension Notations {
             private static let choiceId = "Choice"
             private static let outcomeId = "Outcome"
 
-            public static let decisionPoint: NodeType = NodeType(string: decisionPointId)
-            public static let choice: NodeType = NodeType(string: choiceId)
-            public static let outcome: NodeType = NodeType(string: outcomeId)
+            public static let decisionPoint: NodeType = NodeType(rawValue: decisionPointId)
+            public static let choice: NodeType = NodeType(rawValue: choiceId)
+            public static let outcome: NodeType = NodeType(rawValue: outcomeId)
         }
 
         public struct EdgeTypes: NotationEdgeTypes {

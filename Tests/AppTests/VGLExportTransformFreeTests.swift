@@ -17,11 +17,11 @@ import VGraph
 @Suite("VGL export is transform-free")
 struct VGLExportTransformFreeTests {
 
-    /// `BoundaryChromeStep` flattens a typed group's `GroupStyle` into loose
+    /// `GroupFrameStep` flattens a typed group's `GroupStyle` into loose
     /// `Attributes.Group.*` so the renderer need not know about `GroupType`. That
     /// derived face is re-derivable from `: Organisation`, and the formatter used to
     /// write it back as three authored attribute lines on every typed group.
-    @Test func typedGroupExportsWithoutDerivedChrome() throws {
+    @Test func typedGroupExportsWithoutDerivedFrame() throws {
         let source = """
             vgraph banking: C4 "Banking" {
                 group bank: Organisation "Big Bank" {
@@ -34,13 +34,13 @@ struct VGLExportTransformFreeTests {
         #expect(vgl.contains("group bank: Organisation"))  // the authored type survives…
 
         // The exporter lowercases attribute names, hence `vglKey` rather than literals.
-        let chrome = [
+        let frameKeys = [
             Attributes.Group.borderDash.asDefinition.vglKey,
             Attributes.Group.borderColor.asDefinition.vglKey,
             Attributes.Group.backgroundColor.asDefinition.vglKey,
             Attributes.Group.cornerRadius.asDefinition.vglKey,
         ]
-        for key in chrome {
+        for key in frameKeys {
             #expect(!vgl.contains(key), "\(key) leaked into exported VGL")  // …its derived face does not
         }
     }

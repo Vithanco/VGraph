@@ -99,7 +99,7 @@ struct ZoomTest {
         #expect(scale <= 1.25)
     }
 
-    @Test func fitIsLabelledAutoAndAFixedZoomByItsPercentage() {
+    @Test func fitIsLabeledAutoAndAFixedZoomByItsPercentage() {
         #expect(Zoom.fit.label == "Auto")
         #expect(Zoom.fixed(1.25).label == "125%")
         #expect(Zoom.fixed(0.666).label == "67%")
