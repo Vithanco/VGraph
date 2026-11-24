@@ -27,7 +27,7 @@ private func conceptMap(
             }
         let node = Node(rawValue: id)
         graph = try graph.adding(node: node, type: type)
-        graph = try graph.setting(node: node, attribute: Attributes.Node.label.attribute(label))
+        graph = try graph.setting(node: node, attribute: Attributes.Node.label(label))
     }
     for (index, (from, to)) in links.enumerated() {
         let type =
@@ -75,7 +75,7 @@ struct GenericQualityChecksTests {
         graph = try graph.ensuringUnknownNodeType()
         let node = Node(rawValue: "bad_node")
         graph = try graph.adding(node: node, type: NodeType.unknown)
-        graph = try graph.setting(node: node, attribute: Attributes.Node.label.attribute("Mystery"))
+        graph = try graph.setting(node: node, attribute: Attributes.Node.label("Mystery"))
 
         let messages = GenericQualityChecks.unknownNodeTypes(graph: graph)
         #expect(!messages.isEmpty)
@@ -104,11 +104,11 @@ struct GenericQualityChecksTests {
         // override the diagram logic to sufficient-cause to provoke the redundancy warning.
         var graph = VGraph()
         graph = try Notations.PrerequisiteTree.addNotation(to: graph)
-        graph = try graph.setting(graphAttribute: Attributes.Group.diagramLogic.attribute(.sufficientCause))
+        graph = try graph.setting(graphAttribute: Attributes.Group.diagramLogic(.sufficientCause))
 
         let or = Node(rawValue: "or1")
         graph = try graph.adding(node: or, type: Notations.PrerequisiteTree.NodeTypes.orJunctor)
-        graph = try graph.setting(node: or, attribute: Attributes.Node.label.attribute("alt"))
+        graph = try graph.setting(node: or, attribute: Attributes.Node.label("alt"))
 
         let messages = GenericQualityChecks.redundantJunctor(graph: graph)
         #expect(messages.count == 1)
@@ -124,11 +124,11 @@ struct GenericQualityChecksTests {
         // override the diagram logic to necessary-condition to provoke the redundancy warning.
         var graph = VGraph()
         graph = try Notations.CurrentRealityTree.addNotation(to: graph)
-        graph = try graph.setting(graphAttribute: Attributes.Group.diagramLogic.attribute(.necessaryCondition))
+        graph = try graph.setting(graphAttribute: Attributes.Group.diagramLogic(.necessaryCondition))
 
         let and = Node(rawValue: "and1")
         graph = try graph.adding(node: and, type: Notations.CurrentRealityTree.NodeTypes.andJunctor)
-        graph = try graph.setting(node: and, attribute: Attributes.Node.label.attribute("combo"))
+        graph = try graph.setting(node: and, attribute: Attributes.Node.label("combo"))
 
         let messages = GenericQualityChecks.redundantJunctor(graph: graph)
         #expect(messages.count == 1)
@@ -160,7 +160,7 @@ struct GenericQualityChecksTests {
             graph = try Notations.CurrentRealityTree.addNotation(to: graph)
             graph = try graph.adding(node: node, type: Notations.CurrentRealityTree.NodeTypes.andJunctor)
         }
-        graph = try graph.setting(graphAttribute: Attributes.Group.diagramLogic.attribute(.noLogic))
+        graph = try graph.setting(graphAttribute: Attributes.Group.diagramLogic(.noLogic))
 
         #expect(GenericQualityChecks.redundantJunctor(graph: graph).isEmpty)
     }
@@ -245,19 +245,16 @@ struct ConceptMapQualityChecksTests {
                     ] : []))
     }
 
-    @Test("Only concepts without edges are unconnected; an edgeless relation is not one")
-    func testUnconnectedConcept() throws {
+    @Test("A concept connected to nothing is warned about once, in the shared wording")
+    func aLonelyConceptIsWarnedAboutOnce() throws {
         let graph = try conceptMap(
-            [
-                ("a", .concept, "Dog"), ("orphan", .concept, "Orphan"), ("r1", .relation, "is"),
-                ("lonely", .relation, "lonely"),
-            ], links: [("a", "r1")])
+            [("a", .concept, "Dog"), ("orphan", .concept, "Orphan"), ("r1", .relation, "is")], links: [("a", "r1")])
 
         #expect(
-            CM.unconnectedConcepts(graph, topology: topology(graph)) == [
+            Notations.analyzeQuality(graph: graph).messages.filter { $0.target == .node("orphan") } == [
                 MessageWithSeverity(
-                    message: "Concept \"Orphan\" is not connected to any relation", severity: .warning,
-                    target: .node("orphan"))
+                    message: "Node \"Orphan\" has no relationships — every node should collaborate with at least one other",
+                    severity: .warning, target: .node("orphan"))
             ])
     }
 
@@ -416,14 +413,14 @@ struct IBISQualityChecksTests {
     private func addQuestion(_ id: String, label: String, to graph: VGraph) throws(VError) -> VGraph {
         let node = Node(rawValue: id)
         var result = try graph.adding(node: node, type: IB.NodeTypes.question)
-        result = try result.setting(node: node, attribute: Attributes.Node.label.attribute(label))
+        result = try result.setting(node: node, attribute: Attributes.Node.label(label))
         return result
     }
 
     private func addAnswer(_ id: String, label: String, to graph: VGraph) throws(VError) -> VGraph {
         let node = Node(rawValue: id)
         var result = try graph.adding(node: node, type: IB.NodeTypes.answer)
-        result = try result.setting(node: node, attribute: Attributes.Node.label.attribute(label))
+        result = try result.setting(node: node, attribute: Attributes.Node.label(label))
         return result
     }
 
@@ -514,7 +511,7 @@ struct GoalTreeQualityChecksTests {
             for index in 0..<count {
                 let node = Node(rawValue: "\(prefix)\(index)")
                 graph = try graph.adding(node: node, type: type)
-                graph = try graph.setting(node: node, attribute: Attributes.Node.label.attribute("\(prefix) \(index)"))
+                graph = try graph.setting(node: node, attribute: Attributes.Node.label("\(prefix) \(index)"))
             }
         }
         return graph
@@ -750,7 +747,7 @@ struct MappedRelationsTests {
         let report = Notations.analyzeQuality(graph: graph)
         let messages = report.messages.map { $0.message }
         for phrase in [
-            "Concept \"Orphan\" is not connected to any relation",
+            "Node \"Orphan\" has no relationships",
             "disconnected clusters",
             "linked in both directions",
             "consider reusing a single relation node",
@@ -797,7 +794,7 @@ struct FeedbackLoopDirectionTests {
         for id in ids {
             let node = Node(rawValue: id)
             graph = try graph.adding(node: node, type: CLD.NodeTypes.stock)
-            graph = try graph.setting(node: node, attribute: Attributes.Node.label.attribute(id.uppercased()))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.label(id.uppercased()))
         }
         for (index, (from, to)) in links.enumerated() {
             graph = try graph.adding(edge: Edge(string: "e\(index + 1)", from: from, to: to), edgeType: CLD.EdgeTypes.same)
@@ -810,7 +807,7 @@ struct FeedbackLoopDirectionTests {
         for (id, position) in positions {
             graph = try graph.setting(
                 node: Node(rawValue: id),
-                attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: position.0, y: position.1)))
+                attribute: Attributes.Node.layoutedPos(VPoint(x: position.0, y: position.1)))
         }
         return graph
     }
@@ -846,7 +843,7 @@ struct FeedbackLoopDirectionTests {
         ] {
             graph = try graph.setting(
                 edge: Edge.Id(rawValue: id),
-                attribute: Attributes.Edge.layoutData.attribute(EdgeLayoutData(splinePoints: [start, end])))
+                attribute: Attributes.Edge.layoutData(EdgeLayoutData(splinePoints: [start, end])))
         }
         #expect(direction(of: graph) == .counterClockwise)
     }

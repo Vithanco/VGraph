@@ -87,17 +87,20 @@ struct NodeColorInVGLTests {
         #expect(fills(try styled(vgl, node: "n")).first?.hasPrefix("#6495ed") == true)
     }
 
-    /// Graphviz would accept this one; the domain deliberately does not.
-    @Test("an X11-only name is rejected, not ignored")
-    func x11OnlyNameIsRejected() throws {
-        let vgl = """
+    /// Graphviz would accept this one; the domain deliberately does not. Like any
+    /// badly typed value it is a quality warning, and the node keeps its type's fill.
+    @Test("an X11-only name is not a colour: the node is drawn in its type's colour")
+    func x11OnlyNameIsNotAColour() throws {
+        func vgl(_ attributes: String) -> String {
+            """
             vgraph t: C4 "T" {
                 node p: Person "Op";
-                group s "Sys" { node n: Container "N" [color: chartreuse3]; };
+                group s "Sys" { node n: Container "N" \(attributes); };
                 edge p -> n "Uses";
             }
             """
-        #expect(throws: VError.self) { try styled(vgl, node: "n") }
+        }
+        #expect(fills(try styled(vgl("[color: chartreuse3]"), node: "n")) == fills(try styled(vgl(""), node: "n")))
     }
 
     private func textColors(of layout: NodeStyleLayout) -> [SemanticColor] {

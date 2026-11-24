@@ -25,6 +25,19 @@ struct SemanticColorTests {
         #expect(parsed.darkHex == SemanticColor.groupFill.darkHex)
     }
 
+    /// Style guide Rule 1: white and black are theme-fixed or flipping, and a
+    /// stored colour keeps saying which.
+    @Test(arguments: [SemanticColor.white, .black, .flippingWhite, .flippingBlack, .badgeIcon])
+    func whiteAndBlackKeepTheirKindThroughAString(token: SemanticColor) throws {
+        let parsed = try SemanticColor.fromString(token.asString)
+        #expect(parsed.resolve(darkMode: false) == token.resolve(darkMode: false))
+        #expect(parsed.resolve(darkMode: true) == token.resolve(darkMode: true))
+    }
+
+    @Test func anyOtherColorIsStoredAsItsLightHexAlone() {
+        #expect(!SemanticColor.groupFill.asString.contains("/"))
+    }
+
     /// `darken(to:)` must apply per side so the resulting token stays theme-aware.
     @Test func darkenAppliesPerSide() {
         let blue = SemanticColor(id: "test.blue", lightHex: "#6038d0", darkHex: "#a08fe8")

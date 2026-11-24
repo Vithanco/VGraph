@@ -23,7 +23,7 @@ private func wrapNodeText(node: Node, in graph: VGraph) throws(VError) -> VGraph
     guard !label.isEmpty else {
         return try graph.setting(
             node: node,
-            attribute: Attributes.Node.wrappedText.attribute([])
+            attribute: Attributes.Node.wrappedText([])
         )
     }
 
@@ -43,6 +43,6 @@ private func wrapNodeText(node: Node, in graph: VGraph) throws(VError) -> VGraph
 
     return try graph.setting(
         node: node,
-        attribute: Attributes.Node.wrappedText.attribute(wrappingResult.lines)
+        attribute: Attributes.Node.wrappedText(wrappingResult.lines)
     )
 }

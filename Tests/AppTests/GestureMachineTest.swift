@@ -157,7 +157,7 @@ struct GestureMachineTest {
     }
 
     /// Over a group the drop would be a move, so the group is washed instead —
-    /// never both, since a green "you may connect" line over a boundary the
+    /// never both, since a green "you may connect" line over a group the
     /// drop would move *into* would be a lie (ADR-0019).
     @Test func overAGroupTheDestinationIsWashedInstead() throws {
         let s = try session()

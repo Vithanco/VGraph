@@ -23,9 +23,9 @@ struct VSVGEdgeTests {
         var graph = try parser.parse(source: input)
         for (index, node) in graph.nodes.enumerated() {
             graph = try graph.setting(
-                node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: Double(index) * 100 + 50, y: 50)))
+                node: node, attribute: Attributes.Node.layoutedPos(VPoint(x: Double(index) * 100 + 50, y: 50)))
             graph = try graph.setting(
-                node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
+                node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40)))
         }
         return graph
     }
@@ -64,7 +64,7 @@ struct VSVGEdgeTests {
     // MARK: - Full path (spline + arrowhead + labels)
 
     func withLayoutData(_ graph: VGraph, _ layout: EdgeLayoutData) throws -> VGraph {
-        try graph.setting(edge: edgeId(graph), attribute: Attributes.Edge.layoutData.attribute(layout))
+        try graph.setting(edge: edgeId(graph), attribute: Attributes.Edge.layoutData(layout))
     }
 
     @Test func splinePathWithArrowHead() throws {
@@ -122,7 +122,7 @@ struct VSVGEdgeTests {
         let withLayout = try withLayoutData(graph, layout)
 
         for dir in ["forward", "back", "both", "none"] {
-            let withDir = try withLayout.setting(edge: edgeId(graph), attribute: Attributes.Edge.dir.attribute(dir))
+            let withDir = try withLayout.setting(edge: edgeId(graph), attribute: Attributes.Edge.dir(dir))
             expectSnapshot(withDir, variant: dir)
         }
     }
@@ -197,9 +197,9 @@ struct VSVGEdgeTests {
         var graph = try parser.parse(source: input)
         for (index, node) in graph.nodes.enumerated() {
             graph = try graph.setting(
-                node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: Double(index) * 100 + 50, y: 50)))
+                node: node, attribute: Attributes.Node.layoutedPos(VPoint(x: Double(index) * 100 + 50, y: 50)))
             graph = try graph.setting(
-                node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
+                node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40)))
         }
         let keep = Set([graph.edges[0]])
         expectSnapshot(graph, keepSet: keep)
@@ -343,7 +343,7 @@ struct VSVGEdgeTests {
         let folded = Node("box")
         graph = try graph.adding(node: plain, type: NodeType(rawValue: "Plain"))
         graph = try graph.adding(node: folded, type: Notations.FoldGroups.NodeTypes.foldedGroup)
-            .setting(node: folded, attribute: Attributes.Node.standsForGroup.attribute(true))
+            .setting(node: folded, attribute: Attributes.Node.standsForGroup(true))
         let edge = Edge(id: Edge.Id(rawValue: "plainBox"), from: plain, to: folded)
         graph = try graph.adding(edge: edge, edgeType: EdgeType(string: "e", from: "Plain", to: "FoldedGroup"))
         graph = try withSimpleLayout(graph)

@@ -28,13 +28,13 @@ struct BoundTests {
     private func concept(_ id: String, _ label: String, in graph: VGraph) throws(VError) -> VGraph {
         let node = Node(rawValue: id)
         let result = try graph.adding(node: node, type: CM.NodeTypes.concept)
-        return try result.setting(node: node, attribute: Attributes.Node.label.attribute(label))
+        return try result.setting(node: node, attribute: Attributes.Node.label(label))
     }
 
     private func relation(_ id: String, _ label: String, in graph: VGraph) throws(VError) -> VGraph {
         let node = Node(rawValue: id)
         let result = try graph.adding(node: node, type: CM.NodeTypes.relation)
-        return try result.setting(node: node, attribute: Attributes.Node.label.attribute(label))
+        return try result.setting(node: node, attribute: Attributes.Node.label(label))
     }
 
     private func edge(_ id: String, _ from: String, _ to: String, _ type: EdgeType, in graph: VGraph)
@@ -46,7 +46,7 @@ struct BoundTests {
     private func bound(
         _ definition: TypedAttributeDefinition<Int>, _ value: Int, on edgeType: EdgeType, in graph: VGraph
     ) throws(VError) -> VGraph {
-        try graph.setting(edgeType: edgeType, attribute: definition.attribute(value))
+        try graph.setting(edgeType: edgeType, attribute: definition(value))
     }
 
     // MARK: - The default: nothing is bounded
@@ -242,7 +242,7 @@ struct BoundTests {
         var graph = try conceptMap()
         graph = try concept("a", "Dog", in: graph)
         graph = try graph.setting(
-            nodeType: CM.NodeTypes.relation, attribute: Attributes.Node.totalInDegreeMax.attribute(0))
+            nodeType: CM.NodeTypes.relation, attribute: Attributes.Node.totalInDegreeMax(0))
 
         #expect(graph.successorCandidates(from: Node(rawValue: "a")).isEmpty)
     }
@@ -265,7 +265,7 @@ struct BoundTests {
         graph = try relation("r", "is a", in: graph)
         graph = try edge("e1", "a", "r", CM.EdgeTypes.conceptToRelation, in: graph)
         graph = try graph.setting(
-            nodeType: CM.NodeTypes.concept, attribute: Attributes.Node.totalOutDegreeMax.attribute(1))
+            nodeType: CM.NodeTypes.concept, attribute: Attributes.Node.totalOutDegreeMax(1))
 
         #expect(graph.successorCandidates(from: Node(rawValue: "a")).isEmpty)
     }
@@ -302,7 +302,7 @@ struct BoundTests {
         var graph = try conceptMap()
         graph = try concept("a", "Dog", in: graph)
         graph = try graph.setting(
-            nodeType: CM.NodeTypes.concept, attribute: Attributes.Node.totalOutDegreeMin.attribute(1))
+            nodeType: CM.NodeTypes.concept, attribute: Attributes.Node.totalOutDegreeMin(1))
 
         let messages = GenericQualityChecks.brokenBounds(graph: graph)
         #expect(messages.count == 1)
@@ -317,7 +317,7 @@ struct BoundTests {
         graph = try relation("r1", "likes", in: graph)
         graph = try edge("e1", "a", "r1", CM.EdgeTypes.conceptToRelation, in: graph)
         graph = try graph.setting(
-            nodeType: CM.NodeTypes.concept, attribute: Attributes.Node.totalOutDegreeMin.attribute(1))
+            nodeType: CM.NodeTypes.concept, attribute: Attributes.Node.totalOutDegreeMin(1))
 
         #expect(GenericQualityChecks.brokenBounds(graph: graph).isEmpty)
     }
@@ -327,7 +327,7 @@ struct BoundTests {
         var graph = try conceptMap()
         graph = try relation("r1", "likes", in: graph)
         graph = try graph.setting(
-            nodeType: CM.NodeTypes.relation, attribute: Attributes.Node.totalInDegreeMin.attribute(1))
+            nodeType: CM.NodeTypes.relation, attribute: Attributes.Node.totalInDegreeMin(1))
 
         let messages = GenericQualityChecks.brokenBounds(graph: graph)
         #expect(messages.count == 1)
@@ -348,9 +348,9 @@ struct BoundTests {
         graph = try edge("e3", "a", "r3", CM.EdgeTypes.conceptToRelation, in: graph)
         graph = try edge("e4", "b", "r1", CM.EdgeTypes.conceptToRelation, in: graph)
         graph = try graph.setting(
-            nodeType: CM.NodeTypes.concept, attribute: Attributes.Node.totalOutDegreeMax.attribute(1))
+            nodeType: CM.NodeTypes.concept, attribute: Attributes.Node.totalOutDegreeMax(1))
         graph = try graph.setting(
-            nodeType: CM.NodeTypes.relation, attribute: Attributes.Node.totalInDegreeMax.attribute(1))
+            nodeType: CM.NodeTypes.relation, attribute: Attributes.Node.totalInDegreeMax(1))
 
         let messages = GenericQualityChecks.brokenBounds(graph: graph)
         #expect(

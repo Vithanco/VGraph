@@ -5,7 +5,7 @@ extension NodeStyleLayout {
 
     public static func withCategory(category: String, categoryColor: SemanticColor) -> NodeStyleLayout {
         return framedBox(
-            fill: .white, border: .black,
+            fill: .flippingWhite, border: .flippingBlack,
             content: .vertical(
                 [
                     categoryBar(category, color: categoryColor),
@@ -36,8 +36,8 @@ extension NodeStyleLayout {
 
     public static var bareText: NodeStyleLayout {
         return .background(
-            .solid(shape: .box, color: .white),
-            .nodeText(color: .black)
+            .solid(shape: .box, color: .flippingWhite),
+            .nodeText(color: .labelText)
         )
     }
 
@@ -46,7 +46,7 @@ extension NodeStyleLayout {
             fill: color, border: borderShade(of: color),
             content: .padded(
                 NodeStyleConstants.roundedBoxInsets,
-                .nodeText(color: .black)
+                .nodeText(color: .labelText)
             ))
     }
 
@@ -71,7 +71,7 @@ extension NodeStyleLayout {
         -> NodeStyleLayout
     {
         return framedBox(
-            fill: .white, border: .black,
+            fill: .flippingWhite, border: .flippingBlack,
             content: .vertical(
                 [
                     categoryBar(category, color: categoryColor),
@@ -110,7 +110,7 @@ extension NodeStyleLayout {
                     ),
                     overlay: .padded(
                         NodeStyleConstants.roundedBoxInsets,
-                        .nodeText(color: .black)
+                        .nodeText(color: .labelText)
                     )
                 )
             )

@@ -378,17 +378,17 @@ class Parser {
                 groupTypes.append(VNotationGroupTypeDecl(name: typeName, attrs: rawAttributes))
             } else if check(.identifier) {
                 let key = try identifier(.attrKey)
-                if key == "icon" && check(.identifier) {
+                if key.lowercased() == "icon" && check(.identifier) {
                     // `icon flame [...]` declares artwork; `icon: "flame"` names one.
                     markPrevious(.keyword)
                     icons.append(try parseVNotationIcon())
-                } else if key == "qualityCheck" {
+                } else if key.lowercased() == "qualitycheck" {
                     // qualityCheck: name or qualityCheck: name(param, param, ...)
                     try consume(.colon, "Expected ':' after 'qualityCheck'")
                     let spec = try parseQualityCheckSpec()
                     _ = match(.semicolon)
                     qualityChecks.append(spec)
-                } else if key == "transform" {
+                } else if key.lowercased() == "transform" {
                     // transform: name
                     try consume(.colon, "Expected ':' after 'transform'")
                     let transformName = try identifier()
@@ -489,7 +489,7 @@ class Parser {
         while !check(.rightBracket) && !isAtEnd() {
             let key = try identifier(.attrKey)
             try consume(.colon, "Expected ':' after attribute key '\(key)'")
-            if key == "detailedBy" {
+            if key.lowercased() == "detailedby" {
                 guard detailedByAllowed else {
                     throw VParserError.unexpectedToken("'detailedBy:' belongs on a node type")
                 }
@@ -498,7 +498,7 @@ class Parser {
                 continue
             }
             let val = try value()
-            if key == "icon" {
+            if key.lowercased() == "icon" {
                 iconNameSpans[previous().start] = val
             }
             attrs.append((key: key, value: val))

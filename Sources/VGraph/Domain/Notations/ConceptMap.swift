@@ -247,25 +247,14 @@ extension Notations {
 
         static func relationTopologyChecks(_ graph: VGraph) -> [MessageWithSeverity] {
             let topology = GraphTopology(edges: graph.edges)
-            return unconnectedConcepts(graph, topology: topology)
-                + orphanClusters(graph, topology: topology)
+            return orphanClusters(graph, topology: topology)
                 + redundantPropositions(graph, topology: topology)
                 + unreusedRelations(graph, topology: topology)
                 + mappedRelations(graph, topology: topology)
                 + incompleteRelations(graph, topology: topology)
         }
 
-        static func unconnectedConcepts(_ graph: VGraph, topology: GraphTopology) -> [MessageWithSeverity] {
-            concepts(in: graph).filter { !topology.connectedNodes.contains($0) }.map { node in
-                MessageWithSeverity(
-                    message: "Concept \"\(graph.name(of: node))\" is not connected to any relation",
-                    severity: .warning,
-                    target: .node(node.description)
-                )
-            }
-        }
-
-        /// Ignores singleton components (already caught by unconnectedConcepts/disconnectedNodes).
+        /// Ignores singleton components: `GenericQualityChecks.disconnectedNodes` warns about those.
         static func orphanClusters(_ graph: VGraph, topology: GraphTopology) -> [MessageWithSeverity] {
             let components = topology.connectedComponents(nodes: graph.nodes)
             let nonTrivial = components.filter { $0.count > 1 }

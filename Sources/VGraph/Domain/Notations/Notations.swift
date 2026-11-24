@@ -277,7 +277,8 @@ extension Notations {
         guard !graph.isMetagraph else {
             return QualityReport(messages: [])
         }
-        let namedChecks = namedQualityChecks(of: graph).map(resolvedOrReported)
+        let namedChecks = namedQualityChecks(of: graph).filter { !GenericQualityChecks.runsAlways($0) }
+            .map(resolvedOrReported)
         // A `vnotation` that names its own checks replaces the compiled notation's.
         let notationChecks =
             graph.notationDefinition.declaredQualityChecks.isEmpty ? notationQualityChecks(for: graph.notationName) : []

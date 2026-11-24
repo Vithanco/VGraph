@@ -18,25 +18,25 @@ struct GroupLabelRectsTests {
         var graph = try VGraphParser(logger: TestLogger()).parse(source: source)
         for node in graph.nodes {
             let pos = nodes[node.id] ?? VPoint(x: 250, y: 150)
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(pos))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos(pos))
             graph = try graph.setting(
-                node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 90, height: 44)))
+                node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 90, height: 44)))
         }
         for group in graph.groups {
             if let bounds = groupBounds[group.id.id] {
-                graph = try graph.setting(group: group, attribute: Attributes.Group.layoutedBounds.attribute(bounds))
+                graph = try graph.setting(group: group, attribute: Attributes.Group.layoutedBounds(bounds))
             }
         }
         let root = Group.root
         graph = try graph.setting(
-            group: root, attribute: Attributes.Group.layoutedBounds.attribute(VRect(x: 0, y: 0, width: 500, height: 300)))
+            group: root, attribute: Attributes.Group.layoutedBounds(VRect(x: 0, y: 0, width: 500, height: 300)))
         graph = try graph.setting(
             group: root,
-            attribute: Attributes.Group.labelLayoutedPos.attribute(
+            attribute: Attributes.Group.labelLayoutedPos(
                 VPoint(x: rootLabelRect.minX + rootLabelRect.width / 2, y: rootLabelRect.minY + rootLabelRect.height / 2)))
         graph = try graph.setting(
             group: root,
-            attribute: Attributes.Group.labelLayoutedSize.attribute(
+            attribute: Attributes.Group.labelLayoutedSize(
                 VSize(width: rootLabelRect.width, height: rootLabelRect.height)))
         return graph
     }

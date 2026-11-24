@@ -10,7 +10,7 @@ extension VGraph {
         let withoutViews = try elementsOnly.views.folding(elementsOnly) { (graph, view) throws(VError) in
             try graph.removing(view: view.name)
         }
-        return withoutViews.updatedSelfWith(attributeStore: withoutViews.attributeStore.removeKey(.root))
+        return withoutViews.updatedSelfWith(attributeStore: withoutViews.attributeStore.removingKey(.root))
     }
 
     /// A copied group brings everything inside it.

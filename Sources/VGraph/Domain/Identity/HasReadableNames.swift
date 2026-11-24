@@ -3,7 +3,6 @@ public protocol HasReadableNames: CaseIterable & Identifiable & NameDescribable 
     var alias: String { get }
     /// The programmatic/VGL name for this value.
     var value: String { get }
-    var toolTip: String { get }
     static var typeName: String { get }
 }
 
@@ -21,9 +20,6 @@ extension HasReadableNames {
 }
 
 extension HasReadableNames {
-    public var toolTip: String {
-        return readableName
-    }
     public static func fromString(_ string: String) throws(VError) -> Self {
         if let result = Self.allCases.first(where: { $0.readableName == string || $0.alias == string || $0.value == string }) {
             return result

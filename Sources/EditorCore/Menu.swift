@@ -105,7 +105,7 @@ func commands(on kind: VItemKind) -> [VCommandID] {
         // (ADR-0016).
         // `ungroup` sits beside `delete` because the pair is the whole point:
         // one keeps the contents, the other takes them with it (ADR-0018).
-        // `changeType` sits where it does on a node — a group's boundary kind is
+        // `changeType` sits where it does on a node — a group's type is
         // the same idea one level up, so it gets the same verb (ADR-0020).
         return [
             .addNode, .toggleFolding, .changeType, .setLabel, .openURL, .setURL, .removeURL,
@@ -150,7 +150,7 @@ public func availability(
     case .changeType:
         // A group answers from a different list, and answers `.notApplicable`
         // rather than `.forbiddenByNotation` when it is empty: ⌥ must not reach a
-        // boundary kind, since the unknown group type exists only as the result of
+        // group type, since the unknown group type exists only as the result of
         // a document naming one no notation defines.
         if isPlainGroup(elementId, in: session) {
             return session.groupTypes().isEmpty ? .notApplicable : .available
@@ -462,9 +462,9 @@ public var plainGroupOption: VCommandOption {
     VCommandOption(id: "__plain__", title: "Plain group")
 }
 
-/// The boundary kinds a group may take, or **empty when there is no question**.
-/// No break entry, unlike `retypeOptions`: there is no such thing as a boundary
-/// kind outside the notation to reach for.
+/// The group types a group may take, or **empty when there is no question**.
+/// No break entry, unlike `retypeOptions`: there is no such thing as a group
+/// type outside the notation to reach for.
 public func groupRetypeOptions(
     for groupId: String, in session: some ForEditAGraphVisually
 ) -> [VCommandOption] {

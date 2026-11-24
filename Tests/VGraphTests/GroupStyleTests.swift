@@ -21,7 +21,7 @@ struct GroupStyleTests {
         let style = GroupStyle(folded: folded, unfolded: frame)
 
         var graph = try baseGraph().adding(group: group1)
-        graph = try graph.setting(group: group1, attribute: Attributes.Group.groupStyle.attribute(style))
+        graph = try graph.setting(group: group1, attribute: Attributes.Group.groupStyle(style))
 
         let readBack = try graph.get(group: group1, attribute: Attributes.Group.groupStyle)
         #expect(readBack.asString == style.asString)

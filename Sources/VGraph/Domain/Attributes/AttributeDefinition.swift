@@ -128,10 +128,6 @@ public struct TypedAttributeDefinition<T: AttributeType>: VProtocol {
         return Attribute(definition: self.asDefinition, value: parsed.asString)
     }
 
-    public func attribute(_ value: T) -> Attribute {
-        return Attribute(definition: self.asDefinition, value: value.asString)
-    }
-
     /// Cannot fail, so a notation can state its values as data.
     public func callAsFunction(_ value: T) -> Attribute {
         Attribute(definition: asDefinition, value: value.asString)

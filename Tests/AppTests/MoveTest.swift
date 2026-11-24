@@ -5,7 +5,7 @@ import VGraph
 
 @testable import App
 
-/// The rules — what may go where, what an emptied boundary does — belong to
+/// The rules — what may go where, what an emptied group does — belong to
 /// `MovingElementsTests`. Here is only what the session adds: edges refused,
 /// folding left alone, one undo step.
 struct MoveTest {

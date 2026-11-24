@@ -4,7 +4,7 @@
 /// not stored.
 extension AttributeStore {
 
-    public func addLayer(_ layer: AttributeLayer, parent: AttributeLayer, admission: LayerAdmission) throws(VError)
+    public func addingLayer(_ layer: AttributeLayer, parent: AttributeLayer, admission: LayerAdmission) throws(VError)
         -> AttributeStore
     {
         _ = try info(parent)
@@ -14,7 +14,7 @@ extension AttributeStore {
         return result
     }
 
-    public func removeLayer(_ layer: AttributeLayer) throws(VError) -> AttributeStore {
+    public func removingLayer(_ layer: AttributeLayer) throws(VError) -> AttributeStore {
         _ = try info(layer)
         var result = self
         result.layers[layer] = nil
@@ -28,7 +28,7 @@ extension AttributeStore {
         repruned(affected(by: key, chains), fromLayer: nil, chains)
     }
 
-    public func set(
+    public func setting(
         _ attribute: Attribute, for key: ItemKey, in layer: AttributeLayer,
         chains: some ChainSource
     ) throws(VError) -> AttributeStore {
@@ -68,7 +68,7 @@ extension AttributeStore {
 
     /// Admitted like a write: a layer that may not hold a value may not be
     /// asked to drop one either.
-    public func remove(
+    public func removing(
         _ id: Attribute.Id, for key: ItemKey, in layer: AttributeLayer, chains: some ChainSource
     ) throws(VError) -> AttributeStore {
         _ = try admitted(id, key: key, in: layer)
@@ -76,7 +76,7 @@ extension AttributeStore {
             .repruned(affected(by: key, chains), fromLayer: layer, chains)
     }
 
-    public func removeKey(_ key: ItemKey) -> AttributeStore {
+    public func removingKey(_ key: ItemKey) -> AttributeStore {
         var result = self
         for (layer, values) in layerValues where values[key.kind]?[key.id] != nil {
             result.layerValues[layer]?[key.kind]?[key.id] = nil

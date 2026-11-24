@@ -16,7 +16,7 @@ extension FeedbackLoop {
         TransformStep(.recordLoops) { (graph: VGraph) throws(VError) in
             if graph.completedSteps.contains(.recordLoops) { return graph }
             let loops = FeedbackLoop.fromLoops(graph.loopMarkers.selecting(from: graph.findLoops()), in: graph)
-            return try graph.setting(graphAttribute: Attributes.Group.recordedLoops.attribute(encode(loops)))
+            return try graph.setting(graphAttribute: Attributes.Group.recordedLoops(encode(loops)))
         }
     }
 

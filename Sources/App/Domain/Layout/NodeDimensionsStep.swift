@@ -52,17 +52,17 @@ private func calculateNodeSize(node: Node, in graph: VGraph) throws(VError) -> V
 
     var result = try graph.setting(
         node: node,
-        attribute: Attributes.Node.width.attribute(nodeSize.width)
+        attribute: Attributes.Node.width(nodeSize.width)
     )
     result = try result.setting(
         node: node,
-        attribute: Attributes.Node.height.attribute(nodeSize.height)
+        attribute: Attributes.Node.height(nodeSize.height)
     )
     result = try result.setting(
         node: node,
-        attribute: Attributes.Node.layoutedSize.attribute(nodeSize)
+        attribute: Attributes.Node.layoutedSize(nodeSize)
     )
-    result = try result.setting(node: node, attribute: Attributes.Node.fixedsize.attribute(true))
+    result = try result.setting(node: node, attribute: Attributes.Node.fixedsize(true))
 
     return result
 }

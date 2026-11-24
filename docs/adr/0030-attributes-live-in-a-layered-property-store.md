@@ -207,7 +207,7 @@ Provenance names the layer, so it already says whether a rule set a value; the
   - `values(in: layer, for: key)` returns what one layer holds;
   - `set` and `remove` go through the layer's admission, and `set` prunes a
     redundant value as it writes;
-  - `removeKey` removes a key from every layer, and `repruning` judges a retyped element's values again.
+  - `removingKey` removes a key from every layer, and `repruning` judges a retyped element's values again.
 - **It is functional, but need not be persistent.** Every operation is pure
   and returns a new store, yet no old version outlives the edit that replaced
   it. History is VGL text (0006), and a view is declared in VGL, so an edit to
@@ -265,7 +265,7 @@ Provenance names the layer, so it already says whether a rule set a value; the
 - Round trips are no longer byte-identical for a file that repeats its
   notation, e.g. `[rankdir: TB]` where the notation already lays out top to
   bottom. The export drops the repetition.
-- The tests that exercise member inheritance (`AppTests/VGraphTest.swift`,
+- The tests that exercise member inheritance (`VGraphTests/VGraphLayersTests.swift`,
   `VGraphTests/AttributeTests.swift`) are rewritten. `QualityAnalysis`'s local
   workaround for group inheritance goes away.
 - With (kind, id) keys a node may share its id with a type; `idCollision`

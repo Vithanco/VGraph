@@ -71,9 +71,9 @@ struct GroupTypeTests {
             .adding(group: group1)
             .adding(node: n1, type: nt1, group: group1)
             .adding(groupType: team)
-        graph = try graph.setting(groupType: team, attribute: Attributes.Group.groupStyle.attribute(style))
+        graph = try graph.setting(groupType: team, attribute: Attributes.Group.groupStyle(style))
         graph = try graph.typing(group: group1, as: team)
-        graph = try graph.setting(group: group1, attribute: Attributes.Group.isFolded.attribute(true))
+        graph = try graph.setting(group: group1, attribute: Attributes.Group.isFolded(true))
 
         let result = try applyFoldStep(to: graph)
 
@@ -91,10 +91,10 @@ struct GroupTypeTests {
             .adding(group: group1)
             .adding(node: n1, type: nt1, group: group1)
             .adding(groupType: team)
-        graph = try graph.setting(groupType: team, attribute: Attributes.Group.groupStyle.attribute(typeStyle))
+        graph = try graph.setting(groupType: team, attribute: Attributes.Group.groupStyle(typeStyle))
         graph = try graph.typing(group: group1, as: team)
-        graph = try graph.setting(group: group1, attribute: Attributes.Group.groupStyle.attribute(overrideStyle))
-        graph = try graph.setting(group: group1, attribute: Attributes.Group.isFolded.attribute(true))
+        graph = try graph.setting(group: group1, attribute: Attributes.Group.groupStyle(overrideStyle))
+        graph = try graph.setting(group: group1, attribute: Attributes.Group.isFolded(true))
 
         let result = try applyFoldStep(to: graph)
 
@@ -120,7 +120,7 @@ struct GroupTypeTests {
     func registriesAreNotAttributes() throws(VError) {
         let artwork = IconArtwork(width: 24, height: 24, path: "M0 0L24 24")
         let graph = try baseGraph().adding(groupType: team).adding(icon: "mark", artwork: artwork)
-        #expect(try graph.graphAttributes().isEmpty)
+        #expect(graph.graphAttributes().isEmpty)
         #expect(graph.groupTypes == [team])
         #expect(graph.declaredIcons["mark"] == artwork)
     }
@@ -130,7 +130,7 @@ struct GroupTypeTests {
         let graph = try baseGraph()
             .declaring(qualityChecks: [QualityCheckSpec(name: "treeStructure")])
             .declaring(transforms: ["identity"])
-        #expect(try graph.graphAttributes().isEmpty)
+        #expect(graph.graphAttributes().isEmpty)
         #expect(graph.notationDefinition.declaredQualityChecks == [QualityCheckSpec(name: "treeStructure")])
         #expect(graph.notationDefinition.declaredTransforms == ["identity"])
     }
@@ -166,7 +166,7 @@ struct GroupTypeTests {
     @Test("Given a group carrying the unknown type, when quality is analysed, then it is reported as an error")
     func unknownGroupTypeIsReported() throws(VError) {
         var graph = try baseGraph().ensuringUnknownGroupType().adding(group: group1)
-        graph = try graph.setting(group: group1, attribute: Attributes.Group.label.attribute("Banking"))
+        graph = try graph.setting(group: group1, attribute: Attributes.Group.label("Banking"))
         graph = try graph.typing(group: group1, as: GroupType.unknown)
 
         let messages = GenericQualityChecks.unknownGroupTypes(graph: graph)
@@ -199,9 +199,9 @@ struct GroupTypeTests {
         var graph = try baseGraph()
             .adding(group: group1)
             .adding(node: n1, type: nt1, group: group1)
-        graph = try graph.setting(group: group1, attribute: Attributes.Group.label.attribute("Plain"))
+        graph = try graph.setting(group: group1, attribute: Attributes.Group.label("Plain"))
         graph = try graph.typing(group: group1, as: team)
-        graph = try graph.setting(group: group1, attribute: Attributes.Group.isFolded.attribute(true))
+        graph = try graph.setting(group: group1, attribute: Attributes.Group.isFolded(true))
 
         let result = try applyFoldStep(to: graph)
 

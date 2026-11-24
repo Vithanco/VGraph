@@ -40,11 +40,11 @@ struct SVGRendererTests {
             let pos = VPoint(x: Double(index) * 100 + 50, y: 50)
             layoutedGraph = try layoutedGraph.setting(
                 node: node,
-                attribute: Attributes.Node.layoutedPos.attribute(pos)
+                attribute: Attributes.Node.layoutedPos(pos)
             )
             layoutedGraph = try layoutedGraph.setting(
                 node: node,
-                attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40))
+                attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40))
             )
         }
 
@@ -94,22 +94,22 @@ struct SVGRendererTests {
             let pos = VPoint(x: Double(index) * 100 + 50, y: 50)
             layoutedGraph = try layoutedGraph.setting(
                 node: node,
-                attribute: Attributes.Node.layoutedPos.attribute(pos)
+                attribute: Attributes.Node.layoutedPos(pos)
             )
             layoutedGraph = try layoutedGraph.setting(
                 node: node,
-                attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40))
+                attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40))
             )
         }
 
         let group = graph.groups[0]
         layoutedGraph = try layoutedGraph.setting(
             group: group,
-            attribute: Attributes.Group.layoutedBounds.attribute(VRect(x: 80, y: 10, width: 200, height: 100))
+            attribute: Attributes.Group.layoutedBounds(VRect(x: 80, y: 10, width: 200, height: 100))
         )
         layoutedGraph = try layoutedGraph.setting(
             group: group,
-            attribute: Attributes.Group.labelLayoutedPos.attribute(VPoint(x: 180, y: 20))
+            attribute: Attributes.Group.labelLayoutedPos(VPoint(x: 180, y: 20))
         )
 
         let renderer = VSVGRenderer(logger: TestLogger())
@@ -153,9 +153,9 @@ struct SVGRendererTests {
         for (index, node) in graph.nodes.enumerated() {
             let pos = VPoint(x: Double(index) * 100 + 50, y: 50)
             layoutedGraph = try layoutedGraph.setting(
-                node: node, attribute: Attributes.Node.layoutedPos.attribute(pos))
+                node: node, attribute: Attributes.Node.layoutedPos(pos))
             layoutedGraph = try layoutedGraph.setting(
-                node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
+                node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40)))
         }
 
         let renderer = VSVGRenderer(logger: TestLogger())
@@ -194,9 +194,9 @@ struct SVGRendererTests {
         for (index, node) in graph.nodes.enumerated() {
             let pos = VPoint(x: Double(index) * 100 + 50, y: 50)
             layoutedGraph = try layoutedGraph.setting(
-                node: node, attribute: Attributes.Node.layoutedPos.attribute(pos))
+                node: node, attribute: Attributes.Node.layoutedPos(pos))
             layoutedGraph = try layoutedGraph.setting(
-                node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
+                node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40)))
         }
 
         let renderer = VSVGRenderer(logger: TestLogger())
@@ -237,9 +237,9 @@ struct SVGRendererTests {
         for (index, node) in graph.nodes.enumerated() {
             let pos = VPoint(x: Double(index) * 100 + 50, y: 50)
             layoutedGraph = try layoutedGraph.setting(
-                node: node, attribute: Attributes.Node.layoutedPos.attribute(pos))
+                node: node, attribute: Attributes.Node.layoutedPos(pos))
             layoutedGraph = try layoutedGraph.setting(
-                node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
+                node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40)))
         }
 
         let renderer = VSVGRenderer(logger: TestLogger())
@@ -282,9 +282,9 @@ struct SVGRendererTests {
         for node in graph.nodes {
             let pos = square[node.id] ?? VPoint(x: 0, y: 0)
             layoutedGraph = try layoutedGraph.setting(
-                node: node, attribute: Attributes.Node.layoutedPos.attribute(pos))
+                node: node, attribute: Attributes.Node.layoutedPos(pos))
             layoutedGraph = try layoutedGraph.setting(
-                node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 60, height: 40)))
+                node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 60, height: 40)))
         }
 
         let renderer = VSVGRenderer(logger: TestLogger())
@@ -323,11 +323,11 @@ struct SVGRendererTests {
             let pos = VPoint(x: Double(index) * 100 + 50, y: 50)
             layoutedGraph = try layoutedGraph.setting(
                 node: node,
-                attribute: Attributes.Node.layoutedPos.attribute(pos)
+                attribute: Attributes.Node.layoutedPos(pos)
             )
             layoutedGraph = try layoutedGraph.setting(
                 node: node,
-                attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40))
+                attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40))
             )
         }
 
@@ -356,16 +356,16 @@ struct SVGRendererTests {
             let pos = VPoint(x: Double(index) * 100 + 50, y: 50)
             layoutedGraph = try layoutedGraph.setting(
                 node: node,
-                attribute: Attributes.Node.layoutedPos.attribute(pos)
+                attribute: Attributes.Node.layoutedPos(pos)
             )
             layoutedGraph = try layoutedGraph.setting(
                 node: node,
-                attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40))
+                attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40))
             )
         }
 
         layoutedGraph = try layoutedGraph.setting(
-            graphAttribute: Attributes.Group.watermark.attribute(false)
+            graphAttribute: Attributes.Group.watermark(false)
         )
 
         let renderer = VSVGRenderer(logger: TestLogger())

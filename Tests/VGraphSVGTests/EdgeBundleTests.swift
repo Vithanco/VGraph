@@ -25,9 +25,9 @@ struct EdgeBundleTests {
         var laidOut = graph
         var x = 50.0
         for node in graph.nodes {
-            laidOut = try laidOut.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: x, y: 50)))
+            laidOut = try laidOut.setting(node: node, attribute: Attributes.Node.layoutedPos(VPoint(x: x, y: 50)))
             laidOut = try laidOut.setting(
-                node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
+                node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40)))
             x += 120
         }
         return try VSVGRenderer(logger: TestLogger()).render(graph: laidOut, darkMode: false)

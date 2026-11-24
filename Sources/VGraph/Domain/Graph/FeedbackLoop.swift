@@ -101,8 +101,8 @@ extension Attributes {
 }
 
 extension Edge {
-    public func loopStyle<GA: GetAttribute>(in getter: GA) -> LoopStyle {
-        (try? getter.get(edge: id, attribute: Attributes.Loop.style)).flatMap { try? LoopStyle.fromString($0) }
+    public func loopStyle(in graph: VGraph) -> LoopStyle {
+        (try? graph.get(edge: id, attribute: Attributes.Loop.style)).flatMap { try? LoopStyle.fromString($0) }
             ?? .none
     }
 
@@ -140,8 +140,8 @@ extension FeedbackLoop {
     /// Falls back to node center positions when edge layout data is unavailable.
     ///
     /// See: https://stackoverflow.com/questions/1165647/how-to-determine-if-a-list-of-polygon-points-are-in-clockwise-order/1180256#1180256
-    public func loopDirection<GA: GetAttribute>(in getter: GA) -> LoopDirection {
-        guard edges.count >= 2, let polygon = polygon(in: getter), polygon.count >= 3 else { return .error }
+    public func loopDirection(in graph: VGraph) -> LoopDirection {
+        guard edges.count >= 2, let polygon = polygon(in: graph), polygon.count >= 3 else { return .error }
         let doubledSignedArea = polygon.indices.reduce(0.0) { sum, index in
             let current = polygon[index]
             let next = polygon[(index + 1) % polygon.count]
@@ -153,16 +153,16 @@ extension FeedbackLoop {
     }
 
     /// `nil` when the edges' ends give no polygon and a node has no position.
-    private func polygon<GA: GetAttribute>(in getter: GA) -> [VPoint]? {
+    private func polygon(in graph: VGraph) -> [VPoint]? {
         let edgeEnds = edges.flatMap { edge -> [VPoint] in
-            guard let layoutData = try? getter.get(edge: edge.id, attribute: Attributes.Edge.layoutData),
+            guard let layoutData = try? graph.get(edge: edge.id, attribute: Attributes.Edge.layoutData),
                 let start = layoutData.splinePoints.first,
                 let end = layoutData.splinePoints.last
             else { return [] }
             return [start, end]
         }
         guard edgeEnds.count < 3 else { return edgeEnds }
-        let centers = nodes.compactMap { try? getter.get(node: $0, attribute: Attributes.Node.layoutedPos) }
+        let centers = nodes.compactMap { try? graph.get(node: $0, attribute: Attributes.Node.layoutedPos) }
         return centers.count == nodes.count ? centers : nil
     }
 }

@@ -36,7 +36,7 @@ struct AddNodeTest {
     }
 
     /// Naming a group puts the node inside it — the case a right-click within a
-    /// boundary lands in, since the boundary rect encloses its interior and so
+    /// group lands in, since the group's rect encloses its interior and so
     /// already resolves to the group.
     @Test func addingANodeToAGroupPutsItInsideThatGroup() throws {
         let s = try makeTestSession(

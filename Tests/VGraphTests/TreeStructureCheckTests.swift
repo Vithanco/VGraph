@@ -16,7 +16,7 @@ struct TreeStructureCheckTests {
         for id in nodes {
             let node = Node(rawValue: id)
             graph = try graph.adding(node: node, type: CLD.NodeTypes.stock)
-            graph = try graph.setting(node: node, attribute: Attributes.Node.label.attribute(id.uppercased()))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.label(id.uppercased()))
         }
         for (id, from, to) in edges {
             graph = try graph.adding(edge: Edge(string: id, from: from, to: to), edgeType: CLD.EdgeTypes.same)

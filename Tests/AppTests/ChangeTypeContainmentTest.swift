@@ -120,7 +120,7 @@ struct ChangeTypeContainmentTest {
     }
 
     /// A detailed node is a node: the menu retypes it by node type, never by
-    /// boundary kind, and ⌥ reaches every other node type.
+    /// group type, and ⌥ reaches every other node type.
     @Test("Given a detailed node, then the menu retypes it as a node")
     func theMenuRetypesADetailedNodeAsANode() throws {
         let s = try session(
@@ -154,8 +154,8 @@ struct ChangeTypeContainmentTest {
         #expect(anyType.map { $0.id } == ["Person", "System", "Database", "Queue", "Component", "Table"])
     }
 
-    @Test("Given a detailed node, then a boundary kind is refused rather than replacing its node type")
-    func aDetailedNodeTakesNoBoundaryKind() throws {
+    @Test("Given a detailed node, then a group type is refused rather than replacing its node type")
+    func aDetailedNodeTakesNoGroupType() throws {
         let s = try makeTestSession(
             vgl: Self.notation.replacingOccurrences(of: "}\n", with: "\tgroup type: Boundary\n}\n")
                 + """

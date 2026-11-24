@@ -25,7 +25,7 @@ struct DetailedNodeFoldAndFrameTests {
     @Test("Given a detailed node holding a group style, then the style draws no frame: its look is its node type's")
     func aGroupStyleDoesNotReachADetailedNode() throws(VError) {
         let graph = try detailed().setting(
-            group: ibs, attribute: Attributes.Group.groupStyle.attribute(GroupStyle(folded: .empty, unfolded: dotted)))
+            group: ibs, attribute: Attributes.Group.groupStyle(GroupStyle(folded: .empty, unfolded: dotted)))
 
         #expect(graph.resolvedGroupStyle(ibs) != nil)
         #expect(graph.resolvedFrame(ibs) == nil)

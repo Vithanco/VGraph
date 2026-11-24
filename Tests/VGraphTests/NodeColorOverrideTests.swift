@@ -83,10 +83,10 @@ struct NodeColorOverrideTests {
         var graph = VGraph()
         let type = NodeType(rawValue: "Tagged")
         graph = try graph.adding(nodeType: type)
-        graph = try graph.setting(nodeType: type, attribute: Attributes.Node.nodeStyle.attribute(.withCategory))
+        graph = try graph.setting(nodeType: type, attribute: Attributes.Node.nodeStyle(.withCategory))
         graph = try graph.setting(
             nodeType: type,
-            attribute: Attributes.Node.backgroundColor.attribute(VColor(hexString: "#884499")!))
+            attribute: Attributes.Node.backgroundColor(VColor(hexString: "#884499")!))
 
         let overridden = graph.effectiveNodeLayout(
             for: type, background: VColor(hexString: "#b6e6bd")!, fontColor: nil)

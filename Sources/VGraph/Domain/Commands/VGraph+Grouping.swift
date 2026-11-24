@@ -170,7 +170,7 @@ extension VGraph {
         // what the [[Inline edit]] opens on, and must read the same after a reparse.
         let labeled = try adding(group: created, childOf: Group(rawValue: target.parentId)).setting(
             group: created,
-            attribute: Attributes.Group.label.attribute(Attributes.Node.placeholderLabel))
+            attribute: Attributes.Group.label(Attributes.Node.placeholderLabel))
 
         let members = groupMembers(for: ids).compactMap { resolveCommandTarget(id: $0) }
         let result = try members.folding(labeled) { (result, member) throws(VError) in

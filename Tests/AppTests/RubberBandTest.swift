@@ -59,8 +59,8 @@ struct RubberBandTest {
 
     /// Only what is drawn as a single box: a node, or a folded group — which is
     /// one thing at this zoom, [[Fold state]] deciding as ADR-0003 says. An open
-    /// boundary's interior belongs to the band and has to stay there, or
-    /// band-selecting inside one becomes impossible; the boundary itself arrives
+    /// group's interior belongs to the band and has to stay there, or
+    /// band-selecting inside one becomes impossible; the group itself arrives
     /// by promotion instead (ADR-0018). An edge is never selectable at all
     /// (ADR-0017).
     @Test("Only a node or a folded group is caught")

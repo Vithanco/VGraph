@@ -18,13 +18,13 @@ struct AssembleNodeStyleStepTests {
         var graph = VGraph()
         let nodeType = NodeType(rawValue: nodeTypeName)
         graph = try graph.adding(nodeType: nodeType)
-        graph = try graph.setting(nodeType: nodeType, attribute: Attributes.Node.nodeStyle.attribute(nodeStyle))
-        graph = try graph.setting(nodeType: nodeType, attribute: Attributes.Node.backgroundColor.attribute(backgroundColor))
+        graph = try graph.setting(nodeType: nodeType, attribute: Attributes.Node.nodeStyle(nodeStyle))
+        graph = try graph.setting(nodeType: nodeType, attribute: Attributes.Node.backgroundColor(backgroundColor))
         if let icon = iconInfo {
-            graph = try graph.setting(nodeType: nodeType, attribute: Attributes.Node.iconInfo.attribute(icon))
+            graph = try graph.setting(nodeType: nodeType, attribute: Attributes.Node.iconInfo(icon))
         }
         if let cat = category {
-            graph = try graph.setting(nodeType: nodeType, attribute: Attributes.Node.category.attribute(cat))
+            graph = try graph.setting(nodeType: nodeType, attribute: Attributes.Node.category(cat))
         }
         return graph
     }

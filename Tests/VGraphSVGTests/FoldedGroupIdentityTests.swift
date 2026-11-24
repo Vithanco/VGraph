@@ -28,9 +28,9 @@ struct FoldedGroupIdentityTests {
         var graph = try TransformStep.pipeline(Notations.extensionSteps)(parsed)
         var x = 50.0
         for node in graph.nodes {
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: x, y: 50)))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos(VPoint(x: x, y: 50)))
             graph = try graph.setting(
-                node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
+                node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40)))
             x += 120
         }
         return try VSVGRenderer(logger: TestLogger()).render(graph: graph, darkMode: false)

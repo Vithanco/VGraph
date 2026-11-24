@@ -19,7 +19,7 @@ struct GroupFrameStepTests {
         let graph = try VGraph().adding(nodeType: member).adding(groupType: team)
         return try graph.setting(
             groupType: team,
-            attribute: Attributes.Group.groupStyle.attribute(GroupStyle(folded: .empty, unfolded: frame)))
+            attribute: Attributes.Group.groupStyle(GroupStyle(folded: .empty, unfolded: frame)))
     }
 
     private func adding(_ group: Group, holding node: Node, to graph: VGraph) throws -> VGraph {

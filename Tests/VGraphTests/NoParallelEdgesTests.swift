@@ -26,7 +26,7 @@ struct NoParallelEdgesTests {
     private func stock(_ id: String, _ label: String, in graph: VGraph) throws(VError) -> VGraph {
         let node = Node(rawValue: id)
         let result = try graph.adding(node: node, type: CLD.NodeTypes.stock)
-        return try result.setting(node: node, attribute: Attributes.Node.label.attribute(label))
+        return try result.setting(node: node, attribute: Attributes.Node.label(label))
     }
 
     private func link(_ id: String, _ from: String, _ to: String, _ type: EdgeType, in graph: VGraph)

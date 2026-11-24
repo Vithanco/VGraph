@@ -23,28 +23,28 @@ struct VGraphLayersTests {
     @Test("Given a node attribute, when it is written to a plain group, then the group refuses it")
     func aPlainGroupRefusesANodeAttribute() throws(VError) {
         #expect(throws: VError.wrongTarget(is: .node, insteadOf: .group)) {
-            try graph().setting(group: inner, attribute: Attributes.Node.fontsize.attribute(30))
+            try graph().setting(group: inner, attribute: Attributes.Node.fontsize(30))
         }
     }
 
     @Test("Given a value on the root, when a node resolves the same attribute, then the root's value does not apply")
     func aNodeInheritsNothingFromTheRoot() throws(VError) {
-        let styled = try graph().setting(graphAttribute: Attributes.Node.fontsize.attribute(30))
+        let styled = try graph().setting(graphAttribute: Attributes.Node.fontsize(30))
         #expect(try styled.get(node: q1, attribute: Attributes.Node.fontsize) == Attributes.Node.fontsize.defaultValue)
     }
 
     @Test("Given a value on a node's group, when the node resolves the same attribute, then the group's value does not apply")
     func aNodeTakesNothingFromItsGroup() throws(VError) {
-        let labeled = try graph().setting(group: inner, attribute: Attributes.Group.label.attribute("Inner"))
+        let labeled = try graph().setting(group: inner, attribute: Attributes.Group.label("Inner"))
         #expect(try labeled.get(node: q1, attribute: Attributes.Group.label) == Attributes.Group.label.defaultValue)
     }
 
     @Test("Given values on the graph, the type and the node, when the node's attributes are read, then only the type's and its own are held")
     func aNodesAttributesHoldOnlyItsOwnAndItsTypes() throws(VError) {
         let styled = try graph()
-            .setting(graphAttribute: Attributes.Node.tooltip.attribute("graph"))
-            .setting(nodeType: question, attribute: Attributes.Node.label.attribute("type"))
-            .setting(node: q1, attribute: Attributes.Node.position.attribute(VPoint(x: 42, y: 42).asString))
+            .setting(graphAttribute: Attributes.Node.tooltip("graph"))
+            .setting(nodeType: question, attribute: Attributes.Node.label("type"))
+            .setting(node: q1, attribute: Attributes.Node.position(VPoint(x: 42, y: 42).asString))
         let held = try styled.attributes(node: q1)
         #expect(held.count == 2)
         #expect(held.value(for: Attributes.Node.label) == "type")
@@ -53,27 +53,27 @@ struct VGraphLayersTests {
 
     @Test("Given a labelled parent group, when its child resolves its label, then it has its own or the default")
     func aGroupInheritsNothingFromItsParent() throws(VError) {
-        let labeled = try graph().setting(group: outer, attribute: Attributes.Group.label.attribute("Outer"))
+        let labeled = try graph().setting(group: outer, attribute: Attributes.Group.label("Outer"))
         #expect(try labeled.get(group: inner, attribute: Attributes.Group.label) == Attributes.Group.label.defaultValue)
     }
 
     @Test("Given a value on a node's type, when the node resolves it, then the type's value applies")
     func aNodeFallsBackToItsType() throws(VError) {
-        let typed = try graph().setting(nodeType: question, attribute: Attributes.Node.fontsize.attribute(30))
+        let typed = try graph().setting(nodeType: question, attribute: Attributes.Node.fontsize(30))
         #expect(try typed.get(node: q1, attribute: Attributes.Node.fontsize) == 30.0)
     }
 
     @Test("Given a node value equal to its type's, when the node's own values are read, then it is not among them")
     func aNodeRepeatingItsTypeHoldsNothing() throws(VError) {
-        let repeated = try graph().setting(nodeType: question, attribute: Attributes.Node.fontsize.attribute(30))
-            .setting(node: q1, attribute: Attributes.Node.fontsize.attribute(30))
+        let repeated = try graph().setting(nodeType: question, attribute: Attributes.Node.fontsize(30))
+            .setting(node: q1, attribute: Attributes.Node.fontsize(30))
         #expect(repeated.ownAttributes(node: q1)[Attributes.Node.fontsize.id] == nil)
     }
 
     @Test("Given a node with its own value, when it is retyped to a type with that value, then the value is dropped")
     func retypingPrunesAgainstTheNewType() throws(VError) {
-        let retyped = try graph().setting(nodeType: answer, attribute: Attributes.Node.fontsize.attribute(30))
-            .setting(node: q1, attribute: Attributes.Node.fontsize.attribute(30))
+        let retyped = try graph().setting(nodeType: answer, attribute: Attributes.Node.fontsize(30))
+            .setting(node: q1, attribute: Attributes.Node.fontsize(30))
             .settingNodeType(node: q1, type: answer)
         #expect(retyped.ownAttributes(node: q1)[Attributes.Node.fontsize.id] == nil)
         #expect(try retyped.get(node: q1, attribute: Attributes.Node.fontsize) == 30.0)
@@ -85,7 +85,7 @@ struct VGraphLayersTests {
             id: "node.stranger", name: "stranger", description: "", defaultValue: "", target: .node)
         let graph = try graph()
         #expect(throws: VError.attributeNotFound(stranger.id)) {
-            try graph.setting(node: q1, attribute: stranger.attribute("x"))
+            try graph.setting(node: q1, attribute: stranger("x"))
         }
     }
 
@@ -175,7 +175,7 @@ struct TypeLinkSourceTests {
     func aNodeResolvesThroughTheGraphsOwnType() throws(VError) {
         let question = NodeType("Question")
         let styled = try VGraph().adding(nodeType: question)
-            .setting(nodeType: question, attribute: Attributes.Node.fontsize.attribute(30))
+            .setting(nodeType: question, attribute: Attributes.Node.fontsize(30))
         let structure = try VGraph().adding(nodeType: question)
             .adding(node: Node("q1"), type: question, group: Group.root)
         let assembled = VGraph(graph: structure.typedGraph, attributeStore: styled.attributeStore, groupStructure: structure.groupStructure)

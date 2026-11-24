@@ -1081,7 +1081,7 @@ function AnnotationSpec() {
 
 // ─── CLD Loop Indicators ─────────────────────────────────────────────────────
 
-function LoopIndicator({ type = 'R', clockwise = true, x = 0, y = 0, size = 52 }) {
+function LoopMarker({ type = 'R', clockwise = true, x = 0, y = 0, size = 52 }) {
   const r = size * 0.43;
   const cx = x + size / 2, cy = y + size / 2;
   const sw = size * 0.055;
@@ -1150,7 +1150,7 @@ function CLDLoopSpec() {
             <svg width={svgW} height={SIZE + 48} style={{display:'block', overflow:'visible'}}>
               {variants.map((v, i) => (
                 <g key={i}>
-                  <LoopIndicator type={v.type} clockwise={v.clockwise} x={i * COL} y={0} size={SIZE}/>
+                  <LoopMarker type={v.type} clockwise={v.clockwise} x={i * COL} y={0} size={SIZE}/>
                   <text x={i * COL + SIZE/2} y={SIZE + 18} textAnchor="middle"
                     fontFamily="'DM Sans',sans-serif" fontSize={10} fontWeight={600} fill="#505048">
                     {v.type === 'R' ? 'Reinforcing' : 'Balancing'}
@@ -1193,7 +1193,7 @@ function CLDLoopSpec() {
               <text x={115} y={52} textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize={9} fontStyle="italic" fill="#9a9690">s</text>
 
               {/* Loop indicator floating between the nodes */}
-              <LoopIndicator type="R" clockwise={true} x={91} y={58} size={40}/>
+              <LoopMarker type="R" clockwise={true} x={91} y={58} size={40}/>
 
               {/* Second loop below */}
               <rect x={30} y={110} width={90} height={36} rx={7} fill={CLD_TYPE.fill} stroke={CLD_TYPE.border} strokeWidth={1}/>
@@ -1204,7 +1204,7 @@ function CLDLoopSpec() {
               <path d="M 100,28 Q 140,80 115,110" fill="none" stroke="#b0a898" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-cld)"/>
               <text x={128} y={75} fontFamily="'DM Sans',sans-serif" fontSize={9} fontStyle="italic" fill="#9a9690">o</text>
 
-              <LoopIndicator type="B" clockwise={false} x={148} y={90} size={36}/>
+              <LoopMarker type="B" clockwise={false} x={148} y={90} size={36}/>
             </svg>
           </div>
         </div>

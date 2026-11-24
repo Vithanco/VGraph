@@ -6,8 +6,9 @@ public enum OlderVGLSpellings {
     public enum Place {
         /// An item's attribute in a document, or a diagram attribute in a `vnotation`.
         case attribute(AttributeTarget)
-        /// A key of a `vnotation`'s `node type:` or `group type:`.
-        case typeDeclaration
+        /// A key of a `vnotation`'s `node type:` (`.node`), `edge type:` (`.edge`)
+        /// or `group type:` (`.group`).
+        case typeDeclaration(AttributeTarget)
     }
 
     public static func current(_ name: String, in place: Place) -> String {
@@ -18,27 +19,27 @@ public enum OlderVGLSpellings {
         case ("diagramlogic", .attribute): return Attributes.Group.diagramLogic.name
         // Stated rather than left to `find(attributeByName:)`, whose last resort, a
         // substring match, finds nothing for "color": it fits the background and the font.
-        case ("color", .attribute(.node)): return Attributes.Node.backgroundColor.name
+        case ("color", .attribute(.node)), ("color", .typeDeclaration(.node)):
+            return Attributes.Node.backgroundColor.name
         // The native renderer draws a group from its border and background, so a
         // group's `color` is its background.
         case ("color", .attribute(.group)): return Attributes.Group.backgroundColor.name
         case ("boundarychrome", .attribute(.group)): return Attributes.Group.frame.name
-        case ("boundarydash", .typeDeclaration): return GroupFrame.dashKey
-        case ("boundarycolor", .typeDeclaration): return GroupFrame.colorKey
-        case ("boundaryfill", .typeDeclaration): return GroupFrame.fillKey
-        case ("boundaryradius", .typeDeclaration): return GroupFrame.radiusKey
+        case ("boundarydash", .typeDeclaration(.node)), ("boundarydash", .typeDeclaration(.group)): return GroupFrame.dashKey
+        case ("boundarycolor", .typeDeclaration(.node)), ("boundarycolor", .typeDeclaration(.group)): return GroupFrame.colorKey
+        case ("boundaryfill", .typeDeclaration(.node)), ("boundaryfill", .typeDeclaration(.group)): return GroupFrame.fillKey
+        case ("boundaryradius", .typeDeclaration(.node)), ("boundaryradius", .typeDeclaration(.group)):
+            return GroupFrame.radiusKey
+        // Degree bounds were first named for what they count per (ADR-0011).
+        case ("persourcemin", .typeDeclaration(.edge)): return Attributes.Edge.outDegreeMin.name
+        case ("persourcemax", .typeDeclaration(.edge)): return Attributes.Edge.outDegreeMax.name
+        case ("pertargetmin", .typeDeclaration(.edge)): return Attributes.Edge.inDegreeMin.name
+        case ("pertargetmax", .typeDeclaration(.edge)): return Attributes.Edge.inDegreeMax.name
+        case ("totaloutmin", .typeDeclaration(.node)): return Attributes.Node.totalOutDegreeMin.name
+        case ("totaloutmax", .typeDeclaration(.node)): return Attributes.Node.totalOutDegreeMax.name
+        case ("totalinmin", .typeDeclaration(.node)): return Attributes.Node.totalInDegreeMin.name
+        case ("totalinmax", .typeDeclaration(.node)): return Attributes.Node.totalInDegreeMax.name
         default: return name
         }
-    }
-
-    /// A type declaration's keys in their current spelling. Where a block gives
-    /// both spellings of one key, the current one wins.
-    static func current(typeDeclaration attributes: [String: String]) -> [String: String] {
-        Dictionary(
-            attributes.compactMap { key, value -> (String, String)? in
-                let name = current(key, in: .typeDeclaration)
-                return name != key && attributes[name] != nil ? nil : (name, value)
-            },
-            uniquingKeysWith: { first, _ in first })
     }
 }

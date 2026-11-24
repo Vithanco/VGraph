@@ -22,10 +22,10 @@ extension VGraph {
     /// Loose group colours are `VColor`, so the frame's light hex goes in; the
     /// renderer honours a non-default group colour in both themes.
     fileprivate func stamping(_ frame: GroupFrame, on group: Group) throws(VError) -> VGraph {
-        try stamping(group: group, attribute: Attributes.Group.cornerRadius.attribute(frame.cornerRadius))
-            .stamping(group: group, attribute: Attributes.Group.borderDash.attribute(frame.borderDash))
-            .stamping(group: group, attribute: Attributes.Group.borderColor.attribute(frame.borderColor.resolve(darkMode: false)))
-            .stamping(group: group, attribute: Attributes.Group.backgroundColor.attribute(frame.fill.resolve(darkMode: false)))
+        try stamping(group: group, attribute: Attributes.Group.cornerRadius(frame.cornerRadius))
+            .stamping(group: group, attribute: Attributes.Group.borderDash(frame.borderDash))
+            .stamping(group: group, attribute: Attributes.Group.borderColor(frame.borderColor.resolve(darkMode: false)))
+            .stamping(group: group, attribute: Attributes.Group.backgroundColor(frame.fill.resolve(darkMode: false)))
     }
 }
 

@@ -143,7 +143,7 @@ one window. See [ADR-0013](adr/0013-driving-ports-and-named-commands.md).
 `Inbound/` and `Outbound/` read alike, and the two-name rule does not bend for
 them — direction is a fact about who calls whom, not about where a protocol is
 written. A driving port declared in `Inbound/` compiles fine, so
-`ArchitectureTest.everyDrivingPortIsDeclaredInTheCore` and
+`ArchitectureTest.everyCorePortIsReExportedUnderItsPlainName` and
 `inboundDeclaresNoProtocolOfItsOwn` are what notice.
 
 A driving port names no type that would drag the wiring in, so a pane is

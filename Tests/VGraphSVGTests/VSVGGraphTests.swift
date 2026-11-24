@@ -34,20 +34,20 @@ struct VSVGGraphTests {
         for (index, node) in graph.nodes.enumerated() {
             graph = try graph.setting(
                 node: node,
-                attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: Double(index) * 120 + 60, y: 80)))
+                attribute: Attributes.Node.layoutedPos(VPoint(x: Double(index) * 120 + 60, y: 80)))
             graph = try graph.setting(
-                node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 90, height: 44)))
+                node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 90, height: 44)))
         }
         for group in graph.groups {
             graph = try graph.setting(
                 group: group,
-                attribute: Attributes.Group.layoutedBounds.attribute(
+                attribute: Attributes.Group.layoutedBounds(
                     groupBounds ?? VRect(x: 20, y: 20, width: 300, height: 160)))
         }
         let root = Group.root
         graph = try graph.setting(
             group: root,
-            attribute: Attributes.Group.layoutedBounds.attribute(VRect(x: 0, y: 0, width: 500, height: 300)))
+            attribute: Attributes.Group.layoutedBounds(VRect(x: 0, y: 0, width: 500, height: 300)))
         return graph
     }
 
@@ -122,7 +122,7 @@ struct VSVGGraphTests {
                 node q1: Question "Q";
             }
             """)
-        graph = try graph.setting(graphAttribute: Attributes.Group.watermark.attribute(false))
+        graph = try graph.setting(graphAttribute: Attributes.Group.watermark(false))
         try expectFullRender(graph)
     }
 
@@ -210,36 +210,36 @@ struct VSVGGraphTests {
         let b = Node(rawValue: "b")
         graph = try graph.adding(node: a, type: CLD.NodeTypes.stock)
         graph = try graph.adding(node: b, type: CLD.NodeTypes.stock)
-        graph = try graph.setting(node: a, attribute: Attributes.Node.label.attribute("A"))
-        graph = try graph.setting(node: b, attribute: Attributes.Node.label.attribute("B"))
-        graph = try graph.setting(node: a, attribute: Attributes.Node.wrappedText.attribute(["A"]))
-        graph = try graph.setting(node: b, attribute: Attributes.Node.wrappedText.attribute(["B"]))
+        graph = try graph.setting(node: a, attribute: Attributes.Node.label("A"))
+        graph = try graph.setting(node: b, attribute: Attributes.Node.label("B"))
+        graph = try graph.setting(node: a, attribute: Attributes.Node.wrappedText(["A"]))
+        graph = try graph.setting(node: b, attribute: Attributes.Node.wrappedText(["B"]))
 
         let e1 = Edge(string: "e1", from: "a", to: "b")
         let e2 = Edge(string: "e2", from: "b", to: "a")
         graph = try graph.adding(edge: e1, edgeType: CLD.EdgeTypes.same)
         graph = try graph.adding(edge: e2, edgeType: CLD.EdgeTypes.same)
 
-        graph = try graph.setting(node: a, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 100, y: 100)))
-        graph = try graph.setting(node: b, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 300, y: 100)))
-        graph = try graph.setting(node: a, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 60, height: 30)))
-        graph = try graph.setting(node: b, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 60, height: 30)))
+        graph = try graph.setting(node: a, attribute: Attributes.Node.layoutedPos(VPoint(x: 100, y: 100)))
+        graph = try graph.setting(node: b, attribute: Attributes.Node.layoutedPos(VPoint(x: 300, y: 100)))
+        graph = try graph.setting(node: a, attribute: Attributes.Node.layoutedSize(VSize(width: 60, height: 30)))
+        graph = try graph.setting(node: b, attribute: Attributes.Node.layoutedSize(VSize(width: 60, height: 30)))
 
         graph = try graph.setting(
             edge: e1.id,
-            attribute: Attributes.Edge.layoutData.attribute(
+            attribute: Attributes.Edge.layoutData(
                 EdgeLayoutData(
                     splinePoints: [VPoint(x: 130, y: 90), VPoint(x: 270, y: 90)], color: "#000000", penwidth: 1.0)))
         graph = try graph.setting(
             edge: e2.id,
-            attribute: Attributes.Edge.layoutData.attribute(
+            attribute: Attributes.Edge.layoutData(
                 EdgeLayoutData(
                     splinePoints: [VPoint(x: 270, y: 110), VPoint(x: 130, y: 110)], color: "#000000", penwidth: 1.0)))
 
         let root = Group.root
         graph = try graph.setting(
             group: root,
-            attribute: Attributes.Group.layoutedBounds.attribute(VRect(x: 0, y: 0, width: 400, height: 200)))
+            attribute: Attributes.Group.layoutedBounds(VRect(x: 0, y: 0, width: 400, height: 200)))
         return graph
     }
 
@@ -274,19 +274,19 @@ struct VSVGGraphTests {
         ]
         for node in graph.nodes {
             if let pos = positions[node.id] {
-                graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(pos))
+                graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos(pos))
                 graph = try graph.setting(
-                    node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 30)))
+                    node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 30)))
                 graph = try graph.setting(
                     node: node,
-                    attribute: Attributes.Node.wrappedText.attribute(
+                    attribute: Attributes.Node.wrappedText(
                         [node.id == "tp1800" ? "1800" : node.id == "tp1850" ? "1850" : "Napoleon"]))
             }
         }
         let root = Group.root
         graph = try graph.setting(
             group: root,
-            attribute: Attributes.Group.layoutedBounds.attribute(VRect(x: 0, y: 0, width: 400, height: 200)))
+            attribute: Attributes.Group.layoutedBounds(VRect(x: 0, y: 0, width: 400, height: 200)))
         return graph
     }
 

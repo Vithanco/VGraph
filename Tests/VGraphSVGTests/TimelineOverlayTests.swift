@@ -36,12 +36,12 @@ struct TimelineOverlayTests {
         ]
         for node in graph.nodes {
             if let pos = positions[node.id] {
-                graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(pos))
+                graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos(pos))
                 graph = try graph.setting(
-                    node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 30)))
+                    node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 30)))
                 graph = try graph.setting(
                     node: node,
-                    attribute: Attributes.Node.wrappedText.attribute([node.id == "tp1800" ? "1800" : node.id == "tp1850" ? "1850" : "Napoleon"]))
+                    attribute: Attributes.Node.wrappedText([node.id == "tp1800" ? "1800" : node.id == "tp1850" ? "1850" : "Napoleon"]))
             }
         }
 
@@ -49,7 +49,7 @@ struct TimelineOverlayTests {
         let root = Group.root
         graph = try graph.setting(
             group: root,
-            attribute: Attributes.Group.layoutedBounds.attribute(VRect(x: 0, y: 0, width: 400, height: 200)))
+            attribute: Attributes.Group.layoutedBounds(VRect(x: 0, y: 0, width: 400, height: 200)))
 
         return graph
     }
@@ -65,7 +65,7 @@ struct TimelineOverlayTests {
             color: "#000000", penwidth: 1.0
         )
         let graphWithEdge = try graph.setting(
-            edge: seqEdge.id, attribute: Attributes.Edge.layoutData.attribute(layout))
+            edge: seqEdge.id, attribute: Attributes.Edge.layoutData(layout))
         let svg = try VSVGRenderer(logger: TestLogger()).render(graph: graphWithEdge)
 
         #expect(!svg.contains("id=\"\(SVGElementId.edge(seqEdge.id.id))\""))
@@ -122,16 +122,16 @@ struct TimelineOverlayTests {
         var graph = try parser.parse(source: input)
         for node in graph.nodes {
             graph = try graph.setting(
-                node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 100, y: 100)))
+                node: node, attribute: Attributes.Node.layoutedPos(VPoint(x: 100, y: 100)))
             graph = try graph.setting(
-                node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 30)))
+                node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 30)))
             graph = try graph.setting(
-                node: node, attribute: Attributes.Node.wrappedText.attribute(["Something happened"]))
+                node: node, attribute: Attributes.Node.wrappedText(["Something happened"]))
         }
         let root = Group.root
         graph = try graph.setting(
             group: root,
-            attribute: Attributes.Group.layoutedBounds.attribute(VRect(x: 0, y: 0, width: 200, height: 200)))
+            attribute: Attributes.Group.layoutedBounds(VRect(x: 0, y: 0, width: 200, height: 200)))
 
         let renderer = VSVGRenderer(logger: TestLogger())
         let svg = try renderer.render(graph: graph)

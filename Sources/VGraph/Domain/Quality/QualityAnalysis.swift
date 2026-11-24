@@ -130,16 +130,44 @@ public enum GenericQualityChecks {
         }
     }
 
-    public static var all: [QualityCheck] {
+    /// The block still loads, with the current spelling's value; this says which
+    /// value it overruled, since saving drops it for good.
+    public static func keysGivenTwice(graph: VGraph) -> [MessageWithSeverity] {
+        graph.notationDefinition.keysGivenTwice.map { twice in
+            MessageWithSeverity(
+                message:
+                    "\(graph.owner(of: twice.owner).name) gives \(twice.key) twice, as "
+                    + "\(twice.dropped.spelling): \(twice.dropped.value) and \(twice.kept.spelling): \(twice.kept.value)"
+                    + " — using \(twice.kept.value)",
+                severity: .warning, target: .graph)
+        }
+    }
+
+    public typealias NamedCheck = (name: String, check: QualityCheck)
+
+    /// Also offered by `QualityCheckRegistry` under this name, which it reads
+    /// from here, so `runsAlways` cannot miss it after a rename.
+    static var namedDisconnectedNodes: NamedCheck { ("disconnectedNodes", disconnectedNodes) }
+    static var namedRedundantJunctor: NamedCheck { ("redundantJunctor", redundantJunctor) }
+
+    /// Named so that a `qualityCheck:` naming one of them can be recognised and
+    /// not run a second time.
+    public static var all: [NamedCheck] {
         [
-            badlyTypedValues,
-            unknownNodeTypes, unknownEdgeTypes, unknownGroupTypes, unresolvableIcons,
-            disconnectedNodes, redundantJunctor, brokenBounds, containment,
+            ("badlyTypedValues", badlyTypedValues), ("keysGivenTwice", keysGivenTwice),
+            ("unknownNodeTypes", unknownNodeTypes), ("unknownEdgeTypes", unknownEdgeTypes),
+            ("unknownGroupTypes", unknownGroupTypes), ("unresolvableIcons", unresolvableIcons),
+            namedDisconnectedNodes, namedRedundantJunctor,
+            ("brokenBounds", brokenBounds), ("containment", containment),
         ]
     }
 
+    public static func runsAlways(_ spec: QualityCheckSpec) -> Bool {
+        all.contains { $0.name == spec.name }
+    }
+
     public static func analyze(_ graph: VGraph) -> [MessageWithSeverity] {
-        all.flatMap { $0(graph) }
+        all.flatMap { $0.check(graph) }
     }
 }
 

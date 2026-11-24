@@ -45,8 +45,8 @@ extension VGraph {
         } else {
             replaced = try folding(plain: folded, holding: count, from: original)
         }
-        return try replaced.setting(node: Node(folded), attribute: Attributes.Node.foldedNodeCount.attribute(count))
-            .setting(node: Node(folded), attribute: Attributes.Node.standsForGroup.attribute(true))
+        return try replaced.setting(node: Node(folded), attribute: Attributes.Node.foldedNodeCount(count))
+            .setting(node: Node(folded), attribute: Attributes.Node.standsForGroup(true))
     }
 
     /// An edge with both ends in one folded group is gone with it; one with an end
@@ -84,11 +84,11 @@ extension VGraph {
         // Keep the original-case label on the node for round-tripping; the layout
         // uppercases the rendered title via NodeStyleLayout.typeLabel.
         let labeled =
-            groupLabel.isEmpty ? added : try added.setting(node: groupNode, attribute: Attributes.Node.label.attribute(groupLabel))
+            groupLabel.isEmpty ? added : try added.setting(node: groupNode, attribute: Attributes.Node.label(groupLabel))
         // The box is the group on screen, so it carries the group's link and badge.
         let result =
             try graph.url(of: .group(group)).map { (url) throws(VError) in
-                try labeled.setting(node: groupNode, attribute: Attributes.Node.url.attribute(url))
+                try labeled.setting(node: groupNode, attribute: Attributes.Node.url(url))
             } ?? labeled
 
         let nodeStyle =
@@ -100,7 +100,7 @@ extension VGraph {
                 border: .groupBorder,
                 textColor: .groupText
             )
-        return try result.setting(node: groupNode, attribute: Attributes.Node.style.attribute(nodeStyle))
+        return try result.setting(node: groupNode, attribute: Attributes.Node.style(nodeStyle))
     }
 }
 
@@ -128,7 +128,7 @@ extension VGraph {
         // this way once they are drawn as one.
         let described = try setting(
             edge: edge.id,
-            attribute: Attributes.Edge.foldedDescription.attribute("\(name(of: edge)) (\(originalEdgeType.id.id))"))
+            attribute: Attributes.Edge.foldedDescription("\(name(of: edge)) (\(originalEdgeType.id.id))"))
         let ends = NodeTypePair(from: try described.nodeType(for: newFrom), to: try described.nodeType(for: newTo))
         let retyped =
             described.holds(originalEdgeType, from: ends.from, to: ends.to)

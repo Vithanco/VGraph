@@ -49,7 +49,7 @@ struct SVGElementIdTests {
         #expect(SVGElementId.doubleClickSelector(insideGroupLabel: true) == ".vgraph-group")
         #expect(
             SVGElementId.doubleClickSelector(insideGroupLabel: false) == ".vgraph-node,.vgraph-edge",
-            "a boundary covers everything inside it, so anything else must fall through")
+            "a group covers everything inside it, so anything else must fall through")
     }
 
     @Test func rightClickResolvesAgainstEveryGraphElement() {
@@ -81,15 +81,15 @@ struct SVGElementIdTests {
         var layouted = graph
         for node in graph.nodes {
             layouted = try layouted.setting(
-                node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 50, y: 50)))
+                node: node, attribute: Attributes.Node.layoutedPos(VPoint(x: 50, y: 50)))
             layouted = try layouted.setting(
                 node: node,
-                attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
+                attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40)))
         }
         // A group renders only once Graphviz has given it bounds.
         layouted = try layouted.setting(
             group: Group(rawValue: "g1"),
-            attribute: Attributes.Group.layoutedBounds.attribute(
+            attribute: Attributes.Group.layoutedBounds(
                 VRect(origin: VPoint(x: 0, y: 0), size: VSize(width: 200, height: 120))))
 
         return try VSVGRenderer(logger: TestLogger()).render(graph: layouted)

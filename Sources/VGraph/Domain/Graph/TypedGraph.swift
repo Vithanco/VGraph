@@ -77,8 +77,8 @@ public struct TypedGraph: VProtocol {
         return has(edgeType: EdgeType.Id(rawValue: edgeTypeId))
     }
 
-    public func delete(nodeType: NodeType) throws(VError) -> TypedGraph {
-        // nil, not empty, is what an unused type answers — see delete(edgeType:).
+    public func deleting(nodeType: NodeType) throws(VError) -> TypedGraph {
+        // nil, not empty, is what an unused type answers — see deleting(edgeType:).
         if !(nodeTypeMapping.getMany(one: nodeType) ?? []).isEmpty {
             throw VError.nodeTypeStillInUse(nodeType)
         }
@@ -86,7 +86,7 @@ public struct TypedGraph: VProtocol {
             throw VError.nodeTypeNotFound(nodeType)
         }
         let newMetagraph = metagraph.removeVertex(nodeType)
-        let newNodeTypeMapping = nodeTypeMapping.remove(one: nodeType)
+        let newNodeTypeMapping = nodeTypeMapping.removing(one: nodeType)
 
         return updatedSelfWith(metagraph: newMetagraph, nodeTypes: newNodeTypeMapping)
     }
@@ -97,7 +97,7 @@ public struct TypedGraph: VProtocol {
     /// exactly the type that may be deleted — so nil and empty mean the same
     /// thing here. Reading nil as "not found" made this refuse every unused
     /// type, and there is no other kind it would accept.
-    public func delete(edgeType: EdgeType.Id) throws(VError) -> TypedGraph {
+    public func deleting(edgeType: EdgeType.Id) throws(VError) -> TypedGraph {
         guard metagraph.get(edge: edgeType) != nil else {
             throw VError.edgeTypeNotFound(edgeType)
         }
@@ -105,12 +105,12 @@ public struct TypedGraph: VProtocol {
             throw VError.edgeTypeStillInUse(wearing)
         }
         let newMetagraph = metagraph.removeEdge(id: edgeType)
-        let newEdgeTypeMapping = edgeTypeMapping.remove(one: edgeType)
+        let newEdgeTypeMapping = edgeTypeMapping.removing(one: edgeType)
         return updatedSelfWith(metagraph: newMetagraph, edgeTypes: newEdgeTypeMapping)
     }
 
-    /// Its edges go first, through `delete(edge:)`, so none keeps a type it no longer wears.
-    public func delete(node: Node) throws(VError) -> TypedGraph {
+    /// Its edges go first, through `deleting(edge:)`, so none keeps a type it no longer wears.
+    public func deleting(node: Node) throws(VError) -> TypedGraph {
         guard graph.has(node: node) else {
             throw VError.nodeNotFound(node)
         }
@@ -118,34 +118,34 @@ public struct TypedGraph: VProtocol {
             throw VError.nodeWithoutNodeType(node)
         }
         let withoutEdges = try edges(at: node).folding(self) { (result, edge) throws(VError) in
-            try result.delete(edge: edge.id)
+            try result.deleting(edge: edge.id)
         }
         return withoutEdges.updatedSelfWith(
-            graph: withoutEdges.graph.removeVertex(node), nodeTypes: nodeTypeMapping.remove(many: node))
+            graph: withoutEdges.graph.removeVertex(node), nodeTypes: nodeTypeMapping.removing(many: node))
     }
 
     func edges(at node: Node) -> [Edge] {
         edges.filter { $0.from == node || $0.to == node }
     }
 
-    public func delete(edge id: Edge.Id) throws(VError) -> TypedGraph {
+    public func deleting(edge id: Edge.Id) throws(VError) -> TypedGraph {
         guard let edge = graph.get(edge: id) else {
             throw VError.edgeNotFound(id)
         }
         let newGraph = graph.removeEdge(id: edge.id)
-        let newEdgeTypeMapping = edgeTypeMapping.remove(many: id)
+        let newEdgeTypeMapping = edgeTypeMapping.removing(many: id)
         return updatedSelfWith(graph: newGraph, edgeTypes: newEdgeTypeMapping)
     }
 
     /// Move an edge's endpoints, keeping its id and type.
-    public func redirect(edge: Edge) throws(VError) -> TypedGraph {
+    public func redirecting(edge: Edge) throws(VError) -> TypedGraph {
         guard let type = edgeTypeMapping.getOne(many: edge.id) else {
             throw VError.edgeTypeNotFoundForEdge(edge.id)
         }
-        return try delete(edge: edge.id).add(edge: edge, type: type)
+        return try deleting(edge: edge.id).adding(edge: edge, type: type)
     }
 
-    public func add(edge: Edge, type: EdgeType.Id) throws(VError) -> TypedGraph {
+    public func adding(edge: Edge, type: EdgeType.Id) throws(VError) -> TypedGraph {
         guard !graph.has(edge: edge.id) else {
             throw VError.edgeAlreadyExists(edge.id)
         }
@@ -161,21 +161,21 @@ public struct TypedGraph: VProtocol {
         }
 
         let newGraph = graph.addEdge(edge)
-        let newEdgeTypeMapping = edgeTypeMapping.add(many: edge.id, one: type)
+        let newEdgeTypeMapping = edgeTypeMapping.adding(many: edge.id, one: type)
         return updatedSelfWith(graph: newGraph, edgeTypes: newEdgeTypeMapping)
     }
 
-    public func add(node: Node, type: NodeType) throws(VError) -> TypedGraph {
+    public func adding(node: Node, type: NodeType) throws(VError) -> TypedGraph {
         try ensureExists(nodeType: type)
         guard !graph.has(node: node) else {
             throw VError.nodeAlreadyExists(node)
         }
         let newGraph = graph.addVertex(node)
-        let newNodeTypeMapping = nodeTypeMapping.add(many: node, one: type)
+        let newNodeTypeMapping = nodeTypeMapping.adding(many: node, one: type)
         return updatedSelfWith(graph: newGraph, nodeTypes: newNodeTypeMapping)
     }
 
-    public func add(nodeType: NodeType) throws(VError) -> Self {
+    public func adding(nodeType: NodeType) throws(VError) -> Self {
         if metagraph.vertices.contains(nodeType) {
             throw VError.nodeTypeAlreadyExists(nodeType)
         }
@@ -183,7 +183,7 @@ public struct TypedGraph: VProtocol {
         return updatedSelfWith(metagraph: newMetagraph)
     }
 
-    public func add(edgeType: EdgeType) throws(VError) -> TypedGraph {
+    public func adding(edgeType: EdgeType) throws(VError) -> TypedGraph {
         if metagraph.has(edge: edgeType.id) {
             throw VError.edgeTypeAlreadyExists(edgeType.id)
         }
@@ -198,30 +198,30 @@ public struct TypedGraph: VProtocol {
         return updatedSelfWith(metagraph: newMetagraph)
     }
 
-    public func setNodeType(node: Node, type: NodeType) throws(VError) -> TypedGraph {
+    public func settingNodeType(node: Node, type: NodeType) throws(VError) -> TypedGraph {
         guard has(node: node) else { throw VError.nodeNotFound(node) }
         try ensureExists(nodeType: type)
 
-        let newNodeTypeMapping = nodeTypeMapping.add(many: node, one: type)
+        let newNodeTypeMapping = nodeTypeMapping.adding(many: node, one: type)
         return updatedSelfWith(nodeTypes: newNodeTypeMapping)
     }
 
-    public func setEdgeType(edge: Edge.Id, type: EdgeType.Id) throws(VError) -> TypedGraph {
+    public func settingEdgeType(edge: Edge.Id, type: EdgeType.Id) throws(VError) -> TypedGraph {
         guard has(edge: edge) else { throw VError.edgeNotFound(edge) }
         try ensureExists(edgeType: type)
-        let newEdgeTypeMapping = edgeTypeMapping.add(many: edge, one: type)
+        let newEdgeTypeMapping = edgeTypeMapping.adding(many: edge, one: type)
         return updatedSelfWith(edgeTypes: newEdgeTypeMapping)
     }
 
-    public func ensureUnknownNodeType() throws(VError) -> TypedGraph {
+    public func ensuringUnknownNodeType() throws(VError) -> TypedGraph {
         let unknownType = NodeType.unknown
         if has(nodeType: unknownType) {
             return self
         }
-        return try add(nodeType: unknownType)
+        return try adding(nodeType: unknownType)
     }
 
-    public func ensureUnknownEdgeType(from: NodeType, to: NodeType) throws(VError) -> (TypedGraph, EdgeType) {
+    public func ensuringUnknownEdgeType(from: NodeType, to: NodeType) throws(VError) -> (TypedGraph, EdgeType) {
         let unknownEdgeType = EdgeType.unknown(from: from, to: to)
 
         if let existing = get(edgeType: unknownEdgeType.id) {
@@ -229,9 +229,9 @@ public struct TypedGraph: VProtocol {
         }
 
         let withEndTypes = try [from, to].folding(self) { (graph, type) throws(VError) in
-            graph.has(nodeType: type) ? graph : try graph.add(nodeType: type)
+            graph.has(nodeType: type) ? graph : try graph.adding(nodeType: type)
         }
-        return (try withEndTypes.add(edgeType: unknownEdgeType), unknownEdgeType)
+        return (try withEndTypes.adding(edgeType: unknownEdgeType), unknownEdgeType)
     }
 
     func findLoops() -> Graph.LoopSearch {

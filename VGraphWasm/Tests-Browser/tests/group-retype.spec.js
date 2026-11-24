@@ -4,7 +4,7 @@ import { s, typedGroups, groupedGraph, openEditor, vglText } from '../helpers/ed
 const item = (page, name) => page.locator(s.menuItem, { hasText: name });
 const rightClickGroup = (page) => page.locator(s.groupLabel).click({ button: 'right' });
 
-test('a boundary kind picked from the menu types the group', async ({ page }) => {
+test('a group type picked from the menu types the group', async ({ page }) => {
   await openEditor(page, typedGroups);
   await rightClickGroup(page);
 
@@ -20,7 +20,7 @@ test('a boundary kind picked from the menu types the group', async ({ page }) =>
 
 // Untyped is a real state, not the absence of one, so the way back has to be
 // clickable too (ADR-0020).
-test('Plain group takes the boundary kind away again', async ({ page }) => {
+test('Plain group takes the group type away again', async ({ page }) => {
   await openEditor(page, typedGroups);
   await rightClickGroup(page);
   await item(page, 'Change type').click();
@@ -36,9 +36,9 @@ test('Plain group takes the boundary kind away again', async ({ page }) => {
   expect(vgl).not.toContain('group core: Team');
 });
 
-// ConceptMap registers no boundary kinds, so there is nothing to ask and ⌥
+// ConceptMap registers no group types, so there is nothing to ask and ⌥
 // reaches nothing either — the item is greyed, not breakable.
-test('the item is greyed where the notation has no boundaries', async ({ page }) => {
+test('the item is greyed where the notation has no group types', async ({ page }) => {
   await openEditor(page, groupedGraph);
   await rightClickGroup(page);
 

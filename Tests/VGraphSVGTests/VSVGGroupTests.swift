@@ -40,11 +40,11 @@ struct VSVGGroupTests {
         for group in graph.groups {
             graph = try graph.setting(
                 group: group,
-                attribute: Attributes.Group.layoutedBounds.attribute(VRect(x: 80, y: 10, width: 200, height: 100)))
+                attribute: Attributes.Group.layoutedBounds(VRect(x: 80, y: 10, width: 200, height: 100)))
         }
         for node in graph.nodes {
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 100, y: 100)))
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos(VPoint(x: 100, y: 100)))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40)))
         }
         try expectSnapshotAndAppearsInFullRender(graph)
     }
@@ -67,12 +67,12 @@ struct VSVGGroupTests {
         for group in graph.groups {
             graph = try graph.setting(
                 group: group,
-                attribute: Attributes.Group.layoutedBounds.attribute(VRect(x: 80, y: 10, width: 200, height: 100)))
-            graph = try graph.setting(group: group, attribute: Attributes.Group.label.attribute(""))
+                attribute: Attributes.Group.layoutedBounds(VRect(x: 80, y: 10, width: 200, height: 100)))
+            graph = try graph.setting(group: group, attribute: Attributes.Group.label(""))
         }
         for node in graph.nodes {
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 100, y: 100)))
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos(VPoint(x: 100, y: 100)))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40)))
         }
         let ported = try VSVGGroup.render(graph: graph, darkMode: false).render()
         #expect(!ported.contains(SVGElementId.groupLabelClass))
@@ -99,11 +99,11 @@ struct VSVGGroupTests {
         let innerBounds = VRect(x: 70, y: 100, width: 360, height: 330)
         for group in graph.groups {
             let bounds = group.id.id.contains("sub") ? innerBounds : outerBounds
-            graph = try graph.setting(group: group, attribute: Attributes.Group.layoutedBounds.attribute(bounds))
+            graph = try graph.setting(group: group, attribute: Attributes.Group.layoutedBounds(bounds))
         }
         for node in graph.nodes {
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 100, y: 100)))
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos(VPoint(x: 100, y: 100)))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40)))
         }
 
         try expectSnapshotAndAppearsInFullRender(graph)
@@ -141,12 +141,12 @@ struct VSVGGroupTests {
         for (index, group) in graph.groups.enumerated() {
             graph = try graph.setting(
                 group: group,
-                attribute: Attributes.Group.layoutedBounds.attribute(
+                attribute: Attributes.Group.layoutedBounds(
                     VRect(x: Double(index) * 10, y: Double(index) * 10, width: 400 - Double(index) * 20, height: 400 - Double(index) * 20)))
         }
         for node in graph.nodes {
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 100, y: 100)))
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos(VPoint(x: 100, y: 100)))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40)))
         }
 
         let ported = try VSVGGroup.render(graph: graph, darkMode: false).render()
@@ -169,8 +169,8 @@ struct VSVGGroupTests {
         var graph = try parser.parse(source: input)
         // Deliberately not setting layoutedBounds: it defaults to VRect.zero.
         for node in graph.nodes {
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 100, y: 100)))
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos(VPoint(x: 100, y: 100)))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40)))
         }
 
         let ported = try VSVGGroup.render(graph: graph, darkMode: false).render()
@@ -198,11 +198,11 @@ struct VSVGGroupTests {
         var graph = try parser.parse(source: input)
         for group in graph.groups {
             graph = try graph.setting(
-                group: group, attribute: Attributes.Group.layoutedBounds.attribute(VRect(x: 0, y: 0, width: 100, height: 100)))
+                group: group, attribute: Attributes.Group.layoutedBounds(VRect(x: 0, y: 0, width: 100, height: 100)))
         }
         for node in graph.nodes {
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 50, y: 50)))
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos(VPoint(x: 50, y: 50)))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40)))
         }
 
         try expectSnapshotAndAppearsInFullRender(graph, darkMode: false)
@@ -229,12 +229,12 @@ struct VSVGGroupTests {
         let customBorder = VColor(hexString: "#334455")!
         for group in graph.groups {
             graph = try graph.setting(
-                group: group, attribute: Attributes.Group.layoutedBounds.attribute(VRect(x: 0, y: 0, width: 100, height: 100)))
-            graph = try graph.setting(group: group, attribute: Attributes.Group.borderColor.attribute(customBorder))
+                group: group, attribute: Attributes.Group.layoutedBounds(VRect(x: 0, y: 0, width: 100, height: 100)))
+            graph = try graph.setting(group: group, attribute: Attributes.Group.borderColor(customBorder))
         }
         for node in graph.nodes {
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 50, y: 50)))
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos(VPoint(x: 50, y: 50)))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40)))
         }
 
         try expectSnapshotAndAppearsInFullRender(graph, darkMode: false)
@@ -259,12 +259,12 @@ struct VSVGGroupTests {
         var graph = try parser.parse(source: input)
         for group in graph.groups {
             graph = try graph.setting(
-                group: group, attribute: Attributes.Group.layoutedBounds.attribute(VRect(x: 0, y: 0, width: 100, height: 100)))
-            graph = try graph.setting(group: group, attribute: Attributes.Group.borderDash.attribute(""))
+                group: group, attribute: Attributes.Group.layoutedBounds(VRect(x: 0, y: 0, width: 100, height: 100)))
+            graph = try graph.setting(group: group, attribute: Attributes.Group.borderDash(""))
         }
         for node in graph.nodes {
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 50, y: 50)))
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos(VPoint(x: 50, y: 50)))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40)))
         }
         let ported = try VSVGGroup.render(graph: graph, darkMode: false).render()
         #expect(!ported.contains("stroke-dasharray"))

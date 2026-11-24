@@ -9,7 +9,7 @@ import { s, sel, openEditor, vglText, emptyCanvas, rectOf } from '../helpers/edi
 
 const item = (page, text) => page.locator(s.menuItem).filter({ hasText: text });
 
-// Two nodes outside a boundary and two inside it, so that "everything" and "all
+// Two nodes outside a group and two inside it, so that "everything" and "all
 // of one group" are different sets — on a smaller graph they coincide and the
 // promotion rules cannot be told apart.
 const boxed = `vgraph demo: ConceptMap "Demo" {
@@ -61,7 +61,7 @@ test('Shift-click extends, and the same Shift-click takes it back', async ({ pag
 // The rule the design turns on: promotion is derived, so the toggle that caused
 // it undoes it. Stored instead, the second Shift-click would have nothing to
 // remove and the group could not be let go of.
-test('selecting every member of a boundary promotes to the boundary, reversibly', async ({
+test('selecting every member of a group promotes to the group, reversibly', async ({
   page,
 }) => {
   await openEditor(page, boxed);
@@ -147,14 +147,14 @@ test('the toolbar Group button makes a group of the selection', async ({ page })
 
 // The row says what it would cost, because that is the only warning offered —
 // the command is one undo step, so it needs no dialog.
-test('grouping across a boundary says how much it would move', async ({ page }) => {
+test('grouping across groups says how much it would move', async ({ page }) => {
   await openEditor(page, boxed);
   await page.locator(sel.node('one')).click();
   await page.locator(sel.node('outside')).click({ modifiers: ['Shift'] });
   await page.locator(sel.node('one')).click({ button: 'right' });
 
   await expect(page.locator(s.menuItem)).toHaveText([
-    'Group (moves 1 out of their boundaries)',
+    'Group (moves 1 out of their groups)',
     'Delete',
     'Copy',
     'Paste',
@@ -165,7 +165,7 @@ test('right-clicking inside the selection keeps it', async ({ page }) => {
   await openEditor(page, boxed);
   await page.locator(sel.node('one')).click();
   await page.locator(sel.node('two')).click({ modifiers: ['Shift'] });
-  // Promoted to the boundary; right-clicking a member must not undo that.
+  // Promoted to the group; right-clicking a member must not undo that.
   await page.locator(sel.node('one')).click({ button: 'right' });
 
   expect(await selectedIds(page)).toEqual(['group-box']);

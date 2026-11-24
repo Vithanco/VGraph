@@ -17,9 +17,9 @@ struct LayerContractTests {
             #"vgraph g: IBIS "G" { node q: Question "Q"; node a: Answer "A"; node x: Nonsense "X"; edge q -> a; }"#)
         let view = AttributeLayer("view")
         let withView = graph.updatedSelfWith(
-            attributeStore: try graph.attributeStore.addLayer(view, parent: .model, admission: .view)
-                .set(Attributes.Node.backgroundColor.attribute(fromString: "#ff0000"), for: ItemKey(.node, "q"), in: view, chains: graph)
-                .set(Attributes.Node.fontsize.attribute(40), for: ItemKey(.nodeType, "Answer"), in: view, chains: graph))
+            attributeStore: try graph.attributeStore.addingLayer(view, parent: .model, admission: .view)
+                .setting(Attributes.Node.backgroundColor.attribute(fromString: "#ff0000"), for: ItemKey(.node, "q"), in: view, chains: graph)
+                .setting(Attributes.Node.fontsize(40), for: ItemKey(.nodeType, "Answer"), in: view, chains: graph))
 
         let judged = Notations.analyzeQuality(graph: graph)
         #expect(!judged.messages.isEmpty)

@@ -41,8 +41,8 @@ public func bandCatch(
 /// Only what is drawn as a single box: a node, or a folded group — which is one
 /// thing at this zoom, [[Fold state]] deciding as ADR-0003 says.
 ///
-/// An open boundary's interior belongs to the band and has to stay there, or
-/// band-selecting inside one becomes impossible; the boundary itself arrives by
+/// An open group's interior belongs to the band and has to stay there, or
+/// band-selecting inside one becomes impossible; the group itself arrives by
 /// promotion instead (ADR-0018). An edge is not selectable at all (ADR-0017).
 public func catchable(_ id: String, in session: some ForEditAGraphVisually) -> Bool {
     switch session.kind(of: id) {

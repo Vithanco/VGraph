@@ -36,11 +36,13 @@ struct DerivedEdgesDeclarationTests {
         #expect(try derivedEdgeCount(graph, view: "on") == 1)
     }
 
-    @Test("Given a vview header with derivedEdges: maybe, when parsed, then an error names the attribute")
-    func refusesNonBool() {
-        #expect {
-            _ = try parse(model + "\nvview v [derivedEdges: maybe] {\n exclude node h;\n}\n")
-        } throws: { "\($0)".contains("derivedEdges") && !"\($0)".contains("not found") }
+    @Test("Given a vview header with derivedEdges: maybe, when parsed, then the view keeps derived edges and a warning names the attribute")
+    func warnsAboutNonBool() throws {
+        let graph = try parse(model + "\nvview v [derivedEdges: maybe] {\n exclude node h;\n}\n")
+        let warnings = Notations.analyzeQuality(graph: graph).warnings.map { $0.message }
+
+        #expect(try derivedEdgeCount(graph, view: "v") == 1)
+        #expect(warnings.filter { $0.contains("derivededges \"maybe\" in view \"v\"") }.count == 1)
     }
 
     @Test("Given derivedEdges set on a node or group inside a view, when parsed, then it is refused as root-only")

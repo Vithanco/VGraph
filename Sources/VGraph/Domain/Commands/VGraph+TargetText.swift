@@ -35,9 +35,9 @@ extension VGraph {
 
     private func setting(_ field: ElementText, to value: String, on target: VCommandTarget) throws(VError) -> VGraph {
         switch target {
-        case .node(let node): return try setting(node: node, attribute: field.node.attribute(value))
-        case .edge(let edge): return try setting(edge: edge, attribute: field.edge.attribute(value))
-        case .group(let group): return try setting(group: group, attribute: definition(of: field, for: group).attribute(value))
+        case .node(let node): return try setting(node: node, attribute: field.node(value))
+        case .edge(let edge): return try setting(edge: edge, attribute: field.edge(value))
+        case .group(let group): return try setting(group: group, attribute: definition(of: field, for: group)(value))
         }
     }
 

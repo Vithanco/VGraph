@@ -55,10 +55,10 @@ public enum EditorAction: Sendable, Equatable {
     case changeType(
         node: String, to: NodeType, edgeTypes: [EdgeType.Id], notationBreak: VNotationBreak)
     /// The same menu command one level up, and a separate action because it
-    /// settles a different argument: `nil` makes the boundary plain again, which
+    /// settles a different argument: `nil` makes the group plain again, which
     /// is a real state and not the absence of one (ADR-0020). No conversation
     /// state to carry — an edge's group is derived (ADR-0017), so retyping a
-    /// boundary leaves nothing ambiguous.
+    /// group leaves nothing ambiguous.
     case changeGroupType(group: String, to: GroupType?)
     /// Retype an edge without moving either end. `using: nil` where the notation
     /// left one alternative and the command picks it; no `notationBreak`,
@@ -218,7 +218,7 @@ public func begin(
         if isPlainGroup(target, in: session) {
             let options = groupRetypeOptions(for: target, in: session)
             // Nothing to auto-pick, unlike the node form: `soleCandidate` only
-            // fires on a list carrying the escape hatch, and a boundary list
+            // fires on a list carrying the escape hatch, and a group-type list
             // carries none. A one-entry list is still a question worth asking.
             guard !options.isEmpty else { return (.dismiss, conversation) }
             return (.ask(prompt: prompt(for: command), options: options), conversation)
@@ -419,7 +419,7 @@ public func next(
     // hatch is not offered and not looked for — the original checked the loop
     // before the hatch, and the order is kept.
     if option.isBreak, !conversation.breakChoice, conversation.retype == nil {
-        // Only a *node* retype has an escape hatch. Neither the boundary list
+        // Only a *node* retype has an escape hatch. Neither the group-type list
         // nor the edge list carries one, so a break arriving for either did not
         // come from the list it was offered (ADR-0020, ADR-0023).
         if conversation.command == .changeType, let element = conversation.subject.element,

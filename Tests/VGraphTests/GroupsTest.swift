@@ -16,18 +16,18 @@ struct GroupsTest {
     @Test
     func reassignNode() throws(VError) {
         let groups = try GroupStructure()
-            .add(group: c1)
-            .addTo(group: c1, node: n1)
-            .add(group: c2)
-            .addTo(group: c2, node: n1)
+            .adding(group: c1)
+            .addingTo(group: c1, node: n1)
+            .adding(group: c2)
+            .addingTo(group: c2, node: n1)
         #expect(try groups.directContent(of: c1) == ([], []))
         #expect(try groups.directContent(of: c2) == ([], [n1]))
     }
 
     @Test("Adding a node to the group it is already in changes nothing")
     func addingAMemberAgainChangesNothing() throws(VError) {
-        let once = try GroupStructure().add(group: c1).addTo(group: c1, node: n1)
-        #expect(try once.addTo(group: c1, node: n1) == once)
+        let once = try GroupStructure().adding(group: c1).addingTo(group: c1, node: n1)
+        #expect(try once.addingTo(group: c1, node: n1) == once)
     }
 
     @Test
@@ -35,14 +35,14 @@ struct GroupsTest {
         var groups = GroupStructure()
         groups =
             try groups
-            .add(group: c1)
-            .addTo(group: c1, node: n1)
-            .add(group: c2)
-            .addTo(group: c2, node: n2)
-            .addTo(group: c1, childGroup: c2)
-            .add(group: c3)
-            .addTo(group: c3, node: n3)
-            .addTo(group: c2, childGroup: c3)
+            .adding(group: c1)
+            .addingTo(group: c1, node: n1)
+            .adding(group: c2)
+            .addingTo(group: c2, node: n2)
+            .addingTo(group: c1, childGroup: c2)
+            .adding(group: c3)
+            .addingTo(group: c3, node: n3)
+            .addingTo(group: c2, childGroup: c3)
         let direct = try groups.directContent(of: c1)
         #expect(direct == ([c2], [n1]))
         #expect(try groups.allContent(of: c1) == ([c2, c3], [n1, n2, n3]))
@@ -53,15 +53,15 @@ struct GroupsTest {
         var groups = GroupStructure()
         groups =
             try groups
-            .add(group: c1)
-            .addTo(group: c1, node: n1)
-            .add(group: c2)
-            .addTo(group: c2, node: n2)
-            .addTo(group: c1, childGroup: c2)
-            .add(group: c3)
-            .addTo(group: c3, node: n3)
-            .addTo(group: c2, childGroup: c3)
-            .addTo(group: c1, childGroup: c3)
+            .adding(group: c1)
+            .addingTo(group: c1, node: n1)
+            .adding(group: c2)
+            .addingTo(group: c2, node: n2)
+            .addingTo(group: c1, childGroup: c2)
+            .adding(group: c3)
+            .addingTo(group: c3, node: n3)
+            .addingTo(group: c2, childGroup: c3)
+            .addingTo(group: c1, childGroup: c3)
         let direct = try groups.directContent(of: c1)
         #expect(direct == ([c2, c3], [n1]))
         #expect(try groups.allContent(of: c2) == ([], [n2]))
@@ -71,9 +71,9 @@ struct GroupsTest {
     @Test
     func removeNode() throws(VError) {
         let groups = try GroupStructure()
-            .add(group: c1)
-            .addTo(group: c1, node: n1)
-            .removeFromGroup(node: n1)
+            .adding(group: c1)
+            .addingTo(group: c1, node: n1)
+            .removingFromGroup(node: n1)
         #expect(try groups.directContent(of: c1) == ([], []))
         #expect(try groups.allContent(of: c1) == ([], []))
         #expect(groups.group(of: n1) == nil)
@@ -118,7 +118,7 @@ struct GroupsTest {
             .addingTo(group: c3, node: n3)
             .addingTo(group: c2, childGroup: c3)
             .defining(Attributes.Group.isFolded)
-            .setting(group: c2, attribute: Attributes.Group.isFolded.attribute(true))
+            .setting(group: c2, attribute: Attributes.Group.isFolded(true))
         #expect(groups.foldState(of: c1) == .unfolded)
         #expect(groups.foldState(of: c2) == .folded)
         #expect(groups.foldState(of: c3) == .hidden)
@@ -131,14 +131,14 @@ struct GroupsTest {
         var allGroups: [Group] = []
 
         let rootGroup = Group(rawValue: "g0")
-        groups = groups.add(group: rootGroup)
+        groups = groups.adding(group: rootGroup)
         allGroups.append(rootGroup)
 
         for i in 1..<depth {
             let newGroup = Group(rawValue: "g\(i)")
             let parentGroup = allGroups[i - 1]
-            groups = groups.add(group: newGroup)
-            groups = try groups.addTo(group: parentGroup, childGroup: newGroup)
+            groups = groups.adding(group: newGroup)
+            groups = try groups.addingTo(group: parentGroup, childGroup: newGroup)
             allGroups.append(newGroup)
         }
 
@@ -182,8 +182,8 @@ struct GroupsTest {
 
         let rootGroup = Group(rawValue: "g0")
         let rootNode = Node(rawValue: "n0")
-        groups = groups.add(group: rootGroup)
-        groups = try groups.addTo(group: rootGroup, node: rootNode)
+        groups = groups.adding(group: rootGroup)
+        groups = try groups.addingTo(group: rootGroup, node: rootNode)
         allGroups.append(rootGroup)
         allNodes.append(rootNode)
 
@@ -192,9 +192,9 @@ struct GroupsTest {
             let newNode = Node(rawValue: "n\(i)")
             let parentGroup = allGroups[i - 1]
 
-            groups = groups.add(group: newGroup)
-            groups = try groups.addTo(group: parentGroup, childGroup: newGroup)
-            groups = try groups.addTo(group: newGroup, node: newNode)
+            groups = groups.adding(group: newGroup)
+            groups = try groups.addingTo(group: parentGroup, childGroup: newGroup)
+            groups = try groups.addingTo(group: newGroup, node: newNode)
 
             allGroups.append(newGroup)
             allNodes.append(newNode)
@@ -214,13 +214,13 @@ struct GroupsTest {
         let width = 100
         var groups = GroupStructure()
         let rootGroup = Group(rawValue: "root")
-        groups = groups.add(group: rootGroup)
+        groups = groups.adding(group: rootGroup)
 
         var childGroups: [Group] = []
         for i in 0..<width {
             let child = Group(rawValue: "child\(i)")
-            groups = groups.add(group: child)
-            groups = try groups.addTo(group: rootGroup, childGroup: child)
+            groups = groups.adding(group: child)
+            groups = try groups.addingTo(group: rootGroup, childGroup: child)
             childGroups.append(child)
         }
 

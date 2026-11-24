@@ -58,7 +58,11 @@ extension Bool: AttributeType {
     public static let typeName = "Bool"
 
     public static func fromString(_ string: String) throws(VError) -> Self {
-        return string.lowercased() == "true"
+        switch string.lowercased() {
+        case "true": return true
+        case "false": return false
+        default: throw .conversionError(from: string, to: "Bool")
+        }
     }
 }
 

@@ -26,14 +26,6 @@ public enum FoldState: EnumAttributeType {
         }
     }
 
-    public var toolTip: String {
-        switch self {
-        case .unfolded: return "Visible and Unfolded"
-        case .folded: return "Visible and Folded"
-        case .hidden: return "Hidden within a folded group"
-        }
-    }
-
     public var value: String { readableName }
 
     public static let typeName: String = "FoldState"
@@ -79,16 +71,6 @@ public enum LayoutDirection: EnumAttributeType {
         }
         throw VError.conversionError(from: string, to: typeName)
     }
-
-    public var toolTip: String {
-        switch self {
-        case .topToBottom: return "Layout nodes from top to bottom"
-        case .leftToRight: return "Layout nodes from left to right"
-        case .bottomToTop: return "Layout nodes from bottom to top"
-        case .rightToLeft: return "Layout nodes from right to left"
-        }
-    }
-
 }
 
 public enum RatioType: EnumAttributeType {
@@ -557,7 +539,7 @@ extension Attributes {
 }
 
 extension Group {
-    public func isFolded<GA: GetAttribute>(in graph: GA) -> Bool {
+    public func isFolded(in graph: VGraph) -> Bool {
         (try? graph.get(group: self, attribute: Attributes.Group.isFolded)) ?? Attributes.Group.isFolded.defaultValue
     }
 }

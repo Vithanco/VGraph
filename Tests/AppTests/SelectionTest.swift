@@ -142,7 +142,7 @@ struct SelectionTest {
 
         let items = EditorCore.menu(forSelection: Selection(["a", "c"]), in: s)
 
-        #expect(items[0].title == "Group (moves 1 out of their boundaries)")
+        #expect(items[0].title == "Group (moves 1 out of their groups)")
         #expect(items[0].enabled)
     }
 

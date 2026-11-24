@@ -23,8 +23,8 @@ struct IdCollisionTests {
         let graph = try VGraph()
             .adding(nodeType: nodeType)
             .adding(node: Node(rawValue: "Question"), type: nodeType)
-            .setting(nodeType: nodeType, attribute: Attributes.Node.fontsize.attribute(20))
-            .setting(node: Node(rawValue: "Question"), attribute: Attributes.Node.fontsize.attribute(30))
+            .setting(nodeType: nodeType, attribute: Attributes.Node.fontsize(20))
+            .setting(node: Node(rawValue: "Question"), attribute: Attributes.Node.fontsize(30))
         #expect(try graph.get(nodeType: nodeType, attribute: Attributes.Node.fontsize) == 20)
         #expect(try graph.get(node: Node(rawValue: "Question"), attribute: Attributes.Node.fontsize) == 30)
     }
@@ -84,7 +84,7 @@ struct IdCollisionTests {
     // Note: `deleting(nodeType:)` has a pre-existing quirk (requires the type to have
     // been attached to at least one node, and still "in use" detection returns wrong
     // result for never-used types). Its values are cleared by the same
-    // `removeKey` as a node's, edge's or group's.
+    // `removingKey` as a node's, edge's or group's.
 
     @Test("deleting(edge:) frees the id for reuse")
     func deleteEdgeFreesId() throws(VError) {

@@ -31,6 +31,6 @@ extension VGraph {
     func adding(placeholder node: Node, ofType type: NodeType, in group: Group) throws(VError) -> VGraph {
         try adding(node: node, type: type, group: group).setting(
             node: node,
-            attribute: Attributes.Node.label.attribute(Attributes.Node.placeholderLabel))
+            attribute: Attributes.Node.label(Attributes.Node.placeholderLabel))
     }
 }

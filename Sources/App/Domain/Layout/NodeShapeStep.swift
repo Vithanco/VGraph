@@ -35,7 +35,7 @@ private func extractShape(node: Node, in graph: VGraph) throws(VError) -> VGraph
     }) {
         return try graph.setting(
             node: node,
-            attribute: Attributes.Node.shape.attribute(shape)
+            attribute: Attributes.Node.shape(shape)
         )
     }
 

@@ -106,4 +106,81 @@ struct OlderSpellingsTest {
         #expect(try inBlock.get(graphAttribute: Attributes.Group.backgroundColor) == "#ffeecc")
         #expect(try inBody.get(graphAttribute: Attributes.Group.backgroundColor) == "#ffeecc")
     }
+
+    private func team(_ typeKeys: String) -> String {
+        """
+        vnotation Work {
+        	node type: Task [nodeStyle: roundedBox]
+        	group type: Team [\(typeKeys)]
+        }
+
+        vgraph plan: Work "Plan" {
+        	group core: Team "Core" {
+        		node meet: Task "Meet"
+        	}
+        }
+        """
+    }
+
+    private func teamFrame(_ graph: VGraph) -> GroupFrame? {
+        graph.value(Attributes.Group.frame, of: ItemKey(GroupType(rawValue: "Team")), through: .vnotation)
+    }
+
+    private func warnings(_ source: String) throws -> [String] {
+        Notations.analyzeQuality(graph: try parse(source)).warnings.map { $0.message }
+    }
+
+    @Test("Given a frame key in both spellings with equal values, when parsed, then nothing is reported")
+    func bothSpellingsAgreeing() throws {
+        #expect(try warnings(team(#"boundaryDash: "1,1", frameDash: "1,1""#)) == warnings(team(#"frameDash: "1,1""#)))
+    }
+
+    @Test("Given a frame key in both spellings with different values, when parsed, then the current spelling holds and one warning names both")
+    func bothSpellingsDisagreeing() throws {
+        let source = team(#"frameDash: "1,1", boundaryDash: "4,4""#)
+
+        #expect(try teamFrame(parse(source))?.borderDash == "1,1")
+        #expect(
+            try warnings(source) == [
+                #"Group type "Team" gives frameDash twice, as boundaryDash: 4,4 and frameDash: 1,1 — using 1,1"#
+            ] + warnings(team(#"frameDash: "1,1""#)))
+    }
+
+    @Test(
+        "Given a vnotation key in another case, when parsed and exported, then it is read and written as the guide spells it",
+        arguments: ["framedash", "FRAMEDASH"])
+    func keysIgnoreCase(key: String) throws {
+        let graph = try parse(team("\(key): \"1,1\""))
+
+        #expect(teamFrame(graph)?.borderDash == "1,1")
+        #expect(try VGLExporter().export(graph: graph).contains("\tgroup type: Team [frameDash: \"1,1\"]\n"))
+    }
+
+    @Test("Given the other keys of a vnotation in another case, when parsed, then each is read")
+    func everyKeyIgnoresCase() throws {
+        let graph = try parse(
+            """
+            vnotation Work {
+            	QUALITYCHECK: noParallelEdges
+            	node type: Project [NODESTYLE: withCategory, BACKGROUNDCOLOR: "#112233", CATEGORY: "P", FONTSIZE: 20, DETAILEDBY: (Task)]
+            	node type: Task [nodeStyle: roundedBox]
+            	edge type: needs  from: Task  to: Task [ARROWHEAD: none, OUTDEGREEMAX: 2]
+            }
+
+            vgraph plan: Work "Plan" {
+            	node a: Task "A"
+            }
+            """)
+        let project = NodeType(rawValue: "Project")
+        let needs = EdgeType.Id(rawValue: "needs")
+
+        #expect(try graph.get(nodeType: project, attribute: Attributes.Node.nodeStyle) == .withCategory)
+        #expect(try graph.get(nodeType: project, attribute: Attributes.Node.backgroundColor) == VColor(hexString: "#112233"))
+        #expect(try graph.get(nodeType: project, attribute: Attributes.Node.category) == "P")
+        #expect(try graph.get(nodeType: project, attribute: Attributes.Node.fontsize) == 20)
+        #expect(graph.detailTypes(of: project) == [NodeType(rawValue: "Task")])
+        #expect(try graph.get(edgeType: needs, attribute: Attributes.Edge.arrowHead) == "none")
+        #expect(try graph.get(edgeType: needs, attribute: Attributes.Edge.outDegreeMax) == 2)
+        #expect(graph.notationDefinition.declaredQualityChecks.map { $0.name } == ["noParallelEdges"])
+    }
 }

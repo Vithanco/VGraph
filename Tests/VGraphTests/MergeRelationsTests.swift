@@ -20,21 +20,21 @@ struct MergeRelationsTests {
     private func addConcept(_ id: String, label: String, to graph: VGraph) throws(VError) -> VGraph {
         let node = Node(rawValue: id)
         var result = try graph.adding(node: node, type: CM.NodeTypes.concept)
-        result = try result.setting(node: node, attribute: Attributes.Node.label.attribute(label))
+        result = try result.setting(node: node, attribute: Attributes.Node.label(label))
         return result
     }
 
     private func addEmphasizedConcept(_ id: String, label: String, to graph: VGraph) throws(VError) -> VGraph {
         let node = Node(rawValue: id)
         var result = try graph.adding(node: node, type: CM.NodeTypes.emphasizedConcept)
-        result = try result.setting(node: node, attribute: Attributes.Node.label.attribute(label))
+        result = try result.setting(node: node, attribute: Attributes.Node.label(label))
         return result
     }
 
     private func addRelation(_ id: String, label: String, to graph: VGraph) throws(VError) -> VGraph {
         let node = Node(rawValue: id)
         var result = try graph.adding(node: node, type: CM.NodeTypes.relation)
-        result = try result.setting(node: node, attribute: Attributes.Node.label.attribute(label))
+        result = try result.setting(node: node, attribute: Attributes.Node.label(label))
         return result
     }
 

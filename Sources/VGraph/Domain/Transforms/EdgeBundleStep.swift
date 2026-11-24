@@ -87,12 +87,12 @@ private func bundle(_ bundled: [Edge], in graph: VGraph) throws(VError) -> VGrap
     let withoutMembers = try bundled.folding(typed) { (result, edge) throws(VError) in try result.deleting(edge: edge.id) }
     let bundle = Edge(string: "bundle__\(first.from.id)__\(first.to.id)", from: first.from.id, to: first.to.id)
     return try withoutMembers.adding(edge: bundle, edgeType: type)
-        .setting(edge: bundle.id, attribute: Attributes.Edge.label.attribute("×\(bundled.count)"))
+        .setting(edge: bundle.id, attribute: Attributes.Edge.label("×\(bundled.count)"))
         .setting(
             edge: bundle.id,
-            attribute: Attributes.Edge.bundledEdges.attribute(bundled.map { $0.id.id }.joined(separator: String(idSeparator)))
+            attribute: Attributes.Edge.bundledEdges(bundled.map { $0.id.id }.joined(separator: String(idSeparator)))
         )
-        .setting(edge: bundle.id, attribute: Attributes.Edge.bundleMembers.attribute(descriptions.joined(separator: "\n")))
+        .setting(edge: bundle.id, attribute: Attributes.Edge.bundleMembers(descriptions.joined(separator: "\n")))
 }
 
 /// The members' own type when they share one. Otherwise no member's look can

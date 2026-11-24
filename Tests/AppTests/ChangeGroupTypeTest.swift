@@ -2,7 +2,7 @@
 //  ChangeGroupTypeTest.swift
 //  VGraph
 //
-//  ChangeType on a *group*: give a boundary its kind without writing VGL, and
+//  ChangeType on a *group*: give a group its group type without writing VGL, and
 //  take it away again.
 //
 
@@ -81,8 +81,8 @@ struct ChangeGroupTypeTest {
         }
     }
 
-    /// The canvas is a group (ADR-0016) but not a boundary — it has no outside to
-    /// draw one around.
+    /// The canvas is a group (ADR-0016) but takes no group type — it has no outside
+    /// to draw a frame around.
     @Test func refusesTheRootGroup() throws {
         let s = try teams()
 
@@ -119,7 +119,7 @@ struct ChangeGroupTypeTest {
 
     /// The menu offers it, so clicking it must ask something. `retypeOptions`
     /// answers from the *node* list and a group is not in it.
-    @Test func clickingItOnAGroupAsksForABoundaryKind() throws {
+    @Test func clickingItOnAGroupAsksForAGroupType() throws {
         let s = try teams()
 
         let (step, _) = EditorCore.begin(.changeType, on: "core", forcingChoice: false, in: s)
@@ -131,7 +131,7 @@ struct ChangeGroupTypeTest {
         #expect(options.map { $0.id } == ["Team", "Guild", "Chapter"])
     }
 
-    @Test func theKindPickedTypesTheBoundary() throws {
+    @Test func theGroupTypePickedTypesTheGroup() throws {
         let s = try teams()
         let (_, opened) = EditorCore.begin(.changeType, on: "core", forcingChoice: false, in: s)
 
@@ -145,7 +145,7 @@ struct ChangeGroupTypeTest {
 
     /// "Plain group" is an answer, not a cancel: it settles the same command
     /// with `nil`, which deletes the attribute.
-    @Test func thePlainEntryClearsTheBoundary() throws {
+    @Test func thePlainEntryClearsTheGroupType() throws {
         let s = try teams()
         try s.changeType(of: "core", to: team)
         let (_, opened) = EditorCore.begin(.changeType, on: "core", forcingChoice: false, in: s)
@@ -158,7 +158,7 @@ struct ChangeGroupTypeTest {
 
     /// The item is greyed there, so the conversation is unreachable from the
     /// menu — but opening it anyway must dismiss rather than ask an empty list.
-    @Test func dismissesWhereTheNotationHasNoBoundaries() throws {
+    @Test func dismissesWhereTheNotationHasNoGroupTypes() throws {
         let s = try conceptMap()
 
         let (step, _) = EditorCore.begin(.changeType, on: "g1", forcingChoice: false, in: s)
@@ -167,8 +167,8 @@ struct ChangeGroupTypeTest {
     }
 
     /// ⌥ must not turn this into a node retype: the target is still a group, so
-    /// the boundary list is what comes back.
-    @Test func forcingTheChoiceStillAsksForABoundaryKind() throws {
+    /// the group-type list is what comes back.
+    @Test func forcingTheChoiceStillAsksForAGroupType() throws {
         let s = try teams()
 
         let (step, _) = EditorCore.begin(.changeType, on: "core", forcingChoice: true, in: s)

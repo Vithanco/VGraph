@@ -51,7 +51,7 @@ extension VGraph {
     public func recordingCompletion(of step: TransformStep.Id) throws(VError) -> VGraph {
         var ids = completedSteps
         ids.insert(step)
-        return try setting(graphAttribute: Attributes.Group.completedSteps.attribute(ids.map { $0.id }.sorted()))
+        return try setting(graphAttribute: Attributes.Group.completedSteps(ids.map { $0.id }.sorted()))
     }
 
     /// Gate for *document* exporters: pipeline output must never be written back into

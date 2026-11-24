@@ -41,7 +41,7 @@ let exampleInput = """
         }
     """
 
-extension GetAttribute {
+extension VGraph {
     func ensure<T>(node: Node, attribute: TypedAttributeDefinition<T>, isSameAs: T) throws {
         #expect(attribute.target == .node)
         let value = try get(node: node, attribute: attribute)

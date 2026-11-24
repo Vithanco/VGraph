@@ -140,9 +140,9 @@ struct LoopProjectionTests {
         var graph = try displayed(contradictory)
         for (index, node) in graph.nodes.enumerated() {
             graph = try graph.setting(
-                node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 100 + 200 * Double(index), y: 100)))
+                node: node, attribute: Attributes.Node.layoutedPos(VPoint(x: 100 + 200 * Double(index), y: 100)))
             graph = try graph.setting(
-                node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 60, height: 30)))
+                node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 60, height: 30)))
         }
         // Edge splines offset apart, as Graphviz draws them, so the loop has an area.
         for edge in graph.edges {
@@ -151,7 +151,7 @@ struct LoopProjectionTests {
             let points = forward ? [VPoint(x: 130, y: y), VPoint(x: 270, y: y)] : [VPoint(x: 270, y: y), VPoint(x: 130, y: y)]
             graph = try graph.setting(
                 edge: edge.id,
-                attribute: Attributes.Edge.layoutData.attribute(
+                attribute: Attributes.Edge.layoutData(
                     EdgeLayoutData(splinePoints: points, color: "#000000", penwidth: 1.0)))
         }
         let svg = try VSVGRenderer(logger: TestLogger()).render(graph: graph)

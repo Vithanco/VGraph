@@ -106,7 +106,7 @@ public enum ArithmeticEvaluation {
             return try graph.nodes(ofType: Notations.Arithmetic.NodeTypes.equals).folding(graph) {
                 (result, node) throws(VError) in
                 guard let style = paint(node) else { return result }
-                return try result.setting(node: node, attribute: Attributes.Node.style.attribute(style))
+                return try result.setting(node: node, attribute: Attributes.Node.style(style))
             }
 
             /// A judged Equals shows its verdict; an unjudged one with a value shows that value.

@@ -47,9 +47,9 @@ public enum QualityCheckRegistry {
     private static var checks: [(name: String, make: Make)] {
         [
             ("treeStructure", { _ in treeStructureCheck }),
-            ("disconnectedNodes", { _ in GenericQualityChecks.disconnectedNodes }),
+            alwaysRun(GenericQualityChecks.namedDisconnectedNodes),
             ("noParallelEdges", { _ in noParallelEdgesCheck }),
-            ("redundantJunctor", { _ in GenericQualityChecks.redundantJunctor }),
+            alwaysRun(GenericQualityChecks.namedRedundantJunctor),
             (
                 "exactlyOne",
                 { (spec: QualityCheckSpec) throws(VError) -> QualityCheck in
@@ -80,6 +80,10 @@ public enum QualityCheckRegistry {
                 }
             ),
         ]
+    }
+
+    private static func alwaysRun(_ named: GenericQualityChecks.NamedCheck) -> (name: String, make: Make) {
+        (named.name, { _ in named.check })
     }
 
     public static func resolve(_ spec: QualityCheckSpec) throws(VError) -> QualityCheck {

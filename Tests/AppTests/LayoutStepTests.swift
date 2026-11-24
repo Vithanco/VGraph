@@ -17,12 +17,12 @@ struct LayoutStepTests {
         var graph = VGraph()
         let nodeType = NodeType(rawValue: "TestNode")
         graph = try graph.adding(nodeType: nodeType)
-        graph = try graph.setting(nodeType: nodeType, attribute: Attributes.Node.nodeStyle.attribute(nodeStyle))
+        graph = try graph.setting(nodeType: nodeType, attribute: Attributes.Node.nodeStyle(nodeStyle))
 
         let node = Node(rawValue: "n")
         graph = try graph.adding(node: node, type: nodeType)
-        graph = try graph.setting(node: node, attribute: Attributes.Node.label.attribute(label))
-        graph = try graph.setting(node: node, attribute: Attributes.Node.fontsize.attribute(14))
+        graph = try graph.setting(node: node, attribute: Attributes.Node.label(label))
+        graph = try graph.setting(node: node, attribute: Attributes.Node.fontsize(14))
         return (graph, node)
     }
 

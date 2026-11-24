@@ -128,15 +128,18 @@ commands.**
   uses camelCase.
 
 - **The first names still parse.** Before the rename the degree bounds were
-  `perSource…`, `perTarget…`, `totalOut…` and `totalIn…`. They are aliases in
-  the table; the exporter writes only the current names, so a document migrates
-  the next time it is saved.
+  `perSource…`, `perTarget…`, `totalOut…` and `totalIn…`. They are rows of
+  `OlderVGLSpellings`, the table every older VGL spelling is read through; the
+  exporter writes only the current names, so a document migrates the next time
+  it is saved.
 
-- **Giving one bound under both names is a parse error**, e.g.
-  `[perSourceMin: 1, outDegreeMin: 2]` — even when the two values agree, since
-  the old name is then noise to delete. It is the same kind of error as a bound
-  that is not a whole number, and the only alternative that opens the document
-  has to pick one value silently.
+- **Giving one bound under both names keeps the new name's value**, e.g.
+  `[perSourceMin: 1, outDegreeMin: 2]` reads `outDegreeMin: 2`, and a quality
+  warning names both spellings. Equal values are silent: saving drops the old
+  name anyway. The value is picked by a stated rule, not silently, and the
+  warning is what says so. (First decided as a parse error, even for equal
+  values; that refused a document whose meaning was not in doubt, and every
+  other older spelling, such as `boundaryDash`, already kept the new one.)
 
 - **⌥ is how a bound is overridden.** Enforcement is soft, so there is nothing to
   override — ⌥ widens what the gesture *offers*, and the resulting graph is one

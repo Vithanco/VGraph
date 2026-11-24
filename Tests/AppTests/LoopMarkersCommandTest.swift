@@ -37,7 +37,7 @@ struct LoopMarkersCommandTest {
     }
 
     /// It is a setting of the whole diagram, and only a CLD draws loop markers.
-    @Test("Neither a boundary nor another notation offers it")
+    @Test("Neither a group nor another notation offers it")
     func offeredNowhereElse() throws {
         let session = try makeTestSession(vgl: cld)
         #expect(!titles("g", in: session).contains("Loop markers…"))

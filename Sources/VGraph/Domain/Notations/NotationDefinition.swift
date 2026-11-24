@@ -18,6 +18,9 @@ public struct NotationDefinition: VProtocol {
     /// values, but they keep colours lossily, so which keys were written cannot
     /// be read back from them.
     private(set) var declaredFrameKeys: [ItemKey: [String]] = [:]
+    /// Keys a `vnotation` gave twice with different values. Kept for the quality
+    /// report, since only the value that won reaches the layers.
+    private(set) var keysGivenTwice: [VNotationKeys.GivenTwice] = []
     /// Every type that details another, paired with it and the layer that first
     /// declared the pair, so an export can tell a `vnotation`'s own additions
     /// from what it inherits.
@@ -89,6 +92,12 @@ public struct NotationDefinition: VProtocol {
     func declaring(frameKeys: [ItemKey: [String]]) -> NotationDefinition {
         var result = self
         result.declaredFrameKeys = frameKeys
+        return result
+    }
+
+    func declaring(keysGivenTwice: [VNotationKeys.GivenTwice]) -> NotationDefinition {
+        var result = self
+        result.keysGivenTwice = keysGivenTwice
         return result
     }
 

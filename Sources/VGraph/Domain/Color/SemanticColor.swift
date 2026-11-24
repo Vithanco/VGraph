@@ -99,9 +99,11 @@ extension SemanticColor {
     public static let badgeIcon = SemanticColor(id: "badge.icon", lightHex: "#ffffff", darkHex: "#14120f")
     public static let watermark = SemanticColor(id: "watermark", lightHex: "#c8c4bc", darkHex: "#4a4842")
 
-    // Plain black and white stay theme-fixed; `labelText` is the one that flips.
+    // Rule 1: white and black are either theme-fixed or flipping, so each says which.
     public static let white = SemanticColor(id: "white", lightHex: "#ffffff", darkHex: "#ffffff")
     public static let black = SemanticColor(id: "black", lightHex: "#000000", darkHex: "#000000")
+    public static let flippingWhite = SemanticColor(id: "white.flipping", lightHex: "#ffffff", darkHex: "#000000")
+    public static let flippingBlack = SemanticColor(id: "black.flipping", lightHex: "#000000", darkHex: "#ffffff")
     public static let labelText = SemanticColor(id: "label.text", lightHex: "#000000", darkHex: "#ffffff")
 
     // Meta-node tokens: light hexes carried over from the inline literals that used
@@ -128,18 +130,27 @@ extension SemanticColor {
 
 // MARK: - Serialisation
 //
-// Only the light hex goes on the wire, so a round-tripped colour comes back as a
-// literal: it loses its semantic identity but keeps visual fidelity in both themes,
-// the dark side re-derived by `literal(lightHex:)`.
+// A round-tripped colour comes back as a literal: it loses its semantic identity
+// but keeps visual fidelity in both themes. Dark mode is keyed on the light hex
+// (style guide Rule 1), so the light hex is enough — except for white and black,
+// which are theme-fixed or flipping and must say which: they carry their dark hex.
 
 extension SemanticColor {
     public var asString: String {
-        resolve(darkMode: false).asString
+        let light = resolve(darkMode: false)
+        let dark = resolve(darkMode: true)
+        let isWhiteOrBlack = light == .white || light == .black
+        guard isWhiteOrBlack, dark != SemanticColor.literal(light).resolve(darkMode: true) else {
+            return light.asString
+        }
+        return "\(light.asString)/\(dark.asString)"
     }
 
     public static func fromString(_ string: String) throws(VError) -> SemanticColor {
-        let color = try VColor.fromString(string)
-        return .literal(color)
+        guard let slash = string.firstIndex(of: "/") else { return .literal(try VColor.fromString(string)) }
+        let light = try VColor.fromString(String(string[..<slash]))
+        let dark = try VColor.fromString(String(string[string.index(after: slash)...]))
+        return SemanticColor(id: "literal", lightHex: light.hexStringWithAlpha, darkHex: dark.hexStringWithAlpha)
     }
 }
 

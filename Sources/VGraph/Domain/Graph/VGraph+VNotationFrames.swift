@@ -3,6 +3,10 @@ extension VGraph {
         updatedSelfWith(notationDefinition: notationDefinition.declaring(frameKeys: frameKeys))
     }
 
+    func declaring(keysGivenTwice: [VNotationKeys.GivenTwice]) -> VGraph {
+        updatedSelfWith(notationDefinition: notationDefinition.declaring(keysGivenTwice: keysGivenTwice))
+    }
+
     /// The frame keys a `vnotation` wrote on a type, with their values, for
     /// the exporter to write back exactly those.
     public func declaredFrame(of key: ItemKey) -> [(key: String, value: String)] {

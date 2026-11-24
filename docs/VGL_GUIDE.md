@@ -169,8 +169,9 @@ mean somewhere the reader can see.
 
 Every colour in VGL — a node's, an edge's, a group's, a graph's `fontcolor` — is
 a hex value or one of the 147 **SVG colour keywords** (`red`, `cornflowerblue`,
-`whitesmoke`). Graphviz's larger X11 set is not accepted: `chartreuse3` is an
-error, not a silent no-op. A name you write is kept as you
+`whitesmoke`). Graphviz's larger X11 set is not accepted: `chartreuse3` is a
+quality warning, not a silent no-op, and the node is drawn as if it had no
+colour of its own. A name you write is kept as you
 wrote it when the document is exported; it is never derived back from a colour,
 since `grey` and `gray` are the same value.
 
@@ -316,7 +317,7 @@ by now.
   check across every node type, so a Question raised by two separate `Pro` nodes
   trips it even though the map is legitimate.
 
-**ConceptMap** — the largest set, ten diagnostics in all.
+**ConceptMap** — the largest set, nine diagnostics in all.
 - *info* — the concept and relation counts and their ratio, reported on every
   map. This one is a statistic, not a complaint.
 - *warning* — fewer than 5 concepts ("consider adding more"), or more than 25
@@ -327,9 +328,8 @@ by now.
   involved in", "is associated with", "is linked to", "pertains to", "concerns",
   "has something to do with", "is about" — case-insensitively, and nothing else.
   It is a blocklist, not a judgement of your wording.
-- *warning* — a concept connected to no relation.
 - *warning* — more than one disconnected cluster (single stray nodes are left to
-  the check above).
+  the shared check for a node with no relationships, below).
 - *warning* — two concepts linked in both directions; keep the more meaningful one.
 - *warning* — a relation with several concepts on both sides, which asserts every
   combination: *n* inbound × *m* outbound propositions, all of which must hold.
@@ -360,8 +360,9 @@ More quality warnings come from elsewhere: a node with no relationships at all, 
 [redundant junctor](#diagram-logic-and-junctors), an
 [unknown node or edge type](#grammar), and a node placed where its notation's
 [detailings](#detailedby--a-hierarchical-notation) do not allow, and an
-[attribute](#attributes) whose value is not of its type (`fontsize: big`), which
-is drawn as if it were not there.
+[attribute](#attributes) whose value is not of its type (`fontsize: big`,
+`color: chartreuse3`, `isFolded: maybe`), which is drawn as if it were not
+there, and a `vnotation` key given in two spellings with different values.
 
 ### Extensions
 
@@ -1461,6 +1462,11 @@ the generic folded box. The older spellings `boundaryDash`, `boundaryColor`,
 `boundaryFill` and `boundaryRadius`, and `boundaryChrome` for a group's `frame`,
 are still read; a saved file uses the new ones.
 
+**Spelling.** A `vnotation` key is read in any case, `framedash` as `frameDash`,
+and a saved file spells it as this guide does. A type that gives one key twice,
+in an older spelling or another case, keeps the current spelling's value; if the
+two values differ, a quality warning names both.
+
 **What hovering lights.** Hovering a node lights its edges and the nodes at
 their far ends. `addsToNeighborhood:` on a node type lets the highlight go
 further, for a node that is part of how a claim is written rather than a thing:
@@ -1482,7 +1488,8 @@ on input, but `backgroundColor` is what a document exports — the same name a n
 instance stores it under, so the two surfaces agree.
 
 `qualityCheck: <name>` adds a [quality check](#quality-checks) by name, such as
-`noParallelEdges`; an unknown name is a warning in the quality report, with the
+`noParallelEdges`. `disconnectedNodes` and `redundantJunctor` run for every
+notation anyway, so naming them changes nothing; an unknown name is a warning in the quality report, with the
 list of available ones, and the diagram still renders. `transform: <name>` adds a
 step that rewrites the graph before layout — `mergeRelations`, say, which merges
 Concept Map relations — and an unknown one is refused with the list of available

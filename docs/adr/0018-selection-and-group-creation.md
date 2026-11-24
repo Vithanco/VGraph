@@ -226,7 +226,7 @@ follows `split(_:with:)`/`split(_:ofType:)` and
 call, so the row and the command cannot disagree — the invariant
 `MenuAgreesWithExecutionTest` exists for. It carries the parent id and how many
 elements would be detached, and the menu row says so: **"Group"**, or
-**"Group (moves 2 out of their boundaries)"**.
+**"Group (moves 2 out of their groups)"**.
 
 **It does *not* report emptied groups, because grouping cannot empty one.** That
 was decided the other way and reversed while writing the tests. A group is

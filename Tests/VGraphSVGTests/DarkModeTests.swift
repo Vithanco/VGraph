@@ -4,6 +4,8 @@
 
 import Testing
 
+@testable import App
+@testable import TestSupport
 @testable import VGLanguage
 @testable import VGraph
 @testable import VGraphSVG
@@ -28,10 +30,10 @@ struct DarkModeTests {
         for node in graph.nodes {
             layoutedGraph = try layoutedGraph.setting(
                 node: node,
-                attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 50, y: 50)))
+                attribute: Attributes.Node.layoutedPos(VPoint(x: 50, y: 50)))
             layoutedGraph = try layoutedGraph.setting(
                 node: node,
-                attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
+                attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40)))
         }
 
         let renderer = VSVGRenderer(logger: TestLogger())
@@ -72,20 +74,20 @@ struct DarkModeTests {
         for (index, node) in graph.nodes.enumerated() {
             layoutedGraph = try layoutedGraph.setting(
                 node: node,
-                attribute: Attributes.Node.layoutedPos.attribute(
+                attribute: Attributes.Node.layoutedPos(
                     VPoint(x: Double(index) * 100 + 50, y: 50)))
             layoutedGraph = try layoutedGraph.setting(
                 node: node,
-                attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
+                attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40)))
         }
         let group = graph.groups[0]
         layoutedGraph = try layoutedGraph.setting(
             group: group,
-            attribute: Attributes.Group.layoutedBounds.attribute(
+            attribute: Attributes.Group.layoutedBounds(
                 VRect(x: 80, y: 10, width: 200, height: 100)))
         layoutedGraph = try layoutedGraph.setting(
             group: group,
-            attribute: Attributes.Group.labelLayoutedPos.attribute(VPoint(x: 180, y: 20)))
+            attribute: Attributes.Group.labelLayoutedPos(VPoint(x: 180, y: 20)))
 
         let renderer = VSVGRenderer(logger: TestLogger())
         let lightSvg = try renderer.render(graph: layoutedGraph, darkMode: false)
@@ -124,9 +126,9 @@ struct DarkModeTests {
                 """)
         var folded = try TransformStep.pipeline(Notations.extensionSteps)(graph)
         for node in folded.nodes {
-            folded = try folded.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 100, y: 50)))
+            folded = try folded.setting(node: node, attribute: Attributes.Node.layoutedPos(VPoint(x: 100, y: 50)))
             folded = try folded.setting(
-                node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 160, height: 50)))
+                node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 160, height: 50)))
         }
 
         let darkSvg = try VSVGRenderer(logger: TestLogger()).render(graph: folded, darkMode: true)
@@ -134,6 +136,71 @@ struct DarkModeTests {
         #expect(darkSvg.contains("fill=\"\(SemanticColor.groupFill.darkHex)\""))
         #expect(darkSvg.contains("stroke=\"\(SemanticColor.groupBorder.darkHex)\""))
         #expect(darkSvg.contains("fill=\"\(SemanticColor.groupText.darkHex)\""))
+    }
+
+    /// The count on a folded group's badge is white on the badge's grey in both
+    /// themes, as the style guide draws it.
+    @Test func foldedGroupCountStaysWhiteInDarkMode() throws {
+        let graph = try VGraphParser(logger: TestLogger()).parse(
+            source: """
+                vgraph myGraph: IBIS "Test Graph" {
+                    folded group g1 "My Group" {
+                        node a1: Answer "Answer in group";
+                    };
+                }
+                """)
+        var folded = try TransformStep.pipeline(Notations.extensionSteps)(graph)
+        for node in folded.nodes {
+            folded = try folded.setting(node: node, attribute: Attributes.Node.layoutedPos(VPoint(x: 100, y: 50)))
+            folded = try folded.setting(
+                node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 160, height: 50)))
+        }
+
+        let darkSvg = try VSVGRenderer(logger: TestLogger()).render(graph: folded, darkMode: true)
+
+        let count = try #require(textElement(svg: darkSvg, content: "1"))
+        #expect(count.contains("fill=\"#ffffff\""), "\(count)")
+    }
+
+    /// A built-in node style's white card and black ink are the flipping kind, so
+    /// they still flip after the style is stored as a string.
+    @Test(arguments: ["withCategory", "bareText", "simpleRoundedText", "circle"])
+    func aBuiltInNodeStyleFlipsInDarkMode(style: String) throws {
+        let vgl = """
+            vnotation Q {
+                node type: A [nodeStyle: \(style), backgroundColor: "#d8fce8"]
+                edge type: rel from: A to: A
+            }
+            vgraph g: Q "G" {
+                node x: A "Xlabel";
+            }
+            """
+        let dark = try VGraphTestApp().renderGraph(vgl, darkMode: true).svg
+        let node = try #require(nodeElement(svg: dark, id: "x"))
+        let fill = try #require(attributeValues("fill", in: node).first)
+        let label = try #require(textElement(svg: node, content: "Xlabel"))
+
+        #expect(fill != "#ffffff", "\(node)")
+        let readable = try #require(VColor(hexString: fill)).bwContrastColor.hexString
+        #expect(attributeValues("fill", in: label) == [readable], "\(node)")
+        #expect(!attributeValues("stroke", in: node).contains(fill), "\(node)")
+    }
+
+    /// A recoloured node picks black or white text against each theme's fill. Dark
+    /// mode keeps a mid-tone fill light, so its text stays black there too.
+    @Test func aRecoloredNodesTextReadsOnItsDarkFill() throws {
+        let vgl = """
+            vgraph g: C4 "G" {
+                node cbs: SoftwareSystem "Core Banking" [backgroundColor: "#e8710a"];
+            }
+            """
+        let dark = try VGraphTestApp().renderGraph(vgl, darkMode: true).svg
+        let node = try #require(nodeElement(svg: dark, id: "cbs"))
+        let fill = try #require(attributeValues("fill", in: node).first)
+        let label = try #require(textElement(svg: node, content: "Core Banking"))
+
+        let readable = try #require(VColor(hexString: fill)).bwContrastColor.hexString
+        #expect(attributeValues("fill", in: label) == [readable], "\(node)")
     }
 
     /// Edge labels must render as DM Sans 11px italic in `SemanticColor.ink2`
@@ -154,11 +221,11 @@ struct DarkModeTests {
         for (index, node) in graph.nodes.enumerated() {
             layoutedGraph = try layoutedGraph.setting(
                 node: node,
-                attribute: Attributes.Node.layoutedPos.attribute(
+                attribute: Attributes.Node.layoutedPos(
                     VPoint(x: Double(index) * 100 + 50, y: 50)))
             layoutedGraph = try layoutedGraph.setting(
                 node: node,
-                attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 80, height: 40)))
+                attribute: Attributes.Node.layoutedSize(VSize(width: 80, height: 40)))
         }
         // Synthesise an EdgeLayoutData with a label so renderEdgeLabel is exercised.
         let edge = graph.edges[0]
@@ -168,7 +235,7 @@ struct DarkModeTests {
         )
         layoutedGraph = try layoutedGraph.setting(
             edge: edge.id,
-            attribute: Attributes.Edge.layoutData.attribute(edgeLayout))
+            attribute: Attributes.Edge.layoutData(edgeLayout))
 
         let renderer = VSVGRenderer(logger: TestLogger())
         let lightSvg = try renderer.render(graph: layoutedGraph, darkMode: false)
@@ -236,6 +303,24 @@ struct DarkModeTests {
         // live in sibling <g> blocks after this one closes. So the first
         // `</g>` after `start` is ours.
         guard let end = svg.range(of: "</g>", range: start.upperBound..<svg.endIndex)
+        else { return nil }
+        return String(svg[start.lowerBound..<end.upperBound])
+    }
+
+    private func nodeElement(svg: String, id: String) -> String? {
+        guard let start = svg.range(of: "<g id=\"node-\(id)\""),
+            let end = svg.range(of: "</g>", range: start.upperBound..<svg.endIndex)
+        else { return nil }
+        return String(svg[start.lowerBound..<end.upperBound])
+    }
+
+    private func attributeValues(_ name: String, in element: String) -> [String] {
+        element.components(separatedBy: " \(name)=\"").dropFirst().compactMap { $0.split(separator: "\"").first.map(String.init) }
+    }
+
+    private func textElement(svg: String, content: String) -> String? {
+        guard let end = svg.range(of: ">\(content)</text>"),
+            let start = svg.range(of: "<text", options: .backwards, range: svg.startIndex..<end.lowerBound)
         else { return nil }
         return String(svg[start.lowerBound..<end.upperBound])
     }

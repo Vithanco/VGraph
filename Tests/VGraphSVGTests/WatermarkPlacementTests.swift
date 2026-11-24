@@ -16,11 +16,11 @@ struct WatermarkPlacementTests {
         let source = "vgraph g: IBIS {\n" + declarations.joined(separator: "\n") + "\n}"
         var graph = try VGraphParser(logger: TestLogger()).parse(source: source)
         for (node, center) in zip(graph.nodes, centers) {
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(center))
-            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedSize.attribute(size ?? nodeSize))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedPos(center))
+            graph = try graph.setting(node: node, attribute: Attributes.Node.layoutedSize(size ?? nodeSize))
         }
         return try graph.setting(
-            group: Group.root, attribute: Attributes.Group.layoutedBounds.attribute(bounds))
+            group: Group.root, attribute: Attributes.Group.layoutedBounds(bounds))
     }
 
     func nodeRect(at center: VPoint) -> VRect {

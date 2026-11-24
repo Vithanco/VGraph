@@ -47,8 +47,8 @@ struct DetailedNodeTests {
         let graph = try graph().adding(nodeType: container)
             .typing(group: ibs, as: softwareSystem)
             .adding(node: web, type: container, group: ibs)
-            .setting(group: ibs, attribute: Attributes.Node.label.attribute("IBS"))
-            .setting(group: ibs, attribute: Attributes.Group.isFolded.attribute(true))
+            .setting(group: ibs, attribute: Attributes.Node.label("IBS"))
+            .setting(group: ibs, attribute: Attributes.Group.isFolded(true))
             .declaring(view: ViewDeclaration(name: "v"))
             .settingInView("v", red, for: ItemKey(ibs))
 

@@ -9,7 +9,7 @@ import VGraph
 
 struct EmptyGroupCleanupTest {
 
-    @Test func aBoundaryWithSomethingLeftInItSurvives() throws {
+    @Test func aGroupWithSomethingLeftInItSurvives() throws {
         let s = try makeTestSession(
             vgl: """
                 vgraph demo: ConceptMap "Demo" {
@@ -68,7 +68,7 @@ struct EmptyGroupCleanupTest {
         #expect(try s.exportVGL().contains("hollow"))
     }
 
-    /// One command is one [[Snapshot]]: the node and the boundary it emptied
+    /// One command is one [[Snapshot]]: the node and the group it emptied
     /// come back together.
     @Test func theCleanupIsPartOfTheSameUndoStep() throws {
         let s = try makeTestSession(

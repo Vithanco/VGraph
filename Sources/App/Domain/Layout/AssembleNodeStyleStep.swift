@@ -24,7 +24,7 @@ extension DisplayPipeline {
                 guard ns != .presetLayout, let layout = graph.effectiveNodeLayout(for: nodeType) else { continue }
                 result = try result.setting(
                     nodeType: nodeType,
-                    attribute: Attributes.Node.style.attribute(layout)
+                    attribute: Attributes.Node.style(layout)
                 )
             }
             for node in graph.nodes {
@@ -32,7 +32,7 @@ extension DisplayPipeline {
                 guard own[Attributes.Node.backgroundColor.id] != nil || own[Attributes.Node.fontColor.id] != nil,
                     let layout = graph.effectiveNodeLayout(for: node)
                 else { continue }
-                result = try result.setting(node: node, attribute: Attributes.Node.style.attribute(layout))
+                result = try result.setting(node: node, attribute: Attributes.Node.style(layout))
             }
             return result
         }

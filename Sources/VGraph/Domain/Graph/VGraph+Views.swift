@@ -25,13 +25,13 @@ extension VGraph {
 
     public func declaring(view: ViewDeclaration) throws(VError) -> VGraph {
         guard !views.contains(where: { $0.name == view.name }) else { throw VError.duplicateView(view.name) }
-        let store = try attributeStore.addLayer(Self.layer(ofView: view.name), parent: .model, admission: .view)
+        let store = try attributeStore.addingLayer(Self.layer(ofView: view.name), parent: .model, admission: .view)
         return VGraph(base: self, attributeStore: store, views: views + [view])
     }
 
     public func removing(view name: String) throws(VError) -> VGraph {
         let layer = try viewLayer(name)
-        return VGraph(base: self, attributeStore: try attributeStore.removeLayer(layer), views: views.filter { $0.name != name })
+        return VGraph(base: self, attributeStore: try attributeStore.removingLayer(layer), views: views.filter { $0.name != name })
     }
 
     /// The same values under a new name; the source stays as it was.
@@ -89,7 +89,7 @@ extension VGraph {
     /// A value equal to what the model gives along the same chain is not stored.
     public func settingInView(_ name: String, _ attribute: Attribute, for key: ItemKey) throws(VError) -> VGraph {
         let layer = try viewLayer(name)
-        return updatedSelfWith(attributeStore: try attributeStore.set(attribute, for: key, in: layer, chains: self))
+        return updatedSelfWith(attributeStore: try attributeStore.setting(attribute, for: key, in: layer, chains: self))
     }
 
     /// All at once, so what is pruned does not depend on the order the values

@@ -28,7 +28,7 @@ link across, so its badge vanished.
 
 - **Judging reads the OriginGraph; presenting reads the display graph.** [[Quality check]]s,
   [[Bound]]s and loop detection take the OriginGraph.
-  Layout, sizing, boundary chrome, hover highlighting and the *drawing* of loop
+  Layout, sizing, frames, hover highlighting and the *drawing* of loop
   markers take the display graph.
 - **The stand-in node stays**, in the display graph only. The concern it raised —
   a node the model does not have — is met by the rule above, not by removing it.

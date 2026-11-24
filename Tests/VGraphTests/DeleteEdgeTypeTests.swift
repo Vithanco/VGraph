@@ -29,7 +29,7 @@ struct DeleteEdgeTypeTests {
     private func node(_ id: String, _ type: NodeType, in graph: VGraph) throws(VError) -> VGraph {
         let node = Node(rawValue: id)
         let result = try graph.adding(node: node, type: type)
-        return try result.setting(node: node, attribute: Attributes.Node.label.attribute(id))
+        return try result.setting(node: node, attribute: Attributes.Node.label(id))
     }
 
     /// A pair with an edge on it, and the minted type that joins them.

@@ -11,7 +11,7 @@ extension VGraph {
 
     /// Registers the content's types and puts its values in `layer`.
     public func placing(_ content: NotationContent, in layer: AttributeLayer) throws(VError) -> VGraph {
-        let defined = updatedSelfWith(attributeStore: try attributeStore.define(content.definitions))
+        let defined = updatedSelfWith(attributeStore: try attributeStore.defining(content.definitions))
         let withNodeTypes = try content.nodeTypes.folding(defined) { (graph, type) throws(VError) in
             try graph.adding(nodeType: type)
         }
@@ -33,7 +33,7 @@ extension VGraph {
     /// An attribute must be defined before it is written (ADR-0030): one defined
     /// on first use would have no category, and admission depends on it.
     func writing(_ attribute: Attribute, for key: ItemKey) throws(VError) -> VGraph {
-        updatedSelfWith(attributeStore: try attributeStore.set(attribute, for: key, in: layer(for: key), chains: self))
+        updatedSelfWith(attributeStore: try attributeStore.setting(attribute, for: key, in: layer(for: key), chains: self))
     }
 
     /// After `key` was retyped: its values, and its members', are judged again.

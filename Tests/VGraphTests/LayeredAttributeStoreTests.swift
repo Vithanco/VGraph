@@ -9,7 +9,7 @@ struct LayeredAttributeStoreTests {
     let n1 = ItemKey(.node, "n1")
     let circle = ItemKey(.nodeType, "Circle")
     let g = ItemKey(.group, "g")
-    let boundary = ItemKey(.groupType, "Boundary")
+    let groupType = ItemKey(.groupType, "Boundary")
     let viewA = AttributeLayer("viewA")
     let viewB = AttributeLayer("viewB")
 
@@ -26,13 +26,13 @@ struct LayeredAttributeStoreTests {
 
     init() throws {
         store = try AttributeStore()
-            .define(VGraph().attributeDefinitions)
-            .addLayer(viewA, parent: .model, admission: .view)
-            .addLayer(viewB, parent: .model, admission: .view)
+            .defining(VGraph().attributeDefinitions)
+            .addingLayer(viewA, parent: .model, admission: .view)
+            .addingLayer(viewB, parent: .model, admission: .view)
     }
 
     func color(_ hex: String) throws -> Attribute { try color.attribute(fromString: hex) }
-    func folded(_ value: Bool) throws -> Attribute { Attributes.Group.isFolded.attribute(value) }
+    func folded(_ value: Bool) throws -> Attribute { Attributes.Group.isFolded(value) }
 
     func value(_ store: AttributeStore, _ id: Attribute.Id, _ key: ItemKey, through layer: AttributeLayer = .model)
         throws -> String
@@ -49,17 +49,17 @@ struct LayeredAttributeStoreTests {
             typeAsString: "Int")
         let expected = try #require(store.definitions[color.id]).typeAsString
         #expect(throws: VError.attributeTypeMismatch(color.id, expected: expected, found: "Int")) {
-            try store.set(asNumber.attribute(fromString: "3"), for: n1, in: .model, chains: chains)
+            try store.setting(asNumber.attribute(fromString: "3"), for: n1, in: .model, chains: chains)
         }
     }
 
     @Test
     func layersFormATree() throws {
         #expect(throws: VError.unknownAttributeLayer(AttributeLayer("nowhere"))) {
-            try store.addLayer(AttributeLayer("viewC"), parent: AttributeLayer("nowhere"), admission: .view)
+            try store.addingLayer(AttributeLayer("viewC"), parent: AttributeLayer("nowhere"), admission: .view)
         }
         #expect(throws: VError.duplicateAttributeLayer(viewA)) {
-            try store.addLayer(viewA, parent: .model, admission: .view)
+            try store.addingLayer(viewA, parent: .model, admission: .view)
         }
         #expect(throws: VError.unknownAttributeLayer(AttributeLayer("viewC"))) {
             try store.resolve(color.id, for: n1, through: AttributeLayer("viewC"), chains: chains)
@@ -74,28 +74,28 @@ struct LayeredAttributeStoreTests {
 
     @Test
     func anElementFallsBackToItsType() throws {
-        let typed = try store.set(color(red), for: circle, in: .builtin, chains: chains)
+        let typed = try store.setting(color(red), for: circle, in: .builtin, chains: chains)
         let resolved = try typed.resolve(color.id, for: n1, through: .model, chains: chains)
         #expect(resolved == ResolvedAttribute(red, from: .layer(.builtin, key: circle)))
     }
 
     @Test
     func aViewNamingOnlyTheTypeBeatsTheModelOnTheElement() throws {
-        let styled = try store.set(color(red), for: n1, in: .model, chains: chains).set(color(green), for: circle, in: viewA, chains: chains)
+        let styled = try store.setting(color(red), for: n1, in: .model, chains: chains).setting(color(green), for: circle, in: viewA, chains: chains)
         #expect(try value(styled, color.id, n1, through: viewA) == green)
         #expect(try value(styled, color.id, n1, through: .model) == red)
     }
 
     @Test
     func withinALayerTheElementBeatsItsType() throws {
-        let styled = try store.set(color(green), for: circle, in: viewA, chains: chains).set(color(blue), for: n1, in: viewA, chains: chains)
+        let styled = try store.setting(color(green), for: circle, in: viewA, chains: chains).setting(color(blue), for: n1, in: viewA, chains: chains)
         #expect(try value(styled, color.id, n1, through: viewA) == blue)
     }
 
     @Test("Given a view layer holding a value, when it is removed, then the layer and its value are gone")
     func removingALayerForgetsItsValues() throws {
-        let styled = try store.set(color(green), for: n1, in: viewA, chains: chains)
-        let removed = try styled.removeLayer(viewA)
+        let styled = try store.setting(color(green), for: n1, in: viewA, chains: chains)
+        let removed = try styled.removingLayer(viewA)
         #expect(throws: VError.unknownAttributeLayer(viewA)) {
             try removed.values(in: viewA, for: n1)
         }
@@ -103,25 +103,25 @@ struct LayeredAttributeStoreTests {
 
     @Test("Given two view layers and a model value, when one view is removed, then the model and the other view are unchanged")
     func removingALayerLeavesTheRest() throws {
-        let styled = try store.set(color(red), for: n1, in: .model, chains: chains)
-            .set(color(green), for: circle, in: viewA, chains: chains)
-            .set(color(blue), for: n1, in: viewB, chains: chains)
-        let removed = try styled.removeLayer(viewA)
+        let styled = try store.setting(color(red), for: n1, in: .model, chains: chains)
+            .setting(color(green), for: circle, in: viewA, chains: chains)
+            .setting(color(blue), for: n1, in: viewB, chains: chains)
+        let removed = try styled.removingLayer(viewA)
         #expect(try value(removed, color.id, n1, through: .model) == red)
         #expect(try value(removed, color.id, n1, through: viewB) == blue)
     }
 
     @Test
     func aQueryReadsOnlyItsOwnPath() throws {
-        let styled = try store.set(color(green), for: n1, in: viewB, chains: chains)
+        let styled = try store.setting(color(green), for: n1, in: viewB, chains: chains)
         #expect(try value(styled, color.id, n1, through: viewA) == color.asDefinition.defaultValue)
         #expect(try value(styled, color.id, n1, through: viewB) == green)
     }
 
     @Test
     func resolveAllReturnsWhatIsSetButNoDefaults() throws {
-        let styled = try store.set(color(red), for: circle, in: .builtin, chains: chains)
-            .set(Attributes.Node.label.attribute(fromString: "Hello"), for: n1, in: .model, chains: chains)
+        let styled = try store.setting(color(red), for: circle, in: .builtin, chains: chains)
+            .setting(Attributes.Node.label.attribute(fromString: "Hello"), for: n1, in: .model, chains: chains)
         let all = try styled.resolveAll(for: n1, through: .model, chains: chains)
         #expect(
             all == [
@@ -134,30 +134,30 @@ struct LayeredAttributeStoreTests {
     func aContentAttributeSetInAViewThrows() throws {
         let label = try Attributes.Node.label.attribute(fromString: "Hello")
         #expect(throws: VError.attributeNotAdmitted(label.id, key: n1, layer: viewA)) {
-            try store.set(label, for: n1, in: viewA, chains: chains)
+            try store.setting(label, for: n1, in: viewA, chains: chains)
         }
         #expect(throws: VError.attributeNotAdmitted(label.id, key: n1, layer: viewA)) {
-            try store.remove(label.id, for: n1, in: viewA, chains: chains)
+            try store.removing(label.id, for: n1, in: viewA, chains: chains)
         }
     }
 
     @Test
     func theModelNeverHoldsValuesOnTypesAndTheNotationNeverOnElements() throws {
         #expect(throws: VError.attributeNotAdmitted(color.id, key: circle, layer: .model)) {
-            try store.set(color(red), for: circle, in: .model, chains: chains)
+            try store.setting(color(red), for: circle, in: .model, chains: chains)
         }
         #expect(throws: VError.attributeNotAdmitted(color.id, key: n1, layer: .builtin)) {
-            try store.set(color(red), for: n1, in: .builtin, chains: chains)
+            try store.setting(color(red), for: n1, in: .builtin, chains: chains)
         }
     }
 
     @Test
     func aDiagramOnlyAttributeIsRejectedOffTheRoot() throws {
-        let direction = Attributes.Group.layoutDirection.attribute(.leftToRight)
+        let direction = Attributes.Group.layoutDirection(.leftToRight)
         #expect(throws: VError.attributeNotAdmitted(direction.id, key: g, layer: .model)) {
-            try store.set(direction, for: g, in: .model, chains: chains)
+            try store.setting(direction, for: g, in: .model, chains: chains)
         }
-        let onRoot = try store.set(direction, for: .root, in: .model, chains: chains)
+        let onRoot = try store.setting(direction, for: .root, in: .model, chains: chains)
         #expect(try onRoot.values(in: .model, for: .root)[direction.id] != nil)
     }
 
@@ -165,17 +165,17 @@ struct LayeredAttributeStoreTests {
     /// for the whole diagram only.
     @Test
     func aViewChoosesItsOwnLoopMarkers() throws {
-        let none = Attributes.Group.loopMarkers.attribute(LoopMarkers.none)
-        let chosen = try store.set(none, for: .root, in: viewA, chains: chains)
+        let none = Attributes.Group.loopMarkers(LoopMarkers.none)
+        let chosen = try store.setting(none, for: .root, in: viewA, chains: chains)
         #expect(try value(chosen, none.id, .root, through: viewA) == none.stringValue)
         #expect(throws: VError.attributeNotAdmitted(none.id, key: g, layer: viewA)) {
-            try store.set(none, for: g, in: viewA, chains: chains)
+            try store.setting(none, for: g, in: viewA, chains: chains)
         }
     }
 
     @Test
     func aValueEqualToTheDefaultIsNotStored() throws {
-        let same = try store.set(color(color.asDefinition.defaultValue), for: circle, in: .builtin, chains: chains)
+        let same = try store.setting(color(color.asDefinition.defaultValue), for: circle, in: .builtin, chains: chains)
         #expect(try same.values(in: .builtin, for: circle).isEmpty)
     }
 
@@ -183,21 +183,22 @@ struct LayeredAttributeStoreTests {
     /// lines" must not read back as "never wrapped".
     @Test
     func aComputedValueEqualToTheDefaultIsKept() throws {
-        let wrapped = try store.set(Attributes.Node.wrappedText.attribute([]), for: n1, in: .model, chains: chains)
+        let wrapped = try store.setting(Attributes.Node.wrappedText([]), for: n1, in: .model, chains: chains)
         #expect(try wrapped.values(in: .model, for: n1)[Attributes.Node.wrappedText.id] != nil)
     }
 
     /// ADR-0030: "a model `false` beats a type's `true`".
     @Test
     func unfoldedBeatsAFoldedType() throws {
-        let unfolded = try store.set(folded(true), for: boundary, in: .builtin, chains: chains).set(folded(false), for: g, in: .model, chains: chains)
+        let unfolded = try store.setting(folded(true), for: groupType, in: .builtin, chains: chains)
+            .setting(folded(false), for: g, in: .model, chains: chains)
         #expect(try value(unfolded, Attributes.Group.isFolded.id, g) == "false")
     }
 
     /// ADR-0030: where the type is not folded anyway, `unfolded` is redundant.
     @Test
     func unfoldedIsRedundantWhereTheTypeIsNotFolded() throws {
-        let unfolded = try store.set(folded(false), for: g, in: .model, chains: chains)
+        let unfolded = try store.setting(folded(false), for: g, in: .model, chains: chains)
         #expect(try unfolded.values(in: .model, for: g).isEmpty)
     }
 
@@ -205,26 +206,27 @@ struct LayeredAttributeStoreTests {
     /// only repeated the old colour follows".
     @Test
     func anElementRepeatingItsTypeFollowsTheNotation() throws {
-        let repeated = try store.set(color(red), for: circle, in: .builtin, chains: chains)
-            .set(color(red), for: n1, in: .model, chains: chains)
-            .set(color(blue), for: circle, in: .builtin, chains: chains)
+        let repeated = try store.setting(color(red), for: circle, in: .builtin, chains: chains)
+            .setting(color(red), for: n1, in: .model, chains: chains)
+            .setting(color(blue), for: circle, in: .builtin, chains: chains)
         #expect(try value(repeated, color.id, n1) == blue)
     }
 
     @Test
     func aTypeChangingToAnElementsValuePrunesIt() throws {
-        let pruned = try store.set(color(blue), for: n1, in: .model, chains: chains).set(color(blue), for: circle, in: .vnotation, chains: chains)
+        let pruned = try store.setting(color(blue), for: n1, in: .model, chains: chains)
+            .setting(color(blue), for: circle, in: .vnotation, chains: chains)
         #expect(try pruned.values(in: .model, for: n1).isEmpty)
         #expect(try value(pruned, color.id, n1) == blue)
     }
 
     @Test
     func removingAnAncestorsValueCanMakeAnOverrideRedundant() throws {
-        let shielded = try store.set(color(red), for: circle, in: .builtin, chains: chains)
-            .set(color(blue), for: n1, in: .model, chains: chains)
-            .set(color(red), for: n1, in: viewA, chains: chains)
+        let shielded = try store.setting(color(red), for: circle, in: .builtin, chains: chains)
+            .setting(color(blue), for: n1, in: .model, chains: chains)
+            .setting(color(red), for: n1, in: viewA, chains: chains)
         #expect(try shielded.values(in: viewA, for: n1)[color.id] == red)
-        let exposed = try shielded.remove(color.id, for: n1, in: .model, chains: chains)
+        let exposed = try shielded.removing(color.id, for: n1, in: .model, chains: chains)
         #expect(try exposed.values(in: viewA, for: n1).isEmpty)
     }
 
@@ -232,27 +234,27 @@ struct LayeredAttributeStoreTests {
     /// matching the ancestor is not redundant.
     @Test
     func anOverrideOfItsLayersTypeValueIsKept() throws {
-        let overridden = try store.set(color(red), for: n1, in: .model, chains: chains)
-            .set(color(green), for: circle, in: viewA, chains: chains)
-            .set(color(red), for: n1, in: viewA, chains: chains)
+        let overridden = try store.setting(color(red), for: n1, in: .model, chains: chains)
+            .setting(color(green), for: circle, in: viewA, chains: chains)
+            .setting(color(red), for: n1, in: viewA, chains: chains)
         #expect(try value(overridden, color.id, n1, through: viewA) == red)
     }
 
     @Test
     func anAncestorChangeKeepsAnOverrideOfItsLayersTypeValue() throws {
-        let overridden = try store.set(color(blue), for: n1, in: .model, chains: chains)
-            .set(color(green), for: circle, in: viewA, chains: chains)
-            .set(color(red), for: n1, in: viewA, chains: chains)
-            .set(color(red), for: n1, in: .model, chains: chains)
+        let overridden = try store.setting(color(blue), for: n1, in: .model, chains: chains)
+            .setting(color(green), for: circle, in: viewA, chains: chains)
+            .setting(color(red), for: n1, in: viewA, chains: chains)
+            .setting(color(red), for: n1, in: .model, chains: chains)
         #expect(try value(overridden, color.id, n1, through: viewA) == red)
     }
 
     @Test
     func removingItsLayersTypeValueMakesAnOverrideRedundant() throws {
-        let exposed = try store.set(color(red), for: n1, in: .model, chains: chains)
-            .set(color(green), for: circle, in: viewA, chains: chains)
-            .set(color(red), for: n1, in: viewA, chains: chains)
-            .remove(color.id, for: circle, in: viewA, chains: chains)
+        let exposed = try store.setting(color(red), for: n1, in: .model, chains: chains)
+            .setting(color(green), for: circle, in: viewA, chains: chains)
+            .setting(color(red), for: n1, in: viewA, chains: chains)
+            .removing(color.id, for: circle, in: viewA, chains: chains)
         #expect(try exposed.values(in: viewA, for: n1).isEmpty)
     }
 
@@ -260,21 +262,21 @@ struct LayeredAttributeStoreTests {
     /// value is there before the element's override is judged.
     @Test
     func aMergedOverrideOfItsOwnTypeValueIsKept() throws {
-        let merged = try store.set(color(red), for: n1, in: .model, chains: chains)
+        let merged = try store.setting(color(red), for: n1, in: .model, chains: chains)
             .merging([(n1, color(red)), (circle, color(green))], into: viewA, chains: chains)
         #expect(try value(merged, color.id, n1, through: viewA) == red)
     }
 
     @Test
     func siblingsNeverPruneEachOther() throws {
-        let both = try store.set(color(green), for: n1, in: viewA, chains: chains).set(color(green), for: n1, in: viewB, chains: chains)
+        let both = try store.setting(color(green), for: n1, in: viewA, chains: chains).setting(color(green), for: n1, in: viewB, chains: chains)
         #expect(try both.values(in: viewA, for: n1)[color.id] == green)
         #expect(try both.values(in: viewB, for: n1)[color.id] == green)
     }
 
     @Test
     func mergingIntoALayerPrunesItsDescendantsAndChecksAdmission() throws {
-        let merged = try store.set(color(blue), for: n1, in: .model, chains: chains)
+        let merged = try store.setting(color(blue), for: n1, in: .model, chains: chains)
             .merging([(circle, color(blue))], into: .builtin, chains: chains)
         #expect(try merged.values(in: .model, for: n1).isEmpty)
         #expect(throws: VError.attributeNotAdmitted(color.id, key: n1, layer: .builtin)) {
@@ -285,10 +287,10 @@ struct LayeredAttributeStoreTests {
     @Test
     /// The key's type is the graph's to forget, not the store's.
     func removingAKeyClearsEveryLayer() throws {
-        let removed = try store.set(color(blue), for: n1, in: .model, chains: chains)
-            .set(color(green), for: n1, in: viewA, chains: chains)
-            .set(color(red), for: circle, in: .builtin, chains: chains)
-            .removeKey(n1)
+        let removed = try store.setting(color(blue), for: n1, in: .model, chains: chains)
+            .setting(color(green), for: n1, in: viewA, chains: chains)
+            .setting(color(red), for: circle, in: .builtin, chains: chains)
+            .removingKey(n1)
         #expect(try removed.values(in: .model, for: n1).isEmpty)
         #expect(try removed.values(in: viewA, for: n1).isEmpty)
         #expect(try removed.values(in: .builtin, for: circle)[color.id] == red)
@@ -297,9 +299,9 @@ struct LayeredAttributeStoreTests {
     /// How a detailed node turns into a node and back, keeping its values (ADR-0032).
     @Test
     func rekeyingMovesAKeysValuesInEveryLayer() throws {
-        let moved = try store.set(color(blue), for: g, in: .model, chains: chains)
-            .set(color(green), for: g, in: viewA, chains: chains)
-            .set(color(red), for: circle, in: .builtin, chains: chains)
+        let moved = try store.setting(color(blue), for: g, in: .model, chains: chains)
+            .setting(color(green), for: g, in: viewA, chains: chains)
+            .setting(color(red), for: circle, in: .builtin, chains: chains)
             .rekeying(from: g, to: n1)
         #expect(try moved.values(in: .model, for: g).isEmpty)
         #expect(try moved.values(in: viewA, for: g).isEmpty)
@@ -313,8 +315,8 @@ struct LayeredAttributeStoreTests {
 
     @Test
     func anEditLeavesThePreviousVersionUnchanged() throws {
-        let before = try store.set(color(blue), for: n1, in: .model, chains: chains)
-        _ = try before.set(color(blue), for: circle, in: .builtin, chains: chains).removeKey(n1)
+        let before = try store.setting(color(blue), for: n1, in: .model, chains: chains)
+        _ = try before.setting(color(blue), for: circle, in: .builtin, chains: chains).removingKey(n1)
         #expect(try before.values(in: .model, for: n1)[color.id] == blue)
     }
 }

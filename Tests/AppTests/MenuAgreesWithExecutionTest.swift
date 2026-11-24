@@ -216,7 +216,7 @@ struct MenuAgreesWithExecutionTest {
                         if session.kind(of: elementId) == .group, session.nodeType(of: elementId) == nil {
                             let options = EditorCore.groupRetypeOptions(for: elementId, in: session)
                             guard let first = options.first else {
-                                continue  // no boundary kinds; the item is greyed
+                                continue  // no group types; the item is greyed
                             }
                             let to: GroupType? =
                                 first.id == EditorCore.plainGroupOption.id

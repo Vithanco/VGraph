@@ -32,7 +32,7 @@ struct TypedGraphTests {
     @Test
     func testAddNodeType() throws(VError) {
         var tGraph = TypedGraph()
-        tGraph = try tGraph.add(nodeType: nt1)
+        tGraph = try tGraph.adding(nodeType: nt1)
         #expect(tGraph.nodeTypeMapping.getMany(one: nt1) == nil)
         #expect(tGraph.metagraph.vertices.contains(nt1))
         #expect(!tGraph.metagraph.vertices.contains(nt2))
@@ -41,18 +41,18 @@ struct TypedGraphTests {
     @Test
     func cannotAddNodeTypeTwice() throws(VError) {
         var tGraph = TypedGraph()
-        tGraph = try tGraph.add(nodeType: nt1)
+        tGraph = try tGraph.adding(nodeType: nt1)
         #expect(throws: VError.nodeTypeAlreadyExists(nt1)) {
-            tGraph = try tGraph.add(nodeType: nt1)
+            tGraph = try tGraph.adding(nodeType: nt1)
         }
     }
 
     @Test
     func adEdgeType() throws(VError) {
         var tGraph = TypedGraph()
-        tGraph = try tGraph.add(nodeType: nt1)
-        tGraph = try tGraph.add(nodeType: nt2)
-        tGraph = try tGraph.add(edgeType: et1)
+        tGraph = try tGraph.adding(nodeType: nt1)
+        tGraph = try tGraph.adding(nodeType: nt2)
+        tGraph = try tGraph.adding(edgeType: et1)
         #expect(tGraph.edgeTypeMapping.getMany(one: et1.id) == nil)
         #expect(tGraph.metagraph.get(edge: et1.id) == et1)
         #expect(tGraph.metagraph.vertices.contains(nt1))
@@ -62,26 +62,26 @@ struct TypedGraphTests {
     @Test
     func addEdgeTypeRequiresNodeTypeFrom() throws(VError) {
         var tGraph = TypedGraph()
-        tGraph = try tGraph.add(nodeType: nt2)
+        tGraph = try tGraph.adding(nodeType: nt2)
         #expect(throws: VError.nodeTypeNotFound(nt1)) {
-            tGraph = try tGraph.add(edgeType: et1)
+            tGraph = try tGraph.adding(edgeType: et1)
         }
     }
 
     @Test
     func addEdgeTypeRequiresNodeTypeTo() throws(VError) {
         var tGraph = TypedGraph()
-        tGraph = try tGraph.add(nodeType: nt1)
+        tGraph = try tGraph.adding(nodeType: nt1)
         #expect(throws: VError.nodeTypeNotFound(nt2)) {
-            tGraph = try tGraph.add(edgeType: et1)
+            tGraph = try tGraph.adding(edgeType: et1)
         }
     }
 
     @Test
     func testAddNode() throws(VError) {
         var tGraph = TypedGraph()
-        tGraph = try tGraph.add(nodeType: nt1)
-        tGraph = try tGraph.add(node: n1, type: nt1)
+        tGraph = try tGraph.adding(nodeType: nt1)
+        tGraph = try tGraph.adding(node: n1, type: nt1)
         #expect(tGraph.nodeTypeMapping.getMany(one: nt1) == [n1])
         #expect(tGraph.graph.vertices.contains(n1))
     }
@@ -89,10 +89,10 @@ struct TypedGraphTests {
     @Test
     func cannotAddNodeTwice() throws(VError) {
         var tGraph = TypedGraph()
-        tGraph = try tGraph.add(nodeType: nt1)
-        tGraph = try tGraph.add(node: n1, type: nt1)
+        tGraph = try tGraph.adding(nodeType: nt1)
+        tGraph = try tGraph.adding(node: n1, type: nt1)
         #expect(throws: VError.nodeAlreadyExists(n1)) {
-            tGraph = try tGraph.add(node: n1, type: nt1)
+            tGraph = try tGraph.adding(node: n1, type: nt1)
         }
     }
 
@@ -100,20 +100,20 @@ struct TypedGraphTests {
     func addNodefailsWithoutNodeType() throws(VError) {
         var tGraph = TypedGraph()
         #expect(throws: VError.nodeTypeNotFound(nt1)) {
-            tGraph = try tGraph.add(node: n1, type: nt1)
+            tGraph = try tGraph.adding(node: n1, type: nt1)
         }
     }
 
     @Test
     func addEdge() throws(VError) {
         var tGraph = TypedGraph()
-        tGraph = try tGraph.add(nodeType: nt1)
-        tGraph = try tGraph.add(nodeType: nt2)
-        tGraph = try tGraph.add(edgeType: et1)
-        tGraph = try tGraph.add(node: n1, type: nt1)
-        tGraph = try tGraph.add(node: n2, type: nt2)
-        tGraph = try tGraph.add(node: n3, type: nt1)
-        tGraph = try tGraph.add(edge: e1, type: et1.id)
+        tGraph = try tGraph.adding(nodeType: nt1)
+        tGraph = try tGraph.adding(nodeType: nt2)
+        tGraph = try tGraph.adding(edgeType: et1)
+        tGraph = try tGraph.adding(node: n1, type: nt1)
+        tGraph = try tGraph.adding(node: n2, type: nt2)
+        tGraph = try tGraph.adding(node: n3, type: nt1)
+        tGraph = try tGraph.adding(edge: e1, type: et1.id)
         #expect(tGraph.edgeTypeMapping.getMany(one: et1.id) == [e1.id])
         #expect(tGraph.graph.get(edge: e1.id) == e1)
         #expect(tGraph.graph.getEdges(from: n1, to: n2) == [e1])
@@ -126,28 +126,28 @@ struct TypedGraphTests {
     @Test
     func addEdgeTwiceThrows() throws(VError) {
         var tGraph = TypedGraph()
-        tGraph = try tGraph.add(nodeType: nt1)
-        tGraph = try tGraph.add(nodeType: nt2)
-        tGraph = try tGraph.add(edgeType: et1)
-        tGraph = try tGraph.add(node: n1, type: nt1)
-        tGraph = try tGraph.add(node: n2, type: nt2)
-        tGraph = try tGraph.add(edge: e1, type: et1.id)
+        tGraph = try tGraph.adding(nodeType: nt1)
+        tGraph = try tGraph.adding(nodeType: nt2)
+        tGraph = try tGraph.adding(edgeType: et1)
+        tGraph = try tGraph.adding(node: n1, type: nt1)
+        tGraph = try tGraph.adding(node: n2, type: nt2)
+        tGraph = try tGraph.adding(edge: e1, type: et1.id)
         #expect(throws: VError.edgeAlreadyExists(e1.id)) {
-            try tGraph.add(edge: e1, type: et1.id)
+            try tGraph.adding(edge: e1, type: et1.id)
         }
     }
 
     @Test
     func removeEdge() throws(VError) {
         var tGraph = TypedGraph()
-        tGraph = try tGraph.add(nodeType: nt1)
-        tGraph = try tGraph.add(nodeType: nt2)
-        tGraph = try tGraph.add(edgeType: et1)
-        tGraph = try tGraph.add(node: n1, type: nt1)
-        tGraph = try tGraph.add(node: n2, type: nt2)
-        tGraph = try tGraph.add(node: n3, type: nt1)
-        tGraph = try tGraph.add(edge: e1, type: et1.id)
-        tGraph = try tGraph.delete(edge: e1.id)
+        tGraph = try tGraph.adding(nodeType: nt1)
+        tGraph = try tGraph.adding(nodeType: nt2)
+        tGraph = try tGraph.adding(edgeType: et1)
+        tGraph = try tGraph.adding(node: n1, type: nt1)
+        tGraph = try tGraph.adding(node: n2, type: nt2)
+        tGraph = try tGraph.adding(node: n3, type: nt1)
+        tGraph = try tGraph.adding(edge: e1, type: et1.id)
+        tGraph = try tGraph.deleting(edge: e1.id)
         #expect(tGraph.edgeTypeMapping.getMany(one: et1.id) == nil)
         #expect(tGraph.graph.get(edge: e1.id) == nil)
         #expect(tGraph.graph.getEdges(from: n1, to: n2) == [])
@@ -157,15 +157,15 @@ struct TypedGraphTests {
 
     @Test func changeEdge() throws(VError) {
         var tGraph = TypedGraph()
-        tGraph = try tGraph.add(nodeType: nt1)
-        tGraph = try tGraph.add(nodeType: nt2)
-        tGraph = try tGraph.add(edgeType: et1)
-        tGraph = try tGraph.add(node: n1, type: nt1)
-        tGraph = try tGraph.add(node: n2, type: nt2)
-        tGraph = try tGraph.add(edge: e1, type: et1.id)
-        tGraph = try tGraph.add(node: n3, type: nt2)
+        tGraph = try tGraph.adding(nodeType: nt1)
+        tGraph = try tGraph.adding(nodeType: nt2)
+        tGraph = try tGraph.adding(edgeType: et1)
+        tGraph = try tGraph.adding(node: n1, type: nt1)
+        tGraph = try tGraph.adding(node: n2, type: nt2)
+        tGraph = try tGraph.adding(edge: e1, type: et1.id)
+        tGraph = try tGraph.adding(node: n3, type: nt2)
         let e3 = Edge(base: e1, to: n3)
-        tGraph = try tGraph.redirect(edge: e3)
+        tGraph = try tGraph.redirecting(edge: e3)
         #expect(tGraph.edgeTypeMapping.getMany(one: et1.id) == [e3.id])
         #expect(tGraph.graph.get(edge: e1.id) == e3)
         #expect(tGraph.graph.getEdges(from: n1, to: n2) == [])
@@ -175,83 +175,83 @@ struct TypedGraphTests {
 
     @Test("Retyping a node the graph does not have is an error")
     func setNodeTypeRequiresTheNode() throws(VError) {
-        let tGraph = try TypedGraph().add(nodeType: nt1)
+        let tGraph = try TypedGraph().adding(nodeType: nt1)
         #expect(throws: VError.nodeNotFound(n1)) {
-            try tGraph.setNodeType(node: n1, type: nt1)
+            try tGraph.settingNodeType(node: n1, type: nt1)
         }
     }
 
     @Test("Retyping an edge the graph does not have is an error")
     func setEdgeTypeRequiresTheEdge() throws(VError) {
-        let tGraph = try TypedGraph().add(nodeType: nt1).add(nodeType: nt2).add(edgeType: et1)
+        let tGraph = try TypedGraph().adding(nodeType: nt1).adding(nodeType: nt2).adding(edgeType: et1)
         #expect(throws: VError.edgeNotFound(e1.id)) {
-            try tGraph.setEdgeType(edge: e1.id, type: et1.id)
+            try tGraph.settingEdgeType(edge: e1.id, type: et1.id)
         }
     }
 
     @Test
     func addEdgeTypeRequiresEdgeType() throws(VError) {
         var tGraph = TypedGraph()
-        tGraph = try tGraph.add(nodeType: nt1)
-        tGraph = try tGraph.add(nodeType: nt2)
-        tGraph = try tGraph.add(node: n1, type: nt1)
-        tGraph = try tGraph.add(node: n2, type: nt1)
+        tGraph = try tGraph.adding(nodeType: nt1)
+        tGraph = try tGraph.adding(nodeType: nt2)
+        tGraph = try tGraph.adding(node: n1, type: nt1)
+        tGraph = try tGraph.adding(node: n2, type: nt1)
         #expect(throws: VError.edgeTypeNotFound(et1.id)) {
-            tGraph = try tGraph.add(edge: e1, type: et1.id)
+            tGraph = try tGraph.adding(edge: e1, type: et1.id)
         }
     }
 
     @Test
     func addEdgeTypeRequiresNodeFrom() throws(VError) {
         var tGraph = TypedGraph()
-        tGraph = try tGraph.add(nodeType: nt1)
-        tGraph = try tGraph.add(nodeType: nt2)
-        tGraph = try tGraph.add(edgeType: et1)
-        tGraph = try tGraph.add(node: n2, type: nt1)
+        tGraph = try tGraph.adding(nodeType: nt1)
+        tGraph = try tGraph.adding(nodeType: nt2)
+        tGraph = try tGraph.adding(edgeType: et1)
+        tGraph = try tGraph.adding(node: n2, type: nt1)
         #expect(throws: VError.nodeNotFound(n1)) {
-            tGraph = try tGraph.add(edge: e1, type: et1.id)
+            tGraph = try tGraph.adding(edge: e1, type: et1.id)
         }
     }
 
     @Test
     func addEdgeTypeRequiresNodeTo() throws(VError) {
         var tGraph = TypedGraph()
-        tGraph = try tGraph.add(nodeType: nt1)
-        tGraph = try tGraph.add(nodeType: nt2)
-        tGraph = try tGraph.add(edgeType: et1)
-        tGraph = try tGraph.add(node: n1, type: nt1)
+        tGraph = try tGraph.adding(nodeType: nt1)
+        tGraph = try tGraph.adding(nodeType: nt2)
+        tGraph = try tGraph.adding(edgeType: et1)
+        tGraph = try tGraph.adding(node: n1, type: nt1)
         #expect(throws: VError.nodeNotFound(n2)) {
-            tGraph = try tGraph.add(edge: e1, type: et1.id)
+            tGraph = try tGraph.adding(edge: e1, type: et1.id)
         }
     }
 
     @Test
     func anUnusedNodeTypeIsDeleted() throws(VError) {
         var tGraph = TypedGraph()
-        tGraph = try tGraph.add(nodeType: nt1)
-        tGraph = try tGraph.delete(nodeType: nt1)
+        tGraph = try tGraph.adding(nodeType: nt1)
+        tGraph = try tGraph.deleting(nodeType: nt1)
         #expect(!tGraph.has(nodeType: nt1))
     }
 
     @Test
     func aNodeTypeStillInUseIsRefused() throws(VError) {
         var tGraph = TypedGraph()
-        tGraph = try tGraph.add(nodeType: nt1)
-        tGraph = try tGraph.add(node: n1, type: nt1)
+        tGraph = try tGraph.adding(nodeType: nt1)
+        tGraph = try tGraph.adding(node: n1, type: nt1)
 
         #expect(throws: VError.nodeTypeStillInUse(nt1)) {
-            _ = try tGraph.delete(nodeType: nt1)
+            _ = try tGraph.deleting(nodeType: nt1)
         }
     }
 
     @Test
     func deletingANodeForgetsItsType() throws(VError) {
         var tGraph = TypedGraph()
-        tGraph = try tGraph.add(nodeType: nt1)
-        tGraph = try tGraph.add(node: n1, type: nt1)
-        tGraph = try tGraph.add(node: n2, type: nt1)
+        tGraph = try tGraph.adding(nodeType: nt1)
+        tGraph = try tGraph.adding(node: n1, type: nt1)
+        tGraph = try tGraph.adding(node: n2, type: nt1)
 
-        tGraph = try tGraph.delete(node: n1)
+        tGraph = try tGraph.deleting(node: n1)
 
         #expect(tGraph.nodeTypeMapping.getOne(many: n1) == nil)
         #expect(tGraph.nodeTypeMapping.getMany(one: nt1) == [n2])
@@ -260,15 +260,15 @@ struct TypedGraphTests {
     @Test("Deleting a node frees the type of every edge it took with it")
     func deletingANodeForgetsItsEdgesTypes() throws(VError) {
         let tGraph = try TypedGraph()
-            .add(nodeType: nt1)
-            .add(nodeType: nt2)
-            .add(edgeType: et1)
-            .add(node: n1, type: nt1)
-            .add(node: n2, type: nt2)
-            .add(edge: e1, type: et1.id)
-            .delete(node: n2)
+            .adding(nodeType: nt1)
+            .adding(nodeType: nt2)
+            .adding(edgeType: et1)
+            .adding(node: n1, type: nt1)
+            .adding(node: n2, type: nt2)
+            .adding(edge: e1, type: et1.id)
+            .deleting(node: n2)
 
         #expect(tGraph.edgeTypeMapping.getMany(one: et1.id) == nil)
-        #expect(!(try tGraph.delete(edgeType: et1.id)).has(edgeType: et1.id))
+        #expect(!(try tGraph.deleting(edgeType: et1.id)).has(edgeType: et1.id))
     }
 }

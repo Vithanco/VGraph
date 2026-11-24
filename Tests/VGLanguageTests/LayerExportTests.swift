@@ -70,7 +70,7 @@ struct LayerExportTests {
     @Test("Given a group unfolded against its folded type, when exported, then the unfolding is written")
     func anUnfoldingIsWritten() throws {
         let unfolded = try teamsWithFoldedTeam()
-            .setting(group: Group(rawValue: "b"), attribute: Attributes.Group.isFolded.attribute(false))
+            .setting(group: Group(rawValue: "b"), attribute: Attributes.Group.isFolded(false))
         #expect(try VGLExporter().export(graph: unfolded).contains("isfolded: false"))
     }
 }

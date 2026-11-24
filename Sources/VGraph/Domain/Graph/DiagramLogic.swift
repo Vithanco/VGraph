@@ -1,26 +1,16 @@
 /// The logical reasoning type of a diagram notation.
 ///
-/// Vithanco diagrams use one of three logic types that govern how edges are interpreted:
-/// - **noLogic**: No particular logic applies (e.g., Concept Maps, IBIS)
-/// - **sufficientCause**: Each predecessor is enough to achieve the successor ("If A then B")
-/// - **necessaryCondition**: All predecessors are needed to achieve the successor
+/// Vithanco diagrams use one of three logic types that govern how edges are interpreted.
 public enum DiagramLogic: HasReadableNames {
 
+    /// No particular logic applies (e.g., Concept Maps, IBIS).
     case noLogic
+    /// Each predecessor is enough (sufficient) to achieve the successor ("If A then B"):
+    /// if any predecessor is valid, the successor is valid too.
     case sufficientCause
+    /// Each predecessor is needed to achieve the successor, but not necessarily sufficient:
+    /// only if all predecessors are valid is the successor valid.
     case necessaryCondition
-
-    public var toolTip: String {
-        switch self {
-        case .noLogic: return "Don't use any particular logic"
-        case .sufficientCause:
-            return
-                "'Sufficient Cause' logic means that each predecessor is enough (=sufficient) to achieve the successor. So, if any predecessor is valid then the successors are valid, too."
-        case .necessaryCondition:
-            return
-                "'Necessary Condition' logic means that each predecessor is needed to achieve the successor but not necessarily sufficient. So, only if all predecessors are valid is the successor also valid."
-        }
-    }
 
     public var readableName: String {
         switch self {

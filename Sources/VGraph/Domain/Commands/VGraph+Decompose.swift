@@ -109,13 +109,13 @@ extension VGraph {
     /// keeps the one it had.
     public func unfolding(_ group: Group, onlyIn view: String?) throws(VError) -> VGraph {
         if let view {
-            return try settingInView(view, Attributes.Group.isFolded.attribute(false), for: ItemKey(group))
+            return try settingInView(view, Attributes.Group.isFolded(false), for: ItemKey(group))
         }
-        let unfolded = try setting(group: group, attribute: Attributes.Group.isFolded.attribute(false))
+        let unfolded = try setting(group: group, attribute: Attributes.Group.isFolded(false))
         return try views.folding(unfolded) { (result, declared) throws(VError) in
             let wasFolded = try isFolded(in: self, view: declared.name)
             guard try isFolded(in: result, view: declared.name) != wasFolded else { return result }
-            return try result.settingInView(declared.name, Attributes.Group.isFolded.attribute(wasFolded), for: ItemKey(group))
+            return try result.settingInView(declared.name, Attributes.Group.isFolded(wasFolded), for: ItemKey(group))
         }
 
         func isFolded(in graph: VGraph, view: String) throws(VError) -> Bool {

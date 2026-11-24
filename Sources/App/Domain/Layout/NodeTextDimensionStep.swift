@@ -25,6 +25,6 @@ private func calculateTextSize(node: Node, in graph: VGraph) throws(VError) -> V
 
     return try graph.setting(
         node: node,
-        attribute: Attributes.Node.nodeTextSize.attribute(textSize)
+        attribute: Attributes.Node.nodeTextSize(textSize)
     )
 }

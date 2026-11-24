@@ -28,7 +28,7 @@ struct ArithmeticEvaluationTests {
         let node = Node(rawValue: id)
         var result = try graph.adding(node: node, type: A.NodeTypes.number)
         if let value {
-            result = try result.setting(node: node, attribute: Attributes.Node.label.attribute(value))
+            result = try result.setting(node: node, attribute: Attributes.Node.label(value))
         }
         return result
     }
@@ -41,7 +41,7 @@ struct ArithmeticEvaluationTests {
         let node = Node(rawValue: id)
         var result = try graph.adding(node: node, type: A.NodeTypes.equals)
         if let expected {
-            result = try result.setting(node: node, attribute: Attributes.Node.label.attribute(expected))
+            result = try result.setting(node: node, attribute: Attributes.Node.label(expected))
         }
         return result
     }
@@ -333,7 +333,7 @@ struct ArithmeticEvaluationTests {
         graph = try edge("e2", "b", "op", A.EdgeTypes.plusFirstOperand, in: graph)
         graph = try edge("e3", "c", "op", A.EdgeTypes.plusSecondOperand, in: graph)
         graph = try edge("e4", "op", "eq", A.EdgeTypes.plusResult, in: graph)
-        graph = try graph.setting(node: Node(rawValue: "eq"), attribute: Attributes.Node.label.attribute("11"))
+        graph = try graph.setting(node: Node(rawValue: "eq"), attribute: Attributes.Node.label("11"))
 
         let outcomes = ArithmeticEvaluation.evaluate(graph)
         #expect(outcomes[Node(rawValue: "eq")] == .correct(value: 11))

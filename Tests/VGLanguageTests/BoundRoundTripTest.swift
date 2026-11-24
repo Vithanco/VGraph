@@ -248,28 +248,40 @@ struct BoundRoundTripTest {
         #expect(try graph.get(edgeType: EdgeType.Id(rawValue: "aToA"), attribute: Attributes.Edge.outDegreeMax) == 3)
     }
 
-    /// ADR-0011: one bound written twice contradicts itself, even with equal values.
-    @Test(
-        "Giving one bound under its former and its new name is a parse error",
-        arguments: [
-            (edgeAttrs: "perSourceMin: 1, outDegreeMin: 2", nodeAttrs: ""),
-            (edgeAttrs: "perSourceMin: 1, outDegreeMin: 1", nodeAttrs: ""),
-            (edgeAttrs: "PERTARGETMAX: 1, inDegreeMax: 2", nodeAttrs: ""),
-            (edgeAttrs: "", nodeAttrs: ", totalOutMin: 1, totalOutDegreeMin: 1"),
-        ])
-    func bothNamesAreAnError(edgeAttrs: String, nodeAttrs: String) {
-        #expect(throws: VError.self) {
-            try parse(notation(edgeAttrs: edgeAttrs, nodeAttrs: nodeAttrs))
-        }
+    private func warnings(_ source: String) throws -> [String] {
+        Notations.analyzeQuality(graph: try parse(source)).warnings.map { $0.message }
     }
 
-    @Test("The error names the bound and both spellings, so the fix is obvious")
-    func bothNamesErrorMessage() {
+    @Test(
+        "Given one bound under its former and its new name with equal values, when parsed, then it holds the value and nothing is reported",
+        arguments: [
+            (both: (edge: "perSourceMax: 1, outDegreeMax: 1", node: ""), new: (edge: "outDegreeMax: 1", node: "")),
+            (both: (edge: "", node: ", totalOutMax: 1, totalOutDegreeMax: 1"), new: (edge: "", node: ", totalOutDegreeMax: 1")),
+        ])
+    func bothNamesAgreeing(both: (edge: String, node: String), new: (edge: String, node: String)) throws {
+        let both = notation(edgeAttrs: both.edge, nodeAttrs: both.node)
+        let new = notation(edgeAttrs: new.edge, nodeAttrs: new.node)
+        let given = try warnings(both)
+        let declaredOnce = try warnings(new)
+
+        #expect(given == declaredOnce)
+        #expect(try VGLExporter().export(graph: parse(both)) == VGLExporter().export(graph: parse(new)))
+    }
+
+    @Test(
+        "Given one bound under its former and its new name with different values, when parsed, then the new name's value holds and one warning names both"
+    )
+    func bothNamesDisagreeing() throws {
+        let given = try warnings(notation(edgeAttrs: "perSourceMax: 1, outDegreeMax: 2"))
+        let declaredOnce = try warnings(notation(edgeAttrs: "outDegreeMax: 2"))
+        let graph = try parse(notation(edgeAttrs: "perSourceMax: 1, outDegreeMax: 2", nodeAttrs: ", TOTALINMAX: 5, totalInDegreeMax: 4"))
+
+        #expect(try graph.get(edgeType: EdgeType.Id(rawValue: "aToA"), attribute: Attributes.Edge.outDegreeMax) == 2)
+        #expect(try graph.get(nodeType: NodeType(rawValue: "A"), attribute: Attributes.Node.totalInDegreeMax) == 4)
+        #expect(given == [#"Edge type "aToA" gives outDegreeMax twice, as perSourceMax: 1 and outDegreeMax: 2 — using 2"#] + declaredOnce)
         #expect(
-            throws: VError.parsingError(
-                "'aToA' gives outDegreeMin twice, as outDegreeMin and perSourceMin — keep only outDegreeMin")
-        ) {
-            try parse(notation(edgeAttrs: "perSourceMin: 1, outDegreeMin: 2"))
-        }
+            try warnings(notation(nodeAttrs: ", TOTALINMAX: 5, totalInDegreeMax: 4"))
+                == [#"Node type "A" gives totalInDegreeMax twice, as TOTALINMAX: 5 and totalInDegreeMax: 4 — using 4"#]
+                + warnings(notation(nodeAttrs: ", totalInDegreeMax: 4")))
     }
 }

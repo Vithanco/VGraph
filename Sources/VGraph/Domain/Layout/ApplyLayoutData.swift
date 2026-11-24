@@ -14,7 +14,7 @@ public func applyLayoutData<Logger: VForLogMessages>(
             logger.log("[applyLayoutData] No position found for node \(node.id)")
             return result
         }
-        return try result.setting(node: node, attribute: Attributes.Node.layoutedPos.attribute(position))
+        return try result.setting(node: node, attribute: Attributes.Node.layoutedPos(position))
     }
 
     // The layout engine keys edgeLayouts by the edge's own id, so no positional sort is needed.
@@ -23,7 +23,7 @@ public func applyLayoutData<Logger: VForLogMessages>(
             logger.log("[applyLayoutData] ✗ No layout found for \(edge.id.description)")
             return result
         }
-        return try result.setting(edge: edge, attribute: Attributes.Edge.layoutData.attribute(edgeLayout))
+        return try result.setting(edge: edge, attribute: Attributes.Edge.layoutData(edgeLayout))
     }
 
     // The engine's root box already encloses every drawn element (nodes, edge
@@ -43,12 +43,12 @@ private func applyGroupLayout(
     to group: Group,
     in graph: VGraph
 ) throws(VError) -> VGraph {
-    let bounded = try graph.setting(group: group, attribute: Attributes.Group.layoutedBounds.attribute(layout.boundingBox))
+    let bounded = try graph.setting(group: group, attribute: Attributes.Group.layoutedBounds(layout.boundingBox))
     let labelPlaced =
         try layout.labelPosition.map { (position) throws(VError) in
-            try bounded.setting(group: group, attribute: Attributes.Group.labelLayoutedPos.attribute(position))
+            try bounded.setting(group: group, attribute: Attributes.Group.labelLayoutedPos(position))
         } ?? bounded
     return try layout.labelSize.map { (size) throws(VError) in
-        try labelPlaced.setting(group: group, attribute: Attributes.Group.labelLayoutedSize.attribute(size))
+        try labelPlaced.setting(group: group, attribute: Attributes.Group.labelLayoutedSize(size))
     } ?? labelPlaced
 }

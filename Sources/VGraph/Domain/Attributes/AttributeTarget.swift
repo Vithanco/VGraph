@@ -11,14 +11,6 @@ public enum AttributeTarget: HasReadableNames {
         }
     }
 
-    public var toolTip: String {
-        switch self {
-        case .node: return "An Attribute for a Node"
-        case .group: return "An Attribute for a Group of Nodes, or the diagram"
-        case .edge: return "An Attribute for an Edge"
-        }
-    }
-
     // Explicit per-case strings — no enum-case reflection under Embedded Swift.
     public var value: String {
         switch self {

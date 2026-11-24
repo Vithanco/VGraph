@@ -17,7 +17,7 @@ struct NotationDefinitionTests {
             .using(notation: "MyNotation")
             .extending(notation: "IBIS")
             .using(extensions: ["FoldGroups"])
-        #expect(try graph.graphAttributes().isEmpty)
+        #expect(graph.graphAttributes().isEmpty)
         #expect(graph.notationName == "MyNotation")
         #expect(graph.notationDefinition.extends == "IBIS")
         #expect(graph.notationDefinition.extensions == ["FoldGroups"])

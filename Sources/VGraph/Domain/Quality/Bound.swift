@@ -8,17 +8,12 @@ public enum Bound {
 
     static func isStated(_ bound: Int) -> Bool { bound >= 0 }
 
-    /// One row of the name table. `formerly` is the first name (ADR-0011): still
-    /// parsed, never written, so a document migrates the next time it is saved.
+    /// One row of the name table. A bound's earlier names are read through
+    /// `OlderVGLSpellings` with every other older spelling (ADR-0011).
     public struct Name: Sendable {
-        public let name: String
-        public let formerly: String?
         public let definition: TypedAttributeDefinition<Int>
 
-        func matches(_ key: String) -> Bool {
-            let wanted = key.lowercased()
-            return name.lowercased() == wanted || formerly?.lowercased() == wanted
-        }
+        public var name: String { definition.name }
     }
 
     /// The bounds a `vnotation` may write on an `edge type:` line.
@@ -27,30 +22,23 @@ public enum Bound {
     /// lists of spellings have to agree exactly, and the only way to keep them in
     /// step is to have one.
     public static let edgeBounds: [Name] = [
-        Name(name: "outDegreeMin", formerly: "perSourceMin", definition: Attributes.Edge.outDegreeMin),
-        Name(name: "outDegreeMax", formerly: "perSourceMax", definition: Attributes.Edge.outDegreeMax),
-        Name(name: "inDegreeMin", formerly: "perTargetMin", definition: Attributes.Edge.inDegreeMin),
-        Name(name: "inDegreeMax", formerly: "perTargetMax", definition: Attributes.Edge.inDegreeMax),
-        Name(name: "samePairMin", formerly: nil, definition: Attributes.Edge.samePairMin),
-        Name(name: "samePairMax", formerly: nil, definition: Attributes.Edge.samePairMax),
-    ]
+        Attributes.Edge.outDegreeMin, Attributes.Edge.outDegreeMax, Attributes.Edge.inDegreeMin,
+        Attributes.Edge.inDegreeMax, Attributes.Edge.samePairMin, Attributes.Edge.samePairMax,
+    ].map { Name(definition: $0) }
 
     /// The same for a `node type:` line.
     public static let nodeBounds: [Name] = [
-        Name(name: "totalOutDegreeMin", formerly: "totalOutMin", definition: Attributes.Node.totalOutDegreeMin),
-        Name(name: "totalOutDegreeMax", formerly: "totalOutMax", definition: Attributes.Node.totalOutDegreeMax),
-        Name(name: "totalInDegreeMin", formerly: "totalInMin", definition: Attributes.Node.totalInDegreeMin),
-        Name(name: "totalInDegreeMax", formerly: "totalInMax", definition: Attributes.Node.totalInDegreeMax),
-    ]
+        Attributes.Node.totalOutDegreeMin, Attributes.Node.totalOutDegreeMax, Attributes.Node.totalInDegreeMin,
+        Attributes.Node.totalInDegreeMax,
+    ].map { Name(definition: $0) }
 
-    /// Case-insensitive, because `vglKey` lowercases and a hand-written notation
-    /// will use the camelCase spelling the documentation shows.
+    /// `key` as `VNotationKeys` hands it on: in its current spelling.
     public static func edgeBound(named key: String) -> Name? {
-        edgeBounds.first { $0.matches(key) }
+        edgeBounds.first { $0.name == key }
     }
 
     public static func nodeBound(named key: String) -> Name? {
-        nodeBounds.first { $0.matches(key) }
+        nodeBounds.first { $0.name == key }
     }
 }
 

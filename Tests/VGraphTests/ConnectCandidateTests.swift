@@ -42,7 +42,7 @@ struct ConnectCandidateTests {
     private func node(_ id: String, _ type: NodeType, in graph: VGraph) throws(VError) -> VGraph {
         let node = Node(rawValue: id)
         let result = try graph.adding(node: node, type: type)
-        return try result.setting(node: node, attribute: Attributes.Node.label.attribute(id))
+        return try result.setting(node: node, attribute: Attributes.Node.label(id))
     }
 
     private func edge(_ id: String, _ from: String, _ to: String, _ type: EdgeType, in graph: VGraph)
@@ -54,7 +54,7 @@ struct ConnectCandidateTests {
     private func bound(
         _ definition: TypedAttributeDefinition<Int>, _ value: Int, on edgeType: EdgeType, in graph: VGraph
     ) throws(VError) -> VGraph {
-        try graph.setting(edgeType: edgeType, attribute: definition.attribute(value))
+        try graph.setting(edgeType: edgeType, attribute: definition(value))
     }
 
     private func candidates(_ graph: VGraph, _ from: String, _ to: String) -> [String] {
@@ -172,7 +172,7 @@ struct ConnectCandidateTests {
         graph = try node("r2", CM.NodeTypes.relation, in: graph)
         graph = try edge("e1", "a", "r1", CM.EdgeTypes.conceptToRelation, in: graph)
         graph = try graph.setting(
-            nodeType: CM.NodeTypes.concept, attribute: Attributes.Node.totalOutDegreeMax.attribute(1))
+            nodeType: CM.NodeTypes.concept, attribute: Attributes.Node.totalOutDegreeMax(1))
 
         #expect(candidates(graph, "a", "r2").isEmpty)
     }
@@ -188,7 +188,7 @@ struct ConnectCandidateTests {
         graph = try node("r", CM.NodeTypes.relation, in: graph)
         graph = try edge("e1", "a", "r", CM.EdgeTypes.conceptToRelation, in: graph)
         graph = try graph.setting(
-            nodeType: CM.NodeTypes.relation, attribute: Attributes.Node.totalInDegreeMax.attribute(1))
+            nodeType: CM.NodeTypes.relation, attribute: Attributes.Node.totalInDegreeMax(1))
 
         #expect(candidates(graph, "b", "r").isEmpty)
     }

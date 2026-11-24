@@ -3,14 +3,16 @@ public struct NodeTypeSpec {
     public let name: String
     /// `nil` when the user omitted `nodeStyle:` (valid only for overrides).
     public let nodeStyle: String?
-    public let rawAttributes: [String: String]  // color, icon, iconColor, iconSize, fontsize, category, …
+    public let rawAttributes: [String: String]  // backgroundColor, icon, iconColor, iconSize, fontsize, category, …
     /// Added to whatever the base notation already details this type by.
     public let detailedBy: [String]
+    let keysGivenTwice: [VNotationKeys.GivenTwice]
 
     public init(name: String, nodeStyle: String?, rawAttributes: [String: String], detailedBy: [String] = []) {
         self.name = name
         self.nodeStyle = nodeStyle
-        self.rawAttributes = OlderVGLSpellings.current(typeDeclaration: rawAttributes)
+        (self.rawAttributes, self.keysGivenTwice) = VNotationKeys.reading(
+            rawAttributes, of: .node, owner: ItemKey(NodeType(rawValue: name)))
         self.detailedBy = detailedBy
     }
 }
@@ -20,12 +22,14 @@ public struct EdgeTypeSpec {
     public let from: String  // node type name
     public let to: String  // node type name
     public let rawAttributes: [String: String]
+    let keysGivenTwice: [VNotationKeys.GivenTwice]
 
     public init(id: String, from: String, to: String, rawAttributes: [String: String]) {
         self.id = id
         self.from = from
         self.to = to
-        self.rawAttributes = rawAttributes
+        (self.rawAttributes, self.keysGivenTwice) = VNotationKeys.reading(
+            rawAttributes, of: .edge, owner: ItemKey(EdgeType.Id(rawValue: id)))
     }
 }
 
@@ -52,6 +56,7 @@ public struct DynamicNotation {
     /// Multiple transforms are composed left-to-right.
     /// When non-empty and `extends` is used, these **replace** the base notation's compiled transform.
     public let transformNames: [String]
+    private let groupTypeKeysGivenTwice: [VNotationKeys.GivenTwice]
 
     public init(
         id: Identifier<Notation>,
@@ -70,7 +75,11 @@ public struct DynamicNotation {
         self.nodeTypeSpecs = nodeTypeSpecs
         self.edgeTypeSpecs = edgeTypeSpecs
         self.groupTypes = groupTypes
-        self.groupTypeAttributes = groupTypeAttributes.mapValues { OlderVGLSpellings.current(typeDeclaration: $0) }
+        let groupTypesRead = groupTypeAttributes.map { groupType, attributes in
+            (groupType, VNotationKeys.reading(attributes, of: .group, owner: ItemKey(groupType)))
+        }
+        self.groupTypeAttributes = Dictionary(uniqueKeysWithValues: groupTypesRead.map { ($0.0, $0.1.attributes) })
+        self.groupTypeKeysGivenTwice = groupTypesRead.sorted { $0.0.id < $1.0.id }.flatMap { $0.1.givenTwice }
         self.graphAttributes = graphAttributes
         self.baseEntry = baseEntry
         self.baseVglName = baseVglName
@@ -90,7 +99,11 @@ public struct DynamicNotation {
         let withChecks = qualityCheckSpecs.isEmpty ? withBlock : withBlock.declaring(qualityChecks: qualityCheckSpecs)
         let withTransforms = transformNames.isEmpty ? withChecks : withChecks.declaring(transforms: transformNames)
         let frameKeys = declaredFrameKeys()
-        return frameKeys.isEmpty ? withTransforms : withTransforms.declaring(frameKeys: frameKeys)
+        let withFrameKeys = frameKeys.isEmpty ? withTransforms : withTransforms.declaring(frameKeys: frameKeys)
+        let givenTwice =
+            nodeTypeSpecs.flatMap { $0.keysGivenTwice } + edgeTypeSpecs.flatMap { $0.keysGivenTwice }
+            + groupTypeKeysGivenTwice
+        return givenTwice.isEmpty ? withFrameKeys : withFrameKeys.declaring(keysGivenTwice: givenTwice)
     }
 
     private func declaredFrameKeys() -> [ItemKey: [String]] {
@@ -231,9 +244,7 @@ public struct DynamicNotation {
         if let declaredStyle {
             result.append(Attributes.Node.nodeStyle(declaredStyle))
         }
-        if VNotationTypeAttributes.value(of: "backgroundColor", in: spec.rawAttributes) != nil
-            || VNotationTypeAttributes.value(of: "color", in: spec.rawAttributes) != nil
-        {
+        if spec.rawAttributes[Attributes.Node.backgroundColor.name] != nil {
             result.append(Attributes.Node.backgroundColor(VNotationTypeAttributes.color(from: spec.rawAttributes).resolve(darkMode: false)))
         }
         if spec.rawAttributes["icon"] != nil {
@@ -261,7 +272,6 @@ public struct DynamicNotation {
     }
 
     private func edgeValues(_ spec: EdgeTypeSpec) throws(VError) -> [Attribute] {
-        try ensureEachBoundOnce(spec.rawAttributes, spec.id) { Bound.edgeBound(named: $0) }
         var result: [Attribute] = []
         for (key, value) in spec.rawAttributes {
             switch key {
@@ -285,7 +295,7 @@ public struct DynamicNotation {
                 // Bounds come from one shared table (ADR-0011), so the
                 // parser and the exporter cannot drift apart on their spellings.
                 if let bound = Bound.edgeBound(named: key) {
-                    result.append(bound.definition.attribute(try boundValue(value, key, spec.id)))
+                    result.append(bound.definition(try boundValue(value, key, spec.id)))
                 }
             // Anything else is still ignored, as it always has been.
             }
@@ -293,38 +303,18 @@ public struct DynamicNotation {
         return result
     }
 
-    /// Matched case-insensitively: the exporter writes every key lowercased.
     private func neighborhoodValues(_ rawAttributes: [String: String]) throws(VError) -> [Attribute] {
-        guard let raw = VNotationTypeAttributes.value(of: Attributes.Node.addsToNeighborhood.name, in: rawAttributes) else { return [] }
+        guard let raw = rawAttributes[Attributes.Node.addsToNeighborhood.name] else { return [] }
         return [Attributes.Node.addsToNeighborhood(try AddsToNeighborhood.fromString(raw))]
     }
 
     private func boundValues(_ rawAttributes: [String: String], _ nodeType: NodeType) throws(VError) -> [Attribute] {
-        try ensureEachBoundOnce(rawAttributes, nodeType.id) { Bound.nodeBound(named: $0) }
         var result: [Attribute] = []
         for (key, value) in rawAttributes {
             guard let bound = Bound.nodeBound(named: key) else { continue }
-            result.append(bound.definition.attribute(try boundValue(value, key, nodeType.id)))
+            result.append(bound.definition(try boundValue(value, key, nodeType.id)))
         }
         return result
-    }
-
-    /// A bound under both its former and its new name contradicts itself, even with
-    /// equal values (ADR-0011). Checked before applying: `rawAttributes` is a dictionary,
-    /// so applying first would let whichever key came last win.
-    private func ensureEachBoundOnce(
-        _ rawAttributes: [String: String], _ owner: String, lookup: (String) -> Bound.Name?
-    ) throws(VError) {
-        var keysByBound: [String: [String]] = [:]
-        for key in rawAttributes.keys {
-            guard let bound = lookup(key) else { continue }
-            keysByBound[bound.name, default: []].append(key)
-        }
-        for name in keysByBound.keys.sorted() {
-            guard let keys = keysByBound[name], keys.count > 1 else { continue }
-            throw VError.parsingError(
-                "'\(owner)' gives \(name) twice, as \(keys.sorted().joined(separator: " and ")) — keep only \(name)")
-        }
     }
 
     private func boundValue(_ value: String, _ key: String, _ owner: String) throws(VError) -> Int {

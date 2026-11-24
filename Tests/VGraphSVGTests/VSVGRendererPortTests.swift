@@ -18,18 +18,18 @@ struct VSVGRendererPortTests {
         for (index, node) in graph.nodes.enumerated() {
             graph = try graph.setting(
                 node: node,
-                attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: Double(index) * 120 + 60, y: 80)))
+                attribute: Attributes.Node.layoutedPos(VPoint(x: Double(index) * 120 + 60, y: 80)))
             graph = try graph.setting(
-                node: node, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 90, height: 44)))
+                node: node, attribute: Attributes.Node.layoutedSize(VSize(width: 90, height: 44)))
         }
         for group in graph.groups {
             graph = try graph.setting(
                 group: group,
-                attribute: Attributes.Group.layoutedBounds.attribute(VRect(x: 20, y: 20, width: 300, height: 160)))
+                attribute: Attributes.Group.layoutedBounds(VRect(x: 20, y: 20, width: 300, height: 160)))
         }
         graph = try graph.setting(
             group: Group.root,
-            attribute: Attributes.Group.layoutedBounds.attribute(VRect(x: 0, y: 0, width: 500, height: 300)))
+            attribute: Attributes.Group.layoutedBounds(VRect(x: 0, y: 0, width: 500, height: 300)))
         return graph
     }
 

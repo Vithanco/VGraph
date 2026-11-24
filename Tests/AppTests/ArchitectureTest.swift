@@ -240,7 +240,7 @@ struct ArchitectureTest {
                 // Queries that replace `origin` for menu building (phase 5).
                 "kind", "nodeType", "isDetailed", "detailCount", "isFolded", "storedURL", "canRename", "nodeTypes",
                 "rootGroupId",
-                // A group's boundary kind, and the kinds on offer — what makes
+                // A group's type, and the types on offer — what makes
                 // `changeType` answerable for a group (ADR-0020).
                 "groupTypes", "groupType",
                 "successorCandidates", "predecessorCandidates", "retypeCandidates",

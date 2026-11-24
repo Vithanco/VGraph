@@ -2843,6 +2843,31 @@ struct TimelineNotationTests {
         #expect(countWarnings[0].message.contains("1"))
     }
 
+    @Test("Given a vnotation that names disconnectedNodes, which always runs, then each lonely node is warned about once")
+    func aNamedAlwaysRunCheckRunsOnce() throws {
+        let input = """
+            vnotation Lonely {
+                node type: Item [nodeStyle: simpleRoundedText]
+                edge type: link from: Item to: Item
+                qualityCheck: disconnectedNodes
+            }
+
+            vgraph l1: Lonely "Lonely" {
+                node a: Item "A"
+                node b: Item "B"
+                node c: Item "C"
+                edge a -> b
+            }
+            """
+
+        let graph = try VGraphParser(logger: NoOpLogger()).parse(source: input)
+
+        #expect(
+            Notations.analyzeQuality(graph: graph).messages.map { $0.message } == [
+                "Node \"C\" has no relationships — every node should collaborate with at least one other"
+            ])
+    }
+
     @Test
     func testVNotationQualityCheckExactlyOne() throws {
         let input = """

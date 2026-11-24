@@ -88,15 +88,15 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
                 result = try convert(from: statement, graph: result, stack: stack)
             }
             if let label = label {
-                result = try result.setting(graphAttribute: Attributes.Group.label.attribute(label))
+                result = try result.setting(graphAttribute: Attributes.Group.label(label))
             }
-            result = try result.setting(graphAttribute: Attributes.Group.id.attribute(id))
+            result = try result.setting(graphAttribute: Attributes.Group.id(id))
             result = result.using(notation: type).using(extensions: extensions)
             if let leading = comments.leading {
-                result = try result.setting(graphAttribute: Attributes.Group.comment.attribute(leading))
+                result = try result.setting(graphAttribute: Attributes.Group.comment(leading))
             }
             if let trailing = comments.trailing {
-                result = try result.setting(graphAttribute: Attributes.Group.trailingComment.attribute(trailing))
+                result = try result.setting(graphAttribute: Attributes.Group.trailingComment(trailing))
             }
 
         case .node(let id, type: let typeName, let label, let attributes, let comments):
@@ -126,10 +126,10 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
                 result = try convert(from: attribute, graph: result, stack: newStack)
             }
             if let leading = comments.leading {
-                result = try result.setting(node: node, attribute: Attributes.Node.comment.attribute(leading))
+                result = try result.setting(node: node, attribute: Attributes.Node.comment(leading))
             }
             if let trailing = comments.trailing {
-                result = try result.setting(node: node, attribute: Attributes.Node.trailingComment.attribute(trailing))
+                result = try result.setting(node: node, attribute: Attributes.Node.trailingComment(trailing))
             }
 
         case .attribute(id: let key, let value):
@@ -139,14 +139,6 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
                     throw VError.attributeNotFound(Attribute.Id(rawValue: key))
                 }
                 try refuseComputed(def, named: key)
-                // Here rather than in the style resolver, which can only skip it —
-                // leaving a node indistinguishable from one with no colour at all.
-                if def.id == Attributes.Node.backgroundColor.id || def.id == Attributes.Node.fontColor.id,
-                    (try? VColor.fromString(value)) == nil
-                {
-                    throw VError.conversionError(
-                        from: value, to: "a hex colour (\"#b6e6bd\") or an SVG colour name (\"cornflowerblue\")")
-                }
                 result = try result.setting(node: currentNode, attribute: def.attribute(fromString: stored(value, for: def)))
             } else if let currentEdge = stack.currentEdge {
                 let resolvedKey = OlderVGLSpellings.current(key, in: .attribute(.edge))
@@ -220,10 +212,10 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
                 result = try result.setting(edge: edge, attribute: Attributes.Edge.label.attribute(fromString: label))
             }
             if let leading = comments.leading {
-                result = try result.setting(edge: edge, attribute: Attributes.Edge.comment.attribute(leading))
+                result = try result.setting(edge: edge, attribute: Attributes.Edge.comment(leading))
             }
             if let trailing = comments.trailing {
-                result = try result.setting(edge: edge, attribute: Attributes.Edge.trailingComment.attribute(trailing))
+                result = try result.setting(edge: edge, attribute: Attributes.Edge.trailingComment(trailing))
             }
 
         case .group(let id, let type, let label, let isFolded, let children, let comments):
@@ -308,15 +300,15 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
             result = try result.setting(label: label, on: .group(group))
         }
         if isFolded {
-            result = try result.setting(group: group, attribute: Attributes.Group.isFolded.attribute(true))
+            result = try result.setting(group: group, attribute: Attributes.Group.isFolded(true))
         }
         if let leading = comments.leading {
             let comment = detailed ? Attributes.Node.comment : Attributes.Group.comment
-            result = try result.setting(group: group, attribute: comment.attribute(leading))
+            result = try result.setting(group: group, attribute: comment(leading))
         }
         if let trailing = comments.trailing {
             let comment = detailed ? Attributes.Node.trailingComment : Attributes.Group.trailingComment
-            result = try result.setting(group: group, attribute: comment.attribute(trailing))
+            result = try result.setting(group: group, attribute: comment(trailing))
         }
         return result
     }
@@ -369,15 +361,6 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
         }
         guard definition.category == .presentation else {
             throw VError.parsingError("'\(key)' is not a presentation attribute; a view sets presentation only")
-        }
-        if definition.id == Attributes.Node.backgroundColor.id || definition.id == Attributes.Node.fontColor.id,
-            (try? VColor.fromString(value)) == nil
-        {
-            throw VError.conversionError(
-                from: value, to: "a hex colour (\"#b6e6bd\") or an SVG colour name (\"cornflowerblue\")")
-        }
-        if definition.typeAsString == Bool.typeName, value != "true", value != "false" {
-            throw VError.parsingError("'\(key)' must be true or false, not '\(value)'")
         }
         return definition.attribute(fromString: value)
     }
@@ -443,14 +426,14 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
                     from: Node(rawValue: "_meta_\(nt.id)"),
                     to: Node(rawValue: "_meta_\(detailType.id)"))
                 result = try result.adding(edgeType: detailedBy).adding(edge: edge, edgeType: detailedBy)
-                result = try result.setting(edge: edge.id, attribute: Attributes.Edge.label.attribute("detailed by"))
-                result = try result.setting(edge: edge.id, attribute: Attributes.Edge.style.attribute(.dashed))
+                result = try result.setting(edge: edge.id, attribute: Attributes.Edge.label("detailed by"))
+                result = try result.setting(edge: edge.id, attribute: Attributes.Edge.style(.dashed))
             }
         }
 
         let effectiveLabel = label ?? "\(notationName) Meta Model"
-        result = try result.setting(graphAttribute: Attributes.Group.label.attribute(effectiveLabel))
-        result = try result.setting(graphAttribute: Attributes.Group.id.attribute(notationName))
+        result = try result.setting(graphAttribute: Attributes.Group.label(effectiveLabel))
+        result = try result.setting(graphAttribute: Attributes.Group.id(notationName))
         return result.using(notation: notationName)
     }
 
@@ -517,7 +500,8 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
         let nodeTypeSpecs: [NodeTypeSpec] = nodeTypeDecls.map { decl in
             var attrs: [String: String] = [:]
             for (key, value) in decl.attrs { attrs[key] = value }
-            let nodeStyle = attrs.removeValue(forKey: "nodeStyle")
+            let nodeStyleKey = attrs.keys.sorted().first { $0.lowercased() == "nodestyle" }
+            let nodeStyle = nodeStyleKey.flatMap { attrs.removeValue(forKey: $0) }
             return NodeTypeSpec(name: decl.name, nodeStyle: nodeStyle, rawAttributes: attrs, detailedBy: decl.detailedBy)
         }
 

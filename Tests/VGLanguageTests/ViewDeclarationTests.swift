@@ -187,7 +187,7 @@ struct ViewDeclarationTests {
     func viewTypeValueFollowsTheModel() throws {
         let graph = try parse(recoloredDatabase)
         #expect(!(try graph.attributes(inView: "v", of: ItemKey(.nodeType, "Database"))).isEmpty)
-        let erased = try graph.attributeStore.remove(
+        let erased = try graph.attributeStore.removing(
             Attributes.Node.backgroundColor.id, for: ItemKey(.node, "db"), in: .model, chains: graph)
         #expect(try erased.values(in: VGraph.layer(ofView: "v"), for: ItemKey(.nodeType, "Database")).isEmpty)
     }
@@ -295,7 +295,7 @@ struct ViewDisplayTests {
         let shown = try parse(banking + views).displaying(view: "containers")
         let db = try shown.attributes(node: Node(rawValue: "db"))
         #expect(db[Attributes.Node.backgroundColor.id]?.lowercased() == "#ffd27f")
-        #expect(try shown.graphAttributes()[Attributes.Group.layoutDirection.id] == "LR")
+        #expect(shown.graphAttributes()[Attributes.Group.layoutDirection.id] == "LR")
     }
 
     @Test("Given a view the document lacks, when displayed, then the error lists the views it has")

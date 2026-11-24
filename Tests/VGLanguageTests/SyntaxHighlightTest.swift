@@ -95,9 +95,9 @@ private let sample = """
     }
 
     @Test func diagnosticsGroupMultipleFindingsOnOneElementIntoOneMarker() throws {
-        // `lonely` trips two warnings (disconnected + not connected to a relation).
+        // `lonely` trips two warnings (no relationships + a four-word label).
         let src =
-            "vgraph demo: ConceptMap \"D\" {\n  node a: Concept \"A\";\n  node b: Relation \"leads\";\n  node lonely: Concept \"Lonely\";\n  edge a -> b;\n}"
+            "vgraph demo: ConceptMap \"D\" {\n  node a: Concept \"A\";\n  node b: Relation \"leads\";\n  node lonely: Concept \"A Very Lonely Concept\";\n  edge a -> b;\n}"
         let graph = try VGraphParser(logger: NoOpLogger()).parse(source: src)
         let report = Notations.analyzeQuality(graph: graph)
         let html = VGraphParser(logger: NoOpLogger()).semanticHighlightHTML(source: src, report: report)
@@ -105,7 +105,7 @@ private let sample = """
         // Exactly one marker, whose single tooltip lists both findings.
         #expect(html.components(separatedBy: "class=\"vg-diag-warn\"").count - 1 == 1)
         #expect(html.contains("has no relationships"))
-        #expect(html.contains("not connected to any relation"))
+        #expect(html.contains("has 4 words"))
     }
 
     @Test func graphGlobalFindingsProduceNoMarker() throws {

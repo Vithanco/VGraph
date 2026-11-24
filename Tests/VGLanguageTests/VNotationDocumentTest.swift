@@ -58,7 +58,7 @@ struct VNotationDocumentTest {
         let edge = try #require(before.edges.first).id
         let edgeAfter = try #require(after.edges.first).id
         #expect(try before.attributes(edge: edge) == after.attributes(edge: edgeAfter))
-        #expect(try before.graphAttributes() == after.graphAttributes())
+        #expect(before.graphAttributes() == after.graphAttributes())
     }
 
     @Test("Given a vnotation document, when it round-trips, then its types and definition are kept")

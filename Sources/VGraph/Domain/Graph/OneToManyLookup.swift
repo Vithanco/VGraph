@@ -3,8 +3,8 @@ public struct OneToManyLookup<One: VProtocol, Many: VProtocol>: VProtocol {
     private let manyToOne: [Many: One]
 
     /// A many has one one, so adding it under another moves it.
-    func add(many: Many, one: One) -> Self {
-        let moved = remove(many: many)
+    func adding(many: Many, one: One) -> Self {
+        let moved = removing(many: many)
         var oneToMany = moved.oneToMany
         var manyToOne = moved.manyToOne
         oneToMany[one, default: []].insert(many)
@@ -12,7 +12,7 @@ public struct OneToManyLookup<One: VProtocol, Many: VProtocol>: VProtocol {
         return OneToManyLookup(oneToMany: oneToMany, manyToOne: manyToOne)
     }
 
-    func remove(many: Many) -> Self {
+    func removing(many: Many) -> Self {
         guard let one = getOne(many: many) else {
             return self
         }
@@ -26,7 +26,7 @@ public struct OneToManyLookup<One: VProtocol, Many: VProtocol>: VProtocol {
         return OneToManyLookup(oneToMany: oneToMany, manyToOne: manyToOne)
     }
 
-    func remove(one: One) -> Self {
+    func removing(one: One) -> Self {
         var oneToMany = self.oneToMany
         var manyToOne = self.manyToOne
         for entry in getMany(one: one) ?? Set<Many>() {

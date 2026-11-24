@@ -34,7 +34,7 @@ public struct AttributeStore: VProtocol {
         return definition
     }
 
-    public func define(_ definition: AttributeDefinition) throws(VError) -> Self {
+    public func defining(_ definition: AttributeDefinition) throws(VError) -> Self {
         if let previous = definitions[definition.id] {
             guard previous != definition else {
                 return self
@@ -46,11 +46,11 @@ public struct AttributeStore: VProtocol {
         return result
     }
 
-    public func define<T: AttributeType>(_ definition: TypedAttributeDefinition<T>) throws(VError) -> Self {
-        return try define(definition.asDefinition)
+    public func defining<T: AttributeType>(_ definition: TypedAttributeDefinition<T>) throws(VError) -> Self {
+        return try defining(definition.asDefinition)
     }
 
-    public func define(_ definitions: AttributeDefContainer) throws(VError) -> AttributeStore {
-        try definitions.values.folding(self) { (store, definition) throws(VError) in try store.define(definition) }
+    public func defining(_ definitions: AttributeDefContainer) throws(VError) -> AttributeStore {
+        try definitions.values.folding(self) { (store, definition) throws(VError) in try store.defining(definition) }
     }
 }

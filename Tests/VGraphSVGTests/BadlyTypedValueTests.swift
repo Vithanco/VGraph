@@ -39,4 +39,47 @@ struct BadlyTypedValueTests {
             try badly.get(node: node, attribute: Attributes.Node.layoutedSize)
                 == plain.get(node: node, attribute: Attributes.Node.layoutedSize))
     }
+
+    @Test(
+        "Given a node colour that is no colour, when the document is rendered, then it loads, is warned about once and is drawn as if absent",
+        arguments: [
+            (attributes: "[color: notacolour]", key: "backgroundcolor"),
+            (attributes: "[fontColor: notacolour]", key: "fontcolor"),
+        ])
+    func aBadNodeColourIsAWarning(attributes: String, key: String) throws {
+        let badly = try app.renderGraph(source(attributes))
+
+        #expect(
+            badly.qualityReport.warnings.map { $0.message }
+                == ["Node \"Why?\" has \(key) \"notacolour\", which is not a valid Color"])
+        #expect(drawn(badly.svg) == drawn(try VGraphTestApp().renderGraph(source("")).svg))
+    }
+
+    /// The SVG without the VGL source it carries, which differs by the value under
+    /// test. Each render needs an app of its own, since edge ids count on across parses.
+    private func drawn(_ svg: String) -> String {
+        guard let start = svg.range(of: "<metadata>"), let end = svg.range(of: "</metadata>") else { return svg }
+        return String(svg[..<start.lowerBound] + svg[end.upperBound...])
+    }
+
+    private let grouped = """
+        vgraph g: IBIS "G" {
+            group grp "Grp" {
+                node q: Question "Why?";
+                node a: Answer "Because";
+            }
+            edge q -> a;
+        }
+        """
+
+    @Test("Given a view setting a Bool to something else, when the view is rendered, then it loads, is warned about once and is drawn as if absent")
+    func aNonBoolInAViewIsAWarning() throws {
+        let badly = try app.renderGraph(grouped + "\nvview v {\n group grp [isFolded: maybe];\n}\n", view: "v")
+        let plain = try VGraphTestApp().renderGraph(grouped + "\nvview v {\n}\n", view: "v")
+
+        #expect(
+            badly.qualityReport.warnings.map { $0.message }
+                == [#"Group "Grp" has isfolded "maybe" in view "v", which is not a valid Bool"#])
+        #expect(drawn(badly.svg) == drawn(plain.svg))
+    }
 }

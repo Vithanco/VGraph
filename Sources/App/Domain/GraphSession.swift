@@ -535,7 +535,7 @@ public final class GraphSession<
             throw VError.commandUnavailable(.toggleFolding, target: groupId)
         }
         let folded: Bool = try shownGraph().get(group: group, attribute: Attributes.Group.isFolded)
-        let flipped = Attributes.Group.isFolded.attribute(!folded)
+        let flipped = Attributes.Group.isFolded(!folded)
         if let view = shownView {
             try commit(origin.settingInView(view, flipped, for: ItemKey(group)))
         } else {
@@ -549,7 +549,7 @@ public final class GraphSession<
 
     public func setLoopMarkers(_ markers: LoopMarkers) throws(VError) {
         guard origin.marksLoops else { throw VError.commandUnavailable(.loopMarkers, target: Group.rootId) }
-        try setPresentation(Attributes.Group.loopMarkers.attribute(markers))
+        try setPresentation(Attributes.Group.loopMarkers(markers))
     }
 
     /// A setting of the whole diagram goes to the shown view, or to the model.
@@ -566,7 +566,7 @@ public final class GraphSession<
     }
 
     public func setLayoutDirection(_ direction: LayoutDirection) throws(VError) {
-        try setPresentation(Attributes.Group.layoutDirection.attribute(direction))
+        try setPresentation(Attributes.Group.layoutDirection(direction))
     }
 
     // MARK: - Views
@@ -621,7 +621,7 @@ public final class GraphSession<
         case .node(let node):
             // A command that empties a group removes it, cascading upward
             // (ADR-0018). Part of *this* change, so one undo brings back the
-            // node and the boundary it was the last of.
+            // node and the group it was the last of.
             let held = origin.group(of: node)
             try commit(origin.deleting(node: node).removingEmptied(from: held))
         case .edge(let edge): try commit(origin.deleting(edge: edge))
@@ -765,7 +765,7 @@ public final class GraphSession<
     /// per element, and the user who deleted five things would have to press ⌘Z
     /// five times to get them back.
     ///
-    /// The set is collapsed first, so a boundary whose members were all selected
+    /// The set is collapsed first, so a group whose members were all selected
     /// is what gets deleted — and a group takes its contents with it.
     public func delete(all ids: [String]) throws(VError) {
         let members = origin.outermostElements(of: ids)
@@ -1060,7 +1060,7 @@ public final class GraphSession<
 
     public func changeType(of groupId: String, to type: GroupType?) throws(VError) {
         try refuseRoot(groupId, .changeType)
-        // A detailed node is typed by its node type; a boundary kind would
+        // A detailed node is typed by its node type; a group type would
         // replace it.
         guard case .group(let group) = try target(groupId, .changeType), !origin.isDetailed(group) else {
             throw VError.commandUnavailable(.changeType, target: groupId)

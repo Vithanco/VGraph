@@ -49,9 +49,9 @@ struct AttributeTests {
 
     @Test("Defining an attribute again is a no-op where it matches, and an error where it differs")
     func aDefinitionMayRepeatButNotContradict() throws(VError) {
-        let store = try AttributeStore().define(nodeLabel)
+        let store = try AttributeStore().defining(nodeLabel)
         #expect(store.definitions.count == 1)
-        #expect(try store.define(nodeLabel) == store)
+        #expect(try store.defining(nodeLabel) == store)
         let renamed = AttributeDefinition(
             id: nodeLabel.id,
             name: "another name",
@@ -61,7 +61,7 @@ struct AttributeTests {
             typeAsString: String.typeName
         )
         #expect(throws: VError.definitionAlreadyExists(nodeLabel.id)) {
-            try store.define(renamed)
+            try store.defining(renamed)
         }
     }
 
@@ -73,8 +73,8 @@ struct AttributeTests {
 
     @Test("Defining a set again is a no-op where it matches, and an error where it differs")
     func aSetOfDefinitionsMayRepeatButNotContradict() throws(VError) {
-        let store = try AttributeStore().define(nodeLabel)
-        #expect(try store.define(AttributeDefContainer([nodeLabel.asDefinition])) == store)
+        let store = try AttributeStore().defining(nodeLabel)
+        #expect(try store.defining(AttributeDefContainer([nodeLabel.asDefinition])) == store)
         let renamed = AttributeDefinition(
             id: nodeLabel.id,
             name: "another name",
@@ -84,7 +84,7 @@ struct AttributeTests {
             typeAsString: String.typeName
         )
         #expect(throws: VError.definitionAlreadyExists(nodeLabel.id)) {
-            try store.define(AttributeDefContainer([renamed]))
+            try store.defining(AttributeDefContainer([renamed]))
         }
     }
 
@@ -101,10 +101,10 @@ struct AttributeTests {
             .adding(edge: edge, edgeType: edgeType)
 
         #expect(throws: VError.wrongTarget(is: .group, insteadOf: .node)) {
-            try graph.setting(node: node, attribute: Attributes.Group.label.attribute("a Label"))
+            try graph.setting(node: node, attribute: Attributes.Group.label("a Label"))
         }
         #expect(throws: VError.wrongTarget(is: .group, insteadOf: .edge)) {
-            try graph.setting(edge: edge, attribute: Attributes.Group.label.attribute("a Label"))
+            try graph.setting(edge: edge, attribute: Attributes.Group.label("a Label"))
         }
         // all is allowed for groups, as that is a way to defined shared attributes
     }
@@ -170,7 +170,7 @@ struct AttributeTests {
     @Test("A wrapped line that contains a comma stays one line")
     func arrayElementsKeepTheirCommas() throws(VError) {
         let lines = ["Yes, soon", "a\\b", "x,", ",y", "\\,"]
-        let stored = Attributes.Node.wrappedText.attribute(lines)
+        let stored = Attributes.Node.wrappedText(lines)
         #expect(try Attributes.Node.wrappedText.value(fromString: stored.stringValue) == lines)
     }
 
@@ -212,5 +212,25 @@ struct AttributeTests {
             .merging(Attributes.Edge.definitions) { _, edge in edge }
             .merging(Attributes.Group.definitions) { _, group in group }
         #expect(VGraph().attributeDefinitions == standard)
+    }
+
+    /// VGL matches attribute names regardless of case, which is only safe while no
+    /// two attributes of one target differ in case alone.
+    @Test("No two attributes of one target share a name or a VGL key apart from case")
+    func namesAreUniqueRegardlessOfCase() throws {
+        let graphs = try [VGraph()] + NotationRegistry.entries.map { try VGraph().placing($0.entry.content, in: .builtin) }
+        for graph in graphs {
+            let definitions = Array(graph.attributeDefinitions.values)
+            for target in [AttributeTarget.node, .edge, .group] {
+                let ofTarget = definitions.filter { $0.target == target }
+                let spellings = ofTarget.flatMap { definition in
+                    Set([definition.name.lowercased(), definition.vglKey]).map { (spelling: $0, id: definition.id) }
+                }
+                let clashes = Dictionary(grouping: spellings, by: { $0.spelling })
+                    .filter { Set($0.value.map { $0.id }).count > 1 }
+                    .map { "\($0.key): \($0.value.map { $0.id.id }.sorted())" }
+                #expect(clashes.isEmpty, "\(graph.notationName) \(target.readableName): \(clashes.sorted())")
+            }
+        }
     }
 }

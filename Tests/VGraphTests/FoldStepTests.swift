@@ -34,7 +34,7 @@ struct FoldStepTests {
     }
 
     private func foldGroup(_ group: Group, in graph: VGraph) throws(VError) -> VGraph {
-        return try graph.setting(group: group, attribute: Attributes.Group.isFolded.attribute(true))
+        return try graph.setting(group: group, attribute: Attributes.Group.isFolded(true))
     }
 
     private func groupNode(for group: Group) -> Node {
@@ -62,7 +62,7 @@ struct FoldStepTests {
             .adding(group: group1).adding(node: n1, type: nt1, group: group1).adding(node: n2, type: nt1)
         graph = try addEdgeType(to: graph, from: nt1, to: nt1, id: "e_nt1_nt1")
         let original = EdgeType.Id(rawValue: "e_nt1_nt1")
-        graph = try graph.setting(edgeType: original, attribute: Attributes.Edge.color.attribute(VColor.red))
+        graph = try graph.setting(edgeType: original, attribute: Attributes.Edge.color(VColor.red))
         graph = try graph.adding(edge: Edge(string: "e1", from: "n2", to: "n1"), edgeType: graph.get(edgeType: "e_nt1_nt1")!)
         graph = try foldGroup(group1, in: graph)
 
@@ -101,7 +101,7 @@ struct FoldStepTests {
         var graph = try createBaseGraph()
             .adding(group: group1)
             .adding(node: n1, type: nt1, group: group1)
-        graph = try graph.setting(group: group1, attribute: Attributes.Group.label.attribute("My Group"))
+        graph = try graph.setting(group: group1, attribute: Attributes.Group.label("My Group"))
         graph = try foldGroup(group1, in: graph)
 
         let result = try applyFoldStep(to: graph)

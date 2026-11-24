@@ -31,14 +31,14 @@ struct ExportToDotTests {
             .nodeText(color: .literal(VColor.white))
         )
         let nodeType1 = try graph.nodeType(for: node1)
-        graph = try graph.setting(nodeType: nodeType1, attribute: Attributes.Node.style.attribute(circleStyle))
+        graph = try graph.setting(nodeType: nodeType1, attribute: Attributes.Node.style(circleStyle))
 
         let pointStyle = NodeStyleLayout.background(
             .clear(shape: .point),
             .empty
         )
         let nodeType2 = try graph.nodeType(for: node2)
-        graph = try graph.setting(nodeType: nodeType2, attribute: Attributes.Node.style.attribute(pointStyle))
+        graph = try graph.setting(nodeType: nodeType2, attribute: Attributes.Node.style(pointStyle))
 
         // Styles are set directly above, so mark assembleNodeStyles satisfied
         // rather than running it, then extract shapes.
@@ -80,7 +80,7 @@ struct ExportToDotTests {
         let testStrings = ["First line", "Second line", "Third line"]
         graph =
             try graph
-            .setting(node: node, attribute: Attributes.Node.wrappedText.attribute(testStrings))
+            .setting(node: node, attribute: Attributes.Node.wrappedText(testStrings))
 
         let exporter = DotExporter()
         let dotOutput = try exporter.export(graph: graph)
@@ -108,7 +108,7 @@ struct ExportToDotTests {
 
         graph =
             try graph
-            .setting(node: node, attribute: Attributes.Node.wrappedText.attribute([]))
+            .setting(node: node, attribute: Attributes.Node.wrappedText([]))
 
         let exporter = DotExporter()
         let dotOutput = try exporter.export(graph: graph)
@@ -137,7 +137,7 @@ struct ExportToDotTests {
         ]
 
         for (direction, expectedRankdir) in testCases {
-            graph = try graph.setting(graphAttribute: Attributes.Group.layoutDirection.attribute(direction))
+            graph = try graph.setting(graphAttribute: Attributes.Group.layoutDirection(direction))
 
             let exporter = DotExporter()
             let dotOutput = try exporter.export(graph: graph)
@@ -177,8 +177,8 @@ struct ExportToDotTests {
         graph =
             try graph
             .defining(customAttr)
-            .setting(node: node, attribute: customAttr.attribute("not_exported_value"))
-            .setting(node: node, attribute: Attributes.Node.tooltip.attribute("exported_tooltip"))
+            .setting(node: node, attribute: customAttr("not_exported_value"))
+            .setting(node: node, attribute: Attributes.Node.tooltip("exported_tooltip"))
 
         let exporter = DotExporter()
         let dotOutput = try exporter.export(graph: graph)
@@ -768,13 +768,13 @@ struct DotResolvedValuesTests {
 
     @Test("Given a type that sets the default font, when its node is laid out, then the font still reaches Graphviz")
     func aFontEqualToTheDefaultStillReachesGraphviz() throws {
-        let typed = try graph().setting(nodeType: type, attribute: Attributes.Node.fontname.attribute(.dmSans))
+        let typed = try graph().setting(nodeType: type, attribute: Attributes.Node.fontname(.dmSans))
         #expect(line("n1", in: try DotExporter().export(graph: typed)).contains("fontname=\"Helvetica\""))
     }
 
     @Test("Given a C4 person, when it is laid out, then Graphviz is asked for a box")
     func aPersonIsLaidOutAsABox() throws {
-        let shaped = try graph().setting(node: n1, attribute: Attributes.Node.shape.attribute(.person))
+        let shaped = try graph().setting(node: n1, attribute: Attributes.Node.shape(.person))
         let dot = try DotExporter().export(graph: shaped)
         #expect(line("n1", in: dot).contains("shape=\"box\""))
         #expect(!dot.contains("person"))
@@ -783,8 +783,8 @@ struct DotResolvedValuesTests {
     @Test("Given a node of fixed size, when it is laid out, then Graphviz is not asked to measure its text")
     func aFixedSizeNodeHasNoTextForGraphviz() throws {
         let sized = try graph()
-            .setting(node: n1, attribute: Attributes.Node.wrappedText.attribute(["a long label"]))
-            .setting(node: n1, attribute: Attributes.Node.fixedsize.attribute(true))
+            .setting(node: n1, attribute: Attributes.Node.wrappedText(["a long label"]))
+            .setting(node: n1, attribute: Attributes.Node.fixedsize(true))
         let dot = try DotExporter().export(graph: sized)
         #expect(line("n1", in: dot).contains("label=\"\""))
         #expect(!dot.contains("a long label"))
@@ -792,7 +792,7 @@ struct DotResolvedValuesTests {
 
     @Test("Given an edge that is not to constrain ranks, when it is laid out, then Graphviz is told")
     func anUnconstrainingEdgeSaysSo() throws {
-        let loose = try graph().setting(edge: Edge.Id(rawValue: "e1"), attribute: Attributes.Edge.constraint.attribute(false))
+        let loose = try graph().setting(edge: Edge.Id(rawValue: "e1"), attribute: Attributes.Edge.constraint(false))
         #expect(try DotExporter().export(graph: loose).contains("constraint=\"false\""))
     }
 

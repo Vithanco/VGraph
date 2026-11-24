@@ -27,10 +27,10 @@ struct CLDOverlayTests {
         let b = Node(rawValue: "b")
         graph = try graph.adding(node: a, type: CLD.NodeTypes.stock)
         graph = try graph.adding(node: b, type: CLD.NodeTypes.stock)
-        graph = try graph.setting(node: a, attribute: Attributes.Node.label.attribute("A"))
-        graph = try graph.setting(node: b, attribute: Attributes.Node.label.attribute("B"))
-        graph = try graph.setting(node: a, attribute: Attributes.Node.wrappedText.attribute(["A"]))
-        graph = try graph.setting(node: b, attribute: Attributes.Node.wrappedText.attribute(["B"]))
+        graph = try graph.setting(node: a, attribute: Attributes.Node.label("A"))
+        graph = try graph.setting(node: b, attribute: Attributes.Node.label("B"))
+        graph = try graph.setting(node: a, attribute: Attributes.Node.wrappedText(["A"]))
+        graph = try graph.setting(node: b, attribute: Attributes.Node.wrappedText(["B"]))
 
         let e1 = Edge(string: "e1", from: "a", to: "b")
         let e2 = Edge(string: "e2", from: "b", to: "a")
@@ -39,13 +39,13 @@ struct CLDOverlayTests {
 
         // Mock layout positions. Centroid will be (200, 100).
         graph = try graph.setting(
-            node: a, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 100, y: 100)))
+            node: a, attribute: Attributes.Node.layoutedPos(VPoint(x: 100, y: 100)))
         graph = try graph.setting(
-            node: b, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 300, y: 100)))
+            node: b, attribute: Attributes.Node.layoutedPos(VPoint(x: 300, y: 100)))
         graph = try graph.setting(
-            node: a, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 60, height: 30)))
+            node: a, attribute: Attributes.Node.layoutedSize(VSize(width: 60, height: 30)))
         graph = try graph.setting(
-            node: b, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 60, height: 30)))
+            node: b, attribute: Attributes.Node.layoutedSize(VSize(width: 60, height: 30)))
 
         // Mock edge layout: spline endpoints offset so loopDirection's Shoelace
         // algorithm forms a quadrilateral with real area.
@@ -57,14 +57,14 @@ struct CLDOverlayTests {
             splinePoints: [VPoint(x: 270, y: 110), VPoint(x: 130, y: 110)],
             color: "#000000", penwidth: 1.0
         )
-        graph = try graph.setting(edge: e1.id, attribute: Attributes.Edge.layoutData.attribute(topLayout))
-        graph = try graph.setting(edge: e2.id, attribute: Attributes.Edge.layoutData.attribute(bottomLayout))
+        graph = try graph.setting(edge: e1.id, attribute: Attributes.Edge.layoutData(topLayout))
+        graph = try graph.setting(edge: e2.id, attribute: Attributes.Edge.layoutData(bottomLayout))
 
         // Root group bounds.
         let root = Group.root
         graph = try graph.setting(
             group: root,
-            attribute: Attributes.Group.layoutedBounds.attribute(
+            attribute: Attributes.Group.layoutedBounds(
                 VRect(x: 0, y: 0, width: 400, height: 200)))
 
         return graph
@@ -127,24 +127,24 @@ struct CLDOverlayTests {
         let b = Node(rawValue: "b")
         graph = try graph.adding(node: a, type: CLD.NodeTypes.stock)
         graph = try graph.adding(node: b, type: CLD.NodeTypes.stock)
-        graph = try graph.setting(node: a, attribute: Attributes.Node.wrappedText.attribute(["A"]))
-        graph = try graph.setting(node: b, attribute: Attributes.Node.wrappedText.attribute(["B"]))
+        graph = try graph.setting(node: a, attribute: Attributes.Node.wrappedText(["A"]))
+        graph = try graph.setting(node: b, attribute: Attributes.Node.wrappedText(["B"]))
 
         let e1 = Edge(string: "e1", from: "a", to: "b")
         graph = try graph.adding(edge: e1, edgeType: CLD.EdgeTypes.same)
 
         graph = try graph.setting(
-            node: a, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 100, y: 100)))
+            node: a, attribute: Attributes.Node.layoutedPos(VPoint(x: 100, y: 100)))
         graph = try graph.setting(
-            node: b, attribute: Attributes.Node.layoutedPos.attribute(VPoint(x: 200, y: 100)))
+            node: b, attribute: Attributes.Node.layoutedPos(VPoint(x: 200, y: 100)))
         graph = try graph.setting(
-            node: a, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 60, height: 30)))
+            node: a, attribute: Attributes.Node.layoutedSize(VSize(width: 60, height: 30)))
         graph = try graph.setting(
-            node: b, attribute: Attributes.Node.layoutedSize.attribute(VSize(width: 60, height: 30)))
+            node: b, attribute: Attributes.Node.layoutedSize(VSize(width: 60, height: 30)))
         let root = Group.root
         graph = try graph.setting(
             group: root,
-            attribute: Attributes.Group.layoutedBounds.attribute(
+            attribute: Attributes.Group.layoutedBounds(
                 VRect(x: 0, y: 0, width: 300, height: 200)))
 
         let renderer = VSVGRenderer(logger: TestLogger())

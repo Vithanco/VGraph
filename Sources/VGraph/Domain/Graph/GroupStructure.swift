@@ -61,42 +61,42 @@ public struct GroupStructure: VProtocol {
         return GroupStructure(groups: allGroups, groupSet: groupSet, mapping: mapping, types: newTypes)
     }
 
-    func add(group: Group) -> GroupStructure {
+    func adding(group: Group) -> GroupStructure {
         if groupSet.contains(group) {
             return self
         }
         return GroupStructure(groups: allGroups + [group], groupSet: groupSet.union([group]), mapping: mapping, types: types)
     }
 
-    func remove(group: Group) throws(VError) -> GroupStructure {
+    func removing(group: Group) throws(VError) -> GroupStructure {
         try ensureExists(group: group)
         var newTypes = types
         newTypes[group] = nil
         return GroupStructure(
             groups: allGroups.filter { $0 != group }, groupSet: groupSet.subtracting([group]),
-            mapping: mapping.remove(one: group).remove(many: .subGroup(group)), types: newTypes)
+            mapping: mapping.removing(one: group).removing(many: .subGroup(group)), types: newTypes)
     }
 
-    private func removeGroupEntry(_ manyEntry: GroupStructure.GroupEntry) -> GroupStructure {
+    private func removingGroupEntry(_ manyEntry: GroupStructure.GroupEntry) -> GroupStructure {
         guard mapping.getOne(many: manyEntry) != nil else { return self }
-        return GroupStructure(groups: allGroups, groupSet: groupSet, mapping: mapping.remove(many: manyEntry), types: types)
+        return GroupStructure(groups: allGroups, groupSet: groupSet, mapping: mapping.removing(many: manyEntry), types: types)
     }
 
-    private func addEntry(manyEntry: GroupStructure.GroupEntry, group: Group) -> GroupStructure {
+    private func addingEntry(manyEntry: GroupStructure.GroupEntry, group: Group) -> GroupStructure {
         return GroupStructure(
-            groups: allGroups, groupSet: groupSet, mapping: mapping.add(many: manyEntry, one: group),
+            groups: allGroups, groupSet: groupSet, mapping: mapping.adding(many: manyEntry, one: group),
             types: types)
     }
 
-    func removeFromGroup(node: Node) -> GroupStructure {
+    func removingFromGroup(node: Node) -> GroupStructure {
         let manyEntry = GroupEntry.node(node)
-        return removeGroupEntry(manyEntry)
+        return removingGroupEntry(manyEntry)
     }
 
     /// Moves the node out of any group it was in; adding it where it is changes nothing.
-    func addTo(group: Group, node: Node) throws(VError) -> GroupStructure {
+    func addingTo(group: Group, node: Node) throws(VError) -> GroupStructure {
         try ensureExists(group: group)
-        return addEntry(manyEntry: GroupEntry.node(node), group: group)
+        return addingEntry(manyEntry: GroupEntry.node(node), group: group)
     }
 
     private func ensureExists(group: Group) throws(VError) {
@@ -105,9 +105,9 @@ public struct GroupStructure: VProtocol {
         }
     }
 
-    func addTo(group: Group, childGroup: Group) throws(VError) -> GroupStructure {
+    func addingTo(group: Group, childGroup: Group) throws(VError) -> GroupStructure {
         try ensureExists(group: group)
-        return addEntry(manyEntry: GroupEntry.subGroup(childGroup), group: group)
+        return addingEntry(manyEntry: GroupEntry.subGroup(childGroup), group: group)
     }
 
     private func splitEntries(_ content: Set<GroupStructure.GroupEntry>) -> (groups: [Group], nodes: [Node]) {

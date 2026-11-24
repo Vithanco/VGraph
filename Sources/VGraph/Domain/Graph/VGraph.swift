@@ -57,15 +57,15 @@ public struct VGraph {
             try result.deleting(edge: edge.id)
         }
         return withoutEdges.updatedSelfWith(
-            graph: try withoutEdges.graph.delete(node: node),
-            attributeStore: withoutEdges.attributeStore.removeKey(ItemKey(node)),
-            groupStructure: withoutEdges.groupStructure.removeFromGroup(node: node),
+            graph: try withoutEdges.graph.deleting(node: node),
+            attributeStore: withoutEdges.attributeStore.removingKey(ItemKey(node)),
+            groupStructure: withoutEdges.groupStructure.removingFromGroup(node: node),
             declarationOrder: withoutEdges.declarationOrder.removing(ItemKey(node)))
     }
 
     public func deleting(edge: Edge.Id) throws(VError) -> VGraph {
-        let newGraph = try graph.delete(edge: edge)
-        let newAttributeStore = attributeStore.removeKey(ItemKey(edge))
+        let newGraph = try graph.deleting(edge: edge)
+        let newAttributeStore = attributeStore.removingKey(ItemKey(edge))
         return updatedSelfWith(
             graph: newGraph, attributeStore: newAttributeStore, declarationOrder: declarationOrder.removing(ItemKey(edge)))
     }
@@ -75,7 +75,7 @@ public struct VGraph {
     }
 
     public func adding(nodeType: NodeType) throws(VError) -> VGraph {
-        updatedSelfWith(graph: try graph.add(nodeType: nodeType))
+        updatedSelfWith(graph: try graph.adding(nodeType: nodeType))
     }
 
     public func adding(groupType: GroupType) -> VGraph {
@@ -148,12 +148,12 @@ public struct VGraph {
     }
 
     public func adding(edgeType: EdgeType) throws(VError) -> VGraph {
-        let newGraph = try graph.add(edgeType: edgeType)
+        let newGraph = try graph.adding(edgeType: edgeType)
         return updatedSelfWith(graph: newGraph)
     }
 
     public func ensuringUnknownNodeType() throws(VError) -> VGraph {
-        updatedSelfWith(graph: try graph.ensureUnknownNodeType())
+        updatedSelfWith(graph: try graph.ensuringUnknownNodeType())
     }
 
     public func ensuringUnknownEdgeType(from: NodeType, to: NodeType) throws(VError) -> (VGraph, EdgeType) {
@@ -163,7 +163,7 @@ public struct VGraph {
             return (self, existing)
         }
 
-        let (newGraph, edgeType) = try graph.ensureUnknownEdgeType(from: from, to: to)
+        let (newGraph, edgeType) = try graph.ensuringUnknownEdgeType(from: from, to: to)
         let styled = try updatedSelfWith(graph: newGraph).placing(
             NotationContent(values: [.edgeType(edgeType, [Attributes.Edge.color(VColor.red), Attributes.Edge.penwidth(3.0)])]),
             in: .engine)
@@ -180,7 +180,7 @@ public struct VGraph {
 
     public func adding(node: Node, type: NodeType, group: Group? = nil) throws(VError) -> VGraph {
         if !has(node: node) { try ensureElementIdFree(node.description) }
-        let newGraph = try graph.add(node: node, type: type)
+        let newGraph = try graph.adding(node: node, type: type)
         let result = updatedSelfWith(
             graph: newGraph, declarationOrder: declarationOrder.appending(ItemKey(node)))
         if let group = group {
@@ -195,7 +195,7 @@ public struct VGraph {
         }
         try ensureEdgeTypeFits(edgeType: edgeType, fromType: try nodeType(for: edge.from), toType: try nodeType(for: edge.to))
         if !has(edge: edge.id) { try ensureElementIdFree(edge.id.description) }
-        let newGraph = try graph.add(edge: edge, type: edgeType.id)
+        let newGraph = try graph.adding(edge: edge, type: edgeType.id)
         return updatedSelfWith(
             graph: newGraph,
             declarationOrder: declarationOrder.appending(ItemKey(edge.id)))
@@ -211,24 +211,24 @@ public struct VGraph {
     }
 
     public func deleting(nodeType: NodeType) throws(VError) -> VGraph {
-        let newGraph = try graph.delete(nodeType: nodeType)
-        let newAttributeStore = attributeStore.removeKey(ItemKey(nodeType))
+        let newGraph = try graph.deleting(nodeType: nodeType)
+        let newAttributeStore = attributeStore.removingKey(ItemKey(nodeType))
         return updatedSelfWith(graph: newGraph, attributeStore: newAttributeStore)
     }
 
     public func deleting(edgeType: EdgeType.Id) throws(VError) -> VGraph {
-        let newGraph = try graph.delete(edgeType: edgeType)
-        let newAttributeStore = attributeStore.removeKey(ItemKey(edgeType))
+        let newGraph = try graph.deleting(edgeType: edgeType)
+        let newAttributeStore = attributeStore.removingKey(ItemKey(edgeType))
         return updatedSelfWith(graph: newGraph, attributeStore: newAttributeStore)
     }
 
     public func settingNodeType(node: Node, type: NodeType) throws(VError) -> VGraph {
-        let newGraph = try graph.setNodeType(node: node, type: type)
+        let newGraph = try graph.settingNodeType(node: node, type: type)
         return updatedSelfWith(graph: newGraph).repruning(ItemKey(node))
     }
 
     public func settingEdgeType(edge: Edge.Id, type: EdgeType.Id) throws(VError) -> VGraph {
-        let newGraph = try graph.setEdgeType(edge: edge, type: type)
+        let newGraph = try graph.settingEdgeType(edge: edge, type: type)
         return updatedSelfWith(graph: newGraph).repruning(ItemKey(edge))
     }
 
@@ -238,26 +238,26 @@ public struct VGraph {
     public func redirecting(edge: Edge) throws(VError) -> VGraph {
         try ensureEdgeTypeFits(
             edgeType: try edgeType(for: edge.id), fromType: try nodeType(for: edge.from), toType: try nodeType(for: edge.to))
-        let newGraph = try graph.redirect(edge: edge)
+        let newGraph = try graph.redirecting(edge: edge)
         return updatedSelfWith(graph: newGraph)
     }
 
     public func addingTo(group: Group, node: Node) throws(VError) -> VGraph {
         try ensureExists(node: node)
         try ensureExists(group: group)
-        return updatedSelfWith(groupStructure: try groupStructure.addTo(group: group, node: node))
+        return updatedSelfWith(groupStructure: try groupStructure.addingTo(group: group, node: node))
     }
 
     public func addingTo(group: Group, childGroup: Group) throws(VError) -> VGraph {
         try ensureExists(group: group)
         try ensureExists(group: childGroup)
-        return updatedSelfWith(groupStructure: try groupStructure.addTo(group: group, childGroup: childGroup))
+        return updatedSelfWith(groupStructure: try groupStructure.addingTo(group: group, childGroup: childGroup))
     }
 
     public func deleting(group: Group) throws(VError) -> VGraph {
         try ensureExists(group: group)
-        let newGroupStructure = try groupStructure.remove(group: group)
-        let newAttributeStore = attributeStore.removeKey(ItemKey(group))
+        let newGroupStructure = try groupStructure.removing(group: group)
+        let newAttributeStore = attributeStore.removingKey(ItemKey(group))
         return updatedSelfWith(
             attributeStore: newAttributeStore, groupStructure: newGroupStructure,
             declarationOrder: declarationOrder.removing(ItemKey(group)))
@@ -265,7 +265,7 @@ public struct VGraph {
 
     public func adding(group: Group, childOf: Group? = nil) throws(VError) -> VGraph {
         if !has(group: group) { try ensureElementIdFree(group.id.description) }
-        let newGroupStructure = groupStructure.add(group: group)
+        let newGroupStructure = groupStructure.adding(group: group)
         let result = updatedSelfWith(
             groupStructure: newGroupStructure,
             declarationOrder: declarationOrder.appending(ItemKey(group)))
@@ -602,7 +602,7 @@ extension VGraph {
     }
 }
 
-extension VGraph: GetAttribute {
+extension VGraph {
 
     public func get(node: Node, attribute: AttributeDefinition) throws(VError) -> String {
         guard has(node: node) else {
@@ -636,6 +636,26 @@ extension VGraph: GetAttribute {
         try resolvedValue(attribute, for: ItemKey(group))
     }
 
+    public func get<T>(node: Node, attribute: TypedAttributeDefinition<T>) throws(VError) -> T {
+        try T.fromString(get(node: node, attribute: attribute.asDefinition))
+    }
+
+    public func get<T>(edge: Edge.Id, attribute: TypedAttributeDefinition<T>) throws(VError) -> T {
+        try T.fromString(get(edge: edge, attribute: attribute.asDefinition))
+    }
+
+    public func get<T>(nodeType: NodeType, attribute: TypedAttributeDefinition<T>) throws(VError) -> T {
+        try T.fromString(get(nodeType: nodeType, attribute: attribute.asDefinition))
+    }
+
+    public func get<T>(edgeType: EdgeType.Id, attribute: TypedAttributeDefinition<T>) throws(VError) -> T {
+        try T.fromString(get(edgeType: edgeType, attribute: attribute.asDefinition))
+    }
+
+    public func get<T>(group: Group, attribute: TypedAttributeDefinition<T>) throws(VError) -> T {
+        try T.fromString(get(group: group, attribute: attribute.asDefinition))
+    }
+
     /// The value set on the group or its type, or `nil` when only the default
     /// applies — which lets callers tell "someone set this" from "unset".
     func explicitGroupAttribute(_ group: Group, _ attribute: AttributeDefinition) -> String? {
@@ -665,9 +685,13 @@ extension VGraph: GetAttribute {
     public func get<T: AttributeType>(graphAttribute: TypedAttributeDefinition<T>) throws(VError) -> String {
         return try get(graphAttribute: graphAttribute.asDefinition)
     }
+
+    public func get<T: AttributeType>(attribute: TypedAttributeDefinition<T>) throws(VError) -> T {
+        return try T.fromString(get(graphAttribute: attribute.asDefinition))
+    }
 }
 
-extension VGraph: SetAttribute {
+extension VGraph {
 
     public func setting(node: Node, attribute: Attribute) throws(VError) -> VGraph {
         guard attribute.definition.target == .node else {
@@ -693,6 +717,10 @@ extension VGraph: SetAttribute {
 
     public func setting(edge: Edge, attribute: Attribute) throws(VError) -> VGraph {
         return try setting(edge: edge.id, attribute: attribute)
+    }
+
+    public func setting(edge: Edge.Id, def: AttributeDefinition, value: String) throws(VError) -> VGraph {
+        return try setting(edge: edge, attribute: Attribute(definition: def, value: value))
     }
 
     public func setting(group: Group, attribute: Attribute) throws(VError) -> VGraph {
@@ -747,14 +775,14 @@ extension VGraph {
     /// model does not have.
     public func findLoops() -> TypedGraph.Graph.LoopSearch {
         let derived = edges.filter { (try? edgeType(for: $0))?.isDerived == true }
-        let modelOnly = derived.reduce(graph) { judged, edge in (try? judged.delete(edge: edge.id)) ?? judged }
+        let modelOnly = derived.reduce(graph) { judged, edge in (try? judged.deleting(edge: edge.id)) ?? judged }
         return modelOnly.findLoops()
     }
 }
 
 extension VGraph {
     public func defining(_ attribute: AttributeDefinition) throws(VError) -> Self {
-        let newAttributeStore = try attributeStore.define(attribute)
+        let newAttributeStore = try attributeStore.defining(attribute)
         return updatedSelfWith(attributeStore: newAttributeStore)
     }
 

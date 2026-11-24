@@ -9,11 +9,11 @@ struct OneToManyLookupTests {
     func addAndRemoveOne() throws(VError) {
         var lookup = OneToManyLookup<String, String>()
 
-        lookup = lookup.add(many: "node1", one: "type1")
+        lookup = lookup.adding(many: "node1", one: "type1")
         #expect(lookup.getOne(many: "node1") == "type1")
         #expect(lookup.getMany(one: "type1") == ["node1"])
 
-        lookup = lookup.remove(many: "node1")
+        lookup = lookup.removing(many: "node1")
         #expect(lookup == OneToManyLookup<String, String>())
     }
 
@@ -21,16 +21,16 @@ struct OneToManyLookupTests {
     func addAndRemoveTwo() throws(VError) {
         var lookup = OneToManyLookup<String, String>()
 
-        lookup = lookup.add(many: "node1", one: "type1")
-        lookup = lookup.add(many: "node2", one: "type1")
+        lookup = lookup.adding(many: "node1", one: "type1")
+        lookup = lookup.adding(many: "node2", one: "type1")
         #expect(lookup.getOne(many: "node1") == "type1")
         #expect(lookup.getMany(one: "type1") == ["node1", "node2"])
 
-        lookup = lookup.remove(many: "node1")
+        lookup = lookup.removing(many: "node1")
         #expect(lookup.getOne(many: "node1") == nil)
         #expect(lookup.getMany(one: "type1") == ["node2"])
 
-        lookup = lookup.remove(many: "node2")
+        lookup = lookup.removing(many: "node2")
         #expect(lookup == OneToManyLookup<String, String>())
     }
 
@@ -38,10 +38,10 @@ struct OneToManyLookupTests {
     func addAndRemoveTwoOthers() throws(VError) {
         var lookup = OneToManyLookup<String, String>()
 
-        lookup = lookup.add(many: "node1", one: "type1")
-        lookup = lookup.add(many: "node2", one: "type1")
+        lookup = lookup.adding(many: "node1", one: "type1")
+        lookup = lookup.adding(many: "node2", one: "type1")
 
-        lookup = lookup.remove(one: "type1")
+        lookup = lookup.removing(one: "type1")
         #expect(lookup == OneToManyLookup<String, String>())
     }
 
@@ -49,8 +49,8 @@ struct OneToManyLookupTests {
     func lookupWorks() throws(VError) {
         var lookup = OneToManyLookup<String, String>()
 
-        lookup = lookup.add(many: "node1", one: "type1")
-        lookup = lookup.add(many: "node2", one: "type1")
+        lookup = lookup.adding(many: "node1", one: "type1")
+        lookup = lookup.adding(many: "node2", one: "type1")
 
         #expect(lookup.getMany(one: "type2") == nil)
         #expect(lookup.getOne(many: "node3") == nil)
@@ -60,8 +60,8 @@ struct OneToManyLookupTests {
     func addingAManyToAnotherOneMovesIt() {
         var lookup = OneToManyLookup<String, String>()
 
-        lookup = lookup.add(many: "node1", one: "type1")
-        lookup = lookup.add(many: "node1", one: "type2")
+        lookup = lookup.adding(many: "node1", one: "type1")
+        lookup = lookup.adding(many: "node1", one: "type2")
 
         #expect(lookup.getOne(many: "node1") == "type2")
         #expect(lookup.getMany(one: "type2") == ["node1"])
@@ -70,33 +70,33 @@ struct OneToManyLookupTests {
 
     @Test
     func addingTheSamePairTwiceChangesNothing() {
-        let once = OneToManyLookup<String, String>().add(many: "node1", one: "type1")
+        let once = OneToManyLookup<String, String>().adding(many: "node1", one: "type1")
 
-        #expect(once.add(many: "node1", one: "type1") == once)
+        #expect(once.adding(many: "node1", one: "type1") == once)
     }
 
     @Test
     func removingWhatIsNotThereChangesNothing() {
-        let lookup = OneToManyLookup<String, String>().add(many: "node1", one: "type1")
+        let lookup = OneToManyLookup<String, String>().adding(many: "node1", one: "type1")
 
-        #expect(lookup.remove(many: "node2") == lookup)
-        #expect(lookup.remove(one: "type2") == lookup)
+        #expect(lookup.removing(many: "node2") == lookup)
+        #expect(lookup.removing(one: "type2") == lookup)
     }
 
     /// Equality is by content, so the order things were added in must not matter.
     @Test
     func equalContentIsEqualAndHashesEqually() {
         let a = OneToManyLookup<String, String>()
-            .add(many: "node1", one: "type1")
-            .add(many: "node2", one: "type2")
+            .adding(many: "node1", one: "type1")
+            .adding(many: "node2", one: "type2")
         let b = OneToManyLookup<String, String>()
-            .add(many: "node2", one: "type2")
-            .add(many: "node3", one: "type1")
-            .add(many: "node1", one: "type1")
-            .remove(many: "node3")
+            .adding(many: "node2", one: "type2")
+            .adding(many: "node3", one: "type1")
+            .adding(many: "node1", one: "type1")
+            .removing(many: "node3")
 
         #expect(a == b)
         #expect(a.hashValue == b.hashValue)
-        #expect(a != a.add(many: "node1", one: "type2"))
+        #expect(a != a.adding(many: "node1", one: "type2"))
     }
 }
