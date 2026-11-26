@@ -200,6 +200,78 @@ struct MetadescriptionTest {
         #expect(app.describeNotation("DoesNotExist") == nil)
     }
 
+    // MARK: - A vnotation, described by the document that declares it
+
+    static let flow = """
+        vnotation Flow {
+        	node type: Goal [nodeStyle: roundedBox]
+        	node type: Step [nodeStyle: roundedBox, detailedBy: (Task)]
+        	node type: Task [nodeStyle: roundedBox]
+        	edge type: next  from: Step  to: Step [outDegreeMax: 1]
+        	qualityCheck: treeStructure
+        	qualityCheck: exactlyOne(Goal)
+        }
+
+        vgraph g: Flow "G" {
+        	node a: Step "A"
+        }
+        """
+
+    @Test
+    func aVNotationListsTheRulesItChecks() throws {
+        let markdown = try app.describeNotation(in: Self.flow)
+        #expect(markdown.hasPrefix("# Flow\n"))
+        #expect(
+            markdown.contains(
+                """
+                ## What Vithanco checks
+
+                - Every node has at most one parent.
+                - A diagram has exactly one Goal.
+                - A Task belongs inside a Step.
+                - A Step has at most 1 outgoing "next" edge.
+
+                """))
+    }
+
+    @Test
+    func aVNotationsTitleCanBeReplaced() throws {
+        let markdown = try app.describeNotation(in: Self.flow, title: "How we plan")
+        #expect(markdown.hasPrefix("# How we plan\n"))
+    }
+
+    /// The checks a `vnotation` names replace its base's, so the base's own are not listed.
+    @Test
+    func aVNotationListsOnlyTheChecksInForce() throws {
+        let source = """
+            vnotation Mine extends IBIS {
+            	qualityCheck: labelLength(5)
+            }
+
+            vgraph g: Mine "G" {
+            	node q: Question "Q"
+            }
+            """
+        let markdown = try app.describeNotation(in: source)
+        #expect(markdown.contains("- Every node's label has at most 5 words.\n"))
+        #expect(!markdown.contains("Every Question has at least one Answer."))
+    }
+
+    @Test
+    func aVNotationWithNoRulesOfItsOwnSaysSo() throws {
+        let source = """
+            vnotation Bare {
+            	node type: Item [nodeStyle: roundedBox]
+            }
+
+            vgraph g: Bare "G" {
+            	node i: Item "I"
+            }
+            """
+        let markdown = try app.describeNotation(in: source)
+        #expect(markdown.contains("## What Vithanco checks\n\nOnly the checks every notation runs.\n"))
+    }
+
     // MARK: - Direct NotationMarkdown.render() pathway
 
     @Test

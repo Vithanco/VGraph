@@ -144,12 +144,15 @@ struct Debug: ParsableCommand {
 
 struct Describe: ParsableCommand {
     static let configuration = CommandConfiguration(
-        abstract: "Print the self-describing Markdown document for a built-in notation",
-        discussion: "Example: vgraph describe --notation IBIS, or vgraph describe --common"
+        abstract: "Print the self-describing Markdown document for a notation",
+        discussion: "Example: vgraph describe --notation IBIS, vgraph describe --file mine.vgl, or vgraph describe --common"
     )
 
     @Option(name: .long, help: "Notation name (e.g. IBIS, Timeline, CLD, ConceptMap, …)")
     var notation: String?
+
+    @Option(name: .long, help: "A VGL document: describe the notation it is written in, its vnotation included")
+    var file: String?
 
     @Flag(name: .long, help: "Describe the checks every notation runs instead of one notation")
     var common = false
@@ -161,18 +164,28 @@ struct Describe: ParsableCommand {
     var output: String?
 
     func validate() throws {
-        guard (notation != nil) != common else {
-            throw ValidationError("Give either --notation or --common")
+        guard [notation != nil, file != nil, common].filter({ $0 }).count == 1 else {
+            throw ValidationError("Give one of --notation, --file or --common")
         }
     }
 
     func run() throws {
         let app = VGraphCLIApp()
-        let described = common ? app.describeCommonChecks() : notation.flatMap { app.describeNotation($0, title: title) }
+        let described: String?
+        do {
+            if let file {
+                described = try app.describeNotation(in: String(contentsOfFile: file, encoding: .utf8), title: title)
+            } else {
+                described = common ? app.describeCommonChecks() : notation.flatMap { app.describeNotation($0, title: title) }
+            }
+        } catch {
+            FileHandle.standardError.write(Data("Error: \(error)\n".utf8))
+            throw ExitCode.failure
+        }
         guard let markdown = described else {
             FileHandle.standardError.write(
                 Data(
-                    "Error: notation '\(notation ?? "")' has no Markdown self-description (is it a dynamic vnotation?)\n".utf8
+                    "Error: no built-in notation '\(notation ?? "")' (describe a vnotation with --file)\n".utf8
                 ))
             throw ExitCode.failure
         }

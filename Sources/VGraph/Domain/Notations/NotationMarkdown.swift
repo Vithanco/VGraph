@@ -37,24 +37,34 @@ public enum NotationMarkdown {
                     [$0.nodeType.id, $0.detailTypes.map { $0.id }.joined(separator: ", ")]
                 }
             ).lines,
-            checksSection(Notations.rules(of: entry), otherwise: "Only the checks every notation runs."),
+            checksSection(Notations.rules(of: entry)),
             paragraph("History", entry.history),
             bulletList("References", entry.references.map(link)),
         ]
-        return sections.compactMap { $0 }.map { ($0 + [""]).joined(separator: "\n") }.joined(separator: "\n")
+        return page(sections)
+    }
+
+    /// The notation `graph` is written in. A `vnotation` lives in the document
+    /// that declares it, not in the registry, so it is described from the graph
+    /// that document parses into: what it checks, as nothing more is written down.
+    public static func render(notationOf graph: VGraph, displayTitle: String? = nil) -> String {
+        page([["# \(displayTitle ?? graph.notationName)"], checksSection(Notations.rules(in: graph))])
     }
 
     /// The checks no notation states as its own: told once, not per notation.
     public static func renderCommonChecks() -> String {
-        let sections = [["# Checks every notation runs"], checksSection(GenericQualityChecks.all.map { $0.rule })]
-        return sections.compactMap { $0 }.map { ($0 + [""]).joined(separator: "\n") }.joined(separator: "\n")
+        page([["# Checks every notation runs"], bulletList(checksHeading, GenericQualityChecks.all.map { $0.rule })])
     }
 
-    /// Always present when `otherwise` is given, so a page showing it never looks forgotten.
-    private static func checksSection(_ rules: [String], otherwise: String? = nil) -> [String]? {
-        let heading = "What Vithanco checks"
-        if let list = bulletList(heading, rules) { return list }
-        return otherwise.map { ["## \(heading)", "", $0] }
+    private static let checksHeading = "What Vithanco checks"
+
+    /// Always present, so a page showing it never looks forgotten.
+    private static func checksSection(_ rules: [String]) -> [String] {
+        bulletList(checksHeading, rules) ?? ["## \(checksHeading)", "", "Only the checks every notation runs."]
+    }
+
+    private static func page(_ sections: [[String]?]) -> String {
+        sections.compactMap { $0 }.map { ($0 + [""]).joined(separator: "\n") }.joined(separator: "\n")
     }
 
     private static func nonEmpty(_ text: String) -> String? {

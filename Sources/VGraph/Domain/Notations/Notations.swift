@@ -107,7 +107,7 @@ public struct NotationEntry: @unchecked Sendable {
     /// `Group.extendsNotation` without a runtime cast.
     public let baseId: Identifier<Notation>?
     /// Synthesised from a `vnotation` block rather than a compiled `NotationDeclaration`.
-    /// Drives `metadescription`: dynamic notations carry no Markdown today (see VGraphParser.swift).
+    /// A dynamic notation is described from its document instead: `NotationMarkdown.render(notationOf:)`.
     public let isDynamic: Bool
     /// The [[Quality check]]s the notation declares by name.
     public let namedQualityChecks: [QualityCheckSpec]
@@ -265,21 +265,30 @@ extension Notations {
         [notationTransformsStep, FoldGroups.foldStep, FoldGroups.bundleStep, groupFrameStep]
     }
 
-    /// Checks and metrics alike: both report beside the findings.
-    private static func notationAnalyses(for notationName: String) -> [GraphAnalysis<[MessageWithSeverity]>] {
-        guard let entry = NotationRegistry.entry(for: notationName) else { return [] }
-        return entry.qualityChecks.map { $0.findings } + entry.metrics
+    /// The compiled notation whose own checks and metrics judge `graph`: none once a
+    /// `vnotation` names its checks, which replace the compiled ones.
+    private static func compiledEntry(judging graph: VGraph) -> NotationEntry? {
+        guard graph.notationDefinition.declaredQualityChecks.isEmpty else { return nil }
+        return NotationRegistry.entry(for: graph.notationName)
     }
 
     /// What a notation holds a diagram to, one sentence each: the checks it names,
     /// its own, where each detail type belongs, and its bounds. The checks every
     /// notation runs are not repeated here.
     public static func rules(of entry: NotationEntry) -> [String] {
-        let named = entry.namedQualityChecks.filter { !GenericQualityChecks.runsAlways($0) }
-            .compactMap { try? QualityCheckRegistry.resolve($0) }
         let graph = (try? VGraph().placing(entry.content, in: .builtin)) ?? VGraph()
-        return (named + entry.qualityChecks).map { $0.rule } + GenericQualityChecks.containmentRules(in: graph)
-            + Bound.rules(in: graph)
+        return rules(named: entry.namedQualityChecks, own: entry.qualityChecks, in: graph)
+    }
+
+    /// The same for the notation `graph` is written in, a `vnotation` included:
+    /// the rules of exactly the checks `analyzeQuality` runs on it.
+    public static func rules(in graph: VGraph) -> [String] {
+        rules(named: namedQualityChecks(of: graph), own: compiledEntry(judging: graph)?.qualityChecks ?? [], in: graph)
+    }
+
+    private static func rules(named: [QualityCheckSpec], own: [QualityCheck], in graph: VGraph) -> [String] {
+        let resolved = named.filter { !GenericQualityChecks.runsAlways($0) }.compactMap { try? QualityCheckRegistry.resolve($0) }
+        return (resolved + own).map { $0.rule } + GenericQualityChecks.containmentRules(in: graph) + Bound.rules(in: graph)
     }
 
     /// The named quality checks in force for `graph`: a `vnotation`'s own list when it
@@ -301,8 +310,7 @@ extension Notations {
         let namedChecks = namedQualityChecks(of: graph).filter { !GenericQualityChecks.runsAlways($0) }
             .map(resolvedOrReported)
         // A `vnotation` that names its own checks replaces the compiled notation's.
-        let notationChecks =
-            graph.notationDefinition.declaredQualityChecks.isEmpty ? notationAnalyses(for: graph.notationName) : []
+        let notationChecks = compiledEntry(judging: graph).map { $0.qualityChecks.map { $0.findings } + $0.metrics } ?? []
         let checks = namedChecks + notationChecks
         return QualityReport(messages: GenericQualityChecks.analyze(graph) + checks.flatMap { $0(graph) })
     }

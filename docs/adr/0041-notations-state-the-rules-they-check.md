@@ -34,5 +34,6 @@ to fire, so a published rule cannot outlive its check unnoticed.
 - Wording is the engine's, not the page's. Bound sentences read mechanically
   ("A Plus has at most 1 incoming "plus_first_operand" edge."); a hand-written
   sentence per bound is deferred until one reads badly enough to need it.
-- A user-defined notation names its checks, so their rules exist, but such a
-  notation has no self-description yet to list them in.
+- A user-defined notation has no name outside the document that declares it,
+  so it is described from that document (`describe --file`), and lists the
+  rules of exactly the checks analysis runs on it.

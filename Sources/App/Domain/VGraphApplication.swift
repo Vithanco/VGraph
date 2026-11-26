@@ -32,6 +32,12 @@ public struct VGraphApplication<Ports: AppPorts> {
         return NotationMarkdown.render(entry: entry, displayTitle: title ?? notation)
     }
 
+    /// The Markdown for the notation `source` is written in, a `vnotation` included:
+    /// one has no name outside the document that declares it.
+    public func describeNotation(in source: String, title: String? = nil) throws(VError) -> String {
+        NotationMarkdown.render(notationOf: try parseGraph(source), displayTitle: title)
+    }
+
     /// What every notation checks, as Markdown: the list a notation's own leaves out.
     public func describeCommonChecks() -> String {
         NotationMarkdown.renderCommonChecks()
