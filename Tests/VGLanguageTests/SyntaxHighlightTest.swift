@@ -34,6 +34,12 @@ private let sample = """
         #expect(html.contains("<span class=\"vg-punct\">-&gt;</span>"))
     }
 
+    @Test(arguments: ["layoutDirection", "layout"])
+    func lexicalColorsTheDirectionKey(key: String) {
+        let html = VGraphParser(logger: NoOpLogger()).lexicalHighlightHTML(source: "\(key): leftToRight")
+        #expect(html.contains("<span class=\"vg-kw\">\(key)</span>"))
+    }
+
     @Test func semanticClassifiesRolesAndFlagsUnknownType() {
         let parser = VGraphParser(logger: NoOpLogger())
         let html = parser.semanticHighlightHTML(source: sample)

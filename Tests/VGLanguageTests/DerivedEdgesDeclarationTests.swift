@@ -42,7 +42,7 @@ struct DerivedEdgesDeclarationTests {
         let warnings = Notations.analyzeQuality(graph: graph).warnings.map { $0.message }
 
         #expect(try derivedEdgeCount(graph, view: "v") == 1)
-        #expect(warnings.filter { $0.contains("derivededges \"maybe\" in view \"v\"") }.count == 1)
+        #expect(warnings.filter { $0.contains("derivedEdges \"maybe\" in view \"v\"") }.count == 1)
     }
 
     @Test("Given derivedEdges set on a node or group inside a view, when parsed, then it is refused as root-only")

@@ -99,10 +99,12 @@ extension SemanticColor {
     public static let badgeIcon = SemanticColor(id: "badge.icon", lightHex: "#ffffff", darkHex: "#14120f")
     public static let watermark = SemanticColor(id: "watermark", lightHex: "#c8c4bc", darkHex: "#4a4842")
 
+    /// The surface of a card, which dark mode keeps above the page rather than black.
+    public static let card = SemanticColor(id: "card", lightHex: "#ffffff", darkHex: "#181612")
+
     // Rule 1: white and black are either theme-fixed or flipping, so each says which.
     public static let white = SemanticColor(id: "white", lightHex: "#ffffff", darkHex: "#ffffff")
     public static let black = SemanticColor(id: "black", lightHex: "#000000", darkHex: "#000000")
-    public static let flippingWhite = SemanticColor(id: "white.flipping", lightHex: "#ffffff", darkHex: "#000000")
     public static let flippingBlack = SemanticColor(id: "black.flipping", lightHex: "#000000", darkHex: "#ffffff")
     public static let labelText = SemanticColor(id: "label.text", lightHex: "#000000", darkHex: "#ffffff")
 
@@ -121,8 +123,8 @@ extension SemanticColor {
     /// visual language (a small chip clipped to a corner), for a different fact.
     public static let linkBadgeFill = SemanticColor(id: "link.badge.fill", lightHex: "#909088", darkHex: "#7a766e")
 
-    /// The guide's `CHROME_DARK`. Junctor, page, watermark and the black/white
-    /// tokens are not in it: the guide resolves them by token, not by hex.
+    /// The guide's `CHROME_DARK`. Junctor, page, card, watermark and the
+    /// black/white tokens are not in it: the guide resolves them by token, not by hex.
     static let chrome: [SemanticColor] = [
         edge, edgeBold, ink2, groupFill, groupBorder, groupText, loopMarker, ghostPillFill, ghostPillText,
     ]

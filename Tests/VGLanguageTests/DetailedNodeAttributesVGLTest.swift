@@ -161,7 +161,7 @@ struct DetailedNodeInAViewTest {
     @Test func aViewValueOnADetailedNodeRoundTrips() throws {
         let first = try VGLExporter().export(graph: VGraphParser(logger: NoOpLogger()).parse(source: Self.source))
 
-        #expect(first.contains("\tgroup mainframe [backgroundcolor: \"#00aa00\", fontsize: 16]\n"))
+        #expect(first.contains("\tgroup mainframe [backgroundColor: \"#00aa00\", fontsize: 16]\n"))
         #expect(try VGLExporter().export(graph: VGraphParser(logger: NoOpLogger()).parse(source: first)) == first)
     }
 }

@@ -75,7 +75,7 @@ struct ViewDeclarationTests {
         #expect(first.contains("vview context \"System Context\""))
         #expect(first.contains("vview containers \"Containers\""))
         #expect(viewBlock("context", in: first).contains("folded group type: Zone"))
-        #expect(viewBlock("containers", in: first).contains("node db [backgroundcolor: \"#ffd27f\"]"))
+        #expect(viewBlock("containers", in: first).contains("node db [backgroundColor: \"#ffd27f\"]"))
         #expect(viewBlock("containers", in: first).contains("node customer [fontsize: 16]"))
     }
 
@@ -161,7 +161,7 @@ struct ViewDeclarationTests {
         #expect(try graph.get(node: db, attribute: Attributes.Node.backgroundColor).hexString == "#aaaaaa")
         #expect(try graph.displaying(view: "v").get(node: db, attribute: Attributes.Node.backgroundColor).hexString == "#ffd27f")
         let exported = try VGLExporter().export(graph: graph)
-        #expect(viewBlock("v", in: exported).contains("node type: Database [backgroundcolor: \"#ffd27fff\"]"))
+        #expect(viewBlock("v", in: exported).contains("node type: Database [backgroundColor: \"#ffd27fff\"]"))
     }
 
     @Test(
@@ -287,7 +287,7 @@ struct ViewDisplayTests {
         #expect(try isFolded(graph))
         #expect(try !isFolded(graph.displaying(view: "open")))
         let exported = try VGLExporter().export(graph: graph)
-        #expect(viewBlock("open", in: exported).contains("group bankingSystem [isfolded: false]"))
+        #expect(viewBlock("open", in: exported).contains("group bankingSystem [isFolded: false]"))
     }
 
     @Test("Given a view, when displayed, then its element and type values are what the view graph resolves")

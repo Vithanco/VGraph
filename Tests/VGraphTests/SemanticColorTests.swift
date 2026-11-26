@@ -27,7 +27,7 @@ struct SemanticColorTests {
 
     /// Style guide Rule 1: white and black are theme-fixed or flipping, and a
     /// stored colour keeps saying which.
-    @Test(arguments: [SemanticColor.white, .black, .flippingWhite, .flippingBlack, .badgeIcon])
+    @Test(arguments: [SemanticColor.white, .black, .card, .flippingBlack, .badgeIcon])
     func whiteAndBlackKeepTheirKindThroughAString(token: SemanticColor) throws {
         let parsed = try SemanticColor.fromString(token.asString)
         #expect(parsed.resolve(darkMode: false) == token.resolve(darkMode: false))

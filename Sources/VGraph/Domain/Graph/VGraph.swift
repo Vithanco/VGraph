@@ -8,6 +8,8 @@ public struct VGraph {
     let derivedEdgeTypes: [EdgeType.Id: EdgeType.Id]
     /// Declaration order is the export order; each view is a layer of `attributeStore`.
     public let views: [ViewDeclaration]
+    /// Kept from loading for the quality report, as `NotationDefinition.keysGivenTwice` is.
+    let attributesGivenTwice: [AttributeGivenTwice]
     let readLayer: AttributeLayer
 
     public var typedGraph: TypedGraph {
@@ -26,6 +28,7 @@ public struct VGraph {
         notationDefinition: NotationDefinition = NotationDefinition(),
         derivedEdgeTypes: [EdgeType.Id: EdgeType.Id] = [:],
         views: [ViewDeclaration] = [],
+        attributesGivenTwice: [AttributeGivenTwice] = [],
         readLayer: AttributeLayer = .model
     ) {
         self.graph = graph
@@ -35,6 +38,7 @@ public struct VGraph {
         self.notationDefinition = notationDefinition
         self.derivedEdgeTypes = derivedEdgeTypes
         self.views = views
+        self.attributesGivenTwice = attributesGivenTwice
         self.readLayer = readLayer
     }
 
@@ -47,7 +51,7 @@ public struct VGraph {
             graph: added.graph, attributeStore: added.attributeStore, groupStructure: added.groupStructure,
             declarationOrder: added.declarationOrder, notationDefinition: added.notationDefinition,
             derivedEdgeTypes: derivedEdgeTypes.merging([edgeType.id: original]) { _, new in new },
-            views: added.views, readLayer: added.readLayer)
+            views: added.views, attributesGivenTwice: added.attributesGivenTwice, readLayer: added.readLayer)
     }
 
     /// Its edges go first, through `deleting(edge:)`: an edge left in the store or
@@ -320,6 +324,7 @@ extension VGraph {
         self.notationDefinition = NotationDefinition()
         self.derivedEdgeTypes = [:]
         self.views = []
+        self.attributesGivenTwice = []
         self.readLayer = .model
     }
 
@@ -331,6 +336,7 @@ extension VGraph {
         declarationOrder: DeclarationOrder? = nil,
         notationDefinition: NotationDefinition? = nil,
         views: [ViewDeclaration]? = nil,
+        attributesGivenTwice: [AttributeGivenTwice]? = nil,
         readLayer: AttributeLayer? = nil
     ) {
         self.init(
@@ -341,6 +347,7 @@ extension VGraph {
             notationDefinition: notationDefinition ?? old.notationDefinition,
             derivedEdgeTypes: old.derivedEdgeTypes,
             views: views ?? old.views,
+            attributesGivenTwice: attributesGivenTwice ?? old.attributesGivenTwice,
             readLayer: readLayer ?? old.readLayer)
     }
 

@@ -6,7 +6,7 @@ public struct NodeTypeSpec {
     public let rawAttributes: [String: String]  // backgroundColor, icon, iconColor, iconSize, fontsize, category, …
     /// Added to whatever the base notation already details this type by.
     public let detailedBy: [String]
-    let keysGivenTwice: [VNotationKeys.GivenTwice]
+    let keysGivenTwice: [KeyGivenTwice]
 
     public init(name: String, nodeStyle: String?, rawAttributes: [String: String], detailedBy: [String] = []) {
         self.name = name
@@ -22,7 +22,7 @@ public struct EdgeTypeSpec {
     public let from: String  // node type name
     public let to: String  // node type name
     public let rawAttributes: [String: String]
-    let keysGivenTwice: [VNotationKeys.GivenTwice]
+    let keysGivenTwice: [KeyGivenTwice]
 
     public init(id: String, from: String, to: String, rawAttributes: [String: String]) {
         self.id = id
@@ -56,7 +56,7 @@ public struct DynamicNotation {
     /// Multiple transforms are composed left-to-right.
     /// When non-empty and `extends` is used, these **replace** the base notation's compiled transform.
     public let transformNames: [String]
-    private let groupTypeKeysGivenTwice: [VNotationKeys.GivenTwice]
+    private let groupTypeKeysGivenTwice: [KeyGivenTwice]
 
     public init(
         id: Identifier<Notation>,
@@ -100,10 +100,11 @@ public struct DynamicNotation {
         let withTransforms = transformNames.isEmpty ? withChecks : withChecks.declaring(transforms: transformNames)
         let frameKeys = declaredFrameKeys()
         let withFrameKeys = frameKeys.isEmpty ? withTransforms : withTransforms.declaring(frameKeys: frameKeys)
+        let withHeader = withFrameKeys.noting(headerReading(withIcons).givenTwice)
         let givenTwice =
             nodeTypeSpecs.flatMap { $0.keysGivenTwice } + edgeTypeSpecs.flatMap { $0.keysGivenTwice }
             + groupTypeKeysGivenTwice
-        return givenTwice.isEmpty ? withFrameKeys : withFrameKeys.declaring(keysGivenTwice: givenTwice)
+        return givenTwice.isEmpty ? withHeader : withHeader.declaring(keysGivenTwice: givenTwice)
     }
 
     private func declaredFrameKeys() -> [ItemKey: [String]] {
@@ -192,9 +193,23 @@ public struct DynamicNotation {
             ?? .default
     }
 
+    private func diagramAttribute(named key: String, in vocabulary: VGraph) -> AttributeDefinition? {
+        vocabulary.find(attributeByName: OlderVGLSpellings.current(key, in: .attribute(.group)), for: .group)
+    }
+
+    private func headerReading(_ vocabulary: VGraph) -> (overruled: Set<Int>, givenTwice: [AttributeGivenTwice]) {
+        AttributeGivenTwice.reading(
+            graphAttributes.map { key, value in
+                WrittenAttribute(
+                    owner: .root, spelling: key, value: value, definition: diagramAttribute(named: key, in: vocabulary))
+            }, in: .vnotation)
+    }
+
     private func diagramValues(_ vocabulary: VGraph) throws(VError) -> [Attribute] {
-        let declared = try graphAttributes.map { (key, value) throws(VError) -> Attribute in
-            guard let definition = vocabulary.find(attributeByName: OlderVGLSpellings.current(key, in: .attribute(.group)), for: .group) else {
+        let overruled = headerReading(vocabulary).overruled
+        let applied = graphAttributes.enumerated().filter { !overruled.contains($0.offset) }.map { $0.element }
+        let declared = try applied.map { (key, value) throws(VError) -> Attribute in
+            guard let definition = diagramAttribute(named: key, in: vocabulary) else {
                 throw VError.parsingError("Unknown graph attribute '\(key)' in vnotation '\(id)'")
             }
             // Enum values go through their type, so a stored value reads back the
@@ -294,8 +309,8 @@ public struct DynamicNotation {
             default:
                 // Bounds come from one shared table (ADR-0011), so the
                 // parser and the exporter cannot drift apart on their spellings.
-                if let bound = Bound.edgeBound(named: key) {
-                    result.append(bound.definition(try boundValue(value, key, spec.id)))
+                if let degreeLimit = Bound.edgeBound(named: key)?.definition {
+                    result.append(degreeLimit(try boundValue(value, key, spec.id)))
                 }
             // Anything else is still ignored, as it always has been.
             }
@@ -311,8 +326,8 @@ public struct DynamicNotation {
     private func boundValues(_ rawAttributes: [String: String], _ nodeType: NodeType) throws(VError) -> [Attribute] {
         var result: [Attribute] = []
         for (key, value) in rawAttributes {
-            guard let bound = Bound.nodeBound(named: key) else { continue }
-            result.append(bound.definition(try boundValue(value, key, nodeType.id)))
+            guard let degreeLimit = Bound.nodeBound(named: key)?.definition else { continue }
+            result.append(degreeLimit(try boundValue(value, key, nodeType.id)))
         }
         return result
     }

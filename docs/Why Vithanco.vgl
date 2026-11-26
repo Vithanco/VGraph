@@ -1,5 +1,5 @@
 vgraph whyVithanco: IBIS "Why Vithanco" {
-	layoutdirection: "Left to Right"
+	layoutDirection: leftToRight
 
 	node whatIsVithanco: Question "What is Vithanco?"
 	node anAnalysisTool: Answer "An analysis tool"

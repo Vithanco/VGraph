@@ -30,7 +30,7 @@ struct LoopMarkersVGLTests {
         let parsed = try VGraphParser(logger: NoOpLogger()).parse(source: triangle("loopmarkers: independent;"))
         let exported = try VGLExporter().export(graph: parsed)
 
-        #expect(exported.contains("loopmarkers: independent"))
+        #expect(exported.contains("loopMarkers: independent"))
         let reparsed = try VGraphParser(logger: NoOpLogger()).parse(source: exported)
         #expect(try reparsed.get(attribute: Attributes.Group.loopMarkers) == .independent)
     }
@@ -38,6 +38,6 @@ struct LoopMarkersVGLTests {
     @Test("The default is not written out")
     func defaultIsNotExported() throws {
         let parsed = try VGraphParser(logger: NoOpLogger()).parse(source: triangle(""))
-        #expect(!(try VGLExporter().export(graph: parsed)).contains("loopmarkers"))
+        #expect(!(try VGLExporter().export(graph: parsed)).contains("loopMarkers"))
     }
 }

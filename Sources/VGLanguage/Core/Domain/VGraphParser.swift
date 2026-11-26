@@ -8,6 +8,9 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
     /// Runtime notation registry populated from `vnotation` declarations parsed in the same source.
     /// Stores concrete `DynamicNotation` values, avoiding any `as?` cast through existentials.
     var dynamicNotations: [String: DynamicNotation] = [:]
+    /// What earlier statements gave each element: a group may be declared again,
+    /// and what its second body repeats is given twice like anything else.
+    private var writtenEarlier: [ItemKey: [WrittenAttribute]] = [:]
 
     public init(edgeIds: Int = 100001, groupIds: Int = 200001, logger: Logger) {
         self.edgeIds = edgeIds
@@ -40,6 +43,7 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
     }
 
     func convert(from: ASTNode, to graph: VGraph? = nil) throws(VError) -> VGraph {
+        writtenEarlier = [:]
         return try convert(from: from, graph: graph ?? VGraph(), stack: ParserStack(currentGroup: Group.root))
     }
 
@@ -84,9 +88,7 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
                 result = try applyExtensionEdgeTypes(extName, to: result)
             }
 
-            for statement in children {
-                result = try convert(from: statement, graph: result, stack: stack)
-            }
+            result = try convert(children, of: .root, in: result, stack: stack)
             if let label = label {
                 result = try result.setting(graphAttribute: Attributes.Group.label(label))
             }
@@ -122,9 +124,7 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
                 result = try result.setting(node: node, attribute: Attributes.Node.label.attribute(fromString: id))
             }
             let newStack = ParserStack(currentNode: node, currentGroup: stack.currentGroup)
-            for attribute in attributes {
-                result = try convert(from: attribute, graph: result, stack: newStack)
-            }
+            result = try convert(attributes, of: ItemKey(node), in: result, stack: newStack)
             if let leading = comments.leading {
                 result = try result.setting(node: node, attribute: Attributes.Node.comment(leading))
             }
@@ -204,9 +204,7 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
             }
 
             let newStack = ParserStack(currentEdge: edge)
-            for attribute in attributes {
-                result = try convert(from: attribute, graph: result, stack: newStack)
-            }
+            result = try convert(attributes, of: ItemKey(edge.id), in: result, stack: newStack)
 
             if let label = label {
                 result = try result.setting(edge: edge, attribute: Attributes.Edge.label.attribute(fromString: label))
@@ -225,9 +223,7 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
                 group, type: type, label: label, isFolded: isFolded, comments: comments,
                 in: result, childOf: stack.currentGroup)
             let newStack = ParserStack(currentGroup: group)
-            for child in children {
-                result = try convert(from: child, graph: result, stack: newStack)
-            }
+            result = try convert(children, of: ItemKey(group), in: result, stack: newStack)
 
         case .vnotationDecl:
             // vnotationDecl nodes are consumed at the .file level; reaching here is a no-op.
@@ -253,6 +249,30 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
         // If the notation name is unknown, buildMetagraph already logged.
         }
         return result
+    }
+
+    /// An attribute given under two spellings is applied once, in the current one.
+    private func convert(
+        _ statements: [ASTNode], of owner: ItemKey, in graph: VGraph, stack: ParserStack
+    ) throws(VError) -> VGraph {
+        let earlier = writtenEarlier[owner] ?? []
+        let written = earlier + statements.map { written($0, of: owner, in: graph) }
+        writtenEarlier[owner] = written
+        let read = AttributeGivenTwice.reading(written, in: .model)
+        var result = graph.noting(read.givenTwice)
+        for (position, statement) in statements.enumerated() where !read.overruled.contains(earlier.count + position) {
+            result = try convert(from: statement, graph: result, stack: stack)
+        }
+        return result
+    }
+
+    private func written(_ statement: ASTNode, of owner: ItemKey, in graph: VGraph) -> WrittenAttribute {
+        guard case .attribute(let key, let value) = statement else {
+            return WrittenAttribute(owner: owner, spelling: "", value: "", definition: nil)
+        }
+        return WrittenAttribute(
+            owner: owner, spelling: key, value: value,
+            definition: attribute(named: key, among: targets(of: owner, in: graph), in: graph))
     }
 
     /// Skips what the graph already holds: a pasted fragment's edges join a
@@ -316,9 +336,9 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
     /// A name the model lacks is kept all the same: stored, written back, affecting nothing.
     private func convert(view: VViewDecl, to graph: VGraph) throws(VError) -> VGraph {
         let result = try graph.declaring(view: ViewDeclaration(name: view.name, label: view.label, rules: view.rules))
-        var values: [(key: ItemKey, attribute: Attribute)] = []
+        var values: [(key: ItemKey, spelling: String, attribute: Attribute)] = []
         for (key, value) in view.attrs {
-            values.append((.root, try viewAttribute(key, value, for: [.group], in: result)))
+            values.append((.root, key, try viewAttribute(key, value, for: [.group], in: result)))
         }
         for statement in view.statements {
             let kind: ItemKind
@@ -331,11 +351,17 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
             for (name, value) in statement.attrs {
                 for id in statement.names {
                     let key = ItemKey(kind, id)
-                    values.append((key, try viewAttribute(name, value, for: targets(of: key, in: result), in: result)))
+                    values.append((key, name, try viewAttribute(name, value, for: targets(of: key, in: result), in: result)))
                 }
             }
         }
-        return try result.mergingInView(view.name, values)
+        let read = AttributeGivenTwice.reading(
+            values.map {
+                WrittenAttribute(
+                    owner: $0.key, spelling: $0.spelling, value: $0.attribute.stringValue, definition: $0.attribute.definition)
+            }, in: VGraph.layer(ofView: view.name))
+        let applied = values.enumerated().filter { !read.overruled.contains($0.offset) }.map { $0.element }
+        return try result.noting(read.givenTwice).mergingInView(view.name, applied.map { ($0.key, $0.attribute) })
     }
 
     /// A group named in a view speaks its own namespace, which a detailed node
@@ -346,7 +372,8 @@ public class VGraphParser<Logger: ForLogMessages>: ForParseAGraph, ForHighlightV
         case .node: return [.node]
         case .nodeType: return [.node, .group]
         case .group: return graph.attributeTargets(of: Group(rawValue: key.id))
-        case .groupType, .root, .edge, .edgeType: return [.group]
+        case .edge: return [.edge]
+        case .groupType, .root, .edgeType: return [.group]
         }
     }
 

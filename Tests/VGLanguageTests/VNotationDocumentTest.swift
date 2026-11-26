@@ -11,7 +11,7 @@ import Testing
 struct VNotationDocumentTest {
     static let source = """
         vnotation Mine extends IBIS {
-        	layout: leftToRight
+        	layoutDirection: leftToRight
 
         	icon flame [viewBox: "0 0 24 24", path: "M12 2L4 22h16z"]
 
@@ -108,7 +108,7 @@ struct VNotationDocumentTest {
                 vnotation Mine extends IBIS {
                 	splines: ortho
                 	sep: "+20"
-                	layout: leftToRight
+                	layoutDirection: leftToRight
                 	overlap: scale
                 }
 
@@ -117,6 +117,6 @@ struct VNotationDocumentTest {
                 }
                 """))
         let block = exported.split(separator: "\n").dropFirst().prefix(4).map { String($0) }
-        #expect(block == ["\tlayout: leftToRight", "\toverlap: scale", "\tsep: \"+20\"", "\tsplines: ortho"])
+        #expect(block == ["\tlayoutDirection: leftToRight", "\toverlap: scale", "\tsep: \"+20\"", "\tsplines: ortho"])
     }
 }

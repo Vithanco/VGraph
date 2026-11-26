@@ -186,6 +186,28 @@ struct DarkModeTests {
         #expect(!attributeValues("stroke", in: node).contains(fill), "\(node)")
     }
 
+    /// The style guide's `--card`: a card is not the page's black, which would
+    /// sink it below the canvas.
+    @Test(arguments: ["withCategory", "withCategoryAndIcon", "bareText"])
+    func aBuiltInCardFollowsTheGuidesCardToken(style: String) throws {
+        let vgl = """
+            vnotation Q {
+                node type: A [nodeStyle: \(style), backgroundColor: "#d8fce8", icon: question]
+                edge type: rel from: A to: A
+            }
+            vgraph g: Q "G" {
+                node x: A "Xlabel";
+            }
+            """
+        func cardFill(darkMode: Bool) throws -> String? {
+            let svg = try VGraphTestApp().renderGraph(vgl, darkMode: darkMode).svg
+            return attributeValues("fill", in: try #require(nodeElement(svg: svg, id: "x"))).first
+        }
+
+        #expect(try cardFill(darkMode: false) == "#ffffff")
+        #expect(try cardFill(darkMode: true) == "#181612")
+    }
+
     /// A recoloured node picks black or white text against each theme's fill. Dark
     /// mode keeps a mid-tone fill light, so its text stays black there too.
     @Test func aRecoloredNodesTextReadsOnItsDarkFill() throws {

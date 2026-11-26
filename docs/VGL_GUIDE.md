@@ -33,7 +33,7 @@ node <id>: <NodeType> "<label>" [<attributes>];
 The id must be unique in the document; the label and attributes are optional.
 
 ```vgl
-node q1: Question "What should we do?" [fontsize: 16; color: red];
+node q1: Question "What should we do?" [fontsize: 16; backgroundColor: red];
 ```
 
 ### Edges
@@ -60,7 +60,7 @@ attributes. Edges may cross group boundaries freely.
 ```vgl
 group research "Research Phase" {
     style: filled;
-    color: lightblue;
+    backgroundColor: lightblue;
 
     node q1: Question "What to research?";
     node a1: Answer "User interviews";
@@ -87,9 +87,9 @@ folded. See [C4](#c4).
 **Detailed nodes.** When the type is a *node* type rather than a group type, the
 group is a detailed node: the node itself, with its details inside —
 `group ibs: SoftwareSystem "Internet Banking System" { … }`. It takes the node's
-attributes (`url`, `tooltip`, `backgroundcolor`, …) in its body and in views; a
+attributes (`url`, `tooltip`, `backgroundColor`, …) in its body and in views; a
 key that a node and a group share means the node's. It starts folded;
-`isfolded: false` in a view (or in its body) opens it, and the boundary it then
+`isFolded: false` in a view (or in its body) opens it, and the boundary it then
 draws comes from its node type. See ADR-0032.
 
 ### Views
@@ -103,7 +103,7 @@ vview context "System Context" {
     folded node type: SoftwareSystem;
 }
 
-vview containers "Containers" [rankdir: LR] {
+vview containers "Containers" [layoutDirection: leftToRight] {
     node db [backgroundColor: "#ffd27f"];
     node customer, web [fontsize: 16];
 }
@@ -148,18 +148,27 @@ group body.
 
 | Applies to | Attributes |
 |---|---|
-| Node | `color`, `fontColor`, `fontsize`, `shape`, `url`, `alignGroup` (nodes sharing a value are placed at the same rank) |
+| Node | `backgroundColor`, `fontColor`, `fontsize`, `shape`, `url`, `alignGroup` (nodes sharing a value are placed at the same rank) |
 | Edge | `style` (`solid`/`dashed`/`dotted`), `color`, `weight`, `label`, `url` |
-| Group | `style` (`filled`/`dashed`/`dotted`), `color`, `label`, `url` |
-| Graph | `rankdir` (`LR`/`TB`), `fontcolor`, `labeljust` (`l`/`r`/`c`), `loopMarkers` (`all`/`independent`/`none`, Causal Loop Diagrams: which loops get an R/B marker), `watermark` (`true` by default; `false` leaves the Vithanco mark off the exported image) |
+| Group | `style` (`filled`/`dashed`/`dotted`), `backgroundColor`, `label`, `url` |
+| Graph | `layoutDirection` (`topToBottom`/`leftToRight`/`bottomToTop`/`rightToLeft`), `fontColor`, `labeljust` (`l`/`r`/`c`), `loopMarkers` (`all`/`independent`/`none`, Causal Loop Diagrams: which loops get an R/B marker), `watermark` (`true` by default; `false` leaves the Vithanco mark off the exported image) |
 
-**Colouring one node.** `color` sets a node's fill, overriding whatever its type
-says. `fontColor` sets the text on it; leave it out and the text is set to black
-or white for contrast, but only where it would otherwise stop being legible.
+**Direction.** `layoutDirection` is the same key in a document, in a view's
+header and in a `vnotation`.
+
+**Given twice.** Keys are read in any case, and a saved file spells them as this
+guide does. An attribute given twice to one element — in one statement, or again
+in a group declared a second time — keeps the later value, or the one spelled as
+here, and a quality warning names both.
+
+**Colouring one node.** `backgroundColor` sets a node's fill, overriding
+whatever its type says. `fontColor` sets the text on it; leave it out and the
+text is set to black or white for contrast, but only where it would otherwise
+stop being legible.
 
 ```vgl
-node epBackend: Container "Equipment Pooling Backend" [color: "#b6e6bd"];
-node onApp: Container "ON App" [color: "#ffe08a"; fontColor: "#5c3d00"];
+node epBackend: Container "Equipment Pooling Backend" [backgroundColor: "#b6e6bd"];
+node onApp: Container "ON App" [backgroundColor: "#ffe08a"; fontColor: "#5c3d00"];
 ```
 
 This is a per-node exception, not a second axis: the node keeps its type, so its
@@ -167,7 +176,7 @@ shape, its stereotype line and every quality check still apply. Use it to mark
 what is new or changed in an otherwise ordinary diagram, and say what the colours
 mean somewhere the reader can see.
 
-Every colour in VGL — a node's, an edge's, a group's, a graph's `fontcolor` — is
+Every colour in VGL — a node's, an edge's, a group's, a graph's `fontColor` — is
 a hex value or one of the 147 **SVG colour keywords** (`red`, `cornflowerblue`,
 `whitesmoke`). Graphviz's larger X11 set is not accepted: `chartreuse3` is a
 quality warning, not a silent no-op, and the node is drawn as if it had no
@@ -361,8 +370,8 @@ More quality warnings come from elsewhere: a node with no relationships at all, 
 [unknown node or edge type](#grammar), and a node placed where its notation's
 [detailings](#detailedby--a-hierarchical-notation) do not allow, and an
 [attribute](#attributes) whose value is not of its type (`fontsize: big`,
-`color: chartreuse3`, `isFolded: maybe`), which is drawn as if it were not
-there, and a `vnotation` key given in two spellings with different values.
+`backgroundColor: chartreuse3`, `isFolded: maybe`), which is drawn as if it
+were not there, and an attribute [given twice](#attributes).
 
 ### Extensions
 
@@ -430,24 +439,24 @@ edges; for the smallest possible IBIS document see
 
 ```vgl
 vgraph comprehensive: IBIS "Comprehensive Example" {
-    rankdir: LR;
-    fontcolor: darkblue;
+    layoutDirection: leftToRight;
+    fontColor: darkblue;
     labeljust: l;
 
-    node root: Question "Main Question" [fontsize: 20; color: navy];
+    node root: Question "Main Question" [fontsize: 20; backgroundColor: navy];
     node ans1: Answer "Primary Solution" [fontsize: 16];
 
     group analysis "Detailed Analysis" {
         style: filled;
-        color: lightgray;
+        backgroundColor: lightgray;
 
         node q_perf: Question "What about performance?";
-        node a_fast: Answer "Optimize critical paths" [color: green];
+        node a_fast: Answer "Optimize critical paths" [backgroundColor: green];
         node pro_perf: Pro "40% faster response time";
 
         group tradeoffs "Trade-offs" {
             style: dashed;
-            color: yellow;
+            backgroundColor: yellow;
 
             node con_complex: Con "Increased code complexity";
             node q_maint: Question "Can we maintain this?";
@@ -1357,7 +1366,7 @@ vgraph banking: C4 "Internet Banking System" {
     node cbs: SoftwareSystem "Core Banking System" [backgroundColor: "#e8710a"];
 
     group ibs: SoftwareSystem "Internet Banking System" {
-        isfolded: false;
+        isFolded: false;
         node ui: Container "UI";
         node backend: Container "Backend";
         node database: Database "Database";
@@ -1437,7 +1446,7 @@ layout direction — can be expressed this way.
 
 ```
 vnotation <Name> [extends <BuiltinNotation>] {
-    layout: <topToBottom | leftToRight | rightToLeft | bottomToTop>
+    layoutDirection: <topToBottom | leftToRight | rightToLeft | bottomToTop>
 
     icon      <IconName>   [viewBox: "<minX minY width height>", path: "<svg path data>"]
     node type: <TypeName>  [nodeStyle: <name>, backgroundColor: "#hex", icon: "<IconName>", ...]
@@ -1458,14 +1467,11 @@ type, of its groups. A key left out keeps the look the type already had, so
 recolours the frame and keeps its dashes. A type with no frame of its own, from
 the block or the notation it extends, draws the generic cluster. These are the
 only keys `group type:` takes; a group type declared in a `vnotation` folds into
-the generic folded box. The older spellings `boundaryDash`, `boundaryColor`,
-`boundaryFill` and `boundaryRadius`, and `boundaryChrome` for a group's `frame`,
-are still read; a saved file uses the new ones.
+the generic folded box.
 
 **Spelling.** A `vnotation` key is read in any case, `framedash` as `frameDash`,
-and a saved file spells it as this guide does. A type that gives one key twice,
-in an older spelling or another case, keeps the current spelling's value; if the
-two values differ, a quality warning names both.
+and a saved file spells it as this guide does. A key given twice is read as an
+[attribute](#attributes) given twice is.
 
 **What hovering lights.** Hovering a node lights its edges and the nodes at
 their far ends. `addsToNeighborhood:` on a node type lets the highlight go
@@ -1483,9 +1489,7 @@ A `vgraph` then references it by name exactly like a built-in notation.
 **`vnotation` blocks must appear before any `vgraph` or `metagraph` that
 references them**, which allows single-pass parsing.
 
-`backgroundColor:` is the fill. `color:` is accepted as an older spelling of it
-on input, but `backgroundColor` is what a document exports — the same name a node
-instance stores it under, so the two surfaces agree.
+`backgroundColor:` is the fill, under the same name a node takes in a document.
 
 `qualityCheck: <name>` adds a [quality check](#quality-checks) by name, such as
 `noParallelEdges`. `disconnectedNodes` and `redundantJunctor` run for every
@@ -1504,7 +1508,7 @@ against this table.
 |---|---|---|
 | `iconWithText` | `backgroundColor:` (required), `icon:`, `iconColor:` (default white), `iconSize:` (default 24) | Icon above text, coloured background |
 | `simpleRoundedText` | `backgroundColor:` | Text in a rounded rectangle |
-| `simpleRoundedBox` | `backgroundColor:` | Plain rounded box (`roundedBox` is accepted as an older spelling) |
+| `simpleRoundedBox` | `backgroundColor:` | Plain rounded box |
 | `withCategory` | `backgroundColor:`, `category:` (short header label) | Box with a coloured category bar on top |
 | `withCategoryAndIcon` | `backgroundColor:`, `category:`, `icon:`, `iconColor:`, `iconSize:` | Category bar plus icon |
 | `iconOnly` | `icon:`, `iconColor:` (default black), `iconSize:` | Icon without text |
@@ -1616,7 +1620,7 @@ at the top level unless it details itself. Plain groups in between do not count.
 
 ```vgl
 vnotation RiskMap {
-    layout: topToBottom
+    layoutDirection: topToBottom
 
     icon risk   [viewBox: "0 0 24 24", path: "M12 2 22.5 21h-21zM11 9v6h2V9zm0 8v2h2v-2z"]
     icon shield [viewBox: "0 0 24 24", path: "M12 1 3 5v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V5z"]
@@ -1701,7 +1705,7 @@ notation     ::= identifier
 
 vnotation    ::= "vnotation" identifier ("extends" identifier)? "{" vnotation_body* "}"
 
-vnotation_body ::= ("layout" ":" layout_dir ";"?)
+vnotation_body ::= ("layoutDirection" ":" layout_dir ";"?)
                  | ("icon" identifier "[" "viewBox" ":" quoted_string ","?
                                           "path" ":" quoted_string "]" ";"?)
                  | ("node" "type" ":" identifier type_attributes? ";"?)

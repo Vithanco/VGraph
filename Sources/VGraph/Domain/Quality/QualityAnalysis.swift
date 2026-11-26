@@ -124,23 +124,29 @@ public enum GenericQualityChecks {
                     let (owner, target) = graph.owner(of: key)
                     return MessageWithSeverity(
                         message:
-                            "\(owner) has \(attribute.definition.vglKey) \"\(attribute.stringValue)\"\(inView), which is not a valid \(attribute.type)",
+                            "\(owner) has \(attribute.definition.camelCaseKey) \"\(attribute.stringValue)\"\(inView), which is not a valid \(attribute.type)",
                         severity: .warning, target: target)
                 }
         }
     }
 
-    /// The block still loads, with the current spelling's value; this says which
-    /// value it overruled, since saving drops it for good.
+    /// The document still loads, with the current spelling's value; this says
+    /// which value it overruled, since saving drops it for good.
     public static func keysGivenTwice(graph: VGraph) -> [MessageWithSeverity] {
-        graph.notationDefinition.keysGivenTwice.map { twice in
-            MessageWithSeverity(
-                message:
-                    "\(graph.owner(of: twice.owner).name) gives \(twice.key) twice, as "
-                    + "\(twice.dropped.spelling): \(twice.dropped.value) and \(twice.kept.spelling): \(twice.kept.value)"
-                    + " — using \(twice.kept.value)",
-                severity: .warning, target: .graph)
-        }
+        let viewOfLayer = Dictionary(
+            graph.views.map { (VGraph.layer(ofView: $0.name), " in view \"\($0.name)\"") }, uniquingKeysWith: { first, _ in first })
+        return graph.notationDefinition.keysGivenTwice.map { message(of: $0, in: graph) }
+            + graph.standingAttributesGivenTwice.map { message(of: $0.keys, in: graph, view: viewOfLayer[$0.layer] ?? "") }
+    }
+
+    private static func message(of twice: KeyGivenTwice, in graph: VGraph, view: String = "") -> MessageWithSeverity {
+        let (owner, target) = graph.owner(of: twice.owner)
+        return MessageWithSeverity(
+            message:
+                "\(owner) gives \(twice.key) twice\(view), as "
+                + "\(twice.dropped.spelling): \(twice.dropped.value) and \(twice.kept.spelling): \(twice.kept.value)"
+                + " — using \(twice.kept.value)",
+            severity: .warning, target: target)
     }
 
     public typealias NamedCheck = (name: String, check: QualityCheck)

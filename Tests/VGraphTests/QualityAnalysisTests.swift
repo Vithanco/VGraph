@@ -552,7 +552,7 @@ struct GraphTopologyTests {
         let topology = GraphTopology(edges: [Edge]())
         #expect(topology.outgoingTargets.isEmpty)
         #expect(topology.incomingSources.isEmpty)
-        #expect(topology.connectedNodes.isEmpty)
+        #expect(topology.incidentEdges(of: Node(rawValue: "a")).isEmpty)
     }
 
     @Test("Single edge builds correct indexes")
@@ -565,7 +565,8 @@ struct GraphTopologyTests {
 
         #expect(topology.outgoingTargets[nodeA] == [nodeB])
         #expect(topology.incomingSources[nodeB] == [nodeA])
-        #expect(topology.connectedNodes == [nodeA, nodeB])
+        #expect(topology.incidentEdges(of: nodeA) == [edge])
+        #expect(topology.incidentEdges(of: nodeB) == [edge])
         #expect(topology.outgoingTargets[nodeB] == nil)
         #expect(topology.incomingSources[nodeA] == nil)
     }

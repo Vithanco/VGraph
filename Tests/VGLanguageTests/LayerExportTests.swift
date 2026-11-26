@@ -24,7 +24,7 @@ struct LayerExportTests {
             graph: parse(
                 """
                 vnotation Mine extends IBIS {
-                    layout: leftToRight
+                    layoutDirection: leftToRight
                     node type: Extra [nodeStyle: withCategory, backgroundColor: "#884499", category: "E"]
                 }
 
@@ -35,10 +35,10 @@ struct LayerExportTests {
                 """))
         let vnotation = block("vnotation Mine", in: exported)
         let vgraph = block("vgraph g", in: exported)
-        #expect(vnotation.contains("layout: leftToRight"))
+        #expect(vnotation.contains("layoutDirection: leftToRight"))
         #expect(!vnotation.contains("splines"))
         #expect(vgraph.contains("splines: ortho"))
-        #expect(!vgraph.contains("layoutdirection"))
+        #expect(!vgraph.lowercased().contains("layoutdirection"))
     }
 
     private func teamsWithFoldedTeam() throws -> VGraph {
@@ -64,14 +64,14 @@ struct LayerExportTests {
     func aTypesFoldingIsNotTheGroups() throws {
         let exported = try VGLExporter().export(graph: teamsWithFoldedTeam())
         #expect(!exported.contains("folded group"))
-        #expect(!exported.contains("isfolded"))
+        #expect(!exported.contains("isFolded"))
     }
 
     @Test("Given a group unfolded against its folded type, when exported, then the unfolding is written")
     func anUnfoldingIsWritten() throws {
         let unfolded = try teamsWithFoldedTeam()
             .setting(group: Group(rawValue: "b"), attribute: Attributes.Group.isFolded(false))
-        #expect(try VGLExporter().export(graph: unfolded).contains("isfolded: false"))
+        #expect(try VGLExporter().export(graph: unfolded).contains("isFolded: false"))
     }
 }
 

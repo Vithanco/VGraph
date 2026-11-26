@@ -146,7 +146,9 @@ fails that and leaves it:
   content on the model's root.
 - **Findings and bookkeeping:** quality messages belong to the quality report
   (the per-node `messages` attribute is unused and goes), declaration order to
-  the graph's structure. A notation's markdown description is rendered from the
+  the graph's structure. A value that a document overruled by giving one
+  attribute twice reaches no layer, so the graph keeps it for that report. A
+  notation's markdown description is rendered from the
   notation when asked for; it never belonged to a graph.
 
 **Which values are written to VGL follows from their layer**, not from a flag on
@@ -263,7 +265,7 @@ Provenance names the layer, so it already says whether a rule set a value; the
   the type is not folded anyway, `unfolded` is redundant and disappears on
   export.
 - Round trips are no longer byte-identical for a file that repeats its
-  notation, e.g. `[rankdir: TB]` where the notation already lays out top to
+  notation, e.g. `[layoutDirection: topToBottom]` where the notation already lays out top to
   bottom. The export drops the repetition.
 - The tests that exercise member inheritance (`VGraphTests/VGraphLayersTests.swift`,
   `VGraphTests/AttributeTests.swift`) are rewritten. `QualityAnalysis`'s local

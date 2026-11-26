@@ -83,6 +83,15 @@ struct StyleGuideSyncTests {
         }
     }
 
+    /// Its light hex is white, which the maps hold for theme-fixed white too, so
+    /// the token is read from its own variable.
+    @Test func theCardMatchesTheGuide() {
+        let light = Self.cssVars(Self.block(after: ":root {"))["--card"]
+        let dark = Self.cssVars(Self.block(after: "[data-theme=\"dark\"] {"))["--card"]
+        #expect(light == SemanticColor.card.lightHex)
+        #expect(dark == SemanticColor.card.darkHex)
+    }
+
     /// The watermark's light hex is another token's dark hex, so the CSS/CHROME_DARK
     /// maps cannot hold it; only the guide's watermark spec rows do.
     @Test func theWatermarkMatchesTheGuide() {

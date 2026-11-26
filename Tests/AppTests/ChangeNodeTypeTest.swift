@@ -69,7 +69,7 @@ struct ChangeNodeTypeTest {
 
         let exported = try s.exportVGL()
         #expect(exported.contains("// the strongest argument we have"))
-        #expect(exported.contains("node p: Con \"It is quicker\" [backgroundcolor: \"#008000\"]"))
+        #expect(exported.contains("node p: Con \"It is quicker\" [backgroundColor: \"#008000\"]"))
         // Still the second declaration, ahead of the Answer it hangs off.
         #expect(exported.range(of: "node p:")!.lowerBound < exported.range(of: "node a:")!.lowerBound)
     }

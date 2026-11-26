@@ -86,7 +86,7 @@ struct LoopMarkersCommandTest {
 
         try session.setLoopMarkers(.none)
         #expect(session.loopMarkers() == LoopMarkers.none)
-        #expect(try session.exportVGL().contains("loopmarkers: none"))
+        #expect(try session.exportVGL().contains("loopMarkers: none"))
 
         _ = try session.undo()
         #expect(session.loopMarkers() == .all)

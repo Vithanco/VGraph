@@ -3,7 +3,7 @@ extension VGraph {
         updatedSelfWith(notationDefinition: notationDefinition.declaring(frameKeys: frameKeys))
     }
 
-    func declaring(keysGivenTwice: [VNotationKeys.GivenTwice]) -> VGraph {
+    func declaring(keysGivenTwice: [KeyGivenTwice]) -> VGraph {
         updatedSelfWith(notationDefinition: notationDefinition.declaring(keysGivenTwice: keysGivenTwice))
     }
 

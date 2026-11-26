@@ -8,10 +8,10 @@ import Testing
 
 /// A complex test graph with 54 nodes, 70 edges, and 6 groups
 /// One group (groupE) is nested 3 levels deep with 2 parent groups
-/// Includes graph-level properties: rankdir (layout direction), fontcolor, and labeljust
+/// Includes graph-level properties: layoutDirection, fontcolor, and labeljust
 let complexGraphInput = """
     vgraph complexGraph: IBIS "Complex Test Graph" {
-        rankdir: LR;
+        layoutDirection: leftToRight;
         fontcolor: darkblue;
         labeljust: l;
 
@@ -188,7 +188,7 @@ let complexGraphInput = """
 /// Includes groups, nested groups, and graph-level properties
 let impactMappingInput = """
     vgraph productLaunch: ImpactMapping "Product Launch Strategy" {
-        rankdir: LR;
+        layoutDirection: leftToRight;
         fontcolor: darkblue;
 
         group marketingTeam "Marketing Team" {
@@ -700,13 +700,13 @@ struct VGLGroupExportTests {
         let outerBlock = lines[outerStart...outerEnd].joined(separator: "\n")
 
         #expect(outerBlock.contains("style: filled"), "Outer group should have style attribute")
-        #expect(outerBlock.contains("color: lightgray"), "Outer group should have color attribute")
+        #expect(outerBlock.contains("backgroundColor: lightgray"), "Outer group should have color attribute")
 
         #expect(outerBlock.contains("group inner"), "Inner group should be nested inside outer group")
         #expect(outerBlock.contains("\"Inner Group\""), "Inner group label should exist")
 
         #expect(outerBlock.contains("style: dashed"), "Inner group should have style attribute")
-        #expect(outerBlock.contains("color: lightblue"), "Inner group should have color attribute")
+        #expect(outerBlock.contains("backgroundColor: lightblue"), "Inner group should have color attribute")
 
         #expect(outerBlock.contains("node o1:"), "Outer node should be in outer group")
         #expect(outerBlock.contains("node i1:"), "Inner node should be in nested structure")
@@ -718,7 +718,7 @@ struct VGLGroupExportTests {
         let graph1 = try parser.parse(source: complexGraphInput)
 
         let layoutDirStr: String = try graph1.get(graphAttribute: Attributes.Group.layoutDirection)
-        #expect(layoutDirStr == "LR", "Layout direction should be LR (stored as graphviz value)")
+        #expect(layoutDirStr == "leftToRight", "Layout direction should be leftToRight")
 
         let fontColorStr: String = try graph1.get(graphAttribute: Attributes.Group.fontcolor)
         #expect(fontColorStr == "darkblue", "Font color should be darkblue")
@@ -2418,9 +2418,9 @@ struct AttributeRoundTripTests {
             """)
         let v1: String = try g1.get(graphAttribute: Attributes.Group.layoutDirection)
         let v2: String = try g2.get(graphAttribute: Attributes.Group.layoutDirection)
-        // "rankdir" resolves to layoutDirection via alias; the value is stored as the graphviz spelling
+        // "rankdir" resolves to layoutDirection via alias; the value is stored as written, and export updates it.
         #expect(v1 == "LR")
-        #expect(v2 == "LR")
+        #expect(v2 == "leftToRight")
         #expect(try g1.get(attribute: Attributes.Group.layoutDirection) == .leftToRight)
     }
 
@@ -2469,7 +2469,7 @@ struct TimelineNotationTests {
     func testVNotationExportPure() throws {
         let input = """
             vnotation RiskMap {
-                layout: leftToRight
+                layoutDirection: leftToRight
 
                 node type: Risk    [nodeStyle: iconWithText, color: "#cc3333", icon: "risk"]
                 node type: Control [nodeStyle: simpleRoundedText, color: "#339933"]
@@ -2500,7 +2500,7 @@ struct TimelineNotationTests {
         #expect(exported.contains("node type: Owner"), "Exported VGL should contain Owner node type")
         #expect(exported.contains("edge type: risk_has_control"), "Exported VGL should contain edge type")
         #expect(exported.contains("edge type: control_owned_by"), "Exported VGL should contain edge type")
-        #expect(exported.contains("layout: leftToRight"), "Exported VGL should contain layout directive")
+        #expect(exported.contains("layoutDirection: leftToRight"), "Exported VGL should contain the layout direction")
 
         let graph2 = try parser.parse(source: exported)
         #expect(Set(graph2.nodeTypes.map { $0.id }) == ["Risk", "Control", "Owner"])
@@ -2558,7 +2558,7 @@ struct TimelineNotationTests {
     func testVNotationEdgeTypeAttributeRoundTrip() throws {
         let input = """
             vnotation StyledMap {
-                layout: topToBottom
+                layoutDirection: topToBottom
 
                 node type: Source [nodeStyle: simpleRoundedText, color: "#336699"]
                 node type: Target [nodeStyle: simpleRoundedText, color: "#996633"]
@@ -2686,7 +2686,7 @@ struct TimelineNotationTests {
     func testVNotationDiagramLogicStandalone() throws {
         let input = """
             vnotation LogicMap {
-                layout: topToBottom
+                layoutDirection: topToBottom
                 diagramLogic: sufficientCause
 
                 node type: Cause   [nodeStyle: simpleRoundedText, color: "#cc3333"]
@@ -2774,7 +2774,7 @@ struct TimelineNotationTests {
         // Standalone vnotation without diagramLogic should default to noLogic
         let input = """
             vnotation Simple {
-                layout: topToBottom
+                layoutDirection: topToBottom
                 node type: Thing [nodeStyle: simpleRoundedText, color: "#666666"]
                 edge type: link from: Thing to: Thing
             }
@@ -2798,7 +2798,7 @@ struct TimelineNotationTests {
     func testVNotationUnknownGraphAttrThrows() throws {
         let input = """
             vnotation Bad {
-                layout: topToBottom
+                layoutDirection: topToBottom
                 unknownAttr: someValue
                 node type: Thing [nodeStyle: simpleRoundedText, color: "#666666"]
                 edge type: link from: Thing to: Thing

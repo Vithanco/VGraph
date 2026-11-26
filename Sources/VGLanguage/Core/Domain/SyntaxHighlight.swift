@@ -76,7 +76,7 @@ func baseRole(for type: TokenType) -> VGLTokenRole {
 
 /// Read as keywords but lexed as plain identifiers, so not caught by `baseRole`.
 let vglSoftKeywords: Set<String> = [
-    "extends", "type", "from", "to", "layout",
+    "extends", "type", "from", "to", "layout", "layoutDirection",
     "topToBottom", "leftToRight", "bottomToTop", "rightToLeft",
     "qualityCheck", "transform",
 ]

@@ -5,8 +5,6 @@ public struct GraphTopology {
 
     public let incomingSources: [Node: Set<Node>]
 
-    public let connectedNodes: Set<Node>
-
     /// In the order the edges were given, with a self-loop listed once. Callers
     /// write their results out in the order they walk this, so the order is part
     /// of the contract. `VGraph.edges` is grouped by source node, not by line.
@@ -15,14 +13,11 @@ public struct GraphTopology {
     public init(edges: some Sequence<Edge>) {
         var outgoing: [Node: Set<Node>] = [:]
         var incoming: [Node: Set<Node>] = [:]
-        var connected: Set<Node> = []
         var incident: [Node: [Edge]] = [:]
 
         for edge in edges {
             outgoing[edge.from, default: []].insert(edge.to)
             incoming[edge.to, default: []].insert(edge.from)
-            connected.insert(edge.from)
-            connected.insert(edge.to)
             incident[edge.from, default: []].append(edge)
             if edge.to != edge.from {
                 incident[edge.to, default: []].append(edge)
@@ -31,7 +26,6 @@ public struct GraphTopology {
 
         self.outgoingTargets = outgoing
         self.incomingSources = incoming
-        self.connectedNodes = connected
         self.incident = incident
     }
 
@@ -48,8 +42,8 @@ public struct GraphTopology {
     }
 
     /// Treats edges as undirected (A→B means A and B are in the same component).
-    /// Only considers nodes in the provided collection; isolated nodes
-    /// (not in `connectedNodes`) each form their own singleton component.
+    /// Only considers nodes in the provided collection; a node without edges
+    /// forms its own singleton component.
     public func connectedComponents(nodes: some Collection<Node>) -> [Set<Node>] {
         var visited: Set<Node> = []
         var components: [Set<Node>] = []

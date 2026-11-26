@@ -2,20 +2,6 @@
 /// An author may write one in any case, or in an older spelling; both are brought
 /// to this spelling before anything reads the block, so nothing after has to care.
 enum VNotationKeys {
-    /// A declaration that gave one key twice with different values: under an older
-    /// spelling, or in another case. Reported by `GenericQualityChecks.keysGivenTwice`.
-    struct GivenTwice: VProtocol {
-        let owner: ItemKey
-        let key: String
-        let kept: Written
-        let dropped: Written
-    }
-
-    struct Written: VProtocol {
-        let spelling: String
-        let value: String
-    }
-
     /// `.node` for `node type:`, `.edge` for `edge type:`, `.group` for `group type:`.
     static func keys(of declaration: AttributeTarget) -> [String] {
         switch declaration {
@@ -43,15 +29,17 @@ enum VNotationKeys {
     /// The declaration's keys in their current spelling. Where it gives one key
     /// twice, the current spelling wins; a value it overrules is kept to be reported.
     static func reading(_ attributes: [String: String], of declaration: AttributeTarget, owner: ItemKey)
-        -> (attributes: [String: String], givenTwice: [GivenTwice])
+        -> (attributes: [String: String], givenTwice: [KeyGivenTwice])
     {
         let spellingsByKey = Dictionary(grouping: attributes.keys.sorted()) { current($0, of: declaration) }
-        let read = spellingsByKey.keys.sorted().map { key -> (key: String, value: String, givenTwice: [GivenTwice]) in
+        let read = spellingsByKey.keys.sorted().map { key -> (key: String, value: String, givenTwice: [KeyGivenTwice]) in
             let spellings = spellingsByKey[key] ?? []
-            let keptSpelling = spellings.min { preference($0, for: key) < preference($1, for: key) } ?? key
-            let kept = Written(spelling: keptSpelling, value: attributes[keptSpelling] ?? "")
+            let keptSpelling = spellings.min { KeyGivenTwice.preference($0, for: key) < KeyGivenTwice.preference($1, for: key) } ?? key
+            let kept = KeyGivenTwice.Written(spelling: keptSpelling, value: attributes[keptSpelling] ?? "")
             let overruled = spellings.filter { $0 != keptSpelling && attributes[$0] != kept.value }.map { spelling in
-                GivenTwice(owner: owner, key: key, kept: kept, dropped: Written(spelling: spelling, value: attributes[spelling] ?? ""))
+                KeyGivenTwice(
+                    owner: owner, key: key, kept: kept,
+                    dropped: KeyGivenTwice.Written(spelling: spelling, value: attributes[spelling] ?? ""))
             }
             return (key, kept.value, overruled)
         }
@@ -59,10 +47,5 @@ enum VNotationKeys {
             Dictionary(uniqueKeysWithValues: read.map { ($0.key, $0.value) }),
             read.flatMap { $0.givenTwice }
         )
-    }
-
-    /// The current spelling as the guide writes it, then in another case, then an older one.
-    private static func preference(_ spelling: String, for key: String) -> Int {
-        spelling == key ? 0 : spelling.lowercased() == key.lowercased() ? 1 : 2
     }
 }

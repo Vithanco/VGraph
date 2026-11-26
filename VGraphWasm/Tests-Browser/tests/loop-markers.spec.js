@@ -26,5 +26,5 @@ test('the canvas menu sets which loops are marked', async ({ page }) => {
 
   await item(page, 'No loop markers').click();
   await expect(page.locator('.loop-indicator')).toHaveCount(0);
-  expect(await vglText(page)).toContain('loopmarkers: none');
+  expect(await vglText(page)).toContain('loopMarkers: none');
 });

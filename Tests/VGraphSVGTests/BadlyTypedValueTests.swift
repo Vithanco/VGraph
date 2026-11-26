@@ -43,8 +43,8 @@ struct BadlyTypedValueTests {
     @Test(
         "Given a node colour that is no colour, when the document is rendered, then it loads, is warned about once and is drawn as if absent",
         arguments: [
-            (attributes: "[color: notacolour]", key: "backgroundcolor"),
-            (attributes: "[fontColor: notacolour]", key: "fontcolor"),
+            (attributes: "[color: notacolour]", key: "backgroundColor"),
+            (attributes: "[fontColor: notacolour]", key: "fontColor"),
         ])
     func aBadNodeColourIsAWarning(attributes: String, key: String) throws {
         let badly = try app.renderGraph(source(attributes))
@@ -53,6 +53,15 @@ struct BadlyTypedValueTests {
             badly.qualityReport.warnings.map { $0.message }
                 == ["Node \"Why?\" has \(key) \"notacolour\", which is not a valid Color"])
         #expect(drawn(badly.svg) == drawn(try VGraphTestApp().renderGraph(source("")).svg))
+    }
+
+    @Test("Given a diagram direction that is none, when the document is rendered, then the warning names layoutDirection as the guide spells it")
+    func aBadDirectionIsNamedAsTheGuideSpellsIt() throws {
+        let badly = try app.renderGraph("vgraph g: IBIS \"G\" {\n    rankdir: sideways\n    node q: Question \"Why?\";\n}\n")
+
+        #expect(
+            badly.qualityReport.warnings.map { $0.message }.filter { $0.contains("not a valid") }
+                == [#"The diagram has layoutDirection "sideways", which is not a valid LayoutDirection"#])
     }
 
     /// The SVG without the VGL source it carries, which differs by the value under
@@ -79,7 +88,7 @@ struct BadlyTypedValueTests {
 
         #expect(
             badly.qualityReport.warnings.map { $0.message }
-                == [#"Group "Grp" has isfolded "maybe" in view "v", which is not a valid Bool"#])
+                == [#"Group "Grp" has isFolded "maybe" in view "v", which is not a valid Bool"#])
         #expect(drawn(badly.svg) == drawn(plain.svg))
     }
 }

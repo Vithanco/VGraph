@@ -44,7 +44,7 @@ struct DetailedNodeVGLTest {
         let exported = try VGLExporter().export(graph: parse(unfolded))
 
         #expect(exported.contains("\tgroup mainframe: SoftwareSystem \"Mainframe\" {"))
-        #expect(exported.contains("\t\tisfolded: false\n"))
+        #expect(exported.contains("\t\tisFolded: false\n"))
         #expect(try VGLExporter().export(graph: parse(exported)) == exported)
     }
 

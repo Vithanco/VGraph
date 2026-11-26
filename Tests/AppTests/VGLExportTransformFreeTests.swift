@@ -33,7 +33,6 @@ struct VGLExportTransformFreeTests {
 
         #expect(vgl.contains("group bank: Organisation"))  // the authored type survives…
 
-        // The exporter lowercases attribute names, hence `vglKey` rather than literals.
         let frameKeys = [
             Attributes.Group.borderDash.asDefinition.vglKey,
             Attributes.Group.borderColor.asDefinition.vglKey,
@@ -41,7 +40,7 @@ struct VGLExportTransformFreeTests {
             Attributes.Group.cornerRadius.asDefinition.vglKey,
         ]
         for key in frameKeys {
-            #expect(!vgl.contains(key), "\(key) leaked into exported VGL")  // …its derived face does not
+            #expect(!vgl.lowercased().contains(key), "\(key) leaked into exported VGL")  // …its derived face does not
         }
     }
 

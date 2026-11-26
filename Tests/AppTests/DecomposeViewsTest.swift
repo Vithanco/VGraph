@@ -112,7 +112,7 @@ struct DecomposeViewsTest {
 
         try s.selectView("open")
         #expect(!s.isFolded("bank"))
-        #expect(viewBlock("open", in: try s.exportVGL()).contains("node type: System [isfolded: false]"))
+        #expect(viewBlock("open", in: try s.exportVGL()).contains("node type: System [isFolded: false]"))
     }
 
     @Test(

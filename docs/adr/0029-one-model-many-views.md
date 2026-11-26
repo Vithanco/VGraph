@@ -30,7 +30,7 @@ example using it.
   a **view** (`vview`) is what is shown and how it is arranged; the **look** is
   how each kind of thing is drawn.
 - **The test is ADR-0027's, generalised:** if anything judges a setting, it is
-  model. Fold state, the subset, `rankdir`, `alignGroup`, edge `weight` and
+  model. Fold state, the subset, `layoutDirection`, `alignGroup`, edge `weight` and
   `loopMarkers` are view.
 - **Views live in the document**, after the `vgraph` block, and are addressed
   by name when rendering. A host shows view X of file Y without VGL referring to

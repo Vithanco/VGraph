@@ -154,8 +154,7 @@ public struct CLDOverlayProvider: NotationOverlayProvider {
     }
 
     /// Compute loop markers for the graph's cycles. Returns empty for
-    /// graphs with no cycles (or no styled cycles). Verbatim port of the
-    /// pre-migration `computeLoopIndicators` from SVGRenderer.
+    /// graphs with no cycles (or no styled cycles).
     private func computeMarkers(graph: VGraph) -> [LoopMarker] {
         let loops = graph.loopsToMark
         var markers: [LoopMarker] = []

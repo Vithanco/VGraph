@@ -7,7 +7,7 @@ import {
 } from '../helpers/editor.js';
 
 const wide = `vgraph demo: ConceptMap "Demo" {
-  rankdir: LR;
+  layoutDirection: leftToRight;
 ${Array.from({ length: 14 }, (_, i) => `  node n${i}: Concept "Node number ${i}";`).join('\n')}
 ${Array.from({ length: 13 }, (_, i) => `  edge n${i} -> n${i + 1};`).join('\n')}
 }`;

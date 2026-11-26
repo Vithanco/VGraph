@@ -38,7 +38,7 @@ struct DetailedNodeFoldingViewTests {
         try s.setLabel(of: "customer", to: "Client")
         let text = try s.exportVGL()
         #expect(!text.contains("folded node type: SoftwareSystem"))
-        #expect(!text.contains("isfolded"))
+        #expect(!text.contains("isFolded"))
     }
 
     @Test("Given folded node type: SoftwareSystem, when one detailed node is unfolded in the view, then it is no longer folded")

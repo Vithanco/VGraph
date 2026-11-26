@@ -196,7 +196,7 @@ struct CommentRoundTripTest {
             """)
 
         #expect(!out.contains("comment:"))
-        #expect(!out.contains("trailingcomment"))
+        #expect(!out.contains("trailingComment"))
         #expect(out.contains("[fontsize: 16]"))  // ordinary attributes still emitted
     }
 
@@ -308,11 +308,11 @@ struct CommentRoundTripTest {
 
         let lines = once.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
         func index(of prefix: String) -> Int? { lines.firstIndex { $0.hasPrefix(prefix) } }
-        let graphKeys = ["fontcolor:", "labeljust:", "layoutdirection:"].compactMap { index(of: $0) }
+        let graphKeys = ["fontColor:", "labeljust:", "layoutDirection:"].compactMap { index(of: $0) }
         #expect(graphKeys.count == 3)
         #expect(graphKeys == graphKeys.sorted(), "Graph attributes are written in key order")
         let node = try #require(lines.first { $0.hasPrefix("node q1") })
-        let keyOrder = ["aligngroup:", "fontsize:", "tooltip:"].compactMap { node.range(of: $0)?.lowerBound }
+        let keyOrder = ["alignGroup:", "fontsize:", "tooltip:"].compactMap { node.range(of: $0)?.lowerBound }
         #expect(keyOrder.count == 3)
         #expect(keyOrder == keyOrder.sorted(), "Node attributes are written in key order")
     }

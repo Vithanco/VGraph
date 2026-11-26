@@ -6,9 +6,10 @@ public struct AttributeDefinition: VProtocol {
     public let defaultValue: String
     public let target: AttributeTarget
     public let typeAsString: String
-    /// Values stay strings (ADR-0030), so only the definition can tell whether
-    /// text read from VGL is of its type. Not part of the definition's identity.
-    private let parses: @Sendable (String) -> Bool
+    /// Values stay strings (ADR-0030), so only the definition can tell what text
+    /// read from VGL means in its type: `nil` where it is not of the type. Not part
+    /// of the definition's identity.
+    private let canonical: @Sendable (String) -> String?
 
     public init(
         id: Id, name: String, description: String, defaultValue: String, target: AttributeTarget,
@@ -20,7 +21,7 @@ public struct AttributeDefinition: VProtocol {
         self.defaultValue = defaultValue
         self.target = target
         self.typeAsString = typeAsString
-        self.parses = { _ in true }
+        self.canonical = { $0 }
     }
 
     public init<T: AttributeType>(
@@ -37,11 +38,18 @@ public struct AttributeDefinition: VProtocol {
         self.defaultValue = defaultValue
         self.target = target
         self.typeAsString = type.typeName
-        self.parses = { (try? T.fromString($0)) != nil }
+        self.canonical = { (try? T.fromString($0))?.asString }
     }
 
     public func accepts(_ value: String) -> Bool {
-        parses(value)
+        canonical(value) != nil
+    }
+
+    /// Whether two spellings mean one value, as `LR` and `leftToRight` do.
+    func readsAlike(_ left: String, _ right: String) -> Bool {
+        guard left != right else { return true }
+        guard let meaning = canonical(left) else { return false }
+        return meaning == canonical(right)
     }
 
     public static func == (left: AttributeDefinition, right: AttributeDefinition) -> Bool {
@@ -59,13 +67,16 @@ public struct AttributeDefinition: VProtocol {
         hasher.combine(typeAsString)
     }
 
-    /// The key used for VGL export, derived from the attribute id.
-    /// e.g., id "group.borderWidth" → "borderwidth", id "node.fontsize" → "fontsize"
+    /// What a key written in VGL is matched against: VGL reads keys in any case.
     public var vglKey: String {
-        if let dotIndex = id.description.lastIndex(of: ".") {
-            return String(id.description[id.description.index(after: dotIndex)...]).lowercased()
-        }
-        return id.description.lowercased()
+        camelCaseKey.lowercased()
+    }
+
+    /// The key as the guide spells it and export writes it: id "group.borderWidth" → "borderWidth".
+    public var camelCaseKey: String {
+        let text = id.description
+        guard let dot = text.lastIndex(of: ".") else { return text }
+        return String(text[text.index(after: dot)...])
     }
 
     public func attribute(fromString value: String) -> Attribute {

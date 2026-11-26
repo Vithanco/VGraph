@@ -194,7 +194,7 @@ struct DecomposeTest {
         #expect(s.origin.parentGroup(of: bank) == Group(rawValue: "bigBank"))
         let exported = try s.exportVGL()
         #expect(exported.contains("group bank: System \"Bank\""), "\(exported)")
-        #expect(exported.contains("backgroundcolor: \"#ffd27f\""), "\(exported)")
+        #expect(exported.contains("backgroundColor: \"#ffd27f\""), "\(exported)")
         let bankAt = try #require(exported.range(of: "group bank"))
         let archiveAt = try #require(exported.range(of: "group archive"))
         #expect(bankAt.lowerBound < archiveAt.lowerBound, "\(exported)")

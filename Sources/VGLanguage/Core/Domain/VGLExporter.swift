@@ -67,10 +67,7 @@ public struct VGLExporter: ForExportAGraph {
             except: CommentAttributes.group.union([Attributes.Group.id.id, Attributes.Group.label.id]))
 
         for (key, value) in sortedForOutput(authoredGraphAttrs, in: graph) {
-            let def = graph.attributeDefinitions[key]!
-            let name = def.vglKey
-            let quotedValue = needsQuoting(value) ? "\"\(StringEscaping.escape(value))\"" : value
-            output += "\t\(name): \(quotedValue)\n"
+            output += "\t\(pair(graph.attributeDefinitions[key]!, value))\n"
         }
 
         if !authoredGraphAttrs.isEmpty {
@@ -170,8 +167,8 @@ public struct VGLExporter: ForExportAGraph {
     }
 
     private func bracketed(_ values: AttributeContainer, in graph: VGraph) -> String {
-        let pairs = sortedForOutput(values, in: graph).map { key, value in
-            "\(graph.attributeDefinitions[key]!.vglKey): \(quoteIfNeeded(value))"
+        let pairs = sortedForOutput(values, in: graph).map { key, value -> String in
+            pair(graph.attributeDefinitions[key]!, value)
         }
         return "[\(pairs.joined(separator: ", "))]"
     }
@@ -202,10 +199,7 @@ public struct VGLExporter: ForExportAGraph {
         if !nonDefaultAttrs.isEmpty {
             output += " ["
             let attrStrings = sortedForOutput(nonDefaultAttrs, in: graph).map { key, value in
-                let def = graph.attributeDefinitions[key]!
-                let name = def.vglKey
-                let quotedValue = needsQuoting(value) ? "\"\(StringEscaping.escape(value))\"" : value
-                return "\(name): \(quotedValue)"
+                pair(graph.attributeDefinitions[key]!, value)
             }
             output += attrStrings.joined(separator: ", ")
             output += "]"
@@ -227,7 +221,7 @@ public struct VGLExporter: ForExportAGraph {
             ? (Attributes.Node.comment.id, Attributes.Node.trailingComment.id, Attributes.Node.label.id)
             : (Attributes.Group.comment.id, Attributes.Group.trailingComment.id, Attributes.Group.label.id)
         // The group's own values, not its type's: a type that starts folded is not
-        // a `folded` group, and a `false` against it is written as `isfolded`.
+        // a `folded` group, and a `false` against it is written as `isFolded`.
         let attributes = graph.attributes(group: group)
         let isFolded = attributes[Attributes.Group.isFolded.id] == "true"
 
@@ -249,10 +243,7 @@ public struct VGLExporter: ForExportAGraph {
         let nonDefaultAttrs = authored(attributes, in: graph, except: excluded)
 
         for (key, value) in sortedForOutput(nonDefaultAttrs, in: graph) {
-            let def = graph.attributeDefinitions[key]!
-            let name = def.vglKey
-            let quotedValue = needsQuoting(value) ? "\"\(StringEscaping.escape(value))\"" : value
-            output += "\(indentation)\t\(name): \(quotedValue)\n"
+            output += "\(indentation)\t\(pair(graph.attributeDefinitions[key]!, value))\n"
         }
 
         return output
@@ -286,10 +277,7 @@ public struct VGLExporter: ForExportAGraph {
         if !nonDefaultAttrs.isEmpty {
             output += " ["
             let attrStrings = sortedForOutput(nonDefaultAttrs, in: graph).map { key, value in
-                let def = graph.attributeDefinitions[key]!
-                let name = def.vglKey
-                let quotedValue = needsQuoting(value) ? "\"\(StringEscaping.escape(value))\"" : value
-                return "\(name): \(quotedValue)"
+                pair(graph.attributeDefinitions[key]!, value)
             }
             output += attrStrings.joined(separator: ", ")
             output += "]"
@@ -342,9 +330,9 @@ public struct VGLExporter: ForExportAGraph {
             try graph.attributes(in: .vnotation, of: .root), in: graph, except: vnotationExcludedAttrs)
         let graphLines = ownGraphAttrs.map { attrId, value in
             let def = graph.attributeDefinitions[attrId]!
-            return (key: vnotationKeyName(for: def), value: quoteIfNeeded(vnotationValue(value, for: def)))
+            return (key: def.camelCaseKey, value: quoteIfNeeded(vnotationValue(value, for: def)))
         }
-        for line in graphLines.sorted(by: { $0.key < $1.key }) {
+        for line in graphLines.sorted(by: { $0.key.lowercased() < $1.key.lowercased() }) {
             output += "\t\(line.key): \(line.value)\n"
         }
 
@@ -614,24 +602,27 @@ public struct VGLExporter: ForExportAGraph {
         needsQuoting(value) ? "\"\(StringEscaping.escape(value))\"" : value
     }
 
-    private func vnotationKeyName(for def: AttributeDefinition) -> String {
-        if def.id == Attributes.Group.layoutDirection.id { return "layout" }
-        return def.vglKey
+    private func pair(_ def: AttributeDefinition, _ storedValue: String) -> String {
+        "\(def.camelCaseKey): \(quoteIfNeeded(written(storedValue, for: def)))"
+    }
+
+    /// A direction has several spellings (`LR`, `"Left to Right"`); one that is
+    /// none of them stays as the author wrote it.
+    private func written(_ storedValue: String, for def: AttributeDefinition) -> String {
+        guard def.id == Attributes.Group.layoutDirection.id,
+            let direction = try? LayoutDirection.fromString(storedValue)
+        else { return storedValue }
+        return direction.value
     }
 
     /// Enum types use the `.value` property (Swift case name) instead of the readableName.
     private func vnotationValue(_ storedValue: String, for def: AttributeDefinition) -> String {
-        if def.id == Attributes.Group.layoutDirection.id,
-            let parsed = try? LayoutDirection.fromString(storedValue)
-        {
-            return parsed.value
-        }
         if def.id == Attributes.Group.diagramLogic.id,
             let parsed = try? DiagramLogic.fromString(storedValue)
         {
             return parsed.value
         }
-        return storedValue
+        return written(storedValue, for: def)
     }
 
     /// Whether a value has to be written quoted. `Parser.value()` takes a quoted
