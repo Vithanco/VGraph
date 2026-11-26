@@ -38,4 +38,9 @@ struct TransformRegistryTests {
         graph = graph.declaring(transforms: ["identity"])
         #expect(try Notations.resolveSteps(for: graph).isEmpty)
     }
+
+    @Test func aVnotationNamingNoTransformsRunsTheStepOfTheNotationItExtends() throws {
+        let graph = VGraph().using(notation: "Mine").extending(notation: "ConceptMap")
+        #expect(try Notations.resolveSteps(for: graph).map { $0.id } == [.mergeRelations])
+    }
 }

@@ -117,4 +117,22 @@ struct QualityCheckTripsTest {
         let check = try QualityCheckRegistry.resolve(QualityCheckSpec.parse(row.spec))
         #expect(!check(try parse(row.source)).isEmpty, "\(name) did not fire: \(check.rule)")
     }
+
+    @Test
+    func aVnotationNamingNoChecksIsJudgedByTheNotationItExtends() throws {
+        let graph = try parse(
+            """
+            vnotation Mine extends IBIS {
+                node type: Extra [nodeStyle: withCategory, color: "#884499", category: "E"]
+            }
+            vgraph g: Mine "Open" { node q: Question "Why?"; }
+            """)
+        let ibis = try #require(NotationRegistry.entry(for: "IBIS"))
+        let unanswered = try #require(ibis.qualityChecks.first { $0.name == "unansweredQuestions" })
+        let findings = unanswered(graph)
+        let reported = Notations.analyzeQuality(graph: graph).messages
+        #expect(!findings.isEmpty)
+        #expect(findings.allSatisfy { reported.contains($0) })
+        #expect(Notations.rules(in: graph).contains(unanswered.rule))
+    }
 }

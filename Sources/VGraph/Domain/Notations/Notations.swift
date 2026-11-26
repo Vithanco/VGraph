@@ -239,17 +239,13 @@ public enum Notations {}
 
 extension Notations {
 
-    static func notationStep(for notationName: String) -> TransformStep? {
-        NotationRegistry.entry(for: notationName)?.step
-    }
-
     public static func resolveSteps(for graph: VGraph) throws(VError) -> [TransformStep] {
         let declared = graph.notationDefinition.declaredTransforms
         guard declared.isEmpty else {
             return try declared.map { (name) throws(VError) in try TransformRegistry.resolveStep(name: name) }
                 .compactMap { $0 }
         }
-        return notationStep(for: graph.notationName).map { [$0] } ?? []
+        return compiledEntry(of: graph)?.step.map { [$0] } ?? []
     }
 
     /// Only the *phase* is named here; a notation's own step records itself in addition.
@@ -269,7 +265,13 @@ extension Notations {
     /// `vnotation` names its checks, which replace the compiled ones.
     private static func compiledEntry(judging graph: VGraph) -> NotationEntry? {
         guard graph.notationDefinition.declaredQualityChecks.isEmpty else { return nil }
-        return NotationRegistry.entry(for: graph.notationName)
+        return compiledEntry(of: graph)
+    }
+
+    /// The compiled notation `graph` is written in, or the one its `vnotation` extends.
+    private static func compiledEntry(of graph: VGraph) -> NotationEntry? {
+        NotationRegistry.entry(for: graph.notationName)
+            ?? graph.notationDefinition.extends.flatMap { NotationRegistry.entry(for: $0) }
     }
 
     /// What a notation holds a diagram to, one sentence each: the checks it names,
@@ -297,7 +299,7 @@ extension Notations {
     public static func namedQualityChecks(of graph: VGraph) -> [QualityCheckSpec] {
         let declared = graph.notationDefinition.declaredQualityChecks
         if !declared.isEmpty { return declared }
-        return NotationRegistry.entry(for: graph.notationName)?.namedQualityChecks ?? []
+        return compiledEntry(of: graph)?.namedQualityChecks ?? []
     }
 
     public static func analyzeQuality(graph: VGraph) -> QualityReport {
