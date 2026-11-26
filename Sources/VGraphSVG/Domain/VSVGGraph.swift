@@ -61,8 +61,23 @@ public enum VSVGGraph {
             color = SemanticColor.groupText.resolve(darkMode: darkMode)
         }
 
+        let block = (try? graph.get(group: rootGrp, attribute: Attributes.Group.labelLayoutedSize)) ?? .zero
+        let location = (try? graph.get(group: rootGrp, attribute: Attributes.Group.labelLocation)) ?? "b"
         return VSVGBuilder.text(
-            x: labelPos.x, y: labelPos.y, content: labelText, font: font, color: color, anchor: "middle")
+            x: labelPos.x, y: captionBaseline(center: labelPos, block: block, atTop: location == "t", font: font),
+            content: labelText, font: font, color: color, anchor: "middle")
+    }
+
+    /// The exporter adds an empty line between the nodes and the caption, so
+    /// Graphviz's block for it is two lines: the caption is the one away from
+    /// the nodes, not the block's centre.
+    static func captionBaseline(center: VPoint, block: VSize, atTop: Bool, font: VFont) -> Double {
+        let lineHeight = font.size * 1.2
+        let lineCenter =
+            block.height <= 0 ? center.y
+            : atTop ? center.y - block.height / 2 + lineHeight / 2
+            : center.y + block.height / 2 - lineHeight / 2
+        return lineCenter + font.size * 0.35
     }
 
     // MARK: - Top-level composition
