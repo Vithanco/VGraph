@@ -7,7 +7,9 @@ extension Notations {
         /// Loop markers are the model's loops, so they are recorded before folding.
         public static var step: TransformStep? { FeedbackLoop.recordStep }
 
-        public static var qualityChecks: [QualityCheck] { [unmarkedLoops] }
+        public static var qualityChecks: [QualityCheck] {
+            [QualityCheck("unmarkedLoops", rule: "Every feedback loop is marked.", findings: unmarkedLoops)]
+        }
 
         /// Past the cap only the shortest loops get a marker (ADR-0028); the
         /// diagram should not look as if it had no others.

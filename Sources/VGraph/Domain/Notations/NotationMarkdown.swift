@@ -37,10 +37,24 @@ public enum NotationMarkdown {
                     [$0.nodeType.id, $0.detailTypes.map { $0.id }.joined(separator: ", ")]
                 }
             ).lines,
+            checksSection(Notations.rules(of: entry), otherwise: "Only the checks every notation runs."),
             paragraph("History", entry.history),
             bulletList("References", entry.references.map(link)),
         ]
         return sections.compactMap { $0 }.map { ($0 + [""]).joined(separator: "\n") }.joined(separator: "\n")
+    }
+
+    /// The checks no notation states as its own: told once, not per notation.
+    public static func renderCommonChecks() -> String {
+        let sections = [["# Checks every notation runs"], checksSection(GenericQualityChecks.all.map { $0.rule })]
+        return sections.compactMap { $0 }.map { ($0 + [""]).joined(separator: "\n") }.joined(separator: "\n")
+    }
+
+    /// Always present when `otherwise` is given, so a page showing it never looks forgotten.
+    private static func checksSection(_ rules: [String], otherwise: String? = nil) -> [String]? {
+        let heading = "What Vithanco checks"
+        if let list = bulletList(heading, rules) { return list }
+        return otherwise.map { ["## \(heading)", "", $0] }
     }
 
     private static func nonEmpty(_ text: String) -> String? {

@@ -1,7 +1,30 @@
 /// Analyses are pure functions: same graph → same result.
 public typealias GraphAnalysis<Result> = (VGraph) -> Result
 
-public typealias QualityCheck = GraphAnalysis<[MessageWithSeverity]>
+/// A [[Quality check]]: the rule it states, and what it reports where a graph breaks it.
+public struct QualityCheck {
+    /// Stable, so a page can link to one rule and a test can find it.
+    public let name: String
+    /// One sentence of what good looks like; published as written.
+    public let rule: String
+    public let findings: GraphAnalysis<[MessageWithSeverity]>
+
+    public init(_ name: String, rule: String, findings: @escaping GraphAnalysis<[MessageWithSeverity]>) {
+        self.name = name
+        self.rule = rule
+        self.findings = findings
+    }
+
+    public func callAsFunction(_ graph: VGraph) -> [MessageWithSeverity] {
+        findings(graph)
+    }
+}
+
+/// "a Plus", "an Answer": rule sentences name types the way prose does.
+func withArticle(_ noun: String, capitalised: Bool = false) -> String {
+    let vowel = noun.first.map { "AEIOUaeiou".contains($0) } ?? false
+    return (capitalised ? (vowel ? "An" : "A") : (vowel ? "an" : "a")) + " " + noun
+}
 
 public enum GenericQualityChecks {
 
@@ -149,22 +172,32 @@ public enum GenericQualityChecks {
             severity: .warning, target: target)
     }
 
-    public typealias NamedCheck = (name: String, check: QualityCheck)
-
-    /// Also offered by `QualityCheckRegistry` under this name, which it reads
-    /// from here, so `runsAlways` cannot miss it after a rename.
-    static var namedDisconnectedNodes: NamedCheck { ("disconnectedNodes", disconnectedNodes) }
-    static var namedRedundantJunctor: NamedCheck { ("redundantJunctor", redundantJunctor) }
+    /// Also offered by `QualityCheckRegistry` under these names, which it reads
+    /// from here, so `runsAlways` cannot miss them after a rename.
+    static var disconnectedNodesCheck: QualityCheck {
+        QualityCheck("disconnectedNodes", rule: "Every node is connected to at least one other.", findings: disconnectedNodes)
+    }
+    static var redundantJunctorCheck: QualityCheck {
+        QualityCheck(
+            "redundantJunctor", rule: "No junctor states what the diagram's logic already implies.",
+            findings: redundantJunctor)
+    }
 
     /// Named so that a `qualityCheck:` naming one of them can be recognised and
     /// not run a second time.
-    public static var all: [NamedCheck] {
+    public static var all: [QualityCheck] {
         [
-            ("badlyTypedValues", badlyTypedValues), ("keysGivenTwice", keysGivenTwice),
-            ("unknownNodeTypes", unknownNodeTypes), ("unknownEdgeTypes", unknownEdgeTypes),
-            ("unknownGroupTypes", unknownGroupTypes), ("unresolvableIcons", unresolvableIcons),
-            namedDisconnectedNodes, namedRedundantJunctor,
-            ("brokenBounds", brokenBounds), ("containment", containment),
+            QualityCheck("badlyTypedValues", rule: "Every value fits the type of its attribute.", findings: badlyTypedValues),
+            QualityCheck("keysGivenTwice", rule: "No attribute is given twice for the same item.", findings: keysGivenTwice),
+            QualityCheck("unknownNodeTypes", rule: "Every node has a node type of the notation.", findings: unknownNodeTypes),
+            QualityCheck("unknownEdgeTypes", rule: "Every edge has an edge type of the notation.", findings: unknownEdgeTypes),
+            QualityCheck(
+                "unknownGroupTypes", rule: "Every typed group has a group type of the notation.", findings: unknownGroupTypes),
+            QualityCheck("unresolvableIcons", rule: "Every icon a node type names exists.", findings: unresolvableIcons),
+            disconnectedNodesCheck, redundantJunctorCheck,
+            QualityCheck(
+                "brokenBounds", rule: "Every node and edge stays within the bounds of its type.", findings: brokenBounds),
+            QualityCheck("containment", rule: "A nested element sits inside a type that details it.", findings: containment),
         ]
     }
 
@@ -173,7 +206,7 @@ public enum GenericQualityChecks {
     }
 
     public static func analyze(_ graph: VGraph) -> [MessageWithSeverity] {
-        all.flatMap { $0.check(graph) }
+        all.flatMap { $0(graph) }
     }
 }
 

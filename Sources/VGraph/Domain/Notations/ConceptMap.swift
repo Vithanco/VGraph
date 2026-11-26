@@ -161,17 +161,29 @@ extension Notations {
         // MARK: - Quality Checks
 
         /// Relations are verb phrases and may run longer; the word limit is for concepts.
-        static var labelLengthCheck: QualityCheck { QualityCheckRegistry.labelLengthCheck(maxWords: 3, among: concepts(in:)) }
+        static var labelLengthCheck: QualityCheck {
+            QualityCheckRegistry.labelLengthCheck(maxWords: 3, of: "concept", among: concepts(in:))
+        }
 
         public static var qualityChecks: [QualityCheck] {
             [
-                conceptRelationRatio,
-                conceptCountCheck,
+                QualityCheck("conceptCount", rule: "A map has between 5 and 25 concepts.", findings: conceptCountCheck),
                 labelLengthCheck,
-                vagueRelationsCheck,
-                relationTopologyChecks,
+                QualityCheck(
+                    "vagueRelations", rule: "No relation has a vague label such as \"is related to\".",
+                    findings: vagueRelationsCheck),
+                topologyCheck("disconnectedClusters", rule: "The map is one connected whole.", orphanClusters),
+                topologyCheck("bothDirections", rule: "Two concepts are linked in one direction only.", redundantPropositions),
+                topologyCheck(
+                    "repeatedRelations", rule: "Relations with the same label and the same targets are one relation.",
+                    unreusedRelations),
+                topologyCheck("manyToMany", rule: "A relation has a single concept on at least one side.", mappedRelations),
+                topologyCheck(
+                    "incompleteRelations", rule: "Every relation has a concept on each side.", incompleteRelations),
             ]
         }
+
+        public static var metrics: [GraphAnalysis<[MessageWithSeverity]>] { [conceptRelationRatio] }
 
         /// Concept and Emphasized Concept: both are what a proposition is about.
         private static func concepts(in graph: VGraph) -> [Node] {
@@ -243,15 +255,12 @@ extension Notations {
             }
         }
 
-        // MARK: - Topology-Dependent Checks (Composite)
+        // MARK: - Topology-Dependent Checks
 
-        static func relationTopologyChecks(_ graph: VGraph) -> [MessageWithSeverity] {
-            let topology = GraphTopology(edges: graph.edges)
-            return orphanClusters(graph, topology: topology)
-                + redundantPropositions(graph, topology: topology)
-                + unreusedRelations(graph, topology: topology)
-                + mappedRelations(graph, topology: topology)
-                + incompleteRelations(graph, topology: topology)
+        private static func topologyCheck(
+            _ name: String, rule: String, _ findings: @escaping (VGraph, GraphTopology) -> [MessageWithSeverity]
+        ) -> QualityCheck {
+            QualityCheck(name, rule: rule) { graph in findings(graph, GraphTopology(edges: graph.edges)) }
         }
 
         /// Ignores singleton components: `GenericQualityChecks.disconnectedNodes` warns about those.

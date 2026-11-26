@@ -145,11 +145,14 @@ struct Debug: ParsableCommand {
 struct Describe: ParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Print the self-describing Markdown document for a built-in notation",
-        discussion: "Example: vgraph describe --notation IBIS"
+        discussion: "Example: vgraph describe --notation IBIS, or vgraph describe --common"
     )
 
     @Option(name: .long, help: "Notation name (e.g. IBIS, Timeline, CLD, ConceptMap, …)")
-    var notation: String
+    var notation: String?
+
+    @Flag(name: .long, help: "Describe the checks every notation runs instead of one notation")
+    var common = false
 
     @Option(name: .long, help: "Optional custom title to use as the Markdown H1")
     var title: String?
@@ -157,11 +160,19 @@ struct Describe: ParsableCommand {
     @Option(name: .long, help: "Output file to write (default: stdout)")
     var output: String?
 
+    func validate() throws {
+        guard (notation != nil) != common else {
+            throw ValidationError("Give either --notation or --common")
+        }
+    }
+
     func run() throws {
-        guard let markdown = VGraphCLIApp().describeNotation(notation, title: title) else {
+        let app = VGraphCLIApp()
+        let described = common ? app.describeCommonChecks() : notation.flatMap { app.describeNotation($0, title: title) }
+        guard let markdown = described else {
             FileHandle.standardError.write(
                 Data(
-                    "Error: notation '\(notation)' has no Markdown self-description (is it a dynamic vnotation?)\n".utf8
+                    "Error: notation '\(notation ?? "")' has no Markdown self-description (is it a dynamic vnotation?)\n".utf8
                 ))
             throw ExitCode.failure
         }

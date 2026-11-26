@@ -205,7 +205,13 @@ extension Notations {
         // MARK: - Notation
 
         public static var step: TransformStep? { ArithmeticEvaluation.paintEqualsStep }
-        public static var qualityChecks: [QualityCheck] { [ArithmeticEvaluation.notEvaluableCheck] }
+        public static var qualityChecks: [QualityCheck] {
+            [
+                QualityCheck(
+                    "divisionByZero", rule: "A Divide never divides by zero.",
+                    findings: ArithmeticEvaluation.notEvaluableCheck)
+            ]
+        }
 
         public static var values: [TypeValues] {
             // Without `.presetLayout`, `effectiveNodeLayout(for:)` never reads the

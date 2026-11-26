@@ -66,8 +66,17 @@ A notation names the checks it wants, and many speak about the **shape of the
 whole graph** rather than about any one type: "this is a tree", "no node stands
 alone", "at most one edge between any two nodes". A [[Bound]] is the other kind of
 rule — a value on a type — and a check reports its violations too.
+
+Every check states its rule in one sentence of what good looks like, so a
+notation can tell a reader which rules it holds a diagram to before anything is
+drawn. Checks that run for every notation are told once, not per notation.
 *Avoid*: "criterion", "graph criterion" (the old name for a check on the whole
 graph).
+
+### Metric
+A measurement of one graph — a count, a ratio — that judges nothing. It is not a
+[[Quality check]]: a check states what good means, a metric only reports. Concept
+Map's concept-to-relation ratio is one.
 
 ### Quality report
 What one diagram got back: the messages every applicable [[Quality check]]

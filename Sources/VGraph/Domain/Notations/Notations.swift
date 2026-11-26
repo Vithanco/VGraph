@@ -113,6 +113,8 @@ public struct NotationEntry: @unchecked Sendable {
     public let namedQualityChecks: [QualityCheckSpec]
     /// Empty for dynamic notations: a `vnotation` names its checks, as `namedQualityChecks`.
     public let qualityChecks: [QualityCheck]
+    /// Reported beside the findings, but judging nothing, so no rule to list.
+    public let metrics: [GraphAnalysis<[MessageWithSeverity]>]
 }
 
 public struct ExtensionEntry: @unchecked Sendable {
@@ -138,6 +140,9 @@ public protocol NotationDeclaration: AddNotationBase {
     /// Named, unlike `qualityChecks`, so a command can ask whether one is in force
     /// before it offers something the check would then report (ADR-0011).
     static var namedQualityChecks: [QualityCheckSpec] { get }
+
+    /// [[Metric]]s: measurements reported with the findings, never checks.
+    static var metrics: [GraphAnalysis<[MessageWithSeverity]>] { get }
 }
 
 extension NotationDeclaration {
@@ -160,7 +165,8 @@ extension NotationDeclaration {
             baseId: nil,
             isDynamic: false,
             namedQualityChecks: namedQualityChecks,
-            qualityChecks: qualityChecks
+            qualityChecks: qualityChecks,
+            metrics: metrics
         )
     }
 
@@ -191,6 +197,8 @@ extension NotationDeclaration {
     public static var qualityChecks: [QualityCheck] { [] }
 
     public static var namedQualityChecks: [QualityCheckSpec] { [] }
+
+    public static var metrics: [GraphAnalysis<[MessageWithSeverity]>] { [] }
 }
 
 /// Supplements an existing notation for infrastructure purposes (group folding,
@@ -257,8 +265,21 @@ extension Notations {
         [notationTransformsStep, FoldGroups.foldStep, FoldGroups.bundleStep, groupFrameStep]
     }
 
-    public static func notationQualityChecks(for notationName: String) -> [QualityCheck] {
-        NotationRegistry.entry(for: notationName)?.qualityChecks ?? []
+    /// Checks and metrics alike: both report beside the findings.
+    private static func notationAnalyses(for notationName: String) -> [GraphAnalysis<[MessageWithSeverity]>] {
+        guard let entry = NotationRegistry.entry(for: notationName) else { return [] }
+        return entry.qualityChecks.map { $0.findings } + entry.metrics
+    }
+
+    /// What a notation holds a diagram to, one sentence each: the checks it names,
+    /// its own, where each detail type belongs, and its bounds. The checks every
+    /// notation runs are not repeated here.
+    public static func rules(of entry: NotationEntry) -> [String] {
+        let named = entry.namedQualityChecks.filter { !GenericQualityChecks.runsAlways($0) }
+            .compactMap { try? QualityCheckRegistry.resolve($0) }
+        let graph = (try? VGraph().placing(entry.content, in: .builtin)) ?? VGraph()
+        return (named + entry.qualityChecks).map { $0.rule } + GenericQualityChecks.containmentRules(in: graph)
+            + Bound.rules(in: graph)
     }
 
     /// The named quality checks in force for `graph`: a `vnotation`'s own list when it
@@ -281,16 +302,16 @@ extension Notations {
             .map(resolvedOrReported)
         // A `vnotation` that names its own checks replaces the compiled notation's.
         let notationChecks =
-            graph.notationDefinition.declaredQualityChecks.isEmpty ? notationQualityChecks(for: graph.notationName) : []
+            graph.notationDefinition.declaredQualityChecks.isEmpty ? notationAnalyses(for: graph.notationName) : []
         let checks = namedChecks + notationChecks
         return QualityReport(messages: GenericQualityChecks.analyze(graph) + checks.flatMap { $0(graph) })
     }
 
     /// A name that resolves to nothing is the author's mistake, not the diagram's:
     /// it is reported beside the other findings and the diagram still renders.
-    private static func resolvedOrReported(_ spec: QualityCheckSpec) -> QualityCheck {
+    private static func resolvedOrReported(_ spec: QualityCheckSpec) -> GraphAnalysis<[MessageWithSeverity]> {
         do {
-            return try QualityCheckRegistry.resolve(spec)
+            return try QualityCheckRegistry.resolve(spec).findings
         } catch {
             let message: String
             if case .parsingError(let text) = error { message = text } else { message = error.description }

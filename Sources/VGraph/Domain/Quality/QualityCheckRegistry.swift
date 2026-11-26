@@ -46,10 +46,10 @@ public enum QualityCheckRegistry {
     /// two cannot drift.
     private static var checks: [(name: String, make: Make)] {
         [
-            ("treeStructure", { _ in treeStructureCheck }),
-            alwaysRun(GenericQualityChecks.namedDisconnectedNodes),
-            ("noParallelEdges", { _ in noParallelEdgesCheck }),
-            alwaysRun(GenericQualityChecks.namedRedundantJunctor),
+            ("treeStructure", { _ in treeStructure }),
+            alwaysRun(GenericQualityChecks.disconnectedNodesCheck),
+            ("noParallelEdges", { _ in noParallelEdges }),
+            alwaysRun(GenericQualityChecks.redundantJunctorCheck),
             (
                 "exactlyOne",
                 { (spec: QualityCheckSpec) throws(VError) -> QualityCheck in
@@ -82,9 +82,12 @@ public enum QualityCheckRegistry {
         ]
     }
 
-    private static func alwaysRun(_ named: GenericQualityChecks.NamedCheck) -> (name: String, make: Make) {
-        (named.name, { _ in named.check })
+    private static func alwaysRun(_ check: QualityCheck) -> (name: String, make: Make) {
+        (check.name, { _ in check })
     }
+
+    /// Every name a `qualityCheck:` may give.
+    public static var names: [String] { checks.map { $0.name } }
 
     public static func resolve(_ spec: QualityCheckSpec) throws(VError) -> QualityCheck {
         guard let check = checks.first(where: { $0.name == spec.name }) else {
@@ -95,6 +98,16 @@ public enum QualityCheckRegistry {
     }
 
     // MARK: - Check implementations
+
+    static var treeStructure: QualityCheck {
+        QualityCheck("treeStructure", rule: "Every node has at most one parent.", findings: treeStructureCheck)
+    }
+
+    static var noParallelEdges: QualityCheck {
+        QualityCheck(
+            "noParallelEdges", rule: "At most one edge joins two nodes in the same direction.",
+            findings: noParallelEdgesCheck)
+    }
 
     /// Warns if any node has more than one incoming edge (tree structure violation).
     static func treeStructureCheck(_ graph: VGraph) -> [MessageWithSeverity] {
@@ -137,7 +150,7 @@ public enum QualityCheckRegistry {
 
     /// Error if the count of nodes with the given type name is not exactly 1.
     static func exactlyOneCheck(nodeTypeName: String) -> QualityCheck {
-        return { graph in
+        QualityCheck("exactlyOne", rule: "A diagram has exactly one \(nodeTypeName).") { graph in
             let count = nodeCount(ofTypeNamed: nodeTypeName, in: graph)
             if count == 0 {
                 return [
@@ -160,7 +173,7 @@ public enum QualityCheckRegistry {
 
     /// Warns if the count of nodes with the given type name is outside [min, max].
     static func nodeCountRangeCheck(nodeTypeName: String, min: Int, max: Int) -> QualityCheck {
-        return { graph in
+        QualityCheck("nodeCountRange", rule: "A diagram has between \(min) and \(max) \(nodeTypeName) nodes.") { graph in
             let count = nodeCount(ofTypeNamed: nodeTypeName, in: graph)
             if count < min || count > max {
                 return [
@@ -178,11 +191,11 @@ public enum QualityCheckRegistry {
         graph.nodes(ofType: NodeType(rawValue: name)).count
     }
 
-    /// Warns if any label among `nodes` has more than maxWords words.
-    static func labelLengthCheck(maxWords: Int, among nodes: @escaping (VGraph) -> [Node] = { $0.nodes })
-        -> QualityCheck
-    {
-        return { graph in
+    /// Warns if any label among `nodes` has more than maxWords words; `noun` names them in the rule.
+    static func labelLengthCheck(
+        maxWords: Int, of noun: String = "node", among nodes: @escaping (VGraph) -> [Node] = { $0.nodes }
+    ) -> QualityCheck {
+        QualityCheck("labelLength", rule: "Every \(noun)'s label has at most \(maxWords) words.") { graph in
             nodes(graph).compactMap { node in
                 guard let label: String = try? graph.get(node: node, attribute: Attributes.Node.label) else { return nil }
                 let wordCount = label.split(separator: " ").count

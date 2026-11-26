@@ -32,6 +32,11 @@ public struct VGraphApplication<Ports: AppPorts> {
         return NotationMarkdown.render(entry: entry, displayTitle: title ?? notation)
     }
 
+    /// What every notation checks, as Markdown: the list a notation's own leaves out.
+    public func describeCommonChecks() -> String {
+        NotationMarkdown.renderCommonChecks()
+    }
+
     /// Render targets only — `VGLExporter` refuses the transformed graph this produces.
     public func exportGraph(_ input: String, using exporter: some ForExportAGraph) throws(VError)
         -> String

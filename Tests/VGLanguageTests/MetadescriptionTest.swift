@@ -33,6 +33,21 @@ private enum Architecture: NotationDeclaration {
     }
 }
 
+/// Nothing to check beyond what every notation runs.
+private enum Plain: NotationDeclaration {
+    static let id: Identifier<Notation> = .init(rawValue: "Plain")
+    static let item = NodeType(rawValue: "Item")
+
+    struct NodeTypes: NotationNodeTypes {
+        static var all: [NodeType] { [item] }
+        static var allDefinitions: [NodeTypeDefinition] { [NodeTypeDefinition(item, description: "A thing")] }
+    }
+
+    struct EdgeTypes: NotationEdgeTypes {
+        static var all: [EdgeType] { [] }
+    }
+}
+
 @Suite
 struct MetadescriptionTest {
     let app = VGraphApplication(ports: ParseOnlyPorts(logger: NoOpLogger()))
@@ -137,6 +152,47 @@ struct MetadescriptionTest {
         #expect(!markdown.contains("| Database | |"))
         // An assistant reading only the names would not know how a detailed node is written.
         #expect(markdown.contains("`group <id>: <NodeType> \"<label>\" { … }`"))
+    }
+
+    // MARK: - What Vithanco checks
+
+    @Test
+    func aDescriptionListsTheRulesItChecks() {
+        let markdown = NotationMarkdown.render(entry: Notations.Ibis.entry)
+        #expect(
+            markdown.contains(
+                """
+                ## What Vithanco checks
+
+                - At most one edge joins two nodes in the same direction.
+                - Every node has at most one parent.
+                - Every Question has at least one Answer.
+
+                """))
+    }
+
+    /// Detailings are rules too: a Database belongs inside a System only.
+    @Test
+    func aDescriptionListsWhereEachDetailTypeBelongs() {
+        let markdown = NotationMarkdown.render(entry: Architecture.entry)
+        #expect(markdown.contains("- A Container belongs inside a System or Container."))
+        #expect(markdown.contains("- A Database belongs inside a System."))
+    }
+
+    /// The section is always there, so a page that shows it never looks forgotten.
+    @Test
+    func aNotationWithNoRulesOfItsOwnSaysSo() {
+        let markdown = NotationMarkdown.render(entry: Plain.entry)
+        #expect(markdown.contains("## What Vithanco checks\n\nOnly the checks every notation runs.\n"))
+    }
+
+    @Test
+    func theChecksEveryNotationRunsAreDescribedOnce() {
+        let markdown = app.describeCommonChecks()
+        #expect(markdown.hasPrefix("# Checks every notation runs\n"))
+        #expect(markdown.contains("## What Vithanco checks\n\n- "))
+        #expect(markdown.contains("- Every node is connected to at least one other.\n"))
+        #expect(markdown.contains("- A nested element sits inside a type that details it.\n"))
     }
 
     @Test

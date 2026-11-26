@@ -149,7 +149,11 @@ extension Notations {
         // MARK: - Quality Checks
 
         public static var qualityChecks: [QualityCheck] {
-            [QualityCheckRegistry.exactlyOneCheck(nodeTypeName: NodeTypes.goal.id), csfCount]
+            [
+                QualityCheckRegistry.exactlyOneCheck(nodeTypeName: NodeTypes.goal.id),
+                QualityCheck(
+                    "csfCount", rule: "A Goal Tree has between 3 and 5 Critical Success Factors.", findings: csfCount),
+            ]
         }
 
         /// Recommended: 3-5 Critical Success Factors.

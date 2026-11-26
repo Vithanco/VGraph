@@ -177,7 +177,11 @@ extension Notations {
         /// Nesting and orphans are the engine's containment and disconnected-node
         /// checks, which every notation gets.
         public static var qualityChecks: [QualityCheck] {
-            [unlabeledRelationship]
+            [
+                QualityCheck(
+                    "unlabeledRelationship", rule: "Every relationship has a label saying what it is for.",
+                    findings: unlabeledRelationship)
+            ]
         }
 
         /// c4model.com's checklist: every arrow has a label stating its purpose.

@@ -174,7 +174,11 @@ extension Notations {
         // MARK: - Quality Checks
 
         public static var qualityChecks: [QualityCheck] {
-            [QualityCheckRegistry.treeStructureCheck, unansweredQuestions]
+            [
+                QualityCheckRegistry.treeStructure,
+                QualityCheck(
+                    "unansweredQuestions", rule: "Every Question has at least one Answer.", findings: unansweredQuestions),
+            ]
         }
 
         /// Every Question should have at least one Answer.

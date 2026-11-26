@@ -47,6 +47,16 @@ extension GenericQualityChecks {
             about: member)
     }
 
+    /// The rule as it holds in one notation: where each of its detail types belongs.
+    public static func containmentRules(in graph: VGraph) -> [String] {
+        graph.nodeTypes.compactMap { detailType in
+            let holders = graph.typesDetailed(by: detailType)
+            guard !holders.isEmpty else { return nil }
+            return "\(withArticle(detailType.description, capitalised: true)) belongs inside "
+                + "\(withArticle(listed(holders, joinedBy: "or")))."
+        }
+    }
+
     private static func warning(_ message: String, about member: Member) -> MessageWithSeverity {
         MessageWithSeverity(message: message, severity: .warning, target: .node(member.id))
     }

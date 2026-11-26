@@ -42,6 +42,55 @@ public enum Bound {
     }
 }
 
+extension Bound {
+
+    /// Each bound the notation declares, as a sentence naming its types.
+    public static func rules(in graph: VGraph) -> [String] {
+        graph.edgeTypes.flatMap { rules(of: $0, in: graph) } + graph.nodeTypes.flatMap { rules(of: $0, in: graph) }
+    }
+
+    private static func rules(of edgeType: EdgeType, in graph: VGraph) -> [String] {
+        let bounds = EdgeTypeBounds(of: edgeType, in: graph)
+        let name = "\"\(edgeType.id.description)\""
+        let from = withArticle(edgeType.from.description, capitalised: true)
+        let to = withArticle(edgeType.to.description, capitalised: true)
+        return [
+            Range(bounds.outDegreeMin, bounds.outDegreeMax).map { "\(from) has \($0.count) outgoing \(name) \($0.edges)." },
+            Range(bounds.inDegreeMin, bounds.inDegreeMax).map { "\(to) has \($0.count) incoming \(name) \($0.edges)." },
+            Range(bounds.samePairMin, bounds.samePairMax).map {
+                "\(from) and \(withArticle(edgeType.to.description)) are joined by \($0.count) \(name) \($0.edges)."
+            },
+        ].compactMap { $0 }
+    }
+
+    private static func rules(of nodeType: NodeType, in graph: VGraph) -> [String] {
+        let bounds = NodeTypeBounds(of: nodeType, in: graph)
+        let type = withArticle(nodeType.description, capitalised: true)
+        return [
+            Range(bounds.outDegreeMin, bounds.outDegreeMax).map { "\(type) has \($0.count) outgoing \($0.edges)." },
+            Range(bounds.inDegreeMin, bounds.inDegreeMax).map { "\(type) has \($0.count) incoming \($0.edges)." },
+        ].compactMap { $0 }
+    }
+
+    /// A minimum of 0 requires nothing, so it is not said.
+    private struct Range {
+        let count: String
+        let edges: String
+
+        init?(_ min: Int, _ max: Int) {
+            let hasMin = Bound.isStated(min) && min > 0
+            let hasMax = Bound.isStated(max)
+            switch (hasMin, hasMax) {
+            case (false, false): return nil
+            case (true, false): count = "at least \(min)"
+            case (false, true): count = "at most \(max)"
+            case (true, true): count = min == max ? "exactly \(min)" : "between \(min) and \(max)"
+            }
+            edges = (hasMax ? max : min) == 1 ? "edge" : "edges"
+        }
+    }
+}
+
 extension GenericQualityChecks {
 
     /// Report every declared [[Bound]] the graph breaks.
