@@ -74,9 +74,11 @@ public enum VSVGGraph {
     static func captionBaseline(center: VPoint, block: VSize, atTop: Bool, font: VFont) -> Double {
         let lineHeight = font.size * 1.2
         let lineCenter =
-            block.height <= 0 ? center.y
-            : atTop ? center.y - block.height / 2 + lineHeight / 2
-            : center.y + block.height / 2 - lineHeight / 2
+            block.height <= 0
+            ? center.y
+            : atTop
+                ? center.y - block.height / 2 + lineHeight / 2
+                : center.y + block.height / 2 - lineHeight / 2
         return lineCenter + font.size * 0.35
     }
 

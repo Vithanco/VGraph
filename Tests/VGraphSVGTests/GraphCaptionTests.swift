@@ -52,7 +52,8 @@ struct GraphCaptionTests {
                 edge q -> a;
                 edge q -> b;
             }
-            """).svg
+            """
+        ).svg
         let viewBox = try #require(svg.firstMatch(of: #/viewBox="([-0-9.]+) ([-0-9.]+) ([-0-9.]+) ([-0-9.]+)"/#))
         let bottom = try #require(Double(viewBox.output.2)) + #require(Double(viewBox.output.4))
         let margin = 50.0
