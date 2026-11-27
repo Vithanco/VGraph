@@ -75,7 +75,8 @@ func performRender() {
 /// The curve the stylesheet moves nodes along — see `glideCurve`.
 private var frameEasing: Animation {
     .bezier(
-        x1: 1.0 / 3, y1: Float(glideCurve.y1), x2: 2.0 / 3, y2: Float(glideCurve.y2),
+        x1: Float(glideCurve.x1), y1: Float(glideCurve.y1),
+        x2: Float(glideCurve.x2), y2: Float(glideCurve.y2),
         duration: glideSeconds)
 }
 

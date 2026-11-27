@@ -125,8 +125,8 @@ design discussion started early but landed last.
    Components, not runtime-known tags.
 4. **elementary: attribute factories.** Typed `dx`/`dy` and any other gaps.
    Trivial; good first contribution.
-5. **elementary-ui: a bezier timing curve that honours x1 and x2.**
-   `UnitCurve.bezier` evaluates y at the parameter instead of solving for the
+5. **elementary-ui: a bezier timing curve that honours x1 and x2.** *Landed
+   as elementary-ui#164, released in 0.9.2.* `UnitCurve.bezier` evaluates y at the parameter instead of solving for the
    parameter at which x is the elapsed time, so `.easeInOut` and every custom
    curve differ from their CSS namesakes. Found 2026-11-15; small and
    self-contained. *Unlocks:* any curve for the frame, not only the one both
@@ -208,10 +208,9 @@ not what a large diagram waits for.
   so a first mount is fitted in the frame it appears in.
 
   Two things follow from two clocks moving one picture. The curve has to be
-  one both evaluate alike, and ElementaryUI's bezier ignores its x control
-  points (it evaluates by parameter, not by time), so the shared curve fixes
-  them at 1/3 and 2/3, where that is the same curve the browser draws. And
-  nothing synchronises the two clocks: measured on the optimized build, frame
+  one both evaluate alike, which since ElementaryUI 0.9.2 (upstream PR 5) is
+  any `cubic-bezier`; before it, only one with x control points at 1/3 and
+  2/3 was. And nothing synchronises the two clocks: measured on the optimized build, frame
   and nodes stay within 2 % of each other's progress on diagrams of 8 and 40
   nodes, and drift up to 9 % apart on one of 120, whose render takes 46 ms.
 

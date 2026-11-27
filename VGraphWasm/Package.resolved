@@ -1,5 +1,5 @@
 {
-  "originHash" : "eb5891fe16b7295bf3da4c5a94faa2bb1172647813f1d67a14d662468bc2cbc4",
+  "originHash" : "c810be41869f5d777759cf31d661d3c80fcc40b618ac7a102e7b4a40e7de2690",
   "pins" : [
     {
       "identity" : "carton",
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/elementary-swift/elementary-ui.git",
       "state" : {
-        "revision" : "5af2801481fbf148c085b0a1af8a044f85bac6fa",
-        "version" : "0.9.1"
+        "revision" : "fcb3fbb7a8a5ff3e4d636d97e81f24bc48491af8",
+        "version" : "0.9.2"
       }
     },
     {
@@ -62,15 +62,6 @@
       "state" : {
         "revision" : "88754449ab766a739610b660e117762115fabc9c",
         "version" : "1.7.6"
-      }
-    },
-    {
-      "identity" : "swift-log",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-log.git",
-      "state" : {
-        "revision" : "a878e7f8f46cfc0e1125e565b5c08e7d5272dc9a",
-        "version" : "1.14.0"
       }
     },
     {

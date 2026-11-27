@@ -6,13 +6,10 @@
 /// How long a redraw takes to settle, and along which curve. One of each for
 /// the CSS that moves nodes and lines and for the easing of the frame they move
 /// in (`frameEasing`), which have to stay together the whole way.
-///
-/// The curve's x control points are 1/3 and 2/3 on purpose: ElementaryUI
-/// evaluates a bezier by its parameter rather than by time, and only with
-/// those two is that the curve the browser draws.
 let glideSeconds = 0.25
-let glideCurve = (y1: 0.0, y2: 1.0)
-private let glideCSS = "\(glideSeconds)s cubic-bezier(0.3333,\(glideCurve.y1),0.6667,\(glideCurve.y2))"
+let glideCurve = (x1: 1.0 / 3, y1: 0.0, x2: 2.0 / 3, y2: 1.0)
+private let glideCSS =
+    "\(glideSeconds)s cubic-bezier(\(glideCurve.x1),\(glideCurve.y1),\(glideCurve.x2),\(glideCurve.y2))"
 
 /// Injected into `<head>`, out of the ElementaryUI-managed tree, so the
 /// reconciler never touches it. The root carries `.vg-dark` when dark.
