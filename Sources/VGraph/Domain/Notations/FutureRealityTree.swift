@@ -99,10 +99,12 @@ extension Notations {
                     NodeTypeDefinition(
                         given,
                         description:
-                            "A condition taken as fixed by the environment — present in the future reality regardless of the injected changes."),
+                            "A condition taken as fixed by the environment — present in the future reality regardless of the injected changes. Enters the tree without predecessors, like gravity.",
+                        alsoCalled: ["Precondition"]),
                     NodeTypeDefinition(
                         changeable,
-                        description: "An injection — a proposed change or action introduced into the system to drive the desired future state."),
+                        description: "An injection — a proposed change or action introduced into the system to drive the desired future state.",
+                        alsoCalled: ["Injection"]),
                     NodeTypeDefinition(
                         andJunctor,
                         description: "Conjunctive cause — all inputs must be present together to produce the downstream effect."),

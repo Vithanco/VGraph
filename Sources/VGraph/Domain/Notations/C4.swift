@@ -85,13 +85,15 @@ extension Notations {
                         softwareSystem, description: "Something that delivers value to its users, owned by one team.",
                         detailedBy: [container, database]),
                     NodeTypeDefinition(
-                        container, description: "A separately deployable or runnable unit: an application or a service.",
+                        container,
+                        description:
+                            "A separately deployable or runnable unit: an application or a service, such as a web app, an API or a mobile app.",
                         detailedBy: [component]),
                     NodeTypeDefinition(
                         component, description: "A grouping of related functionality behind a well-defined interface.",
                         detailedBy: [codeElement]),
                     NodeTypeDefinition(codeElement, description: "A class, interface, function or table that implements a component."),
-                    NodeTypeDefinition(database, description: "A container that stores data: a database, schema or file store."),
+                    NodeTypeDefinition(database, description: "A container that stores data: a database, schema or file store. Drawn as a cylinder."),
                 ]
             }
         }

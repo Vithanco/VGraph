@@ -82,7 +82,7 @@ extension Notations {
                     NodeTypeDefinition(
                         undesirableEffect,
                         description:
-                            "An obstacle or resistance condition that must be overcome before the next action can succeed. Grounds the plan in observable reality."
+                            "A current-state problem the plan sets out to eliminate. Tracks what the actions are meant to remove."
                     ),
                     NodeTypeDefinition(
                         intermediateEffect,
@@ -96,12 +96,13 @@ extension Notations {
                     NodeTypeDefinition(
                         given,
                         description:
-                            "A condition already present in the environment that enables or constrains the planned actions — not itself an action."),
+                            "A condition already present in the environment that enables or constrains the planned actions — not itself an action. Enters the tree without predecessors, like gravity.",
+                        alsoCalled: ["Precondition"]),
                     NodeTypeDefinition(
                         changeable,
                         description:
-                            "A concrete action taken by the implementer. The primary building block of the Transition Tree — actions drive all subsequent effects."
-                    ),
+                            "A concrete action taken by the implementer. The primary building block of the Transition Tree — actions drive all subsequent effects.",
+                        alsoCalled: ["Action"]),
                     NodeTypeDefinition(
                         andJunctor,
                         description: "Conjunctive cause — all inputs must be present together to produce the downstream effect."),
@@ -156,16 +157,16 @@ extension Notations {
                 return [
                     EdgeTypeDefinition(
                         undesirableCausesUndesirable,
-                        description: "Sufficient cause — an obstacle or resistance condition drives another obstacle."),
+                        description: "Sufficient cause — one current problem drives another."),
                     EdgeTypeDefinition(
                         undesirableCausesIntermediate,
-                        description: "Sufficient cause — an obstacle, once overcome, leads to an Intermediate Effect."),
+                        description: "Sufficient cause — a current problem leads to an Intermediate Effect."),
                     EdgeTypeDefinition(
                         undesirableCausesDesirable,
-                        description: "Sufficient cause — overcoming an obstacle directly produces the target Desirable Effect."),
+                        description: "Sufficient cause — a current problem leads to a Desirable Effect."),
                     EdgeTypeDefinition(
                         intermediateCausesUndesirable,
-                        description: "Sufficient cause — an action's result reveals or triggers another obstacle to address."),
+                        description: "Sufficient cause — an action's result causes or keeps a current problem."),
                     EdgeTypeDefinition(
                         intermediateCausesIntermediate,
                         description: "Sufficient cause — one action result enables the next step in the implementation chain."),
@@ -175,7 +176,7 @@ extension Notations {
                     EdgeTypeDefinition(
                         desirableCausesUndesirable,
                         description:
-                            "Sufficient cause — reaching a target state exposes a further obstacle. Captures cascading implementation challenges."),
+                            "Sufficient cause — reaching a target state causes a further problem."),
                     EdgeTypeDefinition(
                         desirableCausesIntermediate,
                         description: "Sufficient cause — one Desirable Effect enables a further intermediate step."),
@@ -184,7 +185,7 @@ extension Notations {
                         description: "Sufficient cause — one Desirable Effect reinforces or leads to another. A virtuous-cycle step."),
                     EdgeTypeDefinition(
                         givenCausesUndesirable,
-                        description: "Sufficient cause — a pre-existing environmental condition gives rise to an obstacle."),
+                        description: "Sufficient cause — a pre-existing environmental condition gives rise to a current problem."),
                     EdgeTypeDefinition(
                         givenCausesIntermediate,
                         description: "Sufficient cause — a pre-existing condition contributes to an Intermediate Effect."),
@@ -193,7 +194,7 @@ extension Notations {
                         description: "Sufficient cause — a pre-existing condition contributes to a Desirable Effect."),
                     EdgeTypeDefinition(
                         changeableCausesUndesirable,
-                        description: "Sufficient cause — a concrete action encounters an obstacle. Documents expected resistance."),
+                        description: "Sufficient cause — a concrete action causes a problem. A negative branch to address."),
                     EdgeTypeDefinition(
                         changeableCausesIntermediate,
                         description: "Sufficient cause — a concrete action produces an Intermediate Effect. The primary implementation link."),
@@ -202,7 +203,8 @@ extension Notations {
                         description: "Sufficient cause — a concrete action directly produces the target Desirable Effect."),
                     EdgeTypeDefinition(
                         undesirableToAndJunctor,
-                        description: "An obstacle contributes to an AND junctor — all inputs required together to produce the downstream effect."),
+                        description:
+                            "A current problem contributes to an AND junctor — all inputs required together to produce the downstream effect."),
                     EdgeTypeDefinition(
                         intermediateToAndJunctor,
                         description: "An Intermediate Effect contributes to an AND junctor."),
@@ -217,7 +219,7 @@ extension Notations {
                         description: "A concrete action contributes to an AND junctor — combined with other inputs to produce the downstream effect."),
                     EdgeTypeDefinition(
                         andJunctorCausesUndesirable,
-                        description: "An AND junctor — when all inputs are present — produces an obstacle."),
+                        description: "An AND junctor — when all inputs are present — produces a current problem."),
                     EdgeTypeDefinition(
                         andJunctorCausesIntermediate,
                         description: "An AND junctor drives an Intermediate Effect when all inputs are present."),

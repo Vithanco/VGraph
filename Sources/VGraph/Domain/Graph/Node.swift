@@ -11,11 +11,14 @@ public struct NodeTypeDefinition: Sendable {
     public let description: String
     /// The types this type's nodes are detailed by (ADR-0032).
     public let detailedBy: [NodeType]
+    /// What the literature or an older edition calls this type.
+    public let alsoCalled: [String]
 
-    public init(_ nodeType: NodeType, description: String, detailedBy: [NodeType] = []) {
+    public init(_ nodeType: NodeType, description: String, detailedBy: [NodeType] = [], alsoCalled: [String] = []) {
         self.nodeType = nodeType
         self.description = description
         self.detailedBy = detailedBy
+        self.alsoCalled = alsoCalled
     }
 }
 

@@ -154,6 +154,33 @@ struct MetadescriptionTest {
         #expect(markdown.contains("`group <id>: <NodeType> \"<label>\" { … }`"))
     }
 
+    // MARK: - Node types
+
+    /// A page reader sees words, not identifiers; the metagraph shows what to type.
+    @Test
+    func nodeTypesAreNamedInWords() throws {
+        let c4 = try #require(app.describeNotation("C4"))
+        #expect(c4.contains("| Software System | "))
+        #expect(c4.contains("| Code Element | "))
+        let prt = try #require(app.describeNotation("PRT"))
+        #expect(prt.contains("| OR | "))
+    }
+
+    @Test
+    func otherNamesForANodeTypeGetTheirOwnColumn() throws {
+        let markdown = try #require(app.describeNotation("IBIS"))
+        #expect(markdown.contains("| Type | Also called | Description |"))
+        #expect(markdown.contains("| Answer | Idea | "))
+        #expect(markdown.contains("| Pro |  | "))
+    }
+
+    @Test
+    func noOtherNamesNoColumn() {
+        let markdown = NotationMarkdown.render(entry: Plain.entry)
+        #expect(markdown.contains("| Type | Description |\n"))
+        #expect(markdown.contains("| Item | A thing |\n"))
+    }
+
     // MARK: - What Vithanco checks
 
     @Test

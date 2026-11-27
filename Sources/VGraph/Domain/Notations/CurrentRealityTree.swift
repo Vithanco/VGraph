@@ -103,7 +103,8 @@ extension Notations {
                     NodeTypeDefinition(
                         given,
                         description:
-                            "A condition taken as fixed by the environment — not under the organisation's control and not a candidate for change."),
+                            "A condition taken as fixed by the environment — not under the organisation's control and not a candidate for change. Enters the tree without predecessors, like gravity.",
+                        alsoCalled: ["Precondition"]),
                     NodeTypeDefinition(
                         changeable,
                         description:

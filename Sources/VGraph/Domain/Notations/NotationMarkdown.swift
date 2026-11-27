@@ -12,10 +12,7 @@ public enum NotationMarkdown {
             nonEmpty(entry.description.trimmingWhitespace()).map { ["> \($0)"] },
             paragraph("Purpose", entry.purpose),
             bulletList("When to use", entry.whenToUse.map { $0.trimmingWhitespace() }.filter { !$0.isEmpty }),
-            Table(
-                heading: "Node types", intro: nil, header: ["Type", "Description"],
-                rows: entry.nodeTypeDefinitions.map { [$0.nodeType.id, escapeTableCell($0.description)] }
-            ).lines,
+            nodeTypesTable(entry.nodeTypeDefinitions),
             Table(
                 heading: "Edge types", intro: nil, header: ["From → To", "Meaning"],
                 rows: entry.edgeTypeDefinitions.map {
@@ -57,6 +54,33 @@ public enum NotationMarkdown {
     }
 
     private static let checksHeading = "What Vithanco checks"
+
+    private static func nodeTypesTable(_ definitions: [NodeTypeDefinition]) -> [String]? {
+        let hasOtherNames = definitions.contains { !$0.alsoCalled.isEmpty }
+        return Table(
+            heading: "Node types", intro: nil,
+            header: hasOtherNames ? ["Type", "Also called", "Description"] : ["Type", "Description"],
+            rows: definitions.map {
+                [inWords($0.nodeType.id)] + (hasOtherNames ? [$0.alsoCalled.joined(separator: ", ")] : [])
+                    + [escapeTableCell($0.description)]
+            }
+        ).lines
+    }
+
+    /// `CriticalSuccessFactor` → `Critical Success Factor`; a run of capitals (`OR`) stays one word.
+    private static func inWords(_ identifier: String) -> String {
+        let characters = Array(identifier)
+        var result = ""
+        for (index, character) in characters.enumerated() {
+            let previous = index > 0 ? characters[index - 1] : nil
+            let next = index + 1 < characters.count ? characters[index + 1] : nil
+            let startsWord =
+                character.isUppercase && previous.map { !$0.isUppercase || (next?.isLowercase ?? false) } ?? false
+            if startsWord { result.append(" ") }
+            result.append(character)
+        }
+        return result
+    }
 
     /// Always present, so a page showing it never looks forgotten.
     private static func checksSection(_ rules: [String]) -> [String] {

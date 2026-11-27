@@ -70,12 +70,12 @@ extension Notations {
                     NodeTypeDefinition(
                         benefit,
                         description:
-                            "An advantage gained by a stakeholder. Benefits are realised through changed business processes, not directly by the project."
+                            "An advantage gained by a stakeholder. Benefits are realised through changed business processes, not directly by the project. Ask: which benefits support the Investment Objective?"
                     ),
                     NodeTypeDefinition(
                         businessChange,
                         description:
-                            "A changed process that creates the expected benefit each time it is executed. The mechanism through which benefits are delivered."
+                            "A changed process that creates the expected benefit each time it is executed. The mechanism through which benefits are delivered. Ask: which processes create the benefit? They need not be formal, nor run more than once."
                     ),
                     NodeTypeDefinition(
                         enabler,

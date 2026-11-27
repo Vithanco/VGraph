@@ -79,11 +79,13 @@ extension Notations {
                     NodeTypeDefinition(
                         criticalSuccessFactor,
                         description:
-                            "A high-level outcome without which the Goal cannot be achieved. Typically 3 to 5 CSFs sit directly below the Goal."),
+                            "A high-level outcome without which the Goal cannot be achieved: one of the last things that must happen before it. Typically 3 to 5 CSFs sit directly below the Goal.",
+                        alsoCalled: ["CSF"]),
                     NodeTypeDefinition(
                         necessaryCondition,
                         description:
-                            "An indispensable task or prerequisite supporting a CSF or another NC. NCs cascade into multiple levels of increasing detail."
+                            "An indispensable task or prerequisite supporting a CSF or another NC. NCs cascade into multiple levels of increasing detail, and may cross-connect between branches when one condition supports several.",
+                        alsoCalled: ["NC"]
                     ),
                 ]
             }

@@ -86,7 +86,9 @@ extension Notations {
                 return [
                     NodeTypeDefinition(
                         stock,
-                        description: "A quantity or state in the system. Stock values change over time based on incoming causal links.")
+                        description:
+                            "A quantity or state in the system. Stock values change over time based on incoming causal links. Vithanco does not simulate them."
+                    )
                 ]
             }
 

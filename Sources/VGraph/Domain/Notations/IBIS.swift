@@ -77,7 +77,8 @@ extension Notations {
                     ),
                     NodeTypeDefinition(
                         answer,
-                        description: "An idea or answer for a question. Answers are evaluated through pro and con arguments."),
+                        description: "An idea or answer for a question. Answers are evaluated through pro and con arguments.",
+                        alsoCalled: ["Idea"]),
                     NodeTypeDefinition(
                         pro,
                         description: "An argument in favour of an answer. Pros help evaluate and decide between competing answers."),

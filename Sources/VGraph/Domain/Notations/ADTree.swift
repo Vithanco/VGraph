@@ -84,7 +84,9 @@ extension Notations {
                         description: "A defender's countermeasure or sub-measure. Defense nodes can be refined and challenged by Attack nodes."),
                     NodeTypeDefinition(
                         andJunctor,
-                        description: "Conjunctive refinement — all connected child conditions must be met for the parent goal to be achieved."),
+                        description:
+                            "Conjunctive refinement — all connected child conditions must be met for the parent goal to be achieved. Without one, children are disjunctive: any one child suffices."
+                    ),
                 ]
             }
 

@@ -64,7 +64,7 @@ extension Notations {
                     NodeTypeDefinition(
                         timePoint,
                         description:
-                            "A marker on the time axis labelling a point in time (e.g., '1805', 'Q3 2025'). Defines the temporal structure of the diagram."
+                            "A marker on the time axis labelling a point in time (e.g., '1805', 'Q3 2025'). Defines the temporal structure of the diagram. Optional: `alignGroup` alone is enough to align events."
                     ),
                     NodeTypeDefinition(
                         event,

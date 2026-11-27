@@ -69,7 +69,7 @@ extension Notations {
 
             public static var allDefinitions: [NodeTypeDefinition] {
                 return [
-                    NodeTypeDefinition(number, description: "A value — either given, or filled in as a candidate answer."),
+                    NodeTypeDefinition(number, description: "A value — either given, or filled in as a candidate answer. Its label is its value."),
                     NodeTypeDefinition(
                         equals,
                         description:
