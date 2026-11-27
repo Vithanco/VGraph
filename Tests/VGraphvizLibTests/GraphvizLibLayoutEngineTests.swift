@@ -110,6 +110,30 @@ struct GraphvizLibLayoutEngineTests {
         #expect(aPos.y < bPos.y)
     }
 
+    // Neato is one only in the wasm build, which lacks IPSEPCOLA; circo is one everywhere.
+    @Test("An engine that never boxes a cluster gets the box round its members")
+    func clusterBoxOfAnEngineWithoutClusters() throws {
+        let dot = """
+            digraph {
+                subgraph cluster_g { a; b }
+                c
+                a -> b; b -> c; c -> a
+            }
+            """
+
+        let layout = try engine.computeLayout(dot: dot, engine: "circo")
+
+        let box = try #require(layout.groupLayouts["g"]).boundingBox
+        func inside(_ id: String) throws -> Bool {
+            let p = try #require(layout.nodePositions[id])
+            return box.origin.x <= p.x && p.x <= box.origin.x + box.size.width
+                && box.origin.y <= p.y && p.y <= box.origin.y + box.size.height
+        }
+        #expect(try inside("a"))
+        #expect(try inside("b"))
+        #expect(try !inside("c"))
+    }
+
     @Test("Cluster with cross-cluster edges is laid out correctly")
     func clusterWithCrossEdges() throws {
         // Regression: Graphviz WASM crashes with "table index is out of bounds" when using
