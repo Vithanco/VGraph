@@ -144,3 +144,20 @@ extension Notations {
     }
 
 }
+
+extension Notations.ImpactMapping {
+    public static var counterexamples: [Counterexample] {
+        [
+            Counterexample(
+                "noParallelEdges",
+                """
+                vgraph orders: ImpactMapping "Weekly orders" {
+                    node grow: Goal "Grow weekly orders by 10%";
+                    node returning: Actor "Returning customers";
+                    edge grow -> returning: goal_to_actor;
+                    edge grow -> returning: goal_to_actor;
+                }
+                """)
+        ]
+    }
+}

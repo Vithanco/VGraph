@@ -163,6 +163,22 @@ struct Describe: ParsableCommand {
     @Option(name: .long, help: "Output file to write (default: stdout)")
     var output: String?
 
+    @Option(name: .long, help: "markdown, or json: the rules alone, each with its counterexample")
+    var format: Format = .markdown
+
+    enum Format: String, ExpressibleByArgument {
+        case markdown, json
+    }
+
+    /// For a page that builds its own list: `{"rules": [{"rule", "check", "counterexample"}]}`.
+    static func json(of rules: [StatedRule]) throws -> String {
+        let objects = rules.map { rule in
+            ["rule": rule.rule, "check": rule.check, "counterexample": rule.counterexample].compactMapValues { $0 }
+        }
+        let data = try JSONSerialization.data(withJSONObject: ["rules": objects], options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
+        return String(decoding: data, as: UTF8.self)
+    }
+
     func validate() throws {
         guard [notation != nil, file != nil, common].filter({ $0 }).count == 1 else {
             throw ValidationError("Give one of --notation, --file or --common")
@@ -173,10 +189,16 @@ struct Describe: ParsableCommand {
         let app = VGraphCLIApp()
         let described: String?
         do {
-            if let file {
+            switch (format, file) {
+            case (.markdown, let file?):
                 described = try app.describeNotation(in: String(contentsOfFile: file, encoding: .utf8), title: title)
-            } else {
+            case (.markdown, nil):
                 described = common ? app.describeCommonChecks() : notation.flatMap { app.describeNotation($0, title: title) }
+            case (.json, let file?):
+                described = try Self.json(of: app.describeRules(in: String(contentsOfFile: file, encoding: .utf8)))
+            case (.json, nil):
+                described = try (common ? app.describeCommonRules() : notation.flatMap { app.describeRules($0) })
+                    .map(Self.json)
             }
         } catch {
             FileHandle.standardError.write(Data("Error: \(error)\n".utf8))

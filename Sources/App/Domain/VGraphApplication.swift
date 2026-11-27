@@ -43,6 +43,20 @@ public struct VGraphApplication<Ports: AppPorts> {
         NotationMarkdown.renderCommonChecks()
     }
 
+    /// The rules `describeNotation` lists, each with its counterexample, for a page
+    /// that links them; `nil` for a name the registry does not know.
+    public func describeRules(_ notation: String) -> [StatedRule]? {
+        NotationRegistry.entry(for: notation).map { Notations.statedRules(of: $0) }
+    }
+
+    public func describeRules(in source: String) throws(VError) -> [StatedRule] {
+        Notations.statedRules(in: try parseGraph(source))
+    }
+
+    public func describeCommonRules() -> [StatedRule] {
+        GenericQualityChecks.all.map { StatedRule(rule: $0.rule, check: $0.name, counterexample: nil) }
+    }
+
     /// Render targets only — `VGLExporter` refuses the transformed graph this produces.
     public func exportGraph(_ input: String, using exporter: some ForExportAGraph) throws(VError)
         -> String

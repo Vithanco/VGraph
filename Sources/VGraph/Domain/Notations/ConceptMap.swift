@@ -383,3 +383,122 @@ extension Notations {
     }
 
 }
+
+extension Notations.ConceptMap {
+    public static var counterexamples: [Counterexample] {
+        [
+            Counterexample(
+                "noParallelEdges",
+                """
+                vgraph plants: ConceptMap "Plants" {
+                    node plants: Concept "Plants"; node water: Concept "Water"; node sunlight: Concept "Sunlight";
+                    node soil: Concept "Soil"; node leaves: Concept "Leaves";
+                    node need: Relation "need"; node stores: Relation "stores"; node grow: Relation "grow";
+                    edge plants -> need; edge need -> water; edge need -> sunlight;
+                    edge soil -> stores; edge stores -> water;
+                    edge plants -> grow; edge grow -> leaves;
+                    edge soil -> stores;
+                }
+                """),
+            Counterexample(
+                "conceptCount",
+                """
+                vgraph plants: ConceptMap "Plants" {
+                    node plants: Concept "Plants"; node water: Concept "Water"; node sunlight: Concept "Sunlight";
+                    node need: Relation "need";
+                    edge plants -> need; edge need -> water; edge need -> sunlight;
+                }
+                """),
+            Counterexample(
+                "labelLength",
+                """
+                vgraph plants: ConceptMap "Plants" {
+                    node plants: Concept "Plants"; node water: Concept "Water"; node sunlight: Concept "Sunlight";
+                    node soil: Concept "Soil"; node leaves: Concept "Green leaves on branches";
+                    node need: Relation "need"; node stores: Relation "stores"; node grow: Relation "grow";
+                    edge plants -> need; edge need -> water; edge need -> sunlight;
+                    edge soil -> stores; edge stores -> water;
+                    edge plants -> grow; edge grow -> leaves;
+                }
+                """),
+            Counterexample(
+                "vagueRelations",
+                """
+                vgraph plants: ConceptMap "Plants" {
+                    node plants: Concept "Plants"; node water: Concept "Water"; node sunlight: Concept "Sunlight";
+                    node soil: Concept "Soil"; node leaves: Concept "Leaves";
+                    node need: Relation "need"; node stores: Relation "stores"; node grow: Relation "is related to";
+                    edge plants -> need; edge need -> water; edge need -> sunlight;
+                    edge soil -> stores; edge stores -> water;
+                    edge plants -> grow; edge grow -> leaves;
+                }
+                """),
+            Counterexample(
+                "disconnectedClusters",
+                """
+                vgraph plants: ConceptMap "Plants" {
+                    node plants: Concept "Plants"; node water: Concept "Water"; node sunlight: Concept "Sunlight";
+                    node soil: Concept "Soil"; node minerals: Concept "Minerals";
+                    node need: Relation "need"; node contains: Relation "contains";
+                    edge plants -> need; edge need -> water; edge need -> sunlight;
+                    edge soil -> contains; edge contains -> minerals;
+                }
+                """),
+            Counterexample(
+                "bothDirections",
+                """
+                vgraph plants: ConceptMap "Plants" {
+                    node plants: Concept "Plants"; node water: Concept "Water"; node sunlight: Concept "Sunlight";
+                    node soil: Concept "Soil"; node leaves: Concept "Leaves";
+                    node need: Relation "need"; node stores: Relation "stores"; node grow: Relation "grow";
+                    edge plants -> need; edge need -> water; edge need -> sunlight;
+                    edge soil -> stores; edge stores -> water;
+                    edge plants -> grow; edge grow -> leaves;
+                    node feeds: Relation "feeds"; node enrich: Relation "enrich";
+                    edge soil -> feeds; edge feeds -> plants;
+                    edge plants -> enrich; edge enrich -> soil;
+                }
+                """),
+            Counterexample(
+                "repeatedRelations",
+                """
+                vgraph plants: ConceptMap "Plants" {
+                    node plants: Concept "Plants"; node water: Concept "Water"; node sunlight: Concept "Sunlight";
+                    node soil: Concept "Soil"; node leaves: Concept "Leaves";
+                    node need: Relation "need"; node stores: Relation "stores"; node grow: Relation "grow";
+                    edge plants -> need; edge need -> water; edge need -> sunlight;
+                    edge soil -> stores; edge stores -> water;
+                    edge plants -> grow; edge grow -> leaves;
+                    node alsoNeed: Relation "need";
+                    edge leaves -> alsoNeed; edge alsoNeed -> water; edge alsoNeed -> sunlight;
+                }
+                """),
+            Counterexample(
+                "manyToMany",
+                """
+                vgraph plants: ConceptMap "Plants" {
+                    node plants: Concept "Plants"; node water: Concept "Water"; node sunlight: Concept "Sunlight";
+                    node soil: Concept "Soil"; node leaves: Concept "Leaves";
+                    node need: Relation "need"; node stores: Relation "stores"; node grow: Relation "grow";
+                    edge plants -> need; edge leaves -> need; edge need -> water; edge need -> sunlight;
+                    edge soil -> stores; edge stores -> water;
+                    edge plants -> grow; edge grow -> leaves;
+                }
+                """),
+            Counterexample(
+                "incompleteRelations",
+                """
+                vgraph plants: ConceptMap "Plants" {
+                    node plants: Concept "Plants"; node water: Concept "Water"; node sunlight: Concept "Sunlight";
+                    node soil: Concept "Soil"; node leaves: Concept "Leaves";
+                    node need: Relation "need"; node stores: Relation "stores"; node grow: Relation "grow";
+                    edge plants -> need; edge need -> water; edge need -> sunlight;
+                    edge soil -> stores; edge stores -> water;
+                    edge plants -> grow; edge grow -> leaves;
+                    node turnInto: Relation "turn into";
+                    edge leaves -> turnInto;
+                }
+                """),
+        ]
+    }
+}

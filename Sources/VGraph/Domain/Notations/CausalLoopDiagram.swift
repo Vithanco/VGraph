@@ -8,7 +8,13 @@ extension Notations {
         public static var step: TransformStep? { FeedbackLoop.recordStep }
 
         public static var qualityChecks: [QualityCheck] {
-            [QualityCheck("unmarkedLoops", rule: "Every feedback loop is marked.", findings: unmarkedLoops)]
+            [
+                QualityCheck(
+                    "unmarkedLoops", rule: "A diagram has no more loops than Vithanco can mark.",
+                    noCounterexampleBecause:
+                        "It fires only past the loop search's cap, which no diagram small enough to read reaches.",
+                    findings: unmarkedLoops)
+            ]
         }
 
         /// Past the cap only the shortest loops get a marker (ADR-0028); the
@@ -163,5 +169,22 @@ extension Notations {
                 ]),
             ]
         }
+    }
+}
+
+extension Notations.CausalLoopDiagram {
+    public static var counterexamples: [Counterexample] {
+        [
+            Counterexample(
+                "noParallelEdges",
+                """
+                vgraph shop: CLD "Pricing" {
+                    node price: Stock "Price";
+                    node demand: Stock "Demand";
+                    edge price -> demand: opposite;
+                    edge price -> demand: same;
+                }
+                """)
+        ]
     }
 }

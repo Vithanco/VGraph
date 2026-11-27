@@ -141,3 +141,25 @@ extension Notations {
     }
 
 }
+
+extension Notations.Timeline {
+    public static var counterexamples: [Counterexample] {
+        [
+            Counterexample(
+                "noParallelEdges",
+                """
+                vgraph rail: Timeline "Railways" {
+                    node t1825: TimePoint "1825" [alignGroup: "1825"]
+                    node t1850: TimePoint "1850" [alignGroup: "1850"]
+                    edge t1825 -> t1850: sequence
+                    group england "England" {
+                        node first: Event "First public railway opens" [alignGroup: "1825"]
+                        node boom: Event "Railway boom" [alignGroup: "1850"]
+                    }
+                    edge first -> boom: influence "led to"
+                    edge first -> boom: influence "led to"
+                }
+                """)
+        ]
+    }
+}

@@ -344,3 +344,22 @@ extension Notations {
     }
 
 }
+
+extension Notations.TransitionTree {
+    public static var counterexamples: [Counterexample] {
+        [
+            Counterexample(
+                "noParallelEdges",
+                """
+                vgraph standups: TRT "Daily standups" {
+                    node standup: Changeable "Introduce daily standups";
+                    node talk: IntermediateEffect "Teams talk every day";
+                    node together: DesirableEffect "Better team collaboration";
+                    edge standup -> talk: changeable_causes_intermediate;
+                    edge talk -> together: intermediate_causes_desirable;
+                    edge talk -> together: intermediate_causes_desirable;
+                }
+                """)
+        ]
+    }
+}

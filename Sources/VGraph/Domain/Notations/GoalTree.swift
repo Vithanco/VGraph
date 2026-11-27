@@ -174,3 +174,49 @@ extension Notations {
     }
 
 }
+
+extension Notations.GoalTree {
+    public static var counterexamples: [Counterexample] {
+        [
+            Counterexample(
+                "noParallelEdges",
+                """
+                vgraph cafe: GoalTree "Our café" {
+                    node goal: Goal "A café people return to";
+                    node coffee: CriticalSuccessFactor "Excellent coffee";
+                    node service: CriticalSuccessFactor "Friendly service";
+                    node seats: CriticalSuccessFactor "Comfortable seats";
+                    edge coffee -> goal: csf_to_goal;
+                    edge service -> goal: csf_to_goal;
+                    edge seats -> goal: csf_to_goal;
+                    edge seats -> goal: csf_to_goal;
+                }
+                """),
+            Counterexample(
+                "exactlyOne",
+                """
+                vgraph company: GoalTree "Company goals" {
+                    node revenue: Goal "Grow revenue";
+                    node costs: Goal "Cut costs";
+                    node customers: CriticalSuccessFactor "Win new customers";
+                    node prices: CriticalSuccessFactor "Raise prices";
+                    node suppliers: CriticalSuccessFactor "Renegotiate suppliers";
+                    edge customers -> revenue: csf_to_goal;
+                    edge prices -> revenue: csf_to_goal;
+                    edge suppliers -> costs: csf_to_goal;
+                }
+                """),
+            Counterexample(
+                "csfCount",
+                """
+                vgraph cafe: GoalTree "Our café" {
+                    node goal: Goal "A café people return to";
+                    node coffee: CriticalSuccessFactor "Excellent coffee";
+                    node service: CriticalSuccessFactor "Friendly service";
+                    edge coffee -> goal: csf_to_goal;
+                    edge service -> goal: csf_to_goal;
+                }
+                """),
+        ]
+    }
+}

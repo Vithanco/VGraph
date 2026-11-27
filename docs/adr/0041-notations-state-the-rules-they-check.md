@@ -26,14 +26,23 @@ told once (`describe --common`), not per notation. A [[Metric]] judges nothing,
 so it has no rule and is not listed.
 
 The website inlines this text at build time instead of writing its own. Each
-notation-specific check has a document that breaks it, and a test requires it
-to fire, so a published rule cannot outlive its check unnoticed.
+check a built-in notation runs has a [[Counterexample]], held by the notation
+because it is written in the notation's own types: a document that breaks that
+rule and no other. A test requires it to, so a published rule cannot outlive
+its check unnoticed, and the website shows readers the same document, so what
+they see flagged is what the test proved. A check no small document can break
+states why instead of carrying one.
 
 ## Consequences
 
 - Wording is the engine's, not the page's. Bound sentences read mechanically
   ("A Plus has at most 1 incoming "plus_first_operand" edge."); a hand-written
   sentence per bound is deferred until one reads badly enough to need it.
+- The Markdown lists rules only, because assistants read it through the MCP
+  server; `describe --format json` gives a page each rule with its
+  counterexample, and the page builds its own links.
+- A check a `vnotation` can name has no notation to hold its counterexample, so
+  it breaks on a document kept in its test instead.
 - A user-defined notation has no name outside the document that declares it,
   so it is described from that document (`describe --file`), and lists the
   rules of exactly the checks analysis runs on it.

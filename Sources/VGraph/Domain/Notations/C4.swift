@@ -206,3 +206,21 @@ extension Notations {
             cornerRadius: 8, borderDash: "8,4", borderColor: frameBorder, fill: frameFill)
     }
 }
+
+extension Notations.C4 {
+    public static var counterexamples: [Counterexample] {
+        [
+            Counterexample(
+                "unlabeledRelationship",
+                """
+                vgraph shop: C4 "Online shop" {
+                    node customer: Person "Customer";
+                    node shop: SoftwareSystem "Online Shop";
+                    node payments: SoftwareSystem "Payment Provider";
+                    edge customer -> shop "Places orders using";
+                    edge shop -> payments;
+                }
+                """)
+        ]
+    }
+}

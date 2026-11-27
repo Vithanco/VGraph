@@ -185,3 +185,20 @@ extension Notations {
     }
 
 }
+
+extension Notations.Bbs {
+    public static var counterexamples: [Counterexample] {
+        [
+            Counterexample(
+                "noParallelEdges",
+                """
+                vgraph support: BBS "Support" {
+                    node goal: InvestmentObjective "Answer every customer within a day";
+                    node faster: Benefit "Faster replies";
+                    edge faster -> goal: requires_benefit;
+                    edge faster -> goal: requires_benefit;
+                }
+                """)
+        ]
+    }
+}

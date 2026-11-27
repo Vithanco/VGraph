@@ -201,3 +201,20 @@ extension Notations {
     }
 
 }
+
+extension Notations.ADTree {
+    public static var counterexamples: [Counterexample] {
+        [
+            Counterexample(
+                "noParallelEdges",
+                """
+                vgraph accounts: ADTree "Customer accounts" {
+                    node private: Defense "Customer data stays private"
+                    node phishing: Attack "Phishing email"
+                    edge phishing -> private
+                    edge phishing -> private
+                }
+                """)
+        ]
+    }
+}

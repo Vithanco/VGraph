@@ -254,3 +254,23 @@ extension Notations {
     }
 
 }
+
+extension Notations.Arithmetic {
+    public static var counterexamples: [Counterexample] {
+        [
+            Counterexample(
+                "divisionByZero",
+                """
+                vgraph sweets: Arithmetic "Sharing sweets" {
+                    node sweets: Number "12";
+                    node friends: Number "0";
+                    node share: Divide;
+                    node each: Equals "4";
+                    edge sweets -> share: divide_first_operand;
+                    edge friends -> share: divide_second_operand;
+                    edge share -> each: divide_result;
+                }
+                """)
+        ]
+    }
+}

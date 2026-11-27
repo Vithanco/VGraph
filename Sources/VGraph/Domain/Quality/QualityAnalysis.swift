@@ -8,10 +8,17 @@ public struct QualityCheck {
     /// One sentence of what good looks like; published as written.
     public let rule: String
     public let findings: GraphAnalysis<[MessageWithSeverity]>
+    /// Set only when no small document can break the rule; a notation running the
+    /// check then owes no [[Counterexample]].
+    public let noCounterexampleBecause: String?
 
-    public init(_ name: String, rule: String, findings: @escaping GraphAnalysis<[MessageWithSeverity]>) {
+    public init(
+        _ name: String, rule: String, noCounterexampleBecause: String? = nil,
+        findings: @escaping GraphAnalysis<[MessageWithSeverity]>
+    ) {
         self.name = name
         self.rule = rule
+        self.noCounterexampleBecause = noCounterexampleBecause
         self.findings = findings
     }
 

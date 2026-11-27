@@ -355,3 +355,22 @@ extension Notations {
     }
 
 }
+
+extension Notations.CurrentRealityTree {
+    public static var counterexamples: [Counterexample] {
+        [
+            Counterexample(
+                "noParallelEdges",
+                """
+                vgraph support: CRT "Slow support" {
+                    node understaffed: Changeable "Support team is understaffed";
+                    node backlog: IntermediateEffect "Tickets pile up";
+                    node waiting: UndesirableEffect "Customers wait days for an answer";
+                    edge understaffed -> backlog: changeable_causes_intermediate;
+                    edge backlog -> waiting: intermediate_causes_undesirable;
+                    edge backlog -> waiting: intermediate_causes_undesirable;
+                }
+                """)
+        ]
+    }
+}

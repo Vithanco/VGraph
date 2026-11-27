@@ -130,3 +130,26 @@ extension Notations {
     }
 
 }
+
+extension Notations.DecisionTree {
+    public static var counterexamples: [Counterexample] {
+        [
+            Counterexample(
+                "noParallelEdges",
+                """
+                vgraph umbrella: DecisionTree "Umbrella" {
+                    node rain: DecisionPoint "Is rain forecast?";
+                    node yes: Choice "Yes";
+                    node no: Choice "No";
+                    node take: Outcome "Take the umbrella";
+                    node leave: Outcome "Leave it at home";
+                    edge rain -> yes: decision_to_choice;
+                    edge rain -> no: decision_to_choice;
+                    edge yes -> take: choice_to_outcome;
+                    edge yes -> take: choice_to_outcome;
+                    edge no -> leave: choice_to_outcome;
+                }
+                """)
+        ]
+    }
+}

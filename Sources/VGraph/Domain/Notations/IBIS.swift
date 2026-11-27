@@ -201,3 +201,42 @@ extension Notations {
     }
 
 }
+
+extension Notations.Ibis {
+    public static var counterexamples: [Counterexample] {
+        [
+            Counterexample(
+                "noParallelEdges",
+                """
+                vgraph offsite: IBIS "Team offsite" {
+                    node where: Question "Where should we hold the offsite?";
+                    node mountains: Answer "A lodge in the mountains";
+                    edge where -> mountains;
+                    edge where -> mountains;
+                }
+                """),
+            Counterexample(
+                "treeStructure",
+                """
+                vgraph laptops: IBIS "Laptops" {
+                    node hires: Question "Which laptop do new hires get?";
+                    node contractors: Question "Which laptop do contractors get?";
+                    node small: Answer "The 14-inch model";
+                    edge hires -> small;
+                    edge contractors -> small;
+                }
+                """),
+            Counterexample(
+                "unansweredQuestions",
+                """
+                vgraph release: IBIS "Release risk" {
+                    node risk: Question "How do we make Friday releases safer?";
+                    node staging: Answer "Add a staging week";
+                    node who: Question "Who runs the staging tests?";
+                    edge risk -> staging;
+                    edge staging -> who;
+                }
+                """),
+        ]
+    }
+}

@@ -217,3 +217,22 @@ extension Notations {
     }
 
 }
+
+extension Notations.PrerequisiteTree {
+    public static var counterexamples: [Counterexample] {
+        [
+            Counterexample(
+                "noParallelEdges",
+                """
+                vgraph launch: PRT "Product launch" {
+                    node launch: Objective "Launch the product by spring";
+                    node budget: Obstacle "Marketing budget not approved";
+                    node roi: IntermediateObjective "Show the board a return on investment";
+                    edge budget -> launch: obstacle_blocks_objective;
+                    edge roi -> budget: intermediate_objective_overcomes_obstacle;
+                    edge roi -> budget: intermediate_objective_overcomes_obstacle;
+                }
+                """)
+        ]
+    }
+}

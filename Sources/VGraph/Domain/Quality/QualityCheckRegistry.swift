@@ -109,11 +109,11 @@ public enum QualityCheckRegistry {
             findings: noParallelEdgesCheck)
     }
 
-    /// Warns if any node has more than one incoming edge (tree structure violation).
+    /// Counts parents, not edges: one parent drawn twice is `noParallelEdges`' finding.
     static func treeStructureCheck(_ graph: VGraph) -> [MessageWithSeverity] {
         let topology = GraphTopology(edges: graph.edges)
         return graph.nodes.compactMap { node in
-            let incomingCount = topology.incomingEdges(of: node).count
+            let incomingCount = Set(topology.incomingEdges(of: node).map { $0.from }).count
             guard incomingCount > 1 else { return nil }
             let typeName = ((try? graph.nodeType(for: node))?.id.description) ?? "Node"
             return MessageWithSeverity(

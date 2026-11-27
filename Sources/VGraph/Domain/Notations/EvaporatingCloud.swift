@@ -298,3 +298,22 @@ extension Notations {
     }
 
 }
+
+extension Notations.EvaporatingCloud {
+    public static var counterexamples: [Counterexample] {
+        [
+            Counterexample(
+                "noParallelEdges",
+                """
+                vgraph launch: EC "Launch or polish" {
+                    node succeed: CommonObjective "A product customers love";
+                    node early: Need "Reach customers early";
+                    node ship: Want "Ship the beta now";
+                    edge succeed -> early: objective_to_need;
+                    edge succeed -> early: objective_to_need;
+                    edge early -> ship: need_to_want;
+                }
+                """)
+        ]
+    }
+}

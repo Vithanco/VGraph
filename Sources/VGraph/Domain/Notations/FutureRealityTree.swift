@@ -346,3 +346,22 @@ extension Notations {
     }
 
 }
+
+extension Notations.FutureRealityTree {
+    public static var counterexamples: [Counterexample] {
+        [
+            Counterexample(
+                "noParallelEdges",
+                """
+                vgraph support: FRT "Faster support" {
+                    node hire: Changeable "Hire two support staff";
+                    node quick: IntermediateEffect "Tickets are answered the same day";
+                    node happy: DesirableEffect "Customers stay with us";
+                    edge hire -> quick: changeable_causes_intermediate;
+                    edge hire -> quick: changeable_causes_intermediate;
+                    edge quick -> happy: intermediate_causes_desirable;
+                }
+                """)
+        ]
+    }
+}

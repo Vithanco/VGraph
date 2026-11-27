@@ -225,6 +225,17 @@ struct MetadescriptionTest {
     @Test
     func anUnknownNotationHasNoDescription() {
         #expect(app.describeNotation("DoesNotExist") == nil)
+        #expect(app.describeRules("DoesNotExist") == nil)
+    }
+
+    /// For pages that link each rule to its counterexample.
+    @Test
+    func aNotationsRulesComeWithTheirCounterexamples() throws {
+        let rules = try #require(app.describeRules("IBIS"))
+        let unanswered = try #require(rules.first { $0.check == "unansweredQuestions" })
+        #expect(unanswered.rule == "Every Question has at least one Answer.")
+        #expect(unanswered.counterexample?.hasPrefix("vgraph ") == true)
+        #expect(app.describeCommonRules().contains { $0.rule == "Every node is connected to at least one other." })
     }
 
     // MARK: - A vnotation, described by the document that declares it

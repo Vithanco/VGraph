@@ -108,6 +108,28 @@ struct QualityCheckRuleTests {
         #expect(rules.contains("A Plus has at most 1 outgoing \"plus_result\" edge."))
     }
 
+    /// It fires on a drawing limit, not a modelling slip, and says so.
+    @Test("Causal Loop Diagram's loop check states the limit it guards")
+    func cldLoopRule() {
+        #expect(
+            Notations.rules(of: Notations.CausalLoopDiagram.entry) == [
+                "At most one edge joins two nodes in the same direction.",
+                "A diagram has no more loops than Vithanco can mark.",
+            ])
+    }
+
+    @Test("A rule from a check carries the check and its counterexample; a bound or nesting rule neither")
+    func statedRules() throws {
+        let entry = Notations.C4.entry
+        let stated = Notations.statedRules(of: entry)
+        #expect(stated.map { $0.rule } == Notations.rules(of: entry))
+        let labelled = try #require(stated.first { $0.check == "unlabeledRelationship" })
+        #expect(labelled.counterexample == entry.counterexamples.first { $0.check == "unlabeledRelationship" }?.source)
+        #expect(labelled.counterexample != nil)
+        let nesting = try #require(stated.first { $0.rule == "A Container belongs inside a SoftwareSystem." })
+        #expect(nesting.check == nil && nesting.counterexample == nil)
+    }
+
     // MARK: - How a bound reads
 
     private func conceptMap() throws(VError) -> VGraph {

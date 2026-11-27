@@ -115,6 +115,8 @@ public struct NotationEntry: @unchecked Sendable {
     public let qualityChecks: [QualityCheck]
     /// Reported beside the findings, but judging nothing, so no rule to list.
     public let metrics: [GraphAnalysis<[MessageWithSeverity]>]
+    /// Empty for dynamic notations.
+    public let counterexamples: [Counterexample]
 }
 
 public struct ExtensionEntry: @unchecked Sendable {
@@ -143,6 +145,9 @@ public protocol NotationDeclaration: AddNotationBase {
 
     /// [[Metric]]s: measurements reported with the findings, never checks.
     static var metrics: [GraphAnalysis<[MessageWithSeverity]>] { get }
+
+    /// One per check the notation runs, named or its own.
+    static var counterexamples: [Counterexample] { get }
 }
 
 extension NotationDeclaration {
@@ -166,7 +171,8 @@ extension NotationDeclaration {
             isDynamic: false,
             namedQualityChecks: namedQualityChecks,
             qualityChecks: qualityChecks,
-            metrics: metrics
+            metrics: metrics,
+            counterexamples: counterexamples
         )
     }
 
@@ -199,6 +205,8 @@ extension NotationDeclaration {
     public static var namedQualityChecks: [QualityCheckSpec] { [] }
 
     public static var metrics: [GraphAnalysis<[MessageWithSeverity]>] { [] }
+
+    public static var counterexamples: [Counterexample] { [] }
 }
 
 /// Supplements an existing notation for infrastructure purposes (group folding,
@@ -278,19 +286,43 @@ extension Notations {
     /// its own, where each detail type belongs, and its bounds. The checks every
     /// notation runs are not repeated here.
     public static func rules(of entry: NotationEntry) -> [String] {
-        let graph = (try? VGraph().placing(entry.content, in: .builtin)) ?? VGraph()
-        return rules(named: entry.namedQualityChecks, own: entry.qualityChecks, in: graph)
+        statedRules(of: entry).map { $0.rule }
     }
 
     /// The same for the notation `graph` is written in, a `vnotation` included:
     /// the rules of exactly the checks `analyzeQuality` runs on it.
     public static func rules(in graph: VGraph) -> [String] {
-        rules(named: namedQualityChecks(of: graph), own: compiledEntry(judging: graph)?.qualityChecks ?? [], in: graph)
+        statedRules(in: graph).map { $0.rule }
     }
 
-    private static func rules(named: [QualityCheckSpec], own: [QualityCheck], in graph: VGraph) -> [String] {
+    public static func statedRules(of entry: NotationEntry) -> [StatedRule] {
+        let graph = (try? VGraph().placing(entry.content, in: .builtin)) ?? VGraph()
+        return statedRules(
+            named: entry.namedQualityChecks, own: entry.qualityChecks, counterexamples: entry.counterexamples, in: graph)
+    }
+
+    /// A `vnotation` that names its own checks has no counterexamples: it has no
+    /// notation code to hold them.
+    public static func statedRules(in graph: VGraph) -> [StatedRule] {
+        let compiled = compiledEntry(judging: graph)
+        return statedRules(
+            named: namedQualityChecks(of: graph), own: compiled?.qualityChecks ?? [],
+            counterexamples: compiled?.counterexamples ?? [], in: graph)
+    }
+
+    private static func statedRules(
+        named: [QualityCheckSpec], own: [QualityCheck], counterexamples: [Counterexample], in graph: VGraph
+    ) -> [StatedRule] {
         let resolved = named.filter { !GenericQualityChecks.runsAlways($0) }.compactMap { try? QualityCheckRegistry.resolve($0) }
-        return (resolved + own).map { $0.rule } + GenericQualityChecks.containmentRules(in: graph) + Bound.rules(in: graph)
+        let checked = (resolved + own).map { check in
+            StatedRule(
+                rule: check.rule, check: check.name,
+                counterexample: counterexamples.first { $0.check == check.name }?.source)
+        }
+        let structural = (GenericQualityChecks.containmentRules(in: graph) + Bound.rules(in: graph)).map {
+            StatedRule(rule: $0, check: nil, counterexample: nil)
+        }
+        return checked + structural
     }
 
     /// The named quality checks in force for `graph`: a `vnotation`'s own list when it
