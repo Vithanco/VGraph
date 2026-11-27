@@ -3,8 +3,8 @@ import Testing
 
 @testable import VGraph
 
-/// `treeStructure` counts edges, not distinct parents: two links from the same
-/// node still make two parents. `noParallelEdges` is the check for that case.
+/// `treeStructure` counts distinct parents, not edges: two links from the same
+/// node are one parent drawn twice, which is `noParallelEdges`' finding.
 @Suite("treeStructure")
 struct TreeStructureCheckTests {
 
@@ -42,10 +42,10 @@ struct TreeStructureCheckTests {
         #expect(messages.first?.message == "Stock \"C\" has 2 parent nodes (tree structure expects at most 1)")
     }
 
-    @Test("Two edges from one parent count twice")
-    func parallelEdgesCountTwice() throws {
-        let messages = check(try graph(["a", "b"], [("e1", "a", "b"), ("e2", "a", "b")]))
-        #expect(messages.count == 1)
-        #expect(messages.first?.message.contains("2 parent nodes") == true)
+    @Test("Two edges from one parent are one parent")
+    func parallelEdgesAreOneParent() throws {
+        let doubled = try graph(["a", "b"], [("e1", "a", "b"), ("e2", "a", "b")])
+        #expect(check(doubled).isEmpty)
+        #expect(QualityCheckRegistry.noParallelEdgesCheck(doubled).count == 1)
     }
 }
