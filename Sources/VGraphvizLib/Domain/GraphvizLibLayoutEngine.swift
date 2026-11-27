@@ -4,6 +4,13 @@ import GraphvizBridge
 import SwiftGraphviz
 import VGraph
 
+/// Whether `engine` writes a cluster's box on every build. Native neato does,
+/// but only through IPSEPCOLA, which the wasm Graphviz is built without; there
+/// the box is never written, and reading it reads whatever memory is there.
+private func laysOutClusters(_ engine: String) -> Bool {
+    ["dot", "fdp", "osage", "patchwork"].contains(engine)
+}
+
 #if !os(WASI)
     import Foundation  // DispatchQueue — not available (or needed) in embedded wasm
 #endif
@@ -101,7 +108,8 @@ public struct GraphvizLibLayoutEngine<Logger: ForLogMessages>: ForLayoutAGraph {
 
         let nodePositions = extractNodePositions(graph: graph, graphHeight: graphHeight)
         let edgeLayouts = extractEdgeLayouts(graph: graph, graphHeight: graphHeight)
-        let groupLayouts = extractGroupLayouts(graph: graph, graphHeight: graphHeight)
+        let groupLayouts = extractGroupLayouts(
+            graph: graph, graphHeight: graphHeight, clustersLaidOut: laysOutClusters(engine))
         let (graphLabelPosition, graphLabelSize) = extractGraphLabel(
             graph: graph, graphHeight: graphHeight
         )
@@ -356,26 +364,30 @@ public struct GraphvizLibLayoutEngine<Logger: ForLogMessages>: ForLayoutAGraph {
 
     private func extractGroupLayouts(
         graph: UnsafeMutablePointer<Agraph_t>,
-        graphHeight: Double
+        graphHeight: Double,
+        clustersLaidOut: Bool
     ) -> [String: GroupLayoutData] {
         var groupLayouts: [String: GroupLayoutData] = [:]
-        extractSubgraphs(graph: graph, graphHeight: graphHeight, into: &groupLayouts)
+        extractSubgraphs(
+            graph: graph, graphHeight: graphHeight, clustersLaidOut: clustersLaidOut, into: &groupLayouts)
         return groupLayouts
     }
 
     private func extractSubgraphs(
         graph: UnsafeMutablePointer<Agraph_t>,
         graphHeight: Double,
+        clustersLaidOut: Bool,
         into layouts: inout [String: GroupLayoutData]
     ) {
         var subgraph = agfstsubg(graph)
         while let sg = subgraph {
             let name = String(cString: agnameof(sg))
 
-            if name.hasPrefix("cluster_") {
+            if name.hasPrefix("cluster_"),
+                let rect = clustersLaidOut ? sg.rect : memberBox(of: sg)
+            {
                 let groupId = String(name.dropFirst("cluster_".count))
 
-                let rect = sg.rect
                 let flippedOrigin = VPoint(
                     x: rect.origin.x,
                     y: graphHeight - rect.origin.y - rect.size.height
@@ -386,14 +398,14 @@ public struct GraphvizLibLayoutEngine<Logger: ForLogMessages>: ForLayoutAGraph {
                 )
 
                 let labelPosition: VPoint?
-                if let lp = sg.labelPos {
+                if clustersLaidOut, let lp = sg.labelPos {
                     labelPosition = VPoint(x: lp.x, y: graphHeight - lp.y)
                 } else {
                     labelPosition = nil
                 }
 
                 let labelSize: VSize?
-                if let ls = sg.labelSize {
+                if clustersLaidOut, let ls = sg.labelSize {
                     labelSize = VSize(width: ls.width, height: ls.height)
                 } else {
                     labelSize = nil
@@ -406,10 +418,29 @@ public struct GraphvizLibLayoutEngine<Logger: ForLogMessages>: ForLayoutAGraph {
                 )
             }
 
-            extractSubgraphs(graph: sg, graphHeight: graphHeight, into: &layouts)
+            extractSubgraphs(graph: sg, graphHeight: graphHeight, clustersLaidOut: clustersLaidOut, into: &layouts)
 
             subgraph = agnxtsubg(sg)
         }
+    }
+
+    /// What neato's own `compute_bb` gives a cluster whose edges are declared at
+    /// the root, as `DotExporter` declares them; `nil` for a cluster with no nodes.
+    private func memberBox(of cluster: UnsafeMutablePointer<Agraph_t>) -> GVRect? {
+        var box: GVRect?
+        var node = agfstnode(cluster)
+        while let n = node {
+            let r = n.rect
+            box = box.map { b in
+                let minX = min(b.origin.x, r.origin.x)
+                let minY = min(b.origin.y, r.origin.y)
+                let maxX = max(b.origin.x + b.size.width, r.origin.x + r.size.width)
+                let maxY = max(b.origin.y + b.size.height, r.origin.y + r.size.height)
+                return GVRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+            } ?? r
+            node = agnxtnode(cluster, n)
+        }
+        return box
     }
 
     // MARK: - Graph Label Extraction
