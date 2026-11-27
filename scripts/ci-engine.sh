@@ -6,8 +6,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 apt-get update
-# The bridge generator refuses to start without node, even with no TypeScript to read.
-apt-get install -y --no-install-recommends curl ca-certificates python3 nodejs wabt
+# The bridge generator refuses to start without node, even with no TypeScript to read;
+# npm installs the esbuild that bundles embed.js.
+apt-get install -y --no-install-recommends curl ca-certificates python3 nodejs npm wabt
 
 # Pinned because the optimizer decides the size the 5 MB limit checks, and noble ships
 # binaryen 108, too far behind what a maintainer's release is built with.

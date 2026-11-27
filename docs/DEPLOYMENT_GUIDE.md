@@ -1,6 +1,6 @@
 # VGraph — Deployment Guide
 
-Two deliverables go onto the Vithanco website:
+Three deliverables go onto the Vithanco website:
 
 1. **The editor** — `website/index.html`, which mounts the ElementaryUI editor
    from `Package/VGraphWasm.wasm` and renders VGL → SVG live. This is what end
@@ -8,6 +8,8 @@ Two deliverables go onto the Vithanco website:
 2. **The library** — `website/dist/vgraph-v<version>.js` (+ `.d.ts`), a
    versioned JS wrapper over the same engine, for callers who want to render or
    convert VGL programmatically rather than mount the UI.
+3. **The embed** — `Package/embed.js`, one script tag that turns the VGL blocks
+   on any page into diagrams. Also in the npm package, for jsDelivr and unpkg.
 
 ## Deploying
 
@@ -94,6 +96,41 @@ source — `raw.githubusercontent.com`, say, which any public repo can serve —
 learns nothing about the visitor. When the document did come from elsewhere, the
 status line names that origin, so a stranger's diagram doesn't read as one of
 yours.
+
+## Embedding diagrams with a script tag
+
+```html
+<script type="module" src="https://cdn.jsdelivr.net/npm/@vithanco/vgraph@1/embed.js"></script>
+<pre class="vgl">vgraph demo: IBIS "My Graph" { … }</pre>
+```
+
+Every `pre.vgl`, `code.language-vgl` (a Markdown ```` ```vgl ```` fence; its
+`<pre>` goes too) and `<vgl-diagram>` becomes a diagram, including ones added
+later. A block is swapped for a `<vgl-diagram>` carrying its attributes, since a
+`<pre>` cannot host a shadow root. The engine loads with the first diagram, and
+only once. Diagrams follow `prefers-color-scheme`; `data-theme="light"` or
+`"dark"` pins one. A block that does not parse shows the error in its place.
+
+- **Bundled.** The Package glue imports `@bjorn3/browser_wasi_shim` by bare
+  name, which resolves only through an import map like `index.html`'s, and a
+  third-party page has none. So `build-wasm.sh` bundles `VGraphWasm/Embed/embed.js`
+  with the glue and the shim (esbuild, from the root `package.json`). The glue
+  fetches `VGraphWasm.wasm` relative to the bundle's own URL: the two need only
+  sit side by side, on any origin that sends CORS headers for both.
+- **Shadow DOM.** The SVG's styles use unscoped selectors (`.vgraph-node`,
+  `svg:has(#node-x:hover) #edge-y`). In the page they would restyle the host's
+  own elements, and two diagrams with the same node ids would answer each
+  other's hovers. In a shadow root each diagram's styles and ids are its own.
+- **The font import moves to the page.** Chromium ignores `@font-face` inside a
+  shadow root, so the SVG's Google Fonts `@import` becomes one `<link>` in the
+  document head. `embed.js?fonts=none` leaves it out, and the page makes no
+  request to Google; the diagrams fall back to Helvetica. It is on the URL
+  because a font is loaded for the whole page, not for one diagram.
+
+The site serves it at `/vgraph/Package/embed.js` (`deploy.sh` copies `Package/`
+whole). The npm package's `prepack` copies `embed.js` and `VGraphWasm.wasm` in
+from `website/Package/` and refuses an unoptimized wasm, so pack after
+`just release`.
 
 ## Using the library
 

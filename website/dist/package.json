@@ -9,11 +9,14 @@
   "files": [
     "vgraph-v1.1.0.js",
     "vgraph-v1.1.0.d.ts",
+    "embed.js",
+    "VGraphWasm.wasm",
     "README.md",
     "LICENSE",
     "NOTICE"
   ],
   "scripts": {
+    "prepack": "cp ../Package/embed.js ../Package/VGraphWasm.wasm . && ../../scripts/check-wasm-optimized.sh VGraphWasm.wasm",
     "test": "echo \"No tests yet\""
   },
   "keywords": [

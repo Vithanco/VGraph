@@ -3,6 +3,8 @@
 Playwright tests for the editor in `VGraphWasm/VGraphEditor/`, driving the real
 editor against the deployed `website/`. Two projects: `chromium` for the mouse
 gestures, and `ipad` for `touch.spec.js`.
+`embed.spec.js` is the exception: it drives the drop-in `embed.js` on a host
+page and a CDN that it fakes as two other origins, with routes.
 
 ```bash
 just test-editor                       # all of them

@@ -196,6 +196,19 @@ awk '
 mv ../website/Package/platforms/browser.js.tmp ../website/Package/platforms/browser.js
 
 cd ..
+
+# The drop-in embed, bundled with the glue above and the WASI shim: a
+# third-party page has no import map to resolve the glue's bare
+# `@bjorn3/browser_wasi_shim`. It sits beside the wasm because the glue finds
+# VGraphWasm.wasm relative to the bundle's own URL. esbuild fails on any import
+# it cannot resolve, so no bare specifier survives into the output. The
+# getImports patch above duplicates a key on purpose, hence the one override.
+echo "Bundling embed.js..."
+[ -x node_modules/.bin/esbuild ] || npm ci --silent
+node_modules/.bin/esbuild VGraphWasm/Embed/embed.js --bundle --minify --format=esm \
+    --log-level=warning --log-override:duplicate-object-key=silent \
+    --outfile=website/Package/embed.js
+
 # This build replaced website/Package, so it also writes the record of its source.
 "$SCRIPT_DIR/scripts/record-engine-build.sh" website/Package
 echo "WASM build completed in $(( SECONDS - STEP_START ))s"

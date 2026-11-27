@@ -8,6 +8,9 @@ DerivedData/
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
 /website/Package
+# Copied in from website/Package by the npm package's prepack.
+/website/dist/embed.js
+/website/dist/VGraphWasm.wasm
 test_output.swift
 ADDING_SF_SYMBOLS.md
 .plan.md

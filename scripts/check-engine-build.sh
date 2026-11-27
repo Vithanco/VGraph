@@ -11,7 +11,8 @@ set -uo pipefail
 # What build-wasm.sh reads. A version-bump commit after the build is expected.
 ENGINE_PATHS=(Sources Package.swift Package.resolved .swift-version build-wasm.sh
     scripts/wasm-sdk.sh scripts/embedded-unicode.sh VGraphWasm/Package.swift
-    VGraphWasm/Package.resolved VGraphWasm/Sources VGraphWasm/VGraphEditor VGraphWasm/scripts)
+    VGraphWasm/Package.resolved VGraphWasm/Sources VGraphWasm/VGraphEditor VGraphWasm/scripts
+    VGraphWasm/Embed package-lock.json)
 
 if [ ! -f website/Package/VGRAPH_BUILD ]; then
     echo "Preflight: no record of which commit built website/Package — rebuild it with 'just release'." >&2
