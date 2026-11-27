@@ -5,43 +5,58 @@
 // the unbundled glue fails here as it would on jsDelivr.
 
 import { test, expect } from '@playwright/test';
+import { createReadStream } from 'node:fs';
+import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 
 const PACKAGE = fileURLToPath(new URL('../../../website/Package/', import.meta.url));
-const CDN = 'http://cdn.test/npm/@vithanco/vgraph@1/';
-const PAGE = 'http://page.test/';
+const CDN_PATH = '/npm/@vithanco/vgraph@1/';
 const SHIPPED = { 'embed.js': 'text/javascript', 'VGraphWasm.wasm': 'application/wasm' };
+
+// A real server rather than route.fulfill: fulfill sends the body to the
+// browser in one protocol message, and CI's ~120 MB debug wasm closes the page.
+// It serves the page too, on localhost while the CDN is on 127.0.0.1: two
+// origins, and Chrome only lets a page it got from the network load off loopback.
+const pages = new Map();
+let server;
+let CDN;
+let PAGE;
+test.beforeAll(async () => {
+  server = createServer((req, res) => {
+    const path = new URL(req.url, 'http://local').pathname;
+    if (pages.has(path)) return res.writeHead(200, { 'content-type': 'text/html' }).end(pages.get(path));
+    const name = path.startsWith(CDN_PATH) ? path.slice(CDN_PATH.length) : '';
+    if (!(name in SHIPPED)) return res.writeHead(404).end('not shipped');
+    res.writeHead(200, { 'content-type': SHIPPED[name], 'access-control-allow-origin': '*' });
+    createReadStream(PACKAGE + name).pipe(res);
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address();
+  CDN = `http://127.0.0.1:${port}${CDN_PATH}`;
+  PAGE = `http://localhost:${port}`;
+});
+test.afterAll(() => new Promise((resolve) => server.close(resolve)));
 
 const concept = (label) => `vgraph demo: ConceptMap "Demo" {
   node idea: Concept "${label}";
 }`;
 
 async function hostPage(page, body, { query = '' } = {}) {
-  const requests = [];
-  page.on('request', (r) => requests.push(r.url()));
-  await page.route('**/*', (route) => {
-    const url = new URL(route.request().url());
-    if (url.href === PAGE) {
-      return route.fulfill({
-        contentType: 'text/html',
-        body: `<!doctype html><html><head><meta charset="utf-8"></head><body>
+  const path = `/page/${pages.size}`;
+  pages.set(
+    path,
+    `<!doctype html><html><head><meta charset="utf-8"></head><body>
 ${body}
 <script type="module" src="${CDN}embed.js${query}"></script>
 </body></html>`,
-      });
-    }
-    if (url.href.startsWith(CDN)) {
-      const name = url.pathname.slice(new URL(CDN).pathname.length);
-      if (!(name in SHIPPED)) return route.fulfill({ status: 404, body: 'not shipped' });
-      return route.fulfill({
-        path: PACKAGE + name,
-        contentType: SHIPPED[name],
-        headers: { 'access-control-allow-origin': '*' },
-      });
-    }
-    return route.abort();
-  });
-  await page.goto(PAGE);
+  );
+  const requests = [];
+  page.on('request', (r) => requests.push(r.url()));
+  const local = [PAGE, new URL(CDN).origin];
+  await page.route('**/*', (route) =>
+    local.includes(new URL(route.request().url()).origin) ? route.continue() : route.abort(),
+  );
+  await page.goto(PAGE + path);
   return requests;
 }
 
