@@ -431,13 +431,14 @@ public struct GraphvizLibLayoutEngine<Logger: ForLogMessages>: ForLayoutAGraph {
         var node = agfstnode(cluster)
         while let n = node {
             let r = n.rect
-            box = box.map { b in
-                let minX = min(b.origin.x, r.origin.x)
-                let minY = min(b.origin.y, r.origin.y)
-                let maxX = max(b.origin.x + b.size.width, r.origin.x + r.size.width)
-                let maxY = max(b.origin.y + b.size.height, r.origin.y + r.size.height)
-                return GVRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-            } ?? r
+            box =
+                box.map { b in
+                    let minX = min(b.origin.x, r.origin.x)
+                    let minY = min(b.origin.y, r.origin.y)
+                    let maxX = max(b.origin.x + b.size.width, r.origin.x + r.size.width)
+                    let maxY = max(b.origin.y + b.size.height, r.origin.y + r.size.height)
+                    return GVRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+                } ?? r
             node = agnxtnode(cluster, n)
         }
         return box
