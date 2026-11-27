@@ -1,6 +1,6 @@
 # VGraph JavaScript Library
 
-**Version:** 1.1.0
+**Version:** 1.2.0
 
 A small JavaScript library for rendering and converting Vithanco Graph Language
 (VGL) in the browser. It wraps the VGraph WebAssembly engine and exposes a simple
@@ -30,7 +30,7 @@ a diagram's theme, and `embed.js?fonts=none` skips the Google Fonts request.
 
 ```html
 <script type="module">
-  import VGraphLib from '/vgraph/v1.1.0/vgraph-v1.1.0.js';
+  import VGraphLib from '/vgraph/v1.2.0/vgraph-v1.2.0.js';
 
   const vgraph = new VGraphLib();
   await vgraph.init({ wasmPath: '/vgraph/Package' });

@@ -1,6 +1,6 @@
 /**
  * VGraph JavaScript Library
- * Version: 1.1.0
+ * Version: 1.2.0
  *
  * A JavaScript wrapper for VGraph WASM module that provides graph rendering
  * and conversion capabilities for Vithanco Graph Language (VGL).
@@ -265,7 +265,7 @@ class VGraphLib {
    */
   static getVersion() {
     return {
-      version: '1.1.0',
+      version: '1.2.0',
       wasm: true,
       bridgejs: true,
       features: ['render', 'renderBasic', 'toDot', 'exportVGL', 'debug', 'layout']

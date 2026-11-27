@@ -135,7 +135,7 @@ from `website/Package/` and refuses an unoptimized wasm, so pack after
 ## Using the library
 
 ```javascript
-import VGraphLib from '/vgraph/v1.1.0/vgraph-v1.1.0.js';
+import VGraphLib from '/vgraph/v1.2.0/vgraph-v1.2.0.js';
 
 const vgraph = new VGraphLib();
 await vgraph.init({ wasmPath: '/vgraph/Package' });
