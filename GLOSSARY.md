@@ -107,6 +107,16 @@ notation and extension must have one (a test fails otherwise); add one for any
 other user-visible feature too. Its quality report must stay clean: an example
 that trips a check is either wrong or teaching the wrong thing.
 
+### Counterexample
+A small VGL document that breaks one [[Quality check]]'s rule and nothing
+else, so a reader can watch the warning appear. It is the opposite of an
+[[Example graph]], whose report must stay clean. It belongs to a [[Notation]]
+and one check together: a rule shared by several notations needs one written in
+each notation's own types. It is written for a reader, with a small story
+rather than placeholder labels, and the same document proves the check still
+fires.
+*Avoid*: "bad example", "flagged example".
+
 ### Engine
 The core: the pure VGL→SVG transformation exposed by `VGraphWasm` as string-in/string-out
 functions (`renderGraph`, `renderGraphDark`, …). Graphviz layout is compiled
