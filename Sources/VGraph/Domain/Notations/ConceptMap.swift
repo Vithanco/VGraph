@@ -47,9 +47,12 @@ extension Notations {
         ]
 
         // Color palette — from Vithanco Diagram Style Guide
-        public static let conceptFill = SemanticColor(id: "conceptmap.concept.fill", lightHex: "#e8f5f3")
-        public static let conceptBorder = SemanticColor(id: "conceptmap.concept.border", lightHex: "#1a9488")
-        public static let conceptText = SemanticColor(id: "conceptmap.concept.text", lightHex: "#0a5048")
+        // Near-white so concepts sit with the relation pills and edges rather than above them.
+        public static let conceptFill = SemanticColor(id: "conceptmap.concept.fill", lightHex: "#f9fcfb")
+        // Pale enough that the derived dark would be a fill and vanish, so it keeps its own.
+        public static let conceptBorder = SemanticColor(
+            id: "conceptmap.concept.border", lightHex: "#a6cbc5", darkHex: "#4d8078")
+        public static let conceptText = SemanticColor(id: "conceptmap.concept.text", lightHex: "#2b3f3c")
         // EmphasizedConcept uses a warmer teal to stand out
         public static let emphFill = SemanticColor(id: "conceptmap.emphasis.fill", lightHex: "#fdeef1")
         public static let emphBorder = SemanticColor(id: "conceptmap.emphasis.border", lightHex: "#c84060")
@@ -141,7 +144,7 @@ extension Notations {
             let fromConcept = [Attributes.Edge.dir("back"), Attributes.Edge.arrowHead("none"), Attributes.Edge.arrowTail("dot")]
             let toConcept = [Attributes.Edge.dir("forward"), Attributes.Edge.arrowHead("normal"), Attributes.Edge.arrowTail("none")]
             return [
-                .badge(NodeTypes.concept, "Concept", icon: "concept", fill: conceptFill, border: conceptBorder, text: conceptText),
+                .preset(NodeTypes.concept, .contentNode(fill: conceptFill, border: conceptBorder, textColor: conceptText)),
                 .preset(NodeTypes.emphasizedConcept, .contentNode(fill: emphFill, border: emphBorder, textColor: emphText)),
                 // Relation: ghost pill — subtle tinted capsule, visually subordinate
                 .preset(NodeTypes.relation, .ghostPill, fontsize: 11),

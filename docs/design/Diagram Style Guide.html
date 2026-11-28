@@ -265,7 +265,7 @@ const IBIS_TYPES = [
   { name: 'Con',      abbr: '−',  icon: 'con', fill: '#ffebeb', border: '#d03048', text: '#881028' },
 ];
 
-const CM_TYPE   = { name: 'Concept',   icon: 'concept', fill: '#e8f5f3', border: '#1a9488', text: '#0a5048' };
+const CM_TYPE   = { name: 'Concept',   icon: 'concept', fill: '#f9fcfb', border: '#a6cbc5', text: '#2b3f3c' };
 const CLD_TYPE  = { name: 'Stock',     icon: 'variable', fill: '#f0f0ec', border: '#707068', text: '#303028' };
 
 const BBS_TYPES = [
@@ -352,6 +352,7 @@ const CHROME_DARK = {
   '#e8e7e4': '#1a1814',  // group stack
   '#eeedea': '#1f1d19',
   '#808078': '#a8a49a',  // CLD loop indicator
+  '#a6cbc5': '#4d8078',  // concept border: darkOf would make it a fill and lose it
 };
 
 // Build complete light→dark hex map: chrome + every type's fill/border/text.
@@ -729,6 +730,18 @@ function IconNode({ type, content = 'Node content', x = 0, y = 0 }) {
       </text>
       {/* Content */}
       <text x={14} y={42} fontFamily="'DM Sans',sans-serif" fontSize={12.5} fontWeight={500}
+        fill={type.text}>{content}</text>
+    </g>
+  );
+}
+
+// A plain box: no strip, no badge. For a type nothing else needs telling apart from.
+function PlainNode({ type, content = 'Node content', x = 0, y = 0 }) {
+  const w = 130, h = 36;
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <rect x={0.75} y={0.75} width={w} height={h} rx={9} fill={type.fill} stroke={type.border} strokeWidth={1.5}/>
+      <text x={w/2 + 0.75} y={h/2 + 5} textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize={13}
         fill={type.text}>{content}</text>
     </g>
   );
@@ -2141,18 +2154,21 @@ function App() {
 
         <div style={{fontSize:14,fontWeight:600,color:'var(--ink)',marginTop:40,marginBottom:16,paddingBottom:8,borderBottom:'1px solid var(--rule)'}}>Concept Map · Causal Loop Diagram</div>
         <div style={{fontSize:13,fontWeight:600,color:'var(--ink)',marginBottom:12}}>Concept Map</div>
-        <IconNodeRow
-          types={[CM_TYPE]}
-          contents={['Photosynthesis']}
-        />
+        <div style={{background:'var(--preview-bg)', borderRadius:10, padding:'24px 20px', marginBottom:16}}>
+          <svg width={132} height={38} style={{display:'block', overflow:'visible'}}>
+            <PlainNode type={CM_TYPE} content="Photosynthesis"/>
+          </svg>
+        </div>
         <div style={{fontSize:13,fontWeight:600,color:'var(--ink)',marginBottom:12,marginTop:8}}>Causal Loop Diagram</div>
         <IconNodeRow
           types={[CLD_TYPE]}
           contents={['Population']}
         />
         <div className="note" style={{marginBottom:32}}>
-          Both notations are homogeneous — every node is the same type. The icon (● for Concept,
-          V for Variable) signals the notation at a glance even when a single node is shown out of context.
+          Both notations are homogeneous — every node is the same type. A Concept is a plain, near-white box
+          with no badge: the Relation pills already tell it apart, and it sits with the pills and edges rather
+          than above them. Its border keeps its own dark hex (see <code>CHROME_DARK</code>). The V icon of a
+          Stock signals the notation at a glance even when a single node is shown out of context.
         </div>
 
         <div style={{fontSize:14,fontWeight:600,color:'var(--ink)',marginTop:40,marginBottom:16,paddingBottom:8,borderBottom:'1px solid var(--rule)'}}>Benefit Breakdown Structure (BBS)</div>

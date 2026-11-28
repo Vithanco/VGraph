@@ -125,8 +125,11 @@ extension SemanticColor {
 
     /// The guide's `CHROME_DARK`. Junctor, page, card, watermark and the
     /// black/white tokens are not in it: the guide resolves them by token, not by hex.
+    /// A notation colour whose dark is its own rather than derived belongs here too,
+    /// or it loses that dark the first time it passes through a string.
     static let chrome: [SemanticColor] = [
         edge, edgeBold, ink2, groupFill, groupBorder, groupText, loopMarker, ghostPillFill, ghostPillText,
+        Notations.ConceptMap.conceptBorder,
     ]
 }
 

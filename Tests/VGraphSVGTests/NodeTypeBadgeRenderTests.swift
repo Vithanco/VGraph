@@ -85,8 +85,8 @@ struct NodeTypeBadgeRenderTests {
         #expect(svg.contains("Why?"))
     }
 
-    @Test("Given a Concept Map concept, when rendered, then a node type badge reading CONCEPT with the dot icon is drawn")
-    func aConceptWearsABadge() throws {
+    @Test("Given a Concept Map concept, which the relation pills already tell apart, when rendered, then no node type badge is drawn")
+    func aConceptDrawsNoBadge() throws {
         let svg = try render(
             """
             vgraph c: ConceptMap "T" {
@@ -94,8 +94,22 @@ struct NodeTypeBadgeRenderTests {
             }
             """)
 
-        #expect(svg.contains(path(of: "concept")))
-        #expect(svg.contains(">CONCEPT</text>"))
+        #expect(svg.contains("Idea"))
+        #expect(!svg.contains(path(of: "concept")))
+        #expect(!svg.contains(">CONCEPT</text>"))
+    }
+
+    @Test("Given a Concept Map concept, when rendered dark, then its pale border keeps its own dark hex rather than turning into a fill")
+    func aConceptBorderStaysVisibleInDarkMode() throws {
+        let svg = try render(
+            """
+            vgraph c: ConceptMap "T" {
+                node c1: Concept "Idea";
+            }
+            """, darkMode: true)
+
+        #expect(svg.contains("#4d8078"))
+        #expect(!svg.contains(ColorMath.darkHex(of: "#a6cbc5")))
     }
 
     @Test("Given a Causal Loop Diagram stock, the only node type of its notation, when rendered, then no node type badge is drawn")

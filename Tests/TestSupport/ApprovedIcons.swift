@@ -45,7 +45,6 @@ public enum ApprovedIcons {
         "Arithmetic.Divide": "divide", "Arithmetic.Equals": "equals",
         "BBS.Benefit": "benefit", "BBS.BusinessChange": "business-change", "BBS.Enabler": "enabler",
         "BBS.InvestmentObjective": "investment-objective",
-        "ConceptMap.Concept": "concept",
         "DecisionTree.Choice": "choice", "DecisionTree.DecisionPoint": "decision-point",
         "DecisionTree.Outcome": "outcome",
         "EC.Assumption": "assumption", "EC.CommonObjective": "common-objective", "EC.Need": "need",
