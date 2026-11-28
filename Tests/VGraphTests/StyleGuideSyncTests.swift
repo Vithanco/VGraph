@@ -175,10 +175,12 @@ struct StyleGuideSyncTests {
     }
 
     /// A type colour the guide gives its own dark hex, rather than deriving one,
-    /// must have that dark hex in code too.
-    @Test func explicitTypeDarksMatchTheGuide() {
+    /// must have that dark hex in code too, and keep it once stored as a string.
+    @Test func explicitTypeDarksMatchTheGuide() throws {
         for (key, triple) in Self.mapped {
             for token in [triple.0, triple.1, triple.2] {
+                let stored = try SemanticColor.fromString(token.asString)
+                #expect(stored.darkHex.lowercased() == token.darkHex.lowercased(), "\(key) \(token.id) loses its dark hex")
                 guard let darks = Self.guideDark[token.lightHex.lowercased()] else { continue }
                 #expect(darks == [token.darkHex.lowercased()], "\(key) \(token.id) — guide says \(darks.sorted())")
             }

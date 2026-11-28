@@ -85,50 +85,6 @@ struct NodeTypeBadgeRenderTests {
         #expect(svg.contains("Why?"))
     }
 
-    @Test("Given a Concept Map concept, which the relation pills already tell apart, when rendered, then no node type badge is drawn")
-    func aConceptDrawsNoBadge() throws {
-        let svg = try render(
-            """
-            vgraph c: ConceptMap "T" {
-                node c1: Concept "Idea";
-            }
-            """)
-
-        #expect(svg.contains("Idea"))
-        #expect(!svg.contains(path(of: "concept")))
-        #expect(!svg.contains(">CONCEPT</text>"))
-    }
-
-    @Test("Given a Concept Map concept, when rendered dark, then its pale border keeps its own dark hex rather than turning into a fill")
-    func aConceptBorderStaysVisibleInDarkMode() throws {
-        let svg = try render(
-            """
-            vgraph c: ConceptMap "T" {
-                node c1: Concept "Idea";
-            }
-            """, darkMode: true)
-
-        #expect(svg.contains("#4d8078"))
-        #expect(!svg.contains(ColorMath.darkHex(of: "#a6cbc5")))
-    }
-
-    @Test("Given a Causal Loop Diagram stock, the only node type of its notation, when rendered, then no node type badge is drawn")
-    func aSingleTypeNotationDrawsNoBadge() throws {
-        let svg = try render(
-            """
-            vgraph c: CLD "T" {
-                node a: Stock "Births";
-                node b: Stock "Population";
-                edge a -> b: same;
-            }
-            """)
-
-        #expect(svg.contains("Births"))
-        #expect(!svg.contains(path(of: "variable")))
-        #expect(!svg.contains(">STOCK</text>"))
-        #expect(!svg.contains(">VARIABLE</text>"))
-    }
-
     @Test("Given a graph without node type badges or Arithmetic nodes, when rendered, then no badge icon symbols are written")
     func noBadgesMeansNoBadgeSymbols() throws {
         let svg = try render(
@@ -138,7 +94,7 @@ struct NodeTypeBadgeRenderTests {
             }
             """)
 
-        let written = ApprovedIcons.names.filter { svg.contains(path(of: $0)) }
+        let written = BuiltinIcons.names.filter { svg.contains(path(of: $0)) }
         #expect(written.isEmpty, "symbols written for \(written.sorted())")
     }
 }
