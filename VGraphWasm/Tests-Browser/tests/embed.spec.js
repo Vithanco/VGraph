@@ -41,6 +41,11 @@ const concept = (label) => `vgraph demo: ConceptMap "Demo" {
   node idea: Concept "${label}";
 }`;
 
+// A Concept wears no badge, so this one is for drawing an icon.
+const question = (label) => `vgraph demo: IBIS "Demo" {
+  node idea: Question "${label}";
+}`;
+
 async function hostPage(page, body, { query = '' } = {}) {
   const path = `/page/${pages.size}`;
   pages.set(
@@ -72,8 +77,8 @@ test('two diagrams sharing a node id render apart, each in a shadow root, and th
     page,
     `<style>p { color: rgb(1, 2, 3); }</style>
 <p class="vgraph-node" id="decoy">A host element that happens to share the engine's class.</p>
-<pre class="vgl">${concept('First')}</pre>
-<pre class="vgl">${concept('Second')}</pre>`
+<pre class="vgl">${question('First')}</pre>
+<pre class="vgl">${question('Second')}</pre>`
   );
 
   await expect(page.locator('vgl-diagram svg')).toHaveCount(2);
@@ -89,7 +94,7 @@ test('two diagrams sharing a node id render apart, each in a shadow root, and th
       lightStyles: document.querySelectorAll('style').length,
       lightNode: document.getElementById('node-idea'),
       inShadow: hosts.map((h) => h.shadowRoot?.querySelectorAll('#node-idea').length),
-      // `<use href="#icon-concept">` resolves inside its own tree, or draws nothing.
+      // `<use href="#icon-question">` resolves inside its own tree, or draws nothing.
       iconWidth: hosts.map((h) => h.shadowRoot.querySelector('use[href^="#icon-"]').getBBox().width),
       decoy: { cursor: decoy.cursor, transition: decoy.transitionProperty, color: decoy.color },
     };
