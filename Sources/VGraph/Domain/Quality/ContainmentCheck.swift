@@ -37,11 +37,11 @@ extension GenericQualityChecks {
         guard let holder = graph.detailedNode(holding: member.enclosing), let holderType = graph.nodeType(of: holder) else {
             return warning(
                 "\(name) is at the top level, but a \(member.type.description) belongs inside a "
-                    + listed(graph.typesDetailed(by: member.type), joinedBy: "or"),
+                    + listed(graph.typesDetailed(by: member.type).map { $0.description }, joinedBy: "or"),
                 about: member)
         }
         let allowed = graph.detailTypes(of: holderType)
-        let details = allowed.isEmpty ? "which has no details" : "which is detailed by \(listed(allowed, joinedBy: "and"))"
+        let details = allowed.isEmpty ? "which has no details" : "which is detailed by \(listed(allowed.map { $0.description }, joinedBy: "and"))"
         return warning(
             "\(name) is inside \(holderType.description) \"\(graph.name(of: holder))\", \(details)",
             about: member)
@@ -52,18 +52,12 @@ extension GenericQualityChecks {
         graph.nodeTypes.compactMap { detailType in
             let holders = graph.typesDetailed(by: detailType)
             guard !holders.isEmpty else { return nil }
-            return "\(withArticle(detailType.description, capitalised: true)) belongs inside "
-                + "\(withArticle(listed(holders, joinedBy: "or")))."
+            return "\(withArticle(inWords(detailType.description), capitalised: true)) belongs inside "
+                + "\(withArticle(listed(holders.map { inWords($0.description) }, joinedBy: "or")))."
         }
     }
 
     private static func warning(_ message: String, about member: Member) -> MessageWithSeverity {
         MessageWithSeverity(message: message, severity: .warning, target: .node(member.id))
-    }
-
-    private static func listed(_ types: [NodeType], joinedBy conjunction: String) -> String {
-        let names = types.map { $0.description }
-        guard let last = names.last, names.count > 1 else { return names.first ?? "" }
-        return names.dropLast().joined(separator: ", ") + " \(conjunction) " + last
     }
 }

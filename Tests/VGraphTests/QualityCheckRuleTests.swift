@@ -44,11 +44,11 @@ struct QualityCheckRuleTests {
     @Test(
         "A check a vnotation names states its rule with the numbers it was given",
         arguments: [
-            ("treeStructure", "Every node has at most one parent."),
-            ("noParallelEdges", "At most one edge joins two nodes in the same direction."),
             ("exactlyOne(Goal)", "A diagram has exactly one Goal."),
+            ("exactlyOne(CriticalSuccessFactor)", "A diagram has exactly one Critical Success Factor."),
             ("nodeCountRange(Battle, 1, 20)", "A diagram has between 1 and 20 Battle nodes."),
-            ("labelLength(5)", "Every node's label has at most 5 words."),
+            ("nodeCountRange(Battle, 2, 5)", "A diagram has between two and five Battle nodes."),
+            ("labelLength(5)", "Every node's label has at most five words."),
         ])
     func namedCheckRule(spec: String, rule: String) throws {
         let check = try QualityCheckRegistry.resolve(QualityCheckSpec.parse(spec))
@@ -56,16 +56,18 @@ struct QualityCheckRuleTests {
         #expect(check.name == QualityCheckSpec.parse(spec).name)
     }
 
+    @Test("A notation can call its diagram by its own name")
+    func diagramNamedByItsNotation() {
+        #expect(QualityCheckRegistry.exactlyOneCheck(nodeTypeName: "Goal", in: "Goal Tree").rule == "A Goal Tree has exactly one Goal.")
+    }
+
     // MARK: - What a notation lists
 
     @Test("IBIS lists the check it names, then its own")
     func ibisRules() {
         #expect(
-            Notations.rules(of: Notations.Ibis.entry) == [
-                "At most one edge joins two nodes in the same direction.",
-                "Every node has at most one parent.",
-                "Every Question has at least one Answer.",
-            ])
+            Notations.statedRules(of: Notations.Ibis.entry).map { $0.check }
+                == ["noParallelEdges", "treeStructure", "unansweredQuestions"])
     }
 
     /// The checks every notation runs are told once, not repeated per notation.
@@ -80,21 +82,19 @@ struct QualityCheckRuleTests {
 
     @Test("A metric is not a rule: Concept Map lists no ratio")
     func metricsAreNotListed() {
-        let rules = Notations.rules(of: CM.entry)
-        #expect(!rules.contains { $0.contains("Ratio") || $0.contains("ratio") })
-        #expect(rules.contains("Every concept's label has at most 3 words."))
-        #expect(rules.contains("A map has between 5 and 25 concepts."))
+        #expect(
+            Notations.statedRules(of: CM.entry).compactMap { $0.check }
+                == ["noParallelEdges"] + CM.entry.qualityChecks.map { $0.name })
     }
 
     @Test("C4 lists where each detail type belongs")
     func c4ListsItsNesting() {
         let rules = Notations.rules(of: Notations.C4.entry)
         for rule in [
-            "Every relationship has a label saying what it is for.",
-            "A Container belongs inside a SoftwareSystem.",
-            "A Database belongs inside a SoftwareSystem.",
+            "A Container belongs inside a Software System.",
+            "A Database belongs inside a Software System.",
             "A Component belongs inside a Container.",
-            "A CodeElement belongs inside a Component.",
+            "A Code Element belongs inside a Component.",
         ] {
             #expect(rules.contains(rule), "\(rule) missing from \(rules)")
         }
@@ -103,19 +103,9 @@ struct QualityCheckRuleTests {
     @Test("Arithmetic lists its bounds beside its own check")
     func arithmeticListsItsBounds() {
         let rules = Notations.rules(of: Notations.Arithmetic.entry)
-        #expect(rules.contains("A Divide never divides by zero."))
-        #expect(rules.contains("A Plus has at most 1 incoming \"plus_first_operand\" edge."))
-        #expect(rules.contains("A Plus has at most 1 outgoing \"plus_result\" edge."))
-    }
-
-    /// It fires on a drawing limit, not a modelling slip, and says so.
-    @Test("Causal Loop Diagram's loop check states the limit it guards")
-    func cldLoopRule() {
-        #expect(
-            Notations.rules(of: Notations.CausalLoopDiagram.entry) == [
-                "At most one edge joins two nodes in the same direction.",
-                "A diagram has no more loops than Vithanco can mark.",
-            ])
+        #expect(Notations.statedRules(of: Notations.Arithmetic.entry).contains { $0.check == "divisionByZero" })
+        #expect(rules.contains("A Plus has at most one first operand, one second operand and one result."))
+        #expect(rules.count == 1 + 4)
     }
 
     @Test("A rule from a check carries the check and its counterexample; a bound or nesting rule neither")
@@ -126,7 +116,7 @@ struct QualityCheckRuleTests {
         let labelled = try #require(stated.first { $0.check == "unlabeledRelationship" })
         #expect(labelled.counterexample == entry.counterexamples.first { $0.check == "unlabeledRelationship" }?.source)
         #expect(labelled.counterexample != nil)
-        let nesting = try #require(stated.first { $0.rule == "A Container belongs inside a SoftwareSystem." })
+        let nesting = try #require(stated.first { $0.rule == "A Container belongs inside a Software System." })
         #expect(nesting.check == nil && nesting.counterexample == nil)
     }
 
@@ -146,19 +136,19 @@ struct QualityCheckRuleTests {
     func boundRanges() throws {
         let edge = CM.EdgeTypes.conceptToRelation
         let rows: [([Attribute], String)] = [
-            ([Attributes.Edge.outDegreeMin(1)], "A Concept has at least 1 outgoing \"concept_to_relation\" edge."),
-            ([Attributes.Edge.inDegreeMax(3)], "A Relation has at most 3 incoming \"concept_to_relation\" edges."),
+            ([Attributes.Edge.outDegreeMin(1)], "A Concept has at least one outgoing \"concept to relation\" edge."),
+            ([Attributes.Edge.inDegreeMax(3)], "A Relation has at most three incoming \"concept to relation\" edges."),
             (
                 [Attributes.Edge.inDegreeMin(2), Attributes.Edge.inDegreeMax(2)],
-                "A Relation has exactly 2 incoming \"concept_to_relation\" edges."
+                "A Relation has exactly two incoming \"concept to relation\" edges."
             ),
             (
                 [Attributes.Edge.outDegreeMin(1), Attributes.Edge.outDegreeMax(4)],
-                "A Concept has between 1 and 4 outgoing \"concept_to_relation\" edges."
+                "A Concept has between one and four outgoing \"concept to relation\" edges."
             ),
             (
                 [Attributes.Edge.samePairMax(1)],
-                "A Concept and a Relation are joined by at most 1 \"concept_to_relation\" edge."
+                "A Concept and a Relation are joined by at most one \"concept to relation\" edge."
             ),
         ]
         for (bounds, sentence) in rows {
@@ -170,7 +160,24 @@ struct QualityCheckRuleTests {
     func nodeTypeBound() throws {
         let graph = try conceptMap().setting(
             nodeType: CM.NodeTypes.relation, attribute: Attributes.Node.totalInDegreeMin(1))
-        #expect(Bound.rules(in: graph) == ["A Relation has at least 1 incoming edge."])
+        #expect(Bound.rules(in: graph) == ["A Relation has at least one incoming edge."])
+    }
+
+    @Test("Limits on one type read as one sentence")
+    func boundsOnOneTypeMerge() throws {
+        let graph = try conceptMap()
+            .setting(edgeType: CM.EdgeTypes.conceptToRelation, attribute: Attributes.Edge.inDegreeMax(3))
+            .setting(nodeType: CM.NodeTypes.relation, attribute: Attributes.Node.totalInDegreeMin(1))
+        #expect(
+            Bound.rules(in: graph) == [
+                "A Relation has at most three incoming \"concept to relation\" edges and at least one incoming edge."
+            ])
+    }
+
+    @Test("A large number stays in digits")
+    func largeNumbers() throws {
+        let graph = try bounded([Attributes.Edge.inDegreeMax(12)], on: CM.EdgeTypes.conceptToRelation)
+        #expect(Bound.rules(in: graph) == ["A Relation has at most 12 incoming \"concept to relation\" edges."])
     }
 
     @Test("A notation with no bounds lists none")

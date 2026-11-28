@@ -100,12 +100,14 @@ public enum QualityCheckRegistry {
     // MARK: - Check implementations
 
     static var treeStructure: QualityCheck {
-        QualityCheck("treeStructure", rule: "Every node has at most one parent.", findings: treeStructureCheck)
+        QualityCheck(
+            "treeStructure", rule: "The diagram is a tree: every node has at most one parent.",
+            findings: treeStructureCheck)
     }
 
     static var noParallelEdges: QualityCheck {
         QualityCheck(
-            "noParallelEdges", rule: "At most one edge joins two nodes in the same direction.",
+            "noParallelEdges", rule: "Two nodes are joined at most once in each direction.",
             findings: noParallelEdgesCheck)
     }
 
@@ -148,9 +150,11 @@ public enum QualityCheckRegistry {
         return messages
     }
 
-    /// Error if the count of nodes with the given type name is not exactly 1.
-    static func exactlyOneCheck(nodeTypeName: String) -> QualityCheck {
-        QualityCheck("exactlyOne", rule: "A diagram has exactly one \(nodeTypeName).") { graph in
+    /// Error if the count of nodes with the given type name is not exactly 1. `diagram` is
+    /// what the notation calls one of its diagrams.
+    static func exactlyOneCheck(nodeTypeName: String, in diagram: String = "diagram") -> QualityCheck {
+        let rule = "\(withArticle(diagram, capitalised: true)) has exactly one \(inWords(nodeTypeName))."
+        return QualityCheck("exactlyOne", rule: rule) { graph in
             let count = nodeCount(ofTypeNamed: nodeTypeName, in: graph)
             if count == 0 {
                 return [
@@ -173,7 +177,8 @@ public enum QualityCheckRegistry {
 
     /// Warns if the count of nodes with the given type name is outside [min, max].
     static func nodeCountRangeCheck(nodeTypeName: String, min: Int, max: Int) -> QualityCheck {
-        QualityCheck("nodeCountRange", rule: "A diagram has between \(min) and \(max) \(nodeTypeName) nodes.") { graph in
+        let rule = "A diagram has \(rangeInWords(min, max)) \(inWords(nodeTypeName)) nodes."
+        return QualityCheck("nodeCountRange", rule: rule) { graph in
             let count = nodeCount(ofTypeNamed: nodeTypeName, in: graph)
             if count < min || count > max {
                 return [
@@ -195,7 +200,8 @@ public enum QualityCheckRegistry {
     static func labelLengthCheck(
         maxWords: Int, of noun: String = "node", among nodes: @escaping (VGraph) -> [Node] = { $0.nodes }
     ) -> QualityCheck {
-        QualityCheck("labelLength", rule: "Every \(noun)'s label has at most \(maxWords) words.") { graph in
+        let rule = "Every \(noun)'s label has at most \(numberInWords(maxWords)) \(maxWords == 1 ? "word" : "words")."
+        return QualityCheck("labelLength", rule: rule) { graph in
             nodes(graph).compactMap { node in
                 guard let label: String = try? graph.get(node: node, attribute: Attributes.Node.label) else { return nil }
                 let wordCount = label.split(separator: " ").count

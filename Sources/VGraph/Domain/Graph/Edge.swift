@@ -41,10 +41,17 @@ public typealias EdgeType = BaseEdge<_NodeType>
 public struct EdgeTypeDefinition: Sendable {
     public let edgeType: EdgeType
     public let description: String
+    /// What the source is to the target ("first operand"), so a limit on the
+    /// target's incoming edges can be said without naming the edge type.
+    public let sourceIs: String?
+    /// What the target is to the source ("result"), for limits on outgoing edges.
+    public let targetIs: String?
 
-    public init(_ edgeType: EdgeType, description: String) {
+    public init(_ edgeType: EdgeType, description: String, sourceIs: String? = nil, targetIs: String? = nil) {
         self.edgeType = edgeType
         self.description = description
+        self.sourceIs = sourceIs
+        self.targetIs = targetIs
     }
 }
 

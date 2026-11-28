@@ -35,9 +35,11 @@ states why instead of carrying one.
 
 ## Consequences
 
-- Wording is the engine's, not the page's. Bound sentences read mechanically
-  ("A Plus has at most 1 incoming "plus_first_operand" edge."); a hand-written
-  sentence per bound is deferred until one reads badly enough to need it.
+- Wording is the engine's, not the page's. Bound sentences are generated, so
+  they read well only as far as the notation helps: an edge type can say what
+  its far end is ("first operand"), and the limits on one type become one
+  sentence ("A Plus has at most one first operand, one second operand and one
+  result."). Without that, an edge is named by its type.
 - The Markdown lists rules only, because assistants read it through the MCP
   server; `describe --format json` gives a page each rule with its
   counterexample, and the page builds its own links.

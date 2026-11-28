@@ -67,21 +67,6 @@ public enum NotationMarkdown {
         ).lines
     }
 
-    /// `CriticalSuccessFactor` → `Critical Success Factor`; a run of capitals (`OR`) stays one word.
-    private static func inWords(_ identifier: String) -> String {
-        let characters = Array(identifier)
-        var result = ""
-        for (index, character) in characters.enumerated() {
-            let previous = index > 0 ? characters[index - 1] : nil
-            let next = index + 1 < characters.count ? characters[index + 1] : nil
-            let startsWord =
-                character.isUppercase && previous.map { !$0.isUppercase || (next?.isLowercase ?? false) } ?? false
-            if startsWord { result.append(" ") }
-            result.append(character)
-        }
-        return result
-    }
-
     /// Always present, so a page showing it never looks forgotten.
     private static func checksSection(_ rules: [String]) -> [String] {
         bulletList(checksHeading, rules) ?? ["## \(checksHeading)", "", "Only the checks every notation runs."]

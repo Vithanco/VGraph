@@ -44,49 +44,104 @@ public enum Bound {
 
 extension Bound {
 
-    /// Each bound the notation declares, as a sentence naming its types.
-    public static func rules(in graph: VGraph) -> [String] {
-        graph.edgeTypes.flatMap { rules(of: $0, in: graph) } + graph.nodeTypes.flatMap { rules(of: $0, in: graph) }
+    /// Each bound the notation declares, as prose: the limits on one type in one
+    /// sentence, an edge named by what its far end is when its definition says so.
+    public static func rules(in graph: VGraph, definitions: [EdgeTypeDefinition] = []) -> [String] {
+        let edgeClauses = graph.edgeTypes.flatMap { edgeType in
+            clauses(of: edgeType, in: graph, definition: definitions.first { $0.edgeType == edgeType })
+        }
+        let clauses = edgeClauses + graph.nodeTypes.flatMap { clauses(of: $0, in: graph) }
+        let subjects = clauses.reduce(into: [NodeType]()) { seen, clause in
+            if !seen.contains(clause.subject) { seen.append(clause.subject) }
+        }
+        let perType = subjects.map { subject in
+            sentence(about: subject, clauses.filter { $0.subject == subject })
+        }
+        return perType + graph.edgeTypes.compactMap { pairRule(of: $0, in: graph) }
     }
 
-    private static func rules(of edgeType: EdgeType, in graph: VGraph) -> [String] {
+    /// "at most one first operand": what one limit says about its subject.
+    private struct Clause {
+        let subject: NodeType
+        let range: Range
+        let thing: (Int) -> String
+    }
+
+    private static func clauses(of edgeType: EdgeType, in graph: VGraph, definition: EdgeTypeDefinition?) -> [Clause] {
         let bounds = EdgeTypeBounds(of: edgeType, in: graph)
-        let name = "\"\(edgeType.id.description)\""
-        let from = withArticle(edgeType.from.description, capitalised: true)
-        let to = withArticle(edgeType.to.description, capitalised: true)
+        let name = "\"\(inWords(edgeType.id.description))\""
         return [
-            Range(bounds.outDegreeMin, bounds.outDegreeMax).map { "\(from) has \($0.count) outgoing \(name) \($0.edges)." },
-            Range(bounds.inDegreeMin, bounds.inDegreeMax).map { "\(to) has \($0.count) incoming \(name) \($0.edges)." },
-            Range(bounds.samePairMin, bounds.samePairMax).map {
-                "\(from) and \(withArticle(edgeType.to.description)) are joined by \($0.count) \(name) \($0.edges)."
+            Range(bounds.outDegreeMin, bounds.outDegreeMax).map { range in
+                Clause(subject: edgeType.from, range: range) { count in
+                    definition?.targetIs.map { plural($0, count) } ?? "outgoing \(name) \(plural("edge", count))"
+                }
+            },
+            Range(bounds.inDegreeMin, bounds.inDegreeMax).map { range in
+                Clause(subject: edgeType.to, range: range) { count in
+                    definition?.sourceIs.map { plural($0, count) } ?? "incoming \(name) \(plural("edge", count))"
+                }
             },
         ].compactMap { $0 }
     }
 
-    private static func rules(of nodeType: NodeType, in graph: VGraph) -> [String] {
+    private static func clauses(of nodeType: NodeType, in graph: VGraph) -> [Clause] {
         let bounds = NodeTypeBounds(of: nodeType, in: graph)
-        let type = withArticle(nodeType.description, capitalised: true)
         return [
-            Range(bounds.outDegreeMin, bounds.outDegreeMax).map { "\(type) has \($0.count) outgoing \($0.edges)." },
-            Range(bounds.inDegreeMin, bounds.inDegreeMax).map { "\(type) has \($0.count) incoming \($0.edges)." },
+            Range(bounds.outDegreeMin, bounds.outDegreeMax).map { range in
+                Clause(subject: nodeType, range: range) { "outgoing \(plural("edge", $0))" }
+            },
+            Range(bounds.inDegreeMin, bounds.inDegreeMax).map { range in
+                Clause(subject: nodeType, range: range) { "incoming \(plural("edge", $0))" }
+            },
         ].compactMap { $0 }
+    }
+
+    /// One qualifier said once: "at most one first operand, one second operand and one result".
+    private static func sentence(about subject: NodeType, _ clauses: [Clause]) -> String {
+        let sharesQualifier = Set(clauses.map { $0.range.qualifier }).count == 1 && clauses[0].range.qualifier != "between"
+        let parts = clauses.enumerated().map { index, clause in
+            let amount = sharesQualifier && index > 0 ? clause.range.amount : clause.range.said
+            return "\(amount) \(clause.thing(clause.range.count))"
+        }
+        return "\(withArticle(inWords(subject.description), capitalised: true)) has \(listed(parts))."
+    }
+
+    private static func pairRule(of edgeType: EdgeType, in graph: VGraph) -> String? {
+        let bounds = EdgeTypeBounds(of: edgeType, in: graph)
+        return Range(bounds.samePairMin, bounds.samePairMax).map { range in
+            "\(withArticle(inWords(edgeType.from.description), capitalised: true)) and "
+                + "\(withArticle(inWords(edgeType.to.description))) are joined by \(range.said) "
+                + "\"\(inWords(edgeType.id.description))\" \(plural("edge", range.count))."
+        }
+    }
+
+    private static func plural(_ noun: String, _ count: Int) -> String {
+        count == 1 ? noun : noun + "s"
     }
 
     /// A minimum of 0 requires nothing, so it is not said.
     private struct Range {
-        let count: String
-        let edges: String
+        let qualifier: String
+        /// The number(s) alone: "one", "two and four".
+        let amount: String
+        /// Decides "edge" or "edges".
+        let count: Int
+
+        var said: String { qualifier == "between" ? "between \(amount)" : "\(qualifier) \(amount)" }
 
         init?(_ min: Int, _ max: Int) {
             let hasMin = Bound.isStated(min) && min > 0
             let hasMax = Bound.isStated(max)
             switch (hasMin, hasMax) {
             case (false, false): return nil
-            case (true, false): count = "at least \(min)"
-            case (false, true): count = "at most \(max)"
-            case (true, true): count = min == max ? "exactly \(min)" : "between \(min) and \(max)"
+            case (true, false): (qualifier, amount) = ("at least", numberInWords(min))
+            case (false, true): (qualifier, amount) = ("at most", numberInWords(max))
+            case (true, true) where min == max: (qualifier, amount) = ("exactly", numberInWords(min))
+            case (true, true):
+                qualifier = "between"
+                amount = String(rangeInWords(min, max).dropFirst("between ".count))
             }
-            edges = (hasMax ? max : min) == 1 ? "edge" : "edges"
+            count = hasMax ? max : min
         }
     }
 }

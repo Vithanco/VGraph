@@ -152,9 +152,9 @@ extension Notations {
 
         public static var qualityChecks: [QualityCheck] {
             [
-                QualityCheckRegistry.exactlyOneCheck(nodeTypeName: NodeTypes.goal.id),
+                QualityCheckRegistry.exactlyOneCheck(nodeTypeName: NodeTypes.goal.id, in: "Goal Tree"),
                 QualityCheck(
-                    "csfCount", rule: "A Goal Tree has between 3 and 5 Critical Success Factors.", findings: csfCount),
+                    "csfCount", rule: "A Goal Tree has between three and five Critical Success Factors.", findings: csfCount),
             ]
         }
 

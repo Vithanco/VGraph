@@ -109,18 +109,18 @@ extension Notations {
 
             public static var allDefinitions: [EdgeTypeDefinition] {
                 return [
-                    EdgeTypeDefinition(plusFirstOperand, description: "The first number added."),
-                    EdgeTypeDefinition(plusSecondOperand, description: "The second number added."),
-                    EdgeTypeDefinition(plusResult, description: "The sum, asserted equal at the Equals node."),
-                    EdgeTypeDefinition(minusFirstOperand, description: "The number subtracted from."),
-                    EdgeTypeDefinition(minusSecondOperand, description: "The number subtracted."),
-                    EdgeTypeDefinition(minusResult, description: "The difference, asserted equal at the Equals node."),
-                    EdgeTypeDefinition(timesFirstOperand, description: "The first factor."),
-                    EdgeTypeDefinition(timesSecondOperand, description: "The second factor."),
-                    EdgeTypeDefinition(timesResult, description: "The product, asserted equal at the Equals node."),
-                    EdgeTypeDefinition(divideFirstOperand, description: "The dividend."),
-                    EdgeTypeDefinition(divideSecondOperand, description: "The divisor."),
-                    EdgeTypeDefinition(divideResult, description: "The quotient, asserted equal at the Equals node."),
+                    EdgeTypeDefinition(plusFirstOperand, description: "The first number added.", sourceIs: "first operand"),
+                    EdgeTypeDefinition(plusSecondOperand, description: "The second number added.", sourceIs: "second operand"),
+                    EdgeTypeDefinition(plusResult, description: "The sum, asserted equal at the Equals node.", targetIs: "result"),
+                    EdgeTypeDefinition(minusFirstOperand, description: "The number subtracted from.", sourceIs: "first operand"),
+                    EdgeTypeDefinition(minusSecondOperand, description: "The number subtracted.", sourceIs: "second operand"),
+                    EdgeTypeDefinition(minusResult, description: "The difference, asserted equal at the Equals node.", targetIs: "result"),
+                    EdgeTypeDefinition(timesFirstOperand, description: "The first factor.", sourceIs: "first operand"),
+                    EdgeTypeDefinition(timesSecondOperand, description: "The second factor.", sourceIs: "second operand"),
+                    EdgeTypeDefinition(timesResult, description: "The product, asserted equal at the Equals node.", targetIs: "result"),
+                    EdgeTypeDefinition(divideFirstOperand, description: "The dividend.", sourceIs: "first operand"),
+                    EdgeTypeDefinition(divideSecondOperand, description: "The divisor.", sourceIs: "second operand"),
+                    EdgeTypeDefinition(divideResult, description: "The quotient, asserted equal at the Equals node.", targetIs: "result"),
                 ]
             }
 

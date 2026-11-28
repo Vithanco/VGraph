@@ -182,11 +182,11 @@ public enum GenericQualityChecks {
     /// Also offered by `QualityCheckRegistry` under these names, which it reads
     /// from here, so `runsAlways` cannot miss them after a rename.
     static var disconnectedNodesCheck: QualityCheck {
-        QualityCheck("disconnectedNodes", rule: "Every node is connected to at least one other.", findings: disconnectedNodes)
+        QualityCheck("disconnectedNodes", rule: "No node stands alone: every node has at least one edge.", findings: disconnectedNodes)
     }
     static var redundantJunctorCheck: QualityCheck {
         QualityCheck(
-            "redundantJunctor", rule: "No junctor states what the diagram's logic already implies.",
+            "redundantJunctor", rule: "No junctor repeats what the diagram's logic already says, such as an AND in a necessary-condition diagram.",
             findings: redundantJunctor)
     }
 
@@ -194,17 +194,22 @@ public enum GenericQualityChecks {
     /// not run a second time.
     public static var all: [QualityCheck] {
         [
-            QualityCheck("badlyTypedValues", rule: "Every value fits the type of its attribute.", findings: badlyTypedValues),
+            QualityCheck(
+                "badlyTypedValues", rule: "Every attribute value has the type its attribute expects, such as a number where a number belongs.",
+                findings: badlyTypedValues),
             QualityCheck("keysGivenTwice", rule: "No attribute is given twice for the same item.", findings: keysGivenTwice),
             QualityCheck("unknownNodeTypes", rule: "Every node has a node type of the notation.", findings: unknownNodeTypes),
             QualityCheck("unknownEdgeTypes", rule: "Every edge has an edge type of the notation.", findings: unknownEdgeTypes),
             QualityCheck(
                 "unknownGroupTypes", rule: "Every typed group has a group type of the notation.", findings: unknownGroupTypes),
-            QualityCheck("unresolvableIcons", rule: "Every icon a node type names exists.", findings: unresolvableIcons),
+            QualityCheck("unresolvableIcons", rule: "Every icon a node type names is available.", findings: unresolvableIcons),
             disconnectedNodesCheck, redundantJunctorCheck,
             QualityCheck(
-                "brokenBounds", rule: "Every node and edge stays within the bounds of its type.", findings: brokenBounds),
-            QualityCheck("containment", rule: "A nested element sits inside a type that details it.", findings: containment),
+                "brokenBounds", rule: "No node has more or fewer edges than its notation allows; each notation lists its limits.",
+                findings: brokenBounds),
+            QualityCheck(
+                "containment", rule: "A detailed node holds only the types that may detail it, such as Containers inside a Software System.",
+                findings: containment),
         ]
     }
 

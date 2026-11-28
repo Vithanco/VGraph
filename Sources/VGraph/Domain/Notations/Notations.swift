@@ -298,7 +298,8 @@ extension Notations {
     public static func statedRules(of entry: NotationEntry) -> [StatedRule] {
         let graph = (try? VGraph().placing(entry.content, in: .builtin)) ?? VGraph()
         return statedRules(
-            named: entry.namedQualityChecks, own: entry.qualityChecks, counterexamples: entry.counterexamples, in: graph)
+            named: entry.namedQualityChecks, own: entry.qualityChecks, counterexamples: entry.counterexamples,
+            definitions: entry.edgeTypeDefinitions, in: graph)
     }
 
     /// A `vnotation` that names its own checks has no counterexamples: it has no
@@ -307,11 +308,13 @@ extension Notations {
         let compiled = compiledEntry(judging: graph)
         return statedRules(
             named: namedQualityChecks(of: graph), own: compiled?.qualityChecks ?? [],
-            counterexamples: compiled?.counterexamples ?? [], in: graph)
+            counterexamples: compiled?.counterexamples ?? [],
+            definitions: compiledEntry(of: graph)?.edgeTypeDefinitions ?? [], in: graph)
     }
 
     private static func statedRules(
-        named: [QualityCheckSpec], own: [QualityCheck], counterexamples: [Counterexample], in graph: VGraph
+        named: [QualityCheckSpec], own: [QualityCheck], counterexamples: [Counterexample],
+        definitions: [EdgeTypeDefinition], in graph: VGraph
     ) -> [StatedRule] {
         let resolved = named.filter { !GenericQualityChecks.runsAlways($0) }.compactMap { try? QualityCheckRegistry.resolve($0) }
         let checked = (resolved + own).map { check in
@@ -319,7 +322,7 @@ extension Notations {
                 rule: check.rule, check: check.name,
                 counterexample: counterexamples.first { $0.check == check.name }?.source)
         }
-        let structural = (GenericQualityChecks.containmentRules(in: graph) + Bound.rules(in: graph)).map {
+        let structural = (GenericQualityChecks.containmentRules(in: graph) + Bound.rules(in: graph, definitions: definitions)).map {
             StatedRule(rule: $0, check: nil, counterexample: nil)
         }
         return checked + structural

@@ -185,17 +185,10 @@ struct MetadescriptionTest {
 
     @Test
     func aDescriptionListsTheRulesItChecks() {
-        let markdown = NotationMarkdown.render(entry: Notations.Ibis.entry)
-        #expect(
-            markdown.contains(
-                """
-                ## What Vithanco checks
-
-                - At most one edge joins two nodes in the same direction.
-                - Every node has at most one parent.
-                - Every Question has at least one Answer.
-
-                """))
+        let entry = Notations.Ibis.entry
+        let markdown = NotationMarkdown.render(entry: entry)
+        let list = Notations.rules(of: entry).map { "- \($0)\n" }.joined()
+        #expect(markdown.contains("## What Vithanco checks\n\n" + list + "\n"))
     }
 
     /// Detailings are rules too: a Database belongs inside a System only.
@@ -217,9 +210,8 @@ struct MetadescriptionTest {
     func theChecksEveryNotationRunsAreDescribedOnce() {
         let markdown = app.describeCommonChecks()
         #expect(markdown.hasPrefix("# Checks every notation runs\n"))
-        #expect(markdown.contains("## What Vithanco checks\n\n- "))
-        #expect(markdown.contains("- Every node is connected to at least one other.\n"))
-        #expect(markdown.contains("- A nested element sits inside a type that details it.\n"))
+        let list = GenericQualityChecks.all.map { "- \($0.rule)\n" }.joined()
+        #expect(markdown.contains("## What Vithanco checks\n\n" + list))
     }
 
     @Test
@@ -233,9 +225,8 @@ struct MetadescriptionTest {
     func aNotationsRulesComeWithTheirCounterexamples() throws {
         let rules = try #require(app.describeRules("IBIS"))
         let unanswered = try #require(rules.first { $0.check == "unansweredQuestions" })
-        #expect(unanswered.rule == "Every Question has at least one Answer.")
         #expect(unanswered.counterexample?.hasPrefix("vgraph ") == true)
-        #expect(app.describeCommonRules().contains { $0.rule == "Every node is connected to at least one other." })
+        #expect(app.describeCommonRules().map { $0.rule } == GenericQualityChecks.all.map { $0.rule })
     }
 
     // MARK: - A vnotation, described by the document that declares it
@@ -264,10 +255,10 @@ struct MetadescriptionTest {
                 """
                 ## What Vithanco checks
 
-                - Every node has at most one parent.
+                - \(QualityCheckRegistry.treeStructure.rule)
                 - A diagram has exactly one Goal.
                 - A Task belongs inside a Step.
-                - A Step has at most 1 outgoing "next" edge.
+                - A Step has at most one outgoing "next" edge.
 
                 """))
     }
@@ -291,8 +282,9 @@ struct MetadescriptionTest {
             }
             """
         let markdown = try app.describeNotation(in: source)
-        #expect(markdown.contains("- Every node's label has at most 5 words.\n"))
-        #expect(!markdown.contains("Every Question has at least one Answer."))
+        #expect(markdown.contains("- Every node's label has at most five words.\n"))
+        let unanswered = try #require(Notations.Ibis.entry.qualityChecks.first { $0.name == "unansweredQuestions" })
+        #expect(!markdown.contains(unanswered.rule))
     }
 
     @Test

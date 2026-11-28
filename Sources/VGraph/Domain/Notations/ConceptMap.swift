@@ -175,9 +175,12 @@ extension Notations {
                 topologyCheck("disconnectedClusters", rule: "The map is one connected whole.", orphanClusters),
                 topologyCheck("bothDirections", rule: "Two concepts are linked in one direction only.", redundantPropositions),
                 topologyCheck(
-                    "repeatedRelations", rule: "Relations with the same label and the same targets are one relation.",
+                    "repeatedRelations", rule: "No two relations share a label and their targets.",
                     unreusedRelations),
-                topologyCheck("manyToMany", rule: "A relation has a single concept on at least one side.", mappedRelations),
+                topologyCheck(
+                    "manyToMany",
+                    rule: "If a relation links several concepts to several others, it must hold for every combination of them.",
+                    mappedRelations),
                 topologyCheck(
                     "incompleteRelations", rule: "Every relation has a concept on each side.", incompleteRelations),
             ]
@@ -331,7 +334,8 @@ extension Notations {
         }
 
         /// A relation with several concepts on each side makes n * m propositions that all
-        /// must be valid. Flags circular propositions (same concept on both sides) as errors.
+        /// must be valid. Only a person can judge that, so it is info, not a warning: a
+        /// correct map gets it too. A concept on both sides is related to itself, an error.
         static func mappedRelations(_ graph: VGraph, topology: GraphTopology) -> [MessageWithSeverity] {
             graph.nodes(ofType: NodeTypes.relation).compactMap { relation in
                 let sources = topology.incomingSources[relation] ?? []
@@ -352,7 +356,7 @@ extension Notations {
                 return MessageWithSeverity(
                     message:
                         "Relation \"\(label)\" has \(sources.count) inbound and \(targets.count) outbound concepts, creating \(sources.count * targets.count) propositions -- verify all are valid",
-                    severity: .warning,
+                    severity: .info,
                     target: .node(relation.description)
                 )
             }
@@ -476,13 +480,12 @@ extension Notations.ConceptMap {
             Counterexample(
                 "manyToMany",
                 """
-                vgraph plants: ConceptMap "Plants" {
-                    node plants: Concept "Plants"; node water: Concept "Water"; node sunlight: Concept "Sunlight";
-                    node soil: Concept "Soil"; node leaves: Concept "Leaves";
-                    node need: Relation "need"; node stores: Relation "stores"; node grow: Relation "grow";
-                    edge plants -> need; edge leaves -> need; edge need -> water; edge need -> sunlight;
-                    edge soil -> stores; edge stores -> water;
-                    edge plants -> grow; edge grow -> leaves;
+                vgraph animals: ConceptMap "What animals eat" {
+                    node cats: Concept "Cats"; node cows: Concept "Cows";
+                    node mice: Concept "Mice"; node grass: Concept "Grass"; node farm: Concept "Farm";
+                    node eat: Relation "eat"; node liveOn: Relation "live on";
+                    edge cats -> eat; edge cows -> eat; edge eat -> mice; edge eat -> grass;
+                    edge cows -> liveOn; edge liveOn -> farm;
                 }
                 """),
             Counterexample(

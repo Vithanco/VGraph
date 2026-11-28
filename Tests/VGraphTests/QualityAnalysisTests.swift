@@ -692,7 +692,7 @@ struct MappedRelationsTests {
                 MessageWithSeverity(
                     message:
                         "Relation \"has\" has 2 inbound and 2 outbound concepts, creating 4 propositions -- verify all are valid",
-                    severity: .warning, target: .node("has"))
+                    severity: .info, target: .node("has"))
             ]),
         Row(
             name: "one inbound, many outbound",
