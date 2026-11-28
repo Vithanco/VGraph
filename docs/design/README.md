@@ -27,6 +27,7 @@ Open the HTML files directly in a browser (they load React/Babel + Google Fonts 
 - Sizes, radii, stroke widths, dash patterns, typography (§01–§09, §12, §13)
 - Icons: every path in `ICONS` and the construction rules (§14)
 - Render z-order (Timeline brief §04)
+- The 20px canvas margin (§10, "Canvas")
 - The §11 token rule (below)
 
 **Not binding:** the guide's own page layout and prose; Graphviz attribute suggestions in §10 (recommendations).

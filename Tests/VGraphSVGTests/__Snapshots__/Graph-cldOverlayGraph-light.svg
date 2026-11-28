@@ -1,4 +1,4 @@
-<svg width="500.0" height="300.0" viewBox="-50.0 -50.0 500.0 300.0" xmlns="http://www.w3.org/2000/svg"><style>@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap');</style><style>.vgraph-node, .vgraph-edge, .vgraph-group > rect { transition: opacity 0.12s ease-out, filter 0.12s ease-out; }
+<svg width="440.0" height="240.0" viewBox="-20.0 -20.0 440.0 240.0" xmlns="http://www.w3.org/2000/svg"><style>@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap');</style><style>.vgraph-node, .vgraph-edge, .vgraph-group > rect { transition: opacity 0.12s ease-out, filter 0.12s ease-out; }
 .vgraph-node, .vgraph-edge, .loop-indicator { cursor: pointer; }
 svg:has(.vgraph-node:hover, .vgraph-edge:hover, .loop-indicator:hover) .vgraph-node,
 svg:has(.vgraph-node:hover, .vgraph-edge:hover, .loop-indicator:hover) .vgraph-edge { opacity: 0.15; }

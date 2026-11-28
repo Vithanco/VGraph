@@ -56,7 +56,7 @@ struct GraphCaptionTests {
         ).svg
         let viewBox = try #require(svg.firstMatch(of: #/viewBox="([-0-9.]+) ([-0-9.]+) ([-0-9.]+) ([-0-9.]+)"/#))
         let bottom = try #require(Double(viewBox.output.2)) + #require(Double(viewBox.output.4))
-        let margin = 50.0
+        let margin = 20.0
         let space = bottom - (try baseline(of: svg, caption: "Should we ship?"))
         #expect(space < margin + 10, "space below the caption's baseline: \(space), margin: \(margin)")
     }

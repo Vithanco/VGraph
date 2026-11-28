@@ -138,7 +138,10 @@ public enum VSVGGraph {
 
         content.append(watermark.map { WatermarkRenderer.render(at: $0) } ?? .empty)
 
-        let padding = 50.0
+        // The bounds are Graphviz's box, which already holds whole nodes, edges and
+        // the caption; the margin only has to clear what is drawn past it, such as
+        // stacked shadows (about 12) and link badges.
+        let padding = 20.0
         let viewBoxX = bounds.minX - padding
         let viewBoxY = bounds.minY - padding
         let viewBoxWidth = (bounds.maxX - bounds.minX) + 2 * padding

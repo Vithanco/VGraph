@@ -116,6 +116,6 @@ struct WatermarkPlacementTests {
         let watermark = try watermarkRect(in: rendered)
 
         #expect(contains(bounds, watermark))
-        #expect(try viewBox(of: rendered) == VRect(x: -50, y: -50, width: 500, height: 400))
+        #expect(try viewBox(of: rendered) == VRect(x: -20, y: -20, width: 440, height: 340))
     }
 }

@@ -184,8 +184,8 @@ struct VSVGGraphTests {
             }
             """)
         let ported = try VSVGGraph.render(graph: graph, logger: TestLogger()).render()
-        #expect(ported.contains("width=\"600.0\""))
-        #expect(ported.contains("viewBox=\"-50.0 -50.0 600.0 400.0\""))
+        #expect(ported.contains("width=\"540.0\""))
+        #expect(ported.contains("viewBox=\"-20.0 -20.0 540.0 340.0\""))
         // Same document, inner geometry: integral values with no ".0".
         #expect(ported.contains("width=\"90\""))
     }
