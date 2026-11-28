@@ -5,9 +5,9 @@
 # plugins.json. Nothing is built: `just release` builds what ships, so a build
 # here would be thrown away.
 #
-# Commits nothing: `just plugins-release` commits VGraph's half on a release
-# branch, and `just publish-plugins` commits each plugin's bump together with
-# the engine it ships.
+# Commits nothing: `just plugins-release` commits VGraph's half and pushes it to
+# main, and `just publish-plugins` commits each plugin's bump together with the
+# engine it ships.
 #
 # Usage:
 #   ./release-plugins.sh                # patch bump every plugin

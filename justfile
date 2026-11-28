@@ -216,7 +216,7 @@ release full='': _release-preflight
     V=$(node -p "require('./obsidian-vithanco/manifest.json').version" 2>/dev/null || echo "")
     if [ -n "$V" ] && git -C obsidian-vithanco rev-parse -q --verify "refs/tags/$V" >/dev/null 2>&1; then
         echo "  v$V is already published — bump before publishing:"
-        echo "    just plugins-release patch     # bump + open the release PR; merge it, pull, then just release"
+        echo "    just plugins-release patch     # bump + push to main, then just release"
     else
         echo "  just publish-plugins             # tag + push + GitHub releases at v$V"
     fi
@@ -296,7 +296,7 @@ plugins-setup:
 plugins-pull:
     ./setup-plugins.sh --pull
 
-# Bump every engine consumer, commit VGraph's half on release/<version> and open its PR. Builds nothing. BUMP: patch|minor|major or a version. PLUGIN: optional path.
+# Bump every engine consumer, commit VGraph's half and push it to main. Builds nothing. BUMP: patch|minor|major or a version. PLUGIN: optional path.
 [group('plugins')]
 plugins-release bump='patch' plugin='': _require-maintainer _release-preflight
     #!/usr/bin/env bash
@@ -309,24 +309,45 @@ plugins-release bump='patch' plugin='': _require-maintainer _release-preflight
         patch|minor|major) ARG="--{{bump}}" ;;
         *)                 ARG="{{bump}}" ;;
     esac
+    # The bump is pushed straight to main, so check that push will land before
+    # any consumer is bumped. (_release-preflight fetched origin/main.)
+    if [ "$(git branch --show-current)" != main ] || [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
+        echo "Error: VGraph must be on main at origin/main — 'git switch main && git pull' first." >&2
+        exit 1
+    fi
+    # An open Dependabot PR is a dependency change main does not have yet: that is
+    # how a stale lockfile once reached publish-plugins. Merge or close them first,
+    # or release anyway with IGNORE_DEPENDABOT=1.
+    if [ "${IGNORE_DEPENDABOT:-}" != 1 ]; then
+        OPEN="" NL=$'\n'
+        for REPO in VGraph $(node -p "require('./plugins.json').plugins.map(p => 'Vithanco/' + p.path).join(' ')"); do
+            ARGS=(pr list --app dependabot --state open --json url,title --jq '.[] | "  \(.url)  \(.title)"')
+            [ "$REPO" = VGraph ] || ARGS+=(--repo "$REPO")
+            if ! FOUND=$(gh "${ARGS[@]}" 2>&1); then
+                echo "Error: could not list Dependabot PRs in $REPO: ${FOUND%%$NL*}" >&2
+                exit 1
+            fi
+            OPEN="${OPEN}${FOUND:+$FOUND$NL}"
+        done
+        if [ -n "$OPEN" ]; then
+            echo "Error: Dependabot PRs are open — merge or close them first, or IGNORE_DEPENDABOT=1 to release anyway:" >&2
+            printf '%s' "$OPEN" >&2
+            exit 1
+        fi
+    fi
     ./release-plugins.sh "$ARG" {{plugin}}
     V=$(node -p "const r = require('./plugins.json').plugins; (r.find(p => p.path === process.argv[1]) || r[0]).version" "{{plugin}}")
-    # main takes no direct pushes, so VGraph's half of the bump (plugins.json)
-    # reaches it through a PR. _release-preflight left the checkout clean, so
-    # this commit holds the bump and nothing else. Each consumer's half is
-    # committed when it is published: by publish-plugins with the engine it
-    # ships, and by `just mcp publish`.
-    BRANCH="release/$V"
-    git switch -q -c "$BRANCH"
+    # VGraph's half of the bump (plugins.json) goes straight to main: it holds
+    # only version fields, and CI checks main after the push. main's ruleset asks
+    # for a PR, which the maintainer bypasses. _release-preflight left the
+    # checkout clean, so this commit holds the bump and nothing else. Each
+    # consumer's half is committed when it is published: by publish-plugins with
+    # the engine it ships, and by `just mcp publish`.
     git add plugins.json
     git commit -q -m "chore: release $V"
-    git push -q -u origin "$BRANCH"
-    gh pr create --base main --head "$BRANCH" --title "chore: release $V" \
-        --body "Bumps every engine consumer to $V. After merging: \`git switch main && git pull\`, \`just release\`, \`just publish-plugins\`."
-    git switch -q -
+    git push -q origin main
     echo ""
-    echo "✓ $V committed on $BRANCH and opened as a PR. Nothing built. Next:"
-    echo "    merge the PR, then: git switch main && git pull"
+    echo "✓ $V committed and pushed to main. Nothing built. Next:"
     echo "    just release          # builds and tests what publish-plugins ships"
     echo "    just publish-plugins  # tags, GitHub releases, and the Marketplace when a credential is found"
 
@@ -598,7 +619,7 @@ deploy target *flags:
 # First dependency of every recipe that publishes under the maintainer's accounts.
 # What must already hold before a release is built or published, checked in
 # seconds: `just release` runs this first, so a version bump that is not yet
-# merged stops it here, not after its tests and builds.
+# pushed stops it here, not after its tests and builds.
 _release-preflight: _require-vgraph-main (_require-plugin "obsidian-vithanco") (_require-plugin "vscode-vithanco") (_require-plugin "vgraph-mcp")
     #!/usr/bin/env bash
     set -uo pipefail
@@ -624,7 +645,7 @@ _require-vgraph-main:
         FAIL=1
     elif [ -n "$STATUS" ]; then
         echo "Preflight: VGraph has uncommitted changes — the engine would ship from code no commit holds." >&2
-        echo "           A version bump goes in through the PR 'just plugins-release' opens: merge it, then 'git switch main && git pull'." >&2
+        echo "           'just plugins-release' commits and pushes a version bump itself." >&2
         FAIL=1
     fi
     if ! git fetch -q origin main 2>/dev/null; then

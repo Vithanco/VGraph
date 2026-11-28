@@ -31,14 +31,16 @@ just plugins-release patch     # or minor, major, or an explicit version
 ```
 
 This bumps every engine consumer and builds nothing. VGraph's half of the bump
-(`plugins.json`) is committed on `release/<version>` and opened as a PR, because
-`main` takes no direct pushes. Each consumer's half stays uncommitted in its
+(`plugins.json`) is committed and pushed straight to `main`: it holds only
+version fields, and CI checks `main` after the push (`main`'s ruleset asks for a
+PR, which the maintainer bypasses). Each consumer's half stays uncommitted in its
 checkout until it is published.
 
-Merge the PR once CI is green, then:
+It refuses to bump while a Dependabot PR is open in VGraph or any consumer, and
+lists them: merge or close them first, or release anyway with
+`IGNORE_DEPENDABOT=1 just plugins-release patch`. Then:
 
 ```bash
-git switch main && git pull
 just publish-all
 ```
 

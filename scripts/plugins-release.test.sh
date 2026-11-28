@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # `just plugins-release` only decides the next version: `just release` builds
-# what ships, so a build here was thrown away. Its VGraph half (plugins.json)
-# reaches main through a PR, so it commits that half and opens the PR rather than
-# leaving changes that `just release` then refuses. Each consumer's own half,
+# what ships, so a build here was thrown away. It commits its VGraph half
+# (plugins.json) and pushes it to main rather than leaving changes that
+# `just release` then refuses. Each consumer's own half,
 # vgraph-mcp's included, stays uncommitted in its checkout until it is published.
 set -uo pipefail
 
@@ -13,9 +13,13 @@ FAILED=0
 fail() { echo "FAIL: $*" >&2; FAILED=1; }
 
 mkdir "$ROOT/bin"
+# GH_DEPENDABOT is what `gh pr list` prints for each repo; GH_FAIL makes it fail.
 cat > "$ROOT/bin/gh" <<'EOF'
 #!/usr/bin/env bash
 echo "$*" >> "$GH_LOG"
+[ "$1 $2" = "pr list" ] || exit 0
+[ -z "${GH_FAIL:-}" ] || { echo "gh: not logged in" >&2; exit 1; }
+[ -z "${GH_DEPENDABOT:-}" ] || echo "$GH_DEPENDABOT"
 EOF
 chmod +x "$ROOT/bin/gh"
 export PATH="$ROOT/bin:$PATH"
@@ -67,24 +71,25 @@ given_everything_at() { # version, in a fresh WORK standing in for a merged VGra
 bump() { just --justfile "$REPO_ROOT/justfile" --working-directory "$WORK" plugins-release "$@" >"$WORK/out" 2>&1; }
 nothing_bumped() { # why
     [ -s "$RELEASE_LOG" ] && fail "$1: a engine consumer was bumped: $(cat "$RELEASE_LOG")"
-    git -C "$WORK/vgraph.git" rev-parse -q --verify refs/heads/release/1.2.4 >/dev/null && fail "$1: a release branch was pushed"
-    grep -q '^pr create' "$GH_LOG" && fail "$1: a PR was opened"
+    [ "$(git -C "$WORK/vgraph.git" log -1 --format=%s main)" = "at 1.2.3" ] || fail "$1: main on origin moved"
 }
 
 # Given every engine consumer at 1.2.3 and VGraph merged, when bumping a patch, then
 # every engine consumer is bumped without building anything, VGraph's half is committed
-# on release/1.2.4, pushed and offered as a PR, and the checkout is back on main, clean.
+# and pushed to main with nothing else, no PR is opened, and the checkout is clean.
 given_everything_at 1.2.3
 bump patch || fail "plugins-release patch failed: $(cat "$WORK/out")"
 [ "$(wc -l < "$RELEASE_LOG" | tr -d ' ')" = 3 ] || fail "wanted all three engine consumers bumped: $(cat "$RELEASE_LOG")"
 [ -f "$WORK/built.log" ] && fail "plugins-release built the engine"
-git -C "$WORK/vgraph.git" show release/1.2.4:plugins.json 2>/dev/null | grep -q '1.2.4' \
-    || fail "release/1.2.4 on origin does not carry the bumped plugins.json"
-[ "$(git -C "$WORK/vgraph.git" diff --name-only main release/1.2.4)" = plugins.json ] \
-    || fail "release/1.2.4 carries more than plugins.json: $(git -C "$WORK/vgraph.git" diff --name-only main release/1.2.4)"
+git -C "$WORK/vgraph.git" show main:plugins.json 2>/dev/null | grep -q '1.2.4' \
+    || fail "main on origin does not carry the bumped plugins.json"
+[ "$(git -C "$WORK/vgraph.git" diff --name-only main~1 main)" = plugins.json ] \
+    || fail "the bump commit carries more than plugins.json: $(git -C "$WORK/vgraph.git" diff --name-only main~1 main)"
+[ "$(git -C "$WORK/vgraph.git" branch --list | wc -l | tr -d ' ')" = 1 ] \
+    || fail "a branch besides main was pushed: $(git -C "$WORK/vgraph.git" branch --list)"
 git -C "$WORK/vgraph-mcp" diff --quiet -- package.json \
     && fail "vgraph-mcp's bump is not waiting uncommitted in its checkout"
-grep -q '^pr create.*release/1.2.4' "$GH_LOG" || fail "no PR opened for release/1.2.4: $(cat "$GH_LOG")"
+grep -q '^pr create' "$GH_LOG" && fail "a PR was opened: $(cat "$GH_LOG")"
 [ "$(git -C "$WORK" branch --show-current)" = main ] || fail "left VGraph on $(git -C "$WORK" branch --show-current)"
 [ -z "$(git -C "$WORK" status --porcelain)" ] || fail "left VGraph dirty: $(git -C "$WORK" status --porcelain)"
 grep -q 'just release' "$WORK/out" || fail "does not say 'just release' comes next: $(cat "$WORK/out")"
@@ -103,12 +108,40 @@ grep -q 'uncommitted' "$WORK/out" || fail "does not say VGraph is uncommitted: $
 nothing_bumped "uncommitted VGraph"
 
 # Given a VGraph commit not on origin/main, when bumping, then nothing is bumped:
-# the release PR would carry that commit along.
+# the push would carry that commit along.
 given_everything_at 1.2.3
 git -C "$WORK" commit -qm "local only" --allow-empty
 bump patch && fail "bumped on top of a commit that is not on origin/main"
 grep -q 'origin/main' "$WORK/out" || fail "does not name origin/main: $(cat "$WORK/out")"
 nothing_bumped "unpushed VGraph"
+
+# Given an open Dependabot PR, when bumping, then nothing is bumped and the PR is
+# named: a dependency change main lacks would ship unreleased.
+given_everything_at 1.2.3
+GH_DEPENDABOT="  https://example.invalid/pull/31  bump vsce" bump patch && fail "bumped with a Dependabot PR open"
+grep -q 'pull/31' "$WORK/out" || fail "does not name the open Dependabot PR: $(cat "$WORK/out")"
+nothing_bumped "open Dependabot PR"
+
+# Given an open Dependabot PR and IGNORE_DEPENDABOT=1, when bumping, then it bumps.
+given_everything_at 1.2.3
+GH_DEPENDABOT="  https://example.invalid/pull/31  bump vsce" IGNORE_DEPENDABOT=1 bump patch \
+    || fail "IGNORE_DEPENDABOT=1 did not release past the open PR: $(cat "$WORK/out")"
+
+# Given gh unable to list PRs, when bumping, then nothing is bumped: an unchecked
+# release is not a checked one.
+given_everything_at 1.2.3
+GH_FAIL=1 bump patch && fail "bumped without knowing which Dependabot PRs are open"
+grep -q 'could not list Dependabot PRs' "$WORK/out" || fail "does not say the check failed: $(cat "$WORK/out")"
+nothing_bumped "gh failing"
+
+# Given VGraph behind origin/main, when bumping, then nothing is bumped: the push
+# would be refused after every consumer had been bumped.
+given_everything_at 1.2.3
+OTHER=$(mktemp -d "$ROOT/other.XXXXXX") && git clone -q "$WORK/vgraph.git" "$OTHER/vgraph"
+git -C "$OTHER/vgraph" commit -qm "pushed elsewhere" --allow-empty && git -C "$OTHER/vgraph" push -q origin main
+bump patch && fail "bumped behind origin/main"
+grep -q 'git pull' "$WORK/out" || fail "does not say to pull: $(cat "$WORK/out")"
+[ -s "$RELEASE_LOG" ] && fail "behind origin/main: a engine consumer was bumped: $(cat "$RELEASE_LOG")"
 
 # The real engine consumers' release.sh, asked only to bump: the version moves and
 # nothing is built, installed or copied in. Skips a plugin that is not cloned.
